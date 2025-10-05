@@ -1,4 +1,4 @@
-package com.example.fansauchiwa.Album
+package com.example.fansauchiwa.album
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
