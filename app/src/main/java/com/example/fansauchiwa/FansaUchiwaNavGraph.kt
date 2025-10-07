@@ -1,13 +1,19 @@
 package com.example.fansauchiwa
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -25,6 +31,7 @@ import com.example.fansauchiwa.album.AlbumScreen
 import com.example.fansauchiwa.edit.EditScreen
 import com.example.fansauchiwa.home.HomeScreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FansaUchiwaNavGraph(
     navController: NavHostController = rememberNavController(),
@@ -35,6 +42,27 @@ fun FansaUchiwaNavGraph(
     val currentRoute = currentBackStackEntry?.destination?.route
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { },
+                navigationIcon = {
+                    IconButton(onClick = { /* TODO: Handle back navigation */ }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* TODO: Handle save action */ }) {
+                        Icon(
+                            imageVector = Icons.Default.SaveAlt,
+                            contentDescription = stringResource(R.string.save)
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = {
             if (currentRoute != FansaUchiwaDestinations.EDIT) {
                 NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
