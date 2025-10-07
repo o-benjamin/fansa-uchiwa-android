@@ -1,7 +1,10 @@
 <resources>
     <string name="app_name">Fansa Uchiwa</string>
 
-    <string name="home">Home</string>
-    <string name="album">Album</string>
-    <string name="add">Add</string>
+    <string name="home">ホーム</string>
+    <string name="album">アルバム</string>
+    <string name="add">新規作成</string>
+    <string name="back">戻る</string>
+    <string name="save">保存</string>
+
 </resources>
