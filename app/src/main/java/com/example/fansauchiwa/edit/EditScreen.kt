@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,36 +30,35 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun EditScreen() {
+fun EditScreen(
+    viewModel: EditViewModel = hiltViewModel()
+) {
+    val decorations = viewModel.decorations
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Uchiwa preview area
-        Box(
+        UchiwaPreview(
+            decorations = decorations,
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f),
-            contentAlignment = Alignment.Center
-        ) {
-            // TODO: make Uchiwa shape
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .aspectRatio(1f)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-        }
+                .weight(1f)
+        )
 
         // Decoration selector
         Column(
@@ -101,7 +102,16 @@ fun EditScreen() {
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(RoundedCornerShape(4.dp))
-                                        .clickable(onClick = {})
+                                        .clickable {
+                                            viewModel.addDecoration(
+                                                Decoration.Sticker(
+                                                    label = sticker.type,
+                                                    offset = Offset.Zero,
+                                                    rotation = 0f,
+                                                    size = 100f
+                                                )
+                                            )
+                                        }
                                 ) {
                                     Image(
                                         painter = painterResource(id = sticker.resId),
@@ -128,6 +138,47 @@ fun EditScreen() {
     }
 }
 
+@Composable
+fun UchiwaPreview(
+    decorations: List<Decoration>,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        // TODO: make Uchiwa shape
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .aspectRatio(1f)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+        decorations.forEach { decoration ->
+            when (decoration) {
+                is Decoration.Sticker -> {
+                    Image(
+                        painter = painterResource(decoration.resId),
+                        contentDescription = decoration.label,
+                        modifier = Modifier
+                            .rotate(120f)
+                            .offset(decoration.offset.x.dp, decoration.offset.y.dp)
+                            .size(decoration.size.dp)
+                    )
+                }
+
+                is Decoration.Text -> {
+                    Text(
+                        text = decoration.text,
+                        modifier = Modifier
+                            .offset(decoration.offset.x.dp, decoration.offset.y.dp)
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Preview
 @Composable

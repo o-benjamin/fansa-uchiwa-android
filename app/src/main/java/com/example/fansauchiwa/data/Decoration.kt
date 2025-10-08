@@ -2,6 +2,7 @@ package com.example.fansauchiwa.data
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.example.fansauchiwa.ui.StickerAsset
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 
@@ -13,6 +14,7 @@ sealed interface Decoration {
         val text: String,
         @Serializable(with = OffsetSerializer::class)
         val offset: Offset,
+        val rotation: Float,
         @Serializable(with = ColorSerializer::class)
         val color: Color,
         val size: Float
@@ -20,9 +22,12 @@ sealed interface Decoration {
 
     @Serializable
     data class Sticker(
-        val type: String,
+        val label: String,
         @Serializable(with = OffsetSerializer::class)
         val offset: Offset,
+        val rotation: Float,
         val size: Float
-    ) : Decoration
+    ) : Decoration {
+        val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
+    }
 }

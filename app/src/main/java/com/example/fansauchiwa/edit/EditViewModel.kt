@@ -22,6 +22,7 @@ class EditViewModel @Inject constructor(
 
     private fun onDecorationsChanged() {
         viewModelScope.launch {
+            // TODO: use savedStateHandle instead
             repository.saveDecorations(_decorations.toList())
         }
     }
