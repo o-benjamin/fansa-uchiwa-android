@@ -4,7 +4,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,12 +52,15 @@ fun EditScreen(
     viewModel: EditViewModel = hiltViewModel()
 ) {
     val decorations = viewModel.decorations
+    val selectedDecoration = viewModel.selectedDecoration
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         UchiwaPreview(
             decorations = decorations,
+            selectedDecoration = selectedDecoration,
+            onDecorationClick = { viewModel.selectDecoration(it) },
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
@@ -141,10 +147,15 @@ fun EditScreen(
 @Composable
 fun UchiwaPreview(
     decorations: List<Decoration>,
+    selectedDecoration: Decoration?,
+    onDecorationClick: (Decoration?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier,
+        modifier = modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+        ) { onDecorationClick(null) },
         contentAlignment = Alignment.Center
     ) {
         // TODO: make Uchiwa shape
@@ -156,8 +167,13 @@ fun UchiwaPreview(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         decorations.forEach { decoration ->
+            val isSelected = decoration == selectedDecoration
             when (decoration) {
                 is Decoration.Sticker -> {
+                    val borderModifier = if (isSelected) Modifier.border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary
+                    ) else Modifier
                     Image(
                         painter = painterResource(decoration.resId),
                         contentDescription = decoration.label,
@@ -165,14 +181,28 @@ fun UchiwaPreview(
                             .rotate(120f)
                             .offset(decoration.offset.x.dp, decoration.offset.y.dp)
                             .size(decoration.size.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onDecorationClick(decoration) }
+                            .then(borderModifier)
                     )
                 }
 
                 is Decoration.Text -> {
+                    val borderModifier = if (isSelected) Modifier.border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary
+                    ) else Modifier
                     Text(
                         text = decoration.text,
                         modifier = Modifier
                             .offset(decoration.offset.x.dp, decoration.offset.y.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onDecorationClick(decoration) }
+                            .then(borderModifier)
                     )
                 }
             }

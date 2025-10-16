@@ -1,6 +1,9 @@
 package com.example.fansauchiwa.edit
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.data.Decoration
@@ -17,6 +20,9 @@ class EditViewModel @Inject constructor(
     private val _decorations = mutableStateListOf<Decoration>()
     val decorations: List<Decoration> = _decorations
 
+    var selectedDecoration by mutableStateOf<Decoration?>(null)
+        private set
+
     private val undoStack = mutableListOf<List<Decoration>>()
     private val redoStack = mutableListOf<List<Decoration>>()
 
@@ -32,6 +38,10 @@ class EditViewModel @Inject constructor(
         _decorations.add(decoration)
         undoStack.add(_decorations.toList())
         onDecorationsChanged()
+    }
+
+    fun selectDecoration(decoration: Decoration?) {
+        selectedDecoration = decoration
     }
 
     fun onUndoClicked() {
