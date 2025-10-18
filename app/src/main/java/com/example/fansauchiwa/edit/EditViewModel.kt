@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.data.Decoration
@@ -42,6 +43,19 @@ class EditViewModel @Inject constructor(
 
     fun selectDecoration(decoration: Decoration?) {
         selectedDecoration = decoration
+    }
+
+    fun updateDecorationPosition(decoration: Decoration, dragAmount: Offset) {
+        val index = _decorations.indexOf(decoration)
+        if (index != -1) {
+            val currentDecoration = _decorations[index]
+            val newDecoration = when (currentDecoration) {
+                is Decoration.Sticker -> currentDecoration.copy(offset = currentDecoration.offset + dragAmount)
+                is Decoration.Text -> currentDecoration.copy(offset = currentDecoration.offset + dragAmount)
+            }
+            _decorations[index] = newDecoration
+            selectedDecoration = newDecoration
+        }
     }
 
     fun onUndoClicked() {

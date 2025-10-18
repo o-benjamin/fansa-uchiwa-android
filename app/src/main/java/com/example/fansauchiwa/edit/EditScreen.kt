@@ -1,11 +1,11 @@
 package com.example.fansauchiwa.edit
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,15 +28,18 @@ import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -61,6 +64,7 @@ fun EditScreen(
             decorations = decorations,
             selectedDecoration = selectedDecoration,
             onDecorationClick = { viewModel.selectDecoration(it) },
+            onDecorationDragEnd = viewModel::updateDecorationPosition,
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
@@ -149,13 +153,11 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecoration: Decoration?,
     onDecorationClick: (Decoration?) -> Unit,
+    onDecorationDragEnd: (Decoration, Offset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null
-        ) { onDecorationClick(null) },
+        modifier = modifier.clickable { onDecorationClick(null) },
         contentAlignment = Alignment.Center
     ) {
         // TODO: make Uchiwa shape
@@ -170,6 +172,8 @@ fun UchiwaPreview(
             val isSelected = decoration == selectedDecoration
             when (decoration) {
                 is Decoration.Sticker -> {
+                    val density = LocalDensity.current
+                    var offset by remember { mutableStateOf(decoration.offset) }
                     val borderModifier = if (isSelected) Modifier.border(
                         2.dp,
                         MaterialTheme.colorScheme.primary
@@ -179,8 +183,21 @@ fun UchiwaPreview(
                         contentDescription = decoration.label,
                         modifier = Modifier
                             .rotate(120f)
-                            .offset(decoration.offset.x.dp, decoration.offset.y.dp)
+                            .offset(
+                                with(density) { offset.x.toDp() },
+                                with(density) { offset.y.toDp() }
+                            )
                             .size(decoration.size.dp)
+                            .pointerInput(decoration) {
+                                detectDragGestures(
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        onDecorationClick(decoration)
+                                        offset += dragAmount
+                                    },
+                                    onDragEnd = { onDecorationDragEnd(decoration, offset) }
+                                )
+                            }
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -190,6 +207,7 @@ fun UchiwaPreview(
                 }
 
                 is Decoration.Text -> {
+                    var offset by remember { mutableStateOf(decoration.offset) }
                     val borderModifier = if (isSelected) Modifier.border(
                         2.dp,
                         MaterialTheme.colorScheme.primary
@@ -197,11 +215,18 @@ fun UchiwaPreview(
                     Text(
                         text = decoration.text,
                         modifier = Modifier
-                            .offset(decoration.offset.x.dp, decoration.offset.y.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onDecorationClick(decoration) }
+                            .offset(offset.x.dp, offset.y.dp)
+                            .pointerInput(decoration) {
+                                detectDragGestures(
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        onDecorationClick(decoration)
+                                        offset += dragAmount
+                                    },
+                                    onDragEnd = { onDecorationDragEnd(decoration, offset) }
+                                )
+                            }
+                            .clickable { onDecorationClick(decoration) }
                             .then(borderModifier)
                     )
                 }
