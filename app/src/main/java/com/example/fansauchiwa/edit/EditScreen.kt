@@ -22,24 +22,28 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +52,10 @@ import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -65,6 +73,8 @@ fun EditScreen(
             selectedDecoration = selectedDecoration,
             onDecorationClick = { viewModel.selectDecoration(it) },
             onDecorationDragEnd = viewModel::updateDecorationPosition,
+            onDecorationRotateEnd = viewModel::rotateSelectedDecoration,
+            onDecorationScaleEnd = viewModel::scaleSelectedDecoration,
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
@@ -118,7 +128,7 @@ fun EditScreen(
                                                     label = sticker.type,
                                                     offset = Offset.Zero,
                                                     rotation = 0f,
-                                                    size = 100f
+                                                    scale = 1f
                                                 )
                                             )
                                         }
@@ -148,12 +158,31 @@ fun EditScreen(
     }
 }
 
+private fun onStickerDrag(
+    decoration: Decoration.Sticker,
+    dragAmount: Offset,
+    currentOffset: Offset,
+    onDecorationClick: (Decoration) -> Unit,
+): Offset {
+    onDecorationClick(decoration)
+    val angleRad = Math.toRadians(decoration.rotation.toDouble()).toFloat()
+    val cos = cos(angleRad)
+    val sin = sin(angleRad)
+    val rotatedDragAmount = Offset(
+        x = dragAmount.x * cos - dragAmount.y * sin,
+        y = dragAmount.x * sin + dragAmount.y * cos
+    )
+    return currentOffset + rotatedDragAmount
+}
+
 @Composable
 fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecoration: Decoration?,
     onDecorationClick: (Decoration?) -> Unit,
     onDecorationDragEnd: (Decoration, Offset) -> Unit,
+    onDecorationRotateEnd: (Float) -> Unit,
+    onDecorationScaleEnd: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -172,38 +201,62 @@ fun UchiwaPreview(
             val isSelected = decoration == selectedDecoration
             when (decoration) {
                 is Decoration.Sticker -> {
-                    val density = LocalDensity.current
-                    var offset by remember { mutableStateOf(decoration.offset) }
+                    var currentOffset by remember { mutableStateOf(decoration.offset) }
+                    var currentScale by remember { mutableFloatStateOf(decoration.scale) }
+                    var currentRotation by remember { mutableFloatStateOf(decoration.rotation) }
+
                     val borderModifier = if (isSelected) Modifier.border(
-                        2.dp,
+                        1.dp,
                         MaterialTheme.colorScheme.primary
                     ) else Modifier
-                    Image(
-                        painter = painterResource(decoration.resId),
-                        contentDescription = decoration.label,
+
+                    Box(
                         modifier = Modifier
-                            .rotate(120f)
-                            .offset(
-                                with(density) { offset.x.toDp() },
-                                with(density) { offset.y.toDp() }
-                            )
-                            .size(decoration.size.dp)
+                            .graphicsLayer {
+                                translationX = currentOffset.x
+                                translationY = currentOffset.y
+                                scaleX = currentScale
+                                scaleY = currentScale
+                                rotationZ = currentRotation
+                            }
+                            .size(100.dp)
                             .pointerInput(decoration) {
                                 detectDragGestures(
                                     onDrag = { change, dragAmount ->
                                         change.consume()
-                                        onDecorationClick(decoration)
-                                        offset += dragAmount
+                                        currentOffset = onStickerDrag(
+                                            decoration,
+                                            dragAmount,
+                                            currentOffset,
+                                            onDecorationClick
+                                        )
                                     },
-                                    onDragEnd = { onDecorationDragEnd(decoration, offset) }
+                                    onDragEnd = { onDecorationDragEnd(decoration, currentOffset) }
                                 )
                             }
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) { onDecorationClick(decoration) }
-                            .then(borderModifier)
-                    )
+                            ) { onDecorationClick(decoration) })
+                    {
+                        Image(
+                            painter = painterResource(decoration.resId),
+                            contentDescription = decoration.label,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(borderModifier)
+                        )
+                        if (isSelected) {
+                            ZoomAndRotate(
+                                center = Offset(decoration.offset.x, decoration.offset.y),
+                                onScale = { currentScale = it },
+                                onScaleEnd = { onDecorationScaleEnd(it) },
+                                onRotate = { currentRotation = it },
+                                onRotateEnd = { onDecorationRotateEnd(it) },
+                                modifier = Modifier.align(Alignment.BottomEnd)
+                            )
+                        }
+                    }
                 }
 
                 is Decoration.Text -> {
@@ -234,6 +287,63 @@ fun UchiwaPreview(
         }
     }
 }
+
+@Composable
+private fun ZoomAndRotate(
+    center: Offset,
+    onRotate: (Float) -> Unit,
+    onRotateEnd: (Float) -> Unit,
+    onScale: (Float) -> Unit,
+    onScaleEnd: (Float) -> Unit,
+    modifier: Modifier
+) {
+    var rotation by remember { mutableFloatStateOf(0f) }
+    var scale by remember { mutableFloatStateOf(1f) }
+
+    IconButton(
+        onClick = {},
+        modifier = modifier
+            .offset(12.dp, 12.dp)
+            .background(MaterialTheme.colorScheme.primary, CircleShape)
+            .size(24.dp)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { startPosition ->
+                        // 必要ならなにか定義する
+                    },
+                    onDrag = { change, offset ->
+                        change.consume()
+                        // ドラッグした距離からscaleを計算
+//                        val dragMagnitude = offset.getDistance()
+//                        val scaleFactor = 0.1f
+//                        onScale(1f + (dragMagnitude * scaleFactor))
+
+                        // ドラッグした角度からrotationを計算
+//                        val newAngle = newVector.toAngleDegrees()
+//                        rotation = newAngle - startAngle
+//                        onRotate(rotation)
+                    },
+                    onDragEnd = {
+                        onScaleEnd(scale)
+                        onRotateEnd(rotation)
+                    }
+                )
+            }
+    ) {
+        Icon(
+            imageVector = Icons.Default.Refresh,
+            contentDescription = "Rotate",
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .size(16.dp)
+        )
+    }
+}
+
+private fun Offset.toAngleDegrees(): Float {
+    return atan2(y, x) * 180f / PI.toFloat()
+}
+
 
 @Preview
 @Composable

@@ -17,7 +17,7 @@ sealed interface Decoration {
         val rotation: Float,
         @Serializable(with = ColorSerializer::class)
         val color: Color,
-        val size: Float
+        val scale: Float
     ) : Decoration
 
     @Serializable
@@ -26,7 +26,7 @@ sealed interface Decoration {
         @Serializable(with = OffsetSerializer::class)
         val offset: Offset,
         val rotation: Float,
-        val size: Float
+        val scale: Float
     ) : Decoration {
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }

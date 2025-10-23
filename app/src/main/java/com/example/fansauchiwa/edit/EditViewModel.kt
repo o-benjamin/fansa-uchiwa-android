@@ -58,6 +58,33 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun rotateSelectedDecoration(newRotation: Float) {
+        val currentSelection = selectedDecoration ?: return
+        val index = _decorations.indexOf(currentSelection)
+        if (index != -1) {
+            val newDecoration = when (val decoration = _decorations[index]) {
+                is Decoration.Sticker -> decoration.copy(rotation = newRotation)
+                is Decoration.Text -> decoration // Assuming text can't be rotated for now
+            }
+            _decorations[index] = newDecoration
+            selectedDecoration = newDecoration
+        }
+    }
+
+    fun scaleSelectedDecoration(newScale: Float) {
+        val currentSelection = selectedDecoration ?: return
+        val index = _decorations.indexOf(currentSelection)
+        if (index != -1) {
+            val newDecoration = when (val decoration = _decorations[index]) {
+                is Decoration.Sticker -> decoration.copy(scale = newScale)
+                is Decoration.Text -> decoration.copy(scale = newScale)
+            }
+            _decorations[index] = newDecoration
+            selectedDecoration = newDecoration
+        }
+    }
+
+
     fun onUndoClicked() {
         if (undoStack.isNotEmpty()) {
             redoStack.add(undoStack.last())
