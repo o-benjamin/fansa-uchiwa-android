@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -23,16 +23,16 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +48,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -62,19 +63,17 @@ import kotlin.math.sin
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel()
 ) {
-    val decorations = viewModel.decorations
-    val selectedDecoration = viewModel.selectedDecoration
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         UchiwaPreview(
-            decorations = decorations,
-            selectedDecoration = selectedDecoration,
-            onDecorationClick = { viewModel.selectDecoration(it) },
-            onDecorationDragEnd = viewModel::updateDecorationPosition,
-            onDecorationRotateEnd = viewModel::rotateSelectedDecoration,
-            onDecorationScaleEnd = viewModel::scaleSelectedDecoration,
+            decorations = uiState.decorations,
+            selectedDecoration = uiState.selectedDecoration,
+            onDecorationClick = viewModel::selectDecoration,
+            onDecorationDragEnd = viewModel::updateDecorationGraphic,
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
@@ -158,38 +157,25 @@ fun EditScreen(
     }
 }
 
-private fun onStickerDrag(
-    decoration: Decoration.Sticker,
-    dragAmount: Offset,
-    currentOffset: Offset,
-    onDecorationClick: (Decoration) -> Unit,
-): Offset {
-    onDecorationClick(decoration)
-    val angleRad = Math.toRadians(decoration.rotation.toDouble()).toFloat()
-    val cos = cos(angleRad)
-    val sin = sin(angleRad)
-    val rotatedDragAmount = Offset(
-        x = dragAmount.x * cos - dragAmount.y * sin,
-        y = dragAmount.x * sin + dragAmount.y * cos
-    )
-    return currentOffset + rotatedDragAmount
-}
-
 @Composable
 fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecoration: Decoration?,
     onDecorationClick: (Decoration?) -> Unit,
-    onDecorationDragEnd: (Decoration, Offset) -> Unit,
-    onDecorationRotateEnd: (Float) -> Unit,
-    onDecorationScaleEnd: (Float) -> Unit,
+    onDecorationDragEnd: (Decoration, Offset, Float, Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.clickable { onDecorationClick(null) },
+        modifier = modifier.clickable(
+            interactionSource = null,
+            indication = null
+        ) { onDecorationClick(null) },
         contentAlignment = Alignment.Center
     ) {
-        // TODO: make Uchiwa shape
+        var offsetDiff by remember { mutableStateOf(Offset.Zero) }
+        var scaleDiff by remember { mutableFloatStateOf(0f) }
+        var rotationDiff by remember { mutableFloatStateOf(0f) }
+        // TODO: うちわの形にする
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.8f)
@@ -198,90 +184,44 @@ fun UchiwaPreview(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         decorations.forEach { decoration ->
-            val isSelected = decoration == selectedDecoration
-            when (decoration) {
-                is Decoration.Sticker -> {
-                    var currentOffset by remember { mutableStateOf(decoration.offset) }
-                    var currentScale by remember { mutableFloatStateOf(decoration.scale) }
-                    var currentRotation by remember { mutableFloatStateOf(decoration.rotation) }
-
-                    val borderModifier = if (isSelected) Modifier.border(
-                        1.dp,
-                        MaterialTheme.colorScheme.primary
-                    ) else Modifier
-
-                    Box(
-                        modifier = Modifier
-                            .graphicsLayer {
-                                translationX = currentOffset.x
-                                translationY = currentOffset.y
-                                scaleX = currentScale
-                                scaleY = currentScale
-                                rotationZ = currentRotation
-                            }
-                            .size(100.dp)
-                            .pointerInput(decoration) {
-                                detectDragGestures(
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        currentOffset = onStickerDrag(
-                                            decoration,
-                                            dragAmount,
-                                            currentOffset,
-                                            onDecorationClick
-                                        )
-                                    },
-                                    onDragEnd = { onDecorationDragEnd(decoration, currentOffset) }
+            key(decoration) {
+                val isSelected = decoration == selectedDecoration
+                when (decoration) {
+                    is Decoration.Sticker -> {
+                        GestureInputLayer(
+                            decoration = decoration,
+                            onDecorationTap = { onDecorationClick(decoration) },
+                            isSelected = isSelected,
+                            onDrag = { offsetDiff += it },
+                            onScale = { newScaleDiff ->
+                                val targetScale = (decoration.scale + newScaleDiff).coerceIn(0.5f, 3f)
+                                scaleDiff = targetScale - decoration.scale
+                            },
+                            onRotate = { rotationDiff = it },
+                            onDragEnd = {
+                                onDecorationDragEnd(
+                                    decoration,
+                                    offsetDiff,
+                                    scaleDiff,
+                                    rotationDiff
                                 )
+                                offsetDiff = Offset.Zero
+                                scaleDiff = 0f
+                                rotationDiff = 0f
                             }
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onDecorationClick(decoration) })
-                    {
-                        Image(
-                            painter = painterResource(decoration.resId),
-                            contentDescription = decoration.label,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .then(borderModifier)
                         )
-                        if (isSelected) {
-                            ZoomAndRotate(
-                                center = Offset(decoration.offset.x, decoration.offset.y),
-                                onScale = { currentScale = it },
-                                onScaleEnd = { onDecorationScaleEnd(it) },
-                                onRotate = { currentRotation = it },
-                                onRotateEnd = { onDecorationRotateEnd(it) },
-                                modifier = Modifier.align(Alignment.BottomEnd)
-                            )
-                        }
+                        StickerItem(
+                            decoration = decoration,
+                            isSelected = isSelected,
+                            currentOffset = decoration.offset + offsetDiff,
+                            currentScale = decoration.scale + scaleDiff,
+                            currentRotation = decoration.rotation + rotationDiff
+                        )
                     }
-                }
 
-                is Decoration.Text -> {
-                    var offset by remember { mutableStateOf(decoration.offset) }
-                    val borderModifier = if (isSelected) Modifier.border(
-                        2.dp,
-                        MaterialTheme.colorScheme.primary
-                    ) else Modifier
-                    Text(
-                        text = decoration.text,
-                        modifier = Modifier
-                            .offset(offset.x.dp, offset.y.dp)
-                            .pointerInput(decoration) {
-                                detectDragGestures(
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        onDecorationClick(decoration)
-                                        offset += dragAmount
-                                    },
-                                    onDragEnd = { onDecorationDragEnd(decoration, offset) }
-                                )
-                            }
-                            .clickable { onDecorationClick(decoration) }
-                            .then(borderModifier)
-                    )
+                    is Decoration.Text -> {
+                        // TODO: implement
+                    }
                 }
             }
         }
@@ -289,61 +229,172 @@ fun UchiwaPreview(
 }
 
 @Composable
-private fun ZoomAndRotate(
-    center: Offset,
-    onRotate: (Float) -> Unit,
-    onRotateEnd: (Float) -> Unit,
+private fun GestureInputLayer(
+    decoration: Decoration.Sticker,
+    onDecorationTap: () -> Unit,
+    isSelected: Boolean,
+    onDrag: (Offset) -> Unit,
     onScale: (Float) -> Unit,
-    onScaleEnd: (Float) -> Unit,
+    onRotate: (Float) -> Unit,
+    onDragEnd: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                translationX = decoration.offset.x
+                translationY = decoration.offset.y
+                scaleX = decoration.scale
+                scaleY = decoration.scale
+                rotationZ = decoration.rotation
+            }
+            .size(100.dp)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                onClick = onDecorationTap
+            )
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDecorationTap()
+                        onDrag(rotatedDragAmount(decoration.rotation, dragAmount))
+                    },
+                    onDragEnd = onDragEnd
+                )
+            }
+    ) {
+        if (isSelected) {
+            GestureInputHandle(
+                decoration = decoration,
+                onScale = onScale,
+                onRotate = onRotate,
+                onDragEnd = onDragEnd,
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
+    }
+}
+
+@Composable
+private fun GestureInputHandle(
+    decoration: Decoration,
+    onScale: (Float) -> Unit,
+    onRotate: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val center by remember(decoration) { mutableStateOf(decoration.offset) }
+    var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
+    var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
+    var initialDragAngle by remember { mutableFloatStateOf(0f) }
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .size(24.dp)
+            .offset(12.dp, 12.dp)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { startPosition ->
+                        cumulativeOffset = Offset.Zero
+                        dragStartPosition = startPosition - center
+                        initialDragAngle = dragStartPosition.toAngleDegrees()
+                    },
+                    onDrag = { change, offset ->
+                        change.consume()
+                        cumulativeOffset += offset
+                        // ドラッグした距離からscaleを計算
+                        val signedDistance = (cumulativeOffset.x + cumulativeOffset.y) / 2f
+                        val scaleFactor = 0.005f
+                        val factoredScale = signedDistance * scaleFactor
+                        onScale(factoredScale)
+
+                        // ドラッグした角度からrotationを計算（centerを基準に）
+                        val currentPosition = dragStartPosition + cumulativeOffset
+                        val currentAngle = currentPosition.toAngleDegrees()
+                        val angleDiff = currentAngle - initialDragAngle
+                        val rotation = angleDiff
+                        onRotate(rotation)
+                    },
+                    onDragEnd = onDragEnd
+                )
+            }
+    )
+}
+
+@Composable
+private fun StickerItem(
+    decoration: Decoration.Sticker,
+    isSelected: Boolean,
+    currentOffset: Offset,
+    currentScale: Float,
+    currentRotation: Float,
+) {
+    val borderModifier = if (isSelected) Modifier.border(
+        1.dp,
+        MaterialTheme.colorScheme.primary
+    ) else Modifier
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                translationX = currentOffset.x
+                translationY = currentOffset.y
+                scaleX = currentScale
+                scaleY = currentScale
+                rotationZ = currentRotation
+            }
+            .size(100.dp)
+    )
+    {
+        Image(
+            painter = painterResource(decoration.resId),
+            contentDescription = decoration.label,
+            modifier = Modifier
+                .fillMaxSize()
+                .then(borderModifier)
+        )
+        if (isSelected) {
+            TransformHandleIcon(
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TransformHandleIcon(
     modifier: Modifier
 ) {
-    var rotation by remember { mutableFloatStateOf(0f) }
-    var scale by remember { mutableFloatStateOf(1f) }
-
-    IconButton(
-        onClick = {},
+    Icon(
+        imageVector = Icons.Default.OpenWith,
+        contentDescription = "Zoom and Rotate",
+        tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .offset(12.dp, 12.dp)
             .background(MaterialTheme.colorScheme.primary, CircleShape)
             .size(24.dp)
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { startPosition ->
-                        // 必要ならなにか定義する
-                    },
-                    onDrag = { change, offset ->
-                        change.consume()
-                        // ドラッグした距離からscaleを計算
-//                        val dragMagnitude = offset.getDistance()
-//                        val scaleFactor = 0.1f
-//                        onScale(1f + (dragMagnitude * scaleFactor))
+            .padding(4.dp)
+    )
+}
 
-                        // ドラッグした角度からrotationを計算
-//                        val newAngle = newVector.toAngleDegrees()
-//                        rotation = newAngle - startAngle
-//                        onRotate(rotation)
-                    },
-                    onDragEnd = {
-                        onScaleEnd(scale)
-                        onRotateEnd(rotation)
-                    }
-                )
-            }
-    ) {
-        Icon(
-            imageVector = Icons.Default.Refresh,
-            contentDescription = "Rotate",
-            tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier
-                .size(16.dp)
-        )
-    }
+private fun rotatedDragAmount(
+    currentRotation: Float,
+    dragAmount: Offset,
+): Offset {
+    val angleRad = Math.toRadians(currentRotation.toDouble()).toFloat()
+    val cos = cos(angleRad)
+    val sin = sin(angleRad)
+    val rotatedDragAmount = Offset(
+        x = dragAmount.x * cos - dragAmount.y * sin,
+        y = dragAmount.x * sin + dragAmount.y * cos
+    )
+    return rotatedDragAmount
 }
 
 private fun Offset.toAngleDegrees(): Float {
     return atan2(y, x) * 180f / PI.toFloat()
 }
-
 
 @Preview
 @Composable

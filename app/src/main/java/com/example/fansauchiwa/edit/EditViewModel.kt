@@ -1,5 +1,8 @@
 package com.example.fansauchiwa.edit
 
+import android.icu.number.Scale
+import android.util.Log
+import androidx.compose.material3.FabPosition
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -10,6 +13,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.FansaUchiwaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,90 +24,56 @@ import javax.inject.Inject
 class EditViewModel @Inject constructor(
     private val repository: FansaUchiwaRepository
 ) : ViewModel() {
-
-    private val _decorations = mutableStateListOf<Decoration>()
-    val decorations: List<Decoration> = _decorations
-
-    var selectedDecoration by mutableStateOf<Decoration?>(null)
-        private set
-
-    private val undoStack = mutableListOf<List<Decoration>>()
-    private val redoStack = mutableListOf<List<Decoration>>()
+    private val _uiState = MutableStateFlow(EditUiState())
+    val uiState: StateFlow<EditUiState> = _uiState.asStateFlow()
 
     private fun onDecorationsChanged() {
         viewModelScope.launch {
             // TODO: use savedStateHandle instead
-            repository.saveDecorations(_decorations.toList())
+            repository.saveDecorations(_uiState.value.decorations)
         }
     }
 
     fun addDecoration(decoration: Decoration) {
-        redoStack.clear()
-        _decorations.add(decoration)
-        undoStack.add(_decorations.toList())
+        _uiState.update {
+            it.copy(decorations = it.decorations + decoration)
+        }
         onDecorationsChanged()
     }
 
     fun selectDecoration(decoration: Decoration?) {
-        selectedDecoration = decoration
+        _uiState.update {
+            it.copy(selectedDecoration = decoration)
+        }
     }
 
-    fun updateDecorationPosition(decoration: Decoration, dragAmount: Offset) {
-        val index = _decorations.indexOf(decoration)
+    fun updateDecorationGraphic(
+        decoration: Decoration,
+        offset: Offset,
+        scale: Float,
+        rotation: Float
+    ) {
+        val index = _uiState.value.decorations.indexOf(decoration)
         if (index != -1) {
-            val currentDecoration = _decorations[index]
+            val currentDecoration = _uiState.value.decorations[index]
             val newDecoration = when (currentDecoration) {
-                is Decoration.Sticker -> currentDecoration.copy(offset = currentDecoration.offset + dragAmount)
-                is Decoration.Text -> currentDecoration.copy(offset = currentDecoration.offset + dragAmount)
+                is Decoration.Sticker -> currentDecoration.copy(
+                    offset = currentDecoration.offset + offset,
+                    scale = currentDecoration.scale + scale,
+                    rotation = currentDecoration.rotation + rotation
+                )
+
+                is Decoration.Text -> currentDecoration.copy(offset = currentDecoration.offset + offset)
             }
-            _decorations[index] = newDecoration
-            selectedDecoration = newDecoration
-        }
-    }
+            _uiState.update {
+                it.copy(
+                    decorations = it.decorations.toMutableList().apply {
+                        this[index] = newDecoration
+                    },
+                    selectedDecoration = newDecoration
 
-    fun rotateSelectedDecoration(newRotation: Float) {
-        val currentSelection = selectedDecoration ?: return
-        val index = _decorations.indexOf(currentSelection)
-        if (index != -1) {
-            val newDecoration = when (val decoration = _decorations[index]) {
-                is Decoration.Sticker -> decoration.copy(rotation = newRotation)
-                is Decoration.Text -> decoration // Assuming text can't be rotated for now
+                )
             }
-            _decorations[index] = newDecoration
-            selectedDecoration = newDecoration
-        }
-    }
-
-    fun scaleSelectedDecoration(newScale: Float) {
-        val currentSelection = selectedDecoration ?: return
-        val index = _decorations.indexOf(currentSelection)
-        if (index != -1) {
-            val newDecoration = when (val decoration = _decorations[index]) {
-                is Decoration.Sticker -> decoration.copy(scale = newScale)
-                is Decoration.Text -> decoration.copy(scale = newScale)
-            }
-            _decorations[index] = newDecoration
-            selectedDecoration = newDecoration
-        }
-    }
-
-
-    fun onUndoClicked() {
-        if (undoStack.isNotEmpty()) {
-            redoStack.add(undoStack.last())
-            _decorations.clear()
-            _decorations.addAll(undoStack.last())
-            undoStack.removeAt(undoStack.lastIndex)
-            onDecorationsChanged()
-        }
-    }
-
-    fun onRedoClicked() {
-        if (redoStack.isNotEmpty()) {
-            _decorations.clear()
-            _decorations.addAll(redoStack.last())
-            redoStack.removeAt(redoStack.lastIndex)
-            onDecorationsChanged()
         }
     }
 }
