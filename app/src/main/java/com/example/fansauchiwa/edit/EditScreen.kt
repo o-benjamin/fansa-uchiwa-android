@@ -211,6 +211,7 @@ fun UchiwaPreview(
                         if (isSelected) {
                             val stickerSizePx = with(LocalDensity.current) { 100.dp.toPx() }
 
+                            // Visual Handle (updates position every frame)
                             val visualHandleOffset = calculateHandleOffset(
                                 baseOffset = decoration.offset + offsetDiff,
                                 scale = decoration.scale + scaleDiff,
@@ -218,13 +219,14 @@ fun UchiwaPreview(
                                 size = stickerSizePx,
                                 corner = HandleCorner.BottomRight
                             )
-                            VisualTransformHandle(
+                            TransformHandleIcon(
                                 modifier = Modifier.graphicsLayer {
                                     translationX = visualHandleOffset.x
                                     translationY = visualHandleOffset.y
                                 }
                             )
 
+                            // Gesture Handle (position is fixed during a drag)
                             val gestureHandleOffset = calculateHandleOffset(
                                 baseOffset = decoration.offset,
                                 scale = decoration.scale,
@@ -232,20 +234,33 @@ fun UchiwaPreview(
                                 size = stickerSizePx,
                                 corner = HandleCorner.BottomRight
                             )
+
+                            var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
+
                             GestureInputHandle(
                                 modifier = Modifier.graphicsLayer {
                                     translationX = gestureHandleOffset.x
                                     translationY = gestureHandleOffset.y
                                 },
-                                stickerCenterInParent = decoration.offset,
-                                handleCenterInParent = gestureHandleOffset,
-                                onScale = { newScaleDiff ->
-                                    val targetScale =
-                                        (decoration.scale + newScaleDiff).coerceIn(0.5f, 3f)
-                                    scaleDiff = targetScale - decoration.scale
+                                onTransformStart = { startPosition ->
+                                    cumulativeOffset = Offset.Zero
                                 },
-                                onRotate = { rotationDiff = it },
-                                onDragEnd = {
+                                onTransform = { dragAmount ->
+                                    val transformation = calculateTransformations(
+                                        dragAmount,
+                                        cumulativeOffset,
+                                        gestureHandleOffset
+                                    )
+                                    cumulativeOffset += dragAmount
+                                    val targetScale =
+                                        (decoration.scale + transformation.scaleDiff).coerceIn(
+                                            0.5f,
+                                            3f
+                                        )
+                                    scaleDiff = targetScale - decoration.scale
+                                    rotationDiff = transformation.rotationDiff
+                                },
+                                onTransformEnd = {
                                     onDecorationDragEnd(
                                         decoration,
                                         offsetDiff,
@@ -341,56 +356,32 @@ private fun StickerItem(
 
 @Composable
 private fun GestureInputHandle(
-    stickerCenterInParent: Offset,
-    handleCenterInParent: Offset,
-    onScale: (Float) -> Unit,
-    onRotate: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    onTransformStart: (Offset) -> Unit,
+    onTransform: (Offset) -> Unit,
+    onTransformEnd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val handleSize = 48.dp
-    val handleSizePx = with(LocalDensity.current) { handleSize.toPx() }
-
-    val handleTopLeftInParent = handleCenterInParent - Offset(handleSizePx / 2f, handleSizePx / 2f)
-    val centerInLocal = stickerCenterInParent - handleTopLeftInParent
-
-    var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
-    var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
-    var initialDragAngle by remember { mutableFloatStateOf(0f) }
     Box(
         modifier = modifier
             .size(handleSize)
-            .pointerInput(centerInLocal) {
+            .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = { startPosition ->
-                        cumulativeOffset = Offset.Zero
-                        dragStartPosition = startPosition - centerInLocal
-                        initialDragAngle = dragStartPosition.toAngleDegrees()
+                        onTransformStart(startPosition)
                     },
-                    onDrag = { change, offset ->
+                    onDrag = { change, dragAmount ->
                         change.consume()
-                        cumulativeOffset += offset
-                        // ドラッグした距離からscaleを計算
-                        val signedDistance = (cumulativeOffset.x + cumulativeOffset.y) / 2f
-                        val scaleFactor = 0.005f
-                        val factoredScale = signedDistance * scaleFactor
-                        onScale(factoredScale)
-
-                        // ドラッグした角度からrotationを計算（centerを基準に）
-                        val currentPosition = dragStartPosition + cumulativeOffset
-                        val currentAngle = currentPosition.toAngleDegrees()
-                        val angleDiff = currentAngle - initialDragAngle
-                        val rotation = angleDiff
-                        onRotate(rotation)
+                        onTransform(dragAmount)
                     },
-                    onDragEnd = onDragEnd
+                    onDragEnd = onTransformEnd
                 )
             }
     )
 }
 
 @Composable
-private fun VisualTransformHandle(
+private fun TransformHandleIcon(
     modifier: Modifier
 ) {
     Icon(

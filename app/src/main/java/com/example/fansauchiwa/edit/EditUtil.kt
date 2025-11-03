@@ -1,10 +1,35 @@
 package com.example.fansauchiwa.edit
 
 import androidx.compose.ui.geometry.Offset
+import com.example.fansauchiwa.data.Transformation
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
+
+internal fun calculateTransformations(
+    dragAmount: Offset,
+    cumulativeOffset: Offset,
+    dragStartPosition: Offset,
+): Transformation {
+    val totalOffset = cumulativeOffset + dragAmount
+
+    // ドラッグしている場所と要素の中心との距離からScaleを計算
+    val initialDistance = dragStartPosition.getDistance()
+    val currentDistance = (dragStartPosition + totalOffset).getDistance()
+    val distanceChange = currentDistance - initialDistance
+    val scaleFactor = 0.005f
+    val scaleDiff = distanceChange * scaleFactor
+
+    // ドラッグしている場所と要素の中心との角度からRotationを計算
+    val initialAngle = dragStartPosition.toAngleDegrees()
+    val currentPosition = dragStartPosition + totalOffset
+    val currentAngle = currentPosition.toAngleDegrees()
+    val rotationDiff = currentAngle - initialAngle
+
+    return Transformation(scaleDiff, rotationDiff)
+}
+
 
 internal fun calculateHandleOffset(
     baseOffset: Offset,
