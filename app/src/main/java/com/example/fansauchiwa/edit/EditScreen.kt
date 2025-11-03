@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -44,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -53,10 +53,6 @@ import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -191,13 +187,7 @@ fun UchiwaPreview(
                         GestureInputLayer(
                             decoration = decoration,
                             onDecorationTap = { onDecorationClick(decoration) },
-                            isSelected = isSelected,
                             onDrag = { offsetDiff += it },
-                            onScale = { newScaleDiff ->
-                                val targetScale = (decoration.scale + newScaleDiff).coerceIn(0.5f, 3f)
-                                scaleDiff = targetScale - decoration.scale
-                            },
-                            onRotate = { rotationDiff = it },
                             onDragEnd = {
                                 onDecorationDragEnd(
                                     decoration,
@@ -217,6 +207,57 @@ fun UchiwaPreview(
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff
                         )
+
+                        if (isSelected) {
+                            val stickerSizePx = with(LocalDensity.current) { 100.dp.toPx() }
+
+                            val visualHandleOffset = calculateHandleOffset(
+                                baseOffset = decoration.offset + offsetDiff,
+                                scale = decoration.scale + scaleDiff,
+                                rotation = decoration.rotation + rotationDiff,
+                                size = stickerSizePx,
+                                corner = HandleCorner.BottomRight
+                            )
+                            VisualTransformHandle(
+                                modifier = Modifier.graphicsLayer {
+                                    translationX = visualHandleOffset.x
+                                    translationY = visualHandleOffset.y
+                                }
+                            )
+
+                            val gestureHandleOffset = calculateHandleOffset(
+                                baseOffset = decoration.offset,
+                                scale = decoration.scale,
+                                rotation = decoration.rotation,
+                                size = stickerSizePx,
+                                corner = HandleCorner.BottomRight
+                            )
+                            GestureInputHandle(
+                                modifier = Modifier.graphicsLayer {
+                                    translationX = gestureHandleOffset.x
+                                    translationY = gestureHandleOffset.y
+                                },
+                                stickerCenterInParent = decoration.offset,
+                                handleCenterInParent = gestureHandleOffset,
+                                onScale = { newScaleDiff ->
+                                    val targetScale =
+                                        (decoration.scale + newScaleDiff).coerceIn(0.5f, 3f)
+                                    scaleDiff = targetScale - decoration.scale
+                                },
+                                onRotate = { rotationDiff = it },
+                                onDragEnd = {
+                                    onDecorationDragEnd(
+                                        decoration,
+                                        offsetDiff,
+                                        scaleDiff,
+                                        rotationDiff
+                                    )
+                                    offsetDiff = Offset.Zero
+                                    scaleDiff = 0f
+                                    rotationDiff = 0f
+                                }
+                            )
+                        }
                     }
 
                     is Decoration.Text -> {
@@ -232,10 +273,7 @@ fun UchiwaPreview(
 private fun GestureInputLayer(
     decoration: Decoration.Sticker,
     onDecorationTap: () -> Unit,
-    isSelected: Boolean,
     onDrag: (Offset) -> Unit,
-    onScale: (Float) -> Unit,
-    onRotate: (Float) -> Unit,
     onDragEnd: () -> Unit
 ) {
     Box(
@@ -259,62 +297,6 @@ private fun GestureInputLayer(
                         change.consume()
                         onDecorationTap()
                         onDrag(rotatedDragAmount(decoration.rotation, dragAmount))
-                    },
-                    onDragEnd = onDragEnd
-                )
-            }
-    ) {
-        if (isSelected) {
-            GestureInputHandle(
-                decoration = decoration,
-                onScale = onScale,
-                onRotate = onRotate,
-                onDragEnd = onDragEnd,
-                modifier = Modifier.align(Alignment.BottomEnd)
-            )
-        }
-    }
-}
-
-@Composable
-private fun GestureInputHandle(
-    decoration: Decoration,
-    onScale: (Float) -> Unit,
-    onRotate: (Float) -> Unit,
-    onDragEnd: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val center by remember(decoration) { mutableStateOf(decoration.offset) }
-    var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
-    var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
-    var initialDragAngle by remember { mutableFloatStateOf(0f) }
-    Box(
-        modifier = modifier
-            .clip(CircleShape)
-            .size(24.dp)
-            .offset(12.dp, 12.dp)
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { startPosition ->
-                        cumulativeOffset = Offset.Zero
-                        dragStartPosition = startPosition - center
-                        initialDragAngle = dragStartPosition.toAngleDegrees()
-                    },
-                    onDrag = { change, offset ->
-                        change.consume()
-                        cumulativeOffset += offset
-                        // ドラッグした距離からscaleを計算
-                        val signedDistance = (cumulativeOffset.x + cumulativeOffset.y) / 2f
-                        val scaleFactor = 0.005f
-                        val factoredScale = signedDistance * scaleFactor
-                        onScale(factoredScale)
-
-                        // ドラッグした角度からrotationを計算（centerを基準に）
-                        val currentPosition = dragStartPosition + cumulativeOffset
-                        val currentAngle = currentPosition.toAngleDegrees()
-                        val angleDiff = currentAngle - initialDragAngle
-                        val rotation = angleDiff
-                        onRotate(rotation)
                     },
                     onDragEnd = onDragEnd
                 )
@@ -354,16 +336,61 @@ private fun StickerItem(
                 .fillMaxSize()
                 .then(borderModifier)
         )
-        if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier.align(Alignment.BottomEnd)
-            )
-        }
     }
 }
 
 @Composable
-private fun TransformHandleIcon(
+private fun GestureInputHandle(
+    stickerCenterInParent: Offset,
+    handleCenterInParent: Offset,
+    onScale: (Float) -> Unit,
+    onRotate: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val handleSize = 48.dp
+    val handleSizePx = with(LocalDensity.current) { handleSize.toPx() }
+
+    val handleTopLeftInParent = handleCenterInParent - Offset(handleSizePx / 2f, handleSizePx / 2f)
+    val centerInLocal = stickerCenterInParent - handleTopLeftInParent
+
+    var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
+    var dragStartPosition by remember { mutableStateOf(Offset.Zero) }
+    var initialDragAngle by remember { mutableFloatStateOf(0f) }
+    Box(
+        modifier = modifier
+            .size(handleSize)
+            .pointerInput(centerInLocal) {
+                detectDragGestures(
+                    onDragStart = { startPosition ->
+                        cumulativeOffset = Offset.Zero
+                        dragStartPosition = startPosition - centerInLocal
+                        initialDragAngle = dragStartPosition.toAngleDegrees()
+                    },
+                    onDrag = { change, offset ->
+                        change.consume()
+                        cumulativeOffset += offset
+                        // ドラッグした距離からscaleを計算
+                        val signedDistance = (cumulativeOffset.x + cumulativeOffset.y) / 2f
+                        val scaleFactor = 0.005f
+                        val factoredScale = signedDistance * scaleFactor
+                        onScale(factoredScale)
+
+                        // ドラッグした角度からrotationを計算（centerを基準に）
+                        val currentPosition = dragStartPosition + cumulativeOffset
+                        val currentAngle = currentPosition.toAngleDegrees()
+                        val angleDiff = currentAngle - initialDragAngle
+                        val rotation = angleDiff
+                        onRotate(rotation)
+                    },
+                    onDragEnd = onDragEnd
+                )
+            }
+    )
+}
+
+@Composable
+private fun VisualTransformHandle(
     modifier: Modifier
 ) {
     Icon(
@@ -371,29 +398,10 @@ private fun TransformHandleIcon(
         contentDescription = "Zoom and Rotate",
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
-            .offset(12.dp, 12.dp)
             .background(MaterialTheme.colorScheme.primary, CircleShape)
             .size(24.dp)
             .padding(4.dp)
     )
-}
-
-private fun rotatedDragAmount(
-    currentRotation: Float,
-    dragAmount: Offset,
-): Offset {
-    val angleRad = Math.toRadians(currentRotation.toDouble()).toFloat()
-    val cos = cos(angleRad)
-    val sin = sin(angleRad)
-    val rotatedDragAmount = Offset(
-        x = dragAmount.x * cos - dragAmount.y * sin,
-        y = dragAmount.x * sin + dragAmount.y * cos
-    )
-    return rotatedDragAmount
-}
-
-private fun Offset.toAngleDegrees(): Float {
-    return atan2(y, x) * 180f / PI.toFloat()
 }
 
 @Preview
