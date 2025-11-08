@@ -58,14 +58,16 @@ internal fun calculateHandleOffset(
 
 internal fun rotatedDragAmount(
     currentRotation: Float,
+    currentScale: Float,
     dragAmount: Offset,
 ): Offset {
+    val scaledDragAmount = dragAmount * currentScale
     val angleRad = Math.toRadians(currentRotation.toDouble()).toFloat()
     val cos = cos(angleRad)
     val sin = sin(angleRad)
     val rotatedDragAmount = Offset(
-        x = dragAmount.x * cos - dragAmount.y * sin,
-        y = dragAmount.x * sin + dragAmount.y * cos
+        x = scaledDragAmount.x * cos - scaledDragAmount.y * sin,
+        y = scaledDragAmount.x * sin + scaledDragAmount.y * cos
     )
     return rotatedDragAmount
 }

@@ -311,7 +311,13 @@ private fun GestureInputLayer(
                     onDrag = { change, dragAmount ->
                         change.consume()
                         onDecorationTap()
-                        onDrag(rotatedDragAmount(decoration.rotation, dragAmount))
+                        onDrag(
+                            rotatedDragAmount(
+                                decoration.rotation,
+                                decoration.scale,
+                                dragAmount
+                            )
+                        )
                     },
                     onDragEnd = onDragEnd
                 )
