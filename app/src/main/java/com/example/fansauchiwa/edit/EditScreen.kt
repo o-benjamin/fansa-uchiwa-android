@@ -168,9 +168,6 @@ fun UchiwaPreview(
         ) { onDecorationClick(null) },
         contentAlignment = Alignment.Center
     ) {
-        var offsetDiff by remember { mutableStateOf(Offset.Zero) }
-        var scaleDiff by remember { mutableFloatStateOf(0f) }
-        var rotationDiff by remember { mutableFloatStateOf(0f) }
         // TODO: うちわの形にする
         Box(
             modifier = Modifier
@@ -181,6 +178,9 @@ fun UchiwaPreview(
         )
         decorations.forEach { decoration ->
             key(decoration) {
+                var offsetDiff by remember { mutableStateOf(Offset.Zero) }
+                var scaleDiff by remember { mutableFloatStateOf(0f) }
+                var rotationDiff by remember { mutableFloatStateOf(0f) }
                 val isSelected = decoration == selectedDecoration
                 when (decoration) {
                     is Decoration.Sticker -> {
