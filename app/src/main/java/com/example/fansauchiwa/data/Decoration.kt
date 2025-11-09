@@ -1,7 +1,6 @@
 package com.example.fansauchiwa.data
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import com.example.fansauchiwa.ui.StickerAsset
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
@@ -19,8 +18,6 @@ sealed interface Decoration {
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset,
         override val rotation: Float,
-        @Serializable(with = ColorSerializer::class)
-        val color: Color,
         override val scale: Float
     ) : Decoration
 

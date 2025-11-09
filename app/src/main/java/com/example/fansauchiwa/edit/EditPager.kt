@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -32,7 +33,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EditPager(
-    onAddSticker: (Decoration.Sticker) -> Unit,
+    onStickerClick: (Decoration.Sticker) -> Unit,
+    onTextClick: (Decoration.Text) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -63,11 +65,13 @@ fun EditPager(
         ) { page ->
             when (page) {
                 0 -> {
-                    StickerPage(onAddSticker = onAddSticker)
+                    StickerPage(onStickerClick = onStickerClick)
                 }
+
                 1 -> {
-                    TextPage()
+                    TextPage(onTextClick = onTextClick)
                 }
+
                 else -> {
                     // Placeholder for other tabs
                     Box(
@@ -84,7 +88,7 @@ fun EditPager(
 
 @Composable
 fun StickerPage(
-    onAddSticker: (Decoration.Sticker) -> Unit,
+    onStickerClick: (Decoration.Sticker) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -99,7 +103,7 @@ fun StickerPage(
                     .size(48.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .clickable {
-                        onAddSticker(
+                        onStickerClick(
                             Decoration.Sticker(
                                 label = sticker.type,
                                 offset = Offset.Zero,
@@ -120,11 +124,29 @@ fun StickerPage(
 }
 
 @Composable
-fun TextPage(modifier: Modifier = Modifier) {
+fun TextPage(
+    modifier: Modifier = Modifier,
+    onTextClick: (Decoration.Text) -> Unit
+) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "Text Page")
+        Button(
+            onClick = {
+                onTextClick(
+                    Decoration.Text(
+                        text = DEFAULT_TEXT,
+                        offset = Offset.Zero,
+                        rotation = 0f,
+                        scale = 1f
+                    )
+                )
+            }
+        ) {
+            Text(text = "テキストを追加")
+        }
     }
 }
+
+const val DEFAULT_TEXT = "テキストを入力"

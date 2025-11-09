@@ -63,7 +63,8 @@ fun EditScreen(
         )
 
         EditPager(
-            onAddSticker = viewModel::addDecoration,
+            onStickerClick = viewModel::addDecoration,
+            onTextClick = viewModel::addDecoration,
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
