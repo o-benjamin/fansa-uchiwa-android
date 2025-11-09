@@ -246,10 +246,12 @@ fun UchiwaPreview(
                                     cumulativeOffset = Offset.Zero
                                 },
                                 onTransform = { dragAmount ->
+                                    val center = decoration.offset
+                                    val handleVector = gestureHandleOffset - center
                                     val transformation = calculateTransformations(
                                         dragAmount,
                                         cumulativeOffset,
-                                        gestureHandleOffset
+                                        handleVector
                                     )
                                     cumulativeOffset += dragAmount
                                     val targetScale =
