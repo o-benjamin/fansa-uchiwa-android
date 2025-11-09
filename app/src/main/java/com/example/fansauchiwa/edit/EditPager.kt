@@ -63,38 +63,11 @@ fun EditPager(
         ) { page ->
             when (page) {
                 0 -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 64.dp),
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(StickerAsset.entries) { sticker ->
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable {
-                                        onAddSticker(
-                                            Decoration.Sticker(
-                                                label = sticker.type,
-                                                offset = Offset.Zero,
-                                                rotation = 0f,
-                                                scale = 1f
-                                            )
-                                        )
-                                    }
-                            ) {
-                                Image(
-                                    painter = painterResource(id = sticker.resId),
-                                    contentDescription = sticker.type,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-                    }
+                    StickerPage(onAddSticker = onAddSticker)
                 }
-
+                1 -> {
+                    TextPage()
+                }
                 else -> {
                     // Placeholder for other tabs
                     Box(
@@ -106,5 +79,52 @@ fun EditPager(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StickerPage(
+    onAddSticker: (Decoration.Sticker) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 64.dp),
+        modifier = modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(StickerAsset.entries) { sticker ->
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable {
+                        onAddSticker(
+                            Decoration.Sticker(
+                                label = sticker.type,
+                                offset = Offset.Zero,
+                                rotation = 0f,
+                                scale = 1f
+                            )
+                        )
+                    }
+            ) {
+                Image(
+                    painter = painterResource(id = sticker.resId),
+                    contentDescription = sticker.type,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TextPage(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "Text Page")
     }
 }
