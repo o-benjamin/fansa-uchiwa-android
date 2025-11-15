@@ -56,7 +56,11 @@ class EditViewModel @Inject constructor(
                     rotation = currentDecoration.rotation + rotation
                 )
 
-                is Decoration.Text -> currentDecoration.copy(offset = currentDecoration.offset + offset)
+                is Decoration.Text -> currentDecoration.copy(
+                    offset = currentDecoration.offset + offset,
+                    scale = currentDecoration.scale + scale,
+                    rotation = currentDecoration.rotation + rotation
+                )
             }
             _uiState.update {
                 it.copy(

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -197,7 +198,98 @@ fun UchiwaPreview(
                     }
 
                     is Decoration.Text -> {
-                        // TODO: implement
+                        GestureInputLayer(
+                            decoration = decoration,
+                            onDecorationTap = { onDecorationClick(decoration) },
+                            onDrag = { offsetDiff += it },
+                            onDragEnd = {
+                                onDecorationDragEnd(
+                                    decoration,
+                                    offsetDiff,
+                                    scaleDiff,
+                                    rotationDiff
+                                )
+                                offsetDiff = Offset.Zero
+                                scaleDiff = 0f
+                                rotationDiff = 0f
+                            }
+                        )
+
+                        TextItem(
+                            decoration = decoration,
+                            isSelected = isSelected,
+                            currentOffset = decoration.offset + offsetDiff,
+                            currentScale = decoration.scale + scaleDiff,
+                            currentRotation = decoration.rotation + rotationDiff
+                        )
+
+                        if (isSelected) {
+                            val stickerSizePx = with(LocalDensity.current) { 100.dp.toPx() }
+
+                            // Visual Handle (updates position every frame)
+                            val visualHandleOffset = calculateHandleOffset(
+                                baseOffset = decoration.offset + offsetDiff,
+                                scale = decoration.scale + scaleDiff,
+                                rotation = decoration.rotation + rotationDiff,
+                                size = stickerSizePx,
+                                corner = HandleCorner.BottomRight
+                            )
+                            TransformHandleIcon(
+                                modifier = Modifier.graphicsLayer {
+                                    translationX = visualHandleOffset.x
+                                    translationY = visualHandleOffset.y
+                                }
+                            )
+
+                            // Gesture Handle (position is fixed during a drag)
+                            val gestureHandleOffset = calculateHandleOffset(
+                                baseOffset = decoration.offset,
+                                scale = decoration.scale,
+                                rotation = decoration.rotation,
+                                size = stickerSizePx,
+                                corner = HandleCorner.BottomRight
+                            )
+
+                            var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
+
+                            GestureInputHandle(
+                                modifier = Modifier.graphicsLayer {
+                                    translationX = gestureHandleOffset.x
+                                    translationY = gestureHandleOffset.y
+                                },
+                                onTransformStart = { startPosition ->
+                                    cumulativeOffset = Offset.Zero
+                                },
+                                onTransform = { dragAmount ->
+                                    val center = decoration.offset
+                                    val handleVector = gestureHandleOffset - center
+                                    val transformation = calculateTransformations(
+                                        dragAmount,
+                                        cumulativeOffset,
+                                        handleVector
+                                    )
+                                    cumulativeOffset += dragAmount
+                                    val targetScale =
+                                        (decoration.scale + transformation.scaleDiff).coerceIn(
+                                            0.5f,
+                                            3f
+                                        )
+                                    scaleDiff = targetScale - decoration.scale
+                                    rotationDiff = transformation.rotationDiff
+                                },
+                                onTransformEnd = {
+                                    onDecorationDragEnd(
+                                        decoration,
+                                        offsetDiff,
+                                        scaleDiff,
+                                        rotationDiff
+                                    )
+                                    offsetDiff = Offset.Zero
+                                    scaleDiff = 0f
+                                    rotationDiff = 0f
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -207,7 +299,7 @@ fun UchiwaPreview(
 
 @Composable
 private fun GestureInputLayer(
-    decoration: Decoration.Sticker,
+    decoration: Decoration,
     onDecorationTap: () -> Unit,
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit
@@ -274,6 +366,40 @@ private fun StickerItem(
         Image(
             painter = painterResource(decoration.resId),
             contentDescription = decoration.label,
+            modifier = Modifier
+                .fillMaxSize()
+                .then(borderModifier)
+        )
+    }
+}
+
+@Composable
+private fun TextItem(
+    decoration: Decoration.Text,
+    isSelected: Boolean,
+    currentOffset: Offset,
+    currentScale: Float,
+    currentRotation: Float,
+) {
+    val borderModifier = if (isSelected) Modifier.border(
+        1.dp,
+        MaterialTheme.colorScheme.primary
+    ) else Modifier
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                translationX = currentOffset.x
+                translationY = currentOffset.y
+                scaleX = currentScale
+                scaleY = currentScale
+                rotationZ = currentRotation
+            }
+            .size(100.dp)
+    )
+    {
+        Text(
+            text = decoration.text,
             modifier = Modifier
                 .fillMaxSize()
                 .then(borderModifier)
