@@ -1,6 +1,7 @@
 package com.example.fansauchiwa.edit
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import com.example.fansauchiwa.data.Transformation
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -31,18 +32,19 @@ internal fun calculateTransformations(
 }
 
 
-internal fun calculateHandleOffset(
+internal fun calculateHandleSize(
+    // TODO: Sizeの計算をするように変更する
     baseOffset: Offset,
     scale: Float,
     rotation: Float,
-    size: Float,
+    size: Size,
     corner: HandleCorner,
 ): Offset {
     val cornerOffset = when (corner) {
-        HandleCorner.TopLeft -> Offset(-size / 2f, -size / 2f)
-        HandleCorner.TopRight -> Offset(size / 2f, -size / 2f)
-        HandleCorner.BottomLeft -> Offset(-size / 2f, size / 2f)
-        HandleCorner.BottomRight -> Offset(size / 2f, size / 2f)
+        HandleCorner.TopLeft -> Offset(-size.width / 2f, -size.height / 2f)
+        HandleCorner.TopRight -> Offset(size.width / 2f, -size.height / 2f)
+        HandleCorner.BottomLeft -> Offset(-size.width / 2f, size.height / 2f)
+        HandleCorner.BottomRight -> Offset(size.width / 2f, size.height / 2f)
     }
     val scaledCornerOffset = cornerOffset * scale
 
