@@ -110,13 +110,21 @@ fun UchiwaPreview(
                 val isSelected = decoration == selectedDecoration
                 when (decoration) {
                     is Decoration.Sticker -> {
-                        val decorationSize = with(LocalDensity.current) {
-                            painterResource(decoration.resId).intrinsicSize.toDpSize()
+                        val decorationSize = painterResource(decoration.resId).intrinsicSize
+                        val decorationDpSize = with(LocalDensity.current) {
+                            decorationSize.toDpSize()
                         }
+                        val handleOffset = calculateHandleOffset(
+                            baseOffset = decoration.offset,
+                            scale = decoration.scale,
+                            rotation = decoration.rotation,
+                            decorationSize = decorationSize,
+                            corner = HandleCorner.BottomRight
+                        )
 
                         GestureInputLayer(
                             decoration = decoration,
-                            decorationSize = decorationSize,
+                            decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationClick(decoration) },
                             onDrag = { offsetDiff += it },
@@ -136,11 +144,10 @@ fun UchiwaPreview(
                             },
                             onTransform = { dragAmount ->
                                 val transformation = calculateTransformations(
-                                    dragAmount,
                                     cumulativeOffset,
-                                    decoration.offset
+                                    handleOffset - decoration.offset
                                 )
-                                cumulativeOffset += dragAmount
+                                cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         0.5f,
@@ -172,12 +179,20 @@ fun UchiwaPreview(
 
                     is Decoration.Text -> {
                         val textMeasurer = rememberTextMeasurer()
-                        val decorationSize = with(LocalDensity.current) {
-                            textMeasurer.measure(decoration.text).size.toSize().toDpSize()
+                        val decorationSize = textMeasurer.measure(decoration.text).size.toSize()
+                        val decorationDpSize = with(LocalDensity.current) {
+                            decorationSize.toDpSize()
                         }
+                        val handleOffset = calculateHandleOffset(
+                            baseOffset = decoration.offset,
+                            scale = decoration.scale,
+                            rotation = decoration.rotation,
+                            decorationSize = decorationSize,
+                            corner = HandleCorner.BottomRight
+                        )
                         GestureInputLayer(
                             decoration = decoration,
-                            decorationSize = decorationSize,
+                            decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationClick(decoration) },
                             onDrag = { offsetDiff += it },
@@ -197,11 +212,10 @@ fun UchiwaPreview(
                             },
                             onTransform = { dragAmount ->
                                 val transformation = calculateTransformations(
-                                    dragAmount,
                                     cumulativeOffset,
-                                    decoration.offset
+                                    handleOffset - decoration.offset
                                 )
-                                cumulativeOffset += dragAmount
+                                cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         0.5f,
@@ -220,7 +234,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
-                            },
+                            }
                         )
                         TextItem(
                             decoration = decoration,
@@ -244,7 +258,7 @@ private fun GestureInputLayer(
     onDecorationTap: () -> Unit,
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
-    onTransformStart: (Offset) -> Unit,
+    onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit
 ) {
@@ -395,7 +409,7 @@ private fun TextItem(
 
 @Composable
 private fun GestureInputHandle(
-    onTransformStart: (Offset) -> Unit,
+    onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
     modifier: Modifier = Modifier,
@@ -405,8 +419,8 @@ private fun GestureInputHandle(
             .size(GESTURE_INPUT_HANDLE_SIZE)
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { startPosition ->
-                        onTransformStart(startPosition)
+                    onDragStart = {
+                        onTransformStart()
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
