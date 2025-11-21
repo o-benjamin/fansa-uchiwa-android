@@ -139,7 +139,7 @@ fun TextPage(
                         text = DEFAULT_TEXT,
                         offset = Offset.Zero,
                         rotation = 0f,
-                        scale = 1f
+                        scale = 1f,
                     )
                 )
             }

@@ -36,7 +36,9 @@ class EditViewModel @Inject constructor(
 
     fun selectDecoration(decoration: Decoration?) {
         _uiState.update {
-            it.copy(selectedDecoration = decoration)
+            it.copy(
+                selectedDecoration = decoration
+            )
         }
     }
 
@@ -59,8 +61,9 @@ class EditViewModel @Inject constructor(
                 is Decoration.Text -> currentDecoration.copy(
                     offset = currentDecoration.offset + offset,
                     scale = currentDecoration.scale + scale,
-                    rotation = currentDecoration.rotation + rotation
-                )
+                    rotation = currentDecoration.rotation + rotation,
+
+                    )
             }
             _uiState.update {
                 it.copy(
@@ -71,6 +74,44 @@ class EditViewModel @Inject constructor(
 
                 )
             }
+        }
+    }
+
+    fun onDecorationDoubleClick(decoration: Decoration) {
+        _uiState.update { currentState ->
+            val index = currentState.decorations.indexOf(decoration)
+            if (index == -1) {
+                return@update currentState
+            }
+            val currentDecoration = currentState.decorations[index] as? Decoration.Text
+                ?: return@update currentState
+            val newState = currentDecoration.copy(isEditingText = true)
+            currentState.copy(
+                decorations = currentState.decorations.toMutableList().apply {
+                    this[index] = newState
+                },
+                selectedDecoration = newState
+            )
+        }
+    }
+
+    fun updateText(newText: String, decoration: Decoration) {
+        _uiState.update { currentState ->
+            val index = currentState.decorations.indexOf(decoration)
+            if (index == -1) {
+                return@update currentState
+            }
+
+            val currentDecoration = currentState.decorations[index] as? Decoration.Text
+                ?: return@update currentState
+
+            val newDecoration = currentDecoration.copy(text = newText)
+            currentState.copy(
+                decorations = currentState.decorations.toMutableList().apply {
+                    this[index] = newDecoration
+                },
+                selectedDecoration = newDecoration
+            )
         }
     }
 }

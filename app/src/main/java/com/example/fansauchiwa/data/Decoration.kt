@@ -12,13 +12,15 @@ sealed interface Decoration {
     val rotation: Float
     val scale: Float
 
+
     @Serializable
     data class Text(
         val text: String,
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset,
         override val rotation: Float,
-        override val scale: Float
+        override val scale: Float,
+        val isEditingText: Boolean = false
     ) : Decoration
 
     @Serializable

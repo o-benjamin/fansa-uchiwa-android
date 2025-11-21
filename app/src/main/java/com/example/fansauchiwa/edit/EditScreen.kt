@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,9 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -32,18 +36,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 
@@ -62,7 +76,9 @@ fun EditScreen(
             decorations = uiState.decorations,
             selectedDecoration = uiState.selectedDecoration,
             onDecorationClick = viewModel::selectDecoration,
+            onDecorationDoubleClick = viewModel::onDecorationDoubleClick,
             onDecorationDragEnd = viewModel::updateDecorationGraphic,
+            onTextChanged = viewModel::updateText,
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
@@ -83,14 +99,20 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecoration: Decoration?,
     onDecorationClick: (Decoration?) -> Unit,
+    onDecorationDoubleClick: (Decoration) -> Unit,
     onDecorationDragEnd: (Decoration, Offset, Float, Float) -> Unit,
+    onTextChanged: (String, Decoration.Text) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     Box(
         modifier = modifier.clickable(
             interactionSource = null,
             indication = null
-        ) { onDecorationClick(null) },
+        ) {
+            onDecorationClick(null)
+            focusManager.clearFocus()
+        },
         contentAlignment = Alignment.Center
     ) {
         // TODO: うちわの形にする
@@ -178,10 +200,22 @@ fun UchiwaPreview(
                     }
 
                     is Decoration.Text -> {
+                        TextItem(
+                            decoration = decoration,
+                            isSelected = isSelected,
+                            isEditing = decoration.isEditingText,
+                            currentOffset = decoration.offset + offsetDiff,
+                            currentScale = decoration.scale + scaleDiff,
+                            currentRotation = decoration.rotation + rotationDiff,
+                            onTextChanged = { onTextChanged(it, decoration) }
+                        )
                         val textMeasurer = rememberTextMeasurer()
-                        val decorationSize = textMeasurer.measure(decoration.text).size.toSize()
+                        val decorationSize = textMeasurer.measure(
+                            decoration.text,
+                            TextStyle(fontSize = 24.sp)
+                        ).size.toSize()
                         val decorationDpSize = with(LocalDensity.current) {
-                            decorationSize.toDpSize()
+                            decorationSize.toDpSize() + DpSize(16.dp, 16.dp)
                         }
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -195,6 +229,7 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationClick(decoration) },
+                            onDecorationDoubleTap = { onDecorationDoubleClick(decoration) },
                             onDrag = { offsetDiff += it },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -236,13 +271,6 @@ fun UchiwaPreview(
                                 rotationDiff = 0f
                             }
                         )
-                        TextItem(
-                            decoration = decoration,
-                            isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff
-                        )
                     }
                 }
             }
@@ -250,6 +278,7 @@ fun UchiwaPreview(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GestureInputLayer(
     decoration: Decoration,
@@ -260,7 +289,8 @@ private fun GestureInputLayer(
     onDragEnd: () -> Unit,
     onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
-    onTransformEnd: () -> Unit
+    onTransformEnd: () -> Unit,
+    onDecorationDoubleTap: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -272,10 +302,11 @@ private fun GestureInputLayer(
                 rotationZ = decoration.rotation
             }
             .size(decorationSize)
-            .clickable(
+            .combinedClickable(
                 interactionSource = null,
                 indication = null,
-                onClick = onDecorationTap
+                onClick = onDecorationTap,
+                onDoubleClick = onDecorationDoubleTap
             )
             .pointerInput(Unit) {
                 detectDragGestures(
@@ -362,9 +393,11 @@ private fun StickerItem(
 private fun TextItem(
     decoration: Decoration.Text,
     isSelected: Boolean,
+    isEditing: Boolean,
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    onTextChanged: (String) -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -383,12 +416,43 @@ private fun TextItem(
             .wrapContentSize()
     )
     {
-        Text(
-            text = decoration.text,
+        val focusRequester = remember { FocusRequester() }
+        val focusManager = LocalFocusManager.current
+        var textFieldValue by remember {
+            mutableStateOf(
+                TextFieldValue(
+                    text = decoration.text,
+                    selection = TextRange(decoration.text.length)
+                )
+            )
+        }
+        TextField(
+            value = textFieldValue,
+            onValueChange = {
+                textFieldValue = it
+                onTextChanged(it.text)
+            },
+            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = colorResource(R.color.transparent),
+                unfocusedIndicatorColor = colorResource(R.color.transparent),
+                focusedContainerColor = colorResource(R.color.transparent),
+                unfocusedContainerColor = colorResource(R.color.transparent)
+            ),
+            readOnly = !isEditing,
+            singleLine = true,
             modifier = Modifier
+                .align(Alignment.Center)
                 .then(borderModifier)
-                .padding(8.dp)
+                .focusRequester(focusRequester)
         )
+        LaunchedEffect(isEditing) {
+            if (isEditing) {
+                focusRequester.requestFocus()
+            } else {
+                focusManager.clearFocus()
+            }
+        }
         if (isSelected) {
             TransformHandleIcon(
                 modifier = Modifier
