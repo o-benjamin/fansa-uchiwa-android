@@ -99,9 +99,9 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecoration: Decoration?,
     onDecorationClick: (Decoration?) -> Unit,
-    onDecorationDoubleClick: (Decoration) -> Unit,
-    onDecorationDragEnd: (Decoration, Offset, Float, Float) -> Unit,
-    onTextChanged: (String, Decoration.Text) -> Unit,
+    onDecorationDoubleClick: (String) -> Unit,
+    onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
+    onTextChanged: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -152,7 +152,7 @@ fun UchiwaPreview(
                             onDrag = { offsetDiff += it },
                             onDragEnd = {
                                 onDecorationDragEnd(
-                                    decoration,
+                                    decoration.id,
                                     offsetDiff,
                                     scaleDiff,
                                     rotationDiff
@@ -180,7 +180,7 @@ fun UchiwaPreview(
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
-                                    decoration,
+                                    decoration.id,
                                     offsetDiff,
                                     scaleDiff,
                                     rotationDiff
@@ -207,7 +207,7 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            onTextChanged = { onTextChanged(it, decoration) }
+                            onTextChanged = { onTextChanged(decoration.id, it) }
                         )
                         val textMeasurer = rememberTextMeasurer()
                         val decorationSize = textMeasurer.measure(
@@ -229,11 +229,11 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationClick(decoration) },
-                            onDecorationDoubleTap = { onDecorationDoubleClick(decoration) },
+                            onDecorationDoubleTap = { onDecorationDoubleClick(decoration.id) },
                             onDrag = { offsetDiff += it },
                             onDragEnd = {
                                 onDecorationDragEnd(
-                                    decoration,
+                                    decoration.id,
                                     offsetDiff,
                                     scaleDiff,
                                     rotationDiff
@@ -261,7 +261,7 @@ fun UchiwaPreview(
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
-                                    decoration,
+                                    decoration.id,
                                     offsetDiff,
                                     scaleDiff,
                                     rotationDiff

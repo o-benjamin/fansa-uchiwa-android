@@ -20,6 +20,16 @@ class EditViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EditUiState())
     val uiState: StateFlow<EditUiState> = _uiState.asStateFlow()
 
+    fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                decorations = currentState.decorations.map { decoration ->
+                    if (decoration.id == id) transform(decoration) else decoration
+                }
+            )
+        }
+    }
+
     private fun onDecorationsChanged() {
         viewModelScope.launch {
             // TODO: use savedStateHandle instead
@@ -43,75 +53,37 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateDecorationGraphic(
-        decoration: Decoration,
+        id: String,
         offset: Offset,
         scale: Float,
         rotation: Float
     ) {
-        val index = _uiState.value.decorations.indexOf(decoration)
-        if (index != -1) {
-            val currentDecoration = _uiState.value.decorations[index]
-            val newDecoration = when (currentDecoration) {
-                is Decoration.Sticker -> currentDecoration.copy(
-                    offset = currentDecoration.offset + offset,
-                    scale = currentDecoration.scale + scale,
-                    rotation = currentDecoration.rotation + rotation
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Sticker -> decoration.copy(
+                    offset = decoration.offset + offset,
+                    scale = decoration.scale + scale,
+                    rotation = decoration.rotation + rotation
                 )
 
-                is Decoration.Text -> currentDecoration.copy(
-                    offset = currentDecoration.offset + offset,
-                    scale = currentDecoration.scale + scale,
-                    rotation = currentDecoration.rotation + rotation,
-
-                    )
-            }
-            _uiState.update {
-                it.copy(
-                    decorations = it.decorations.toMutableList().apply {
-                        this[index] = newDecoration
-                    },
-                    selectedDecoration = newDecoration
-
+                is Decoration.Text -> decoration.copy(
+                    offset = decoration.offset + offset,
+                    scale = decoration.scale + scale,
+                    rotation = decoration.rotation + rotation,
                 )
             }
         }
     }
 
-    fun onDecorationDoubleClick(decoration: Decoration) {
-        _uiState.update { currentState ->
-            val index = currentState.decorations.indexOf(decoration)
-            if (index == -1) {
-                return@update currentState
-            }
-            val currentDecoration = currentState.decorations[index] as? Decoration.Text
-                ?: return@update currentState
-            val newState = currentDecoration.copy(isEditingText = true)
-            currentState.copy(
-                decorations = currentState.decorations.toMutableList().apply {
-                    this[index] = newState
-                },
-                selectedDecoration = newState
-            )
+    fun onDecorationDoubleClick(id: String) {
+        updateDecoration(id) { decoration ->
+            (decoration as? Decoration.Text)?.copy(isEditingText = true) ?: decoration
         }
     }
 
-    fun updateText(newText: String, decoration: Decoration) {
-        _uiState.update { currentState ->
-            val index = currentState.decorations.indexOf(decoration)
-            if (index == -1) {
-                return@update currentState
-            }
-
-            val currentDecoration = currentState.decorations[index] as? Decoration.Text
-                ?: return@update currentState
-
-            val newDecoration = currentDecoration.copy(text = newText)
-            currentState.copy(
-                decorations = currentState.decorations.toMutableList().apply {
-                    this[index] = newDecoration
-                },
-                selectedDecoration = newDecoration
-            )
+    fun updateText(id: String, newText: String) {
+        updateDecoration(id) { decoration ->
+            (decoration as? Decoration.Text)?.copy(text = newText) ?: decoration
         }
     }
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.StickerAsset
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -106,6 +107,7 @@ fun StickerPage(
                         onStickerClick(
                             Decoration.Sticker(
                                 label = sticker.type,
+                                id = UUID.randomUUID().toString(),
                                 offset = Offset.Zero,
                                 rotation = 0f,
                                 scale = 1f
@@ -137,6 +139,7 @@ fun TextPage(
                 onTextClick(
                     Decoration.Text(
                         text = DEFAULT_TEXT,
+                        id = UUID.randomUUID().toString(),
                         offset = Offset.Zero,
                         rotation = 0f,
                         scale = 1f,

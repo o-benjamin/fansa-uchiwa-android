@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 @Polymorphic
 @Serializable
 sealed interface Decoration {
+    val id: String
     val offset: Offset
     val rotation: Float
     val scale: Float
@@ -16,6 +17,7 @@ sealed interface Decoration {
     @Serializable
     data class Text(
         val text: String,
+        override val id: String,
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset,
         override val rotation: Float,
@@ -26,6 +28,7 @@ sealed interface Decoration {
     @Serializable
     data class Sticker(
         val label: String,
+        override val id: String,
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset,
         override val rotation: Float,
