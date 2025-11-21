@@ -74,10 +74,10 @@ fun EditScreen(
     ) {
         UchiwaPreview(
             decorations = uiState.decorations,
-            selectedDecoration = uiState.selectedDecoration,
+            selectedDecorationId = uiState.selectedDecorationId,
             editingTextId = uiState.editingTextId,
-            onDecorationClick = viewModel::selectDecoration,
-            onDecorationDoubleClick = viewModel::startEditingText,
+            onDecorationTap = viewModel::selectDecoration,
+            onDecorationDoubleTap = viewModel::startEditingText,
             onDecorationDragEnd = viewModel::updateDecorationGraphic,
             onTextChanged = viewModel::updateText,
             modifier = Modifier
@@ -98,10 +98,10 @@ fun EditScreen(
 @Composable
 fun UchiwaPreview(
     decorations: List<Decoration>,
-    selectedDecoration: Decoration?,
+    selectedDecorationId: String?,
     editingTextId: String?,
-    onDecorationClick: (Decoration?) -> Unit,
-    onDecorationDoubleClick: (String) -> Unit,
+    onDecorationTap: (String?) -> Unit,
+    onDecorationDoubleTap: (String) -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTextChanged: (String, String) -> Unit,
     modifier: Modifier = Modifier,
@@ -112,7 +112,7 @@ fun UchiwaPreview(
             interactionSource = null,
             indication = null
         ) {
-            onDecorationClick(null)
+            onDecorationTap(null)
             focusManager.clearFocus()
         },
         contentAlignment = Alignment.Center
@@ -131,7 +131,7 @@ fun UchiwaPreview(
                 var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
                 var scaleDiff by remember { mutableFloatStateOf(0f) }
                 var rotationDiff by remember { mutableFloatStateOf(0f) }
-                val isSelected = decoration == selectedDecoration
+                val isSelected = decoration.id == selectedDecorationId
                 when (decoration) {
                     is Decoration.Sticker -> {
                         val decorationSize = painterResource(decoration.resId).intrinsicSize
@@ -150,7 +150,7 @@ fun UchiwaPreview(
                             decoration = decoration,
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
-                            onDecorationTap = { onDecorationClick(decoration) },
+                            onDecorationTap = { onDecorationTap(decoration.id) },
                             onDrag = { offsetDiff += it },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -230,8 +230,8 @@ fun UchiwaPreview(
                             decoration = decoration,
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
-                            onDecorationTap = { onDecorationClick(decoration) },
-                            onDecorationDoubleTap = { onDecorationDoubleClick(decoration.id) },
+                            onDecorationTap = { onDecorationTap(decoration.id) },
+                            onDecorationDoubleTap = { onDecorationDoubleTap(decoration.id) },
                             onDrag = { offsetDiff += it },
                             onDragEnd = {
                                 onDecorationDragEnd(
