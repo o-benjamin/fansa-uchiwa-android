@@ -75,8 +75,9 @@ fun EditScreen(
         UchiwaPreview(
             decorations = uiState.decorations,
             selectedDecoration = uiState.selectedDecoration,
+            editingTextId = uiState.editingTextId,
             onDecorationClick = viewModel::selectDecoration,
-            onDecorationDoubleClick = viewModel::onDecorationDoubleClick,
+            onDecorationDoubleClick = viewModel::startEditingText,
             onDecorationDragEnd = viewModel::updateDecorationGraphic,
             onTextChanged = viewModel::updateText,
             modifier = Modifier
@@ -98,6 +99,7 @@ fun EditScreen(
 fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecoration: Decoration?,
+    editingTextId: String?,
     onDecorationClick: (Decoration?) -> Unit,
     onDecorationDoubleClick: (String) -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
@@ -203,7 +205,7 @@ fun UchiwaPreview(
                         TextItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            isEditing = decoration.isEditingText,
+                            isEditing = decoration.id == editingTextId,
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,

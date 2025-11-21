@@ -52,12 +52,7 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun updateDecorationGraphic(
-        id: String,
-        offset: Offset,
-        scale: Float,
-        rotation: Float
-    ) {
+    fun updateDecorationGraphic(id: String, offset: Offset, scale: Float, rotation: Float) {
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Sticker -> decoration.copy(
@@ -75,9 +70,11 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun onDecorationDoubleClick(id: String) {
-        updateDecoration(id) { decoration ->
-            (decoration as? Decoration.Text)?.copy(isEditingText = true) ?: decoration
+    fun startEditingText(id: String) {
+        _uiState.update { state ->
+            state.copy(
+                editingTextId = id
+            )
         }
     }
 
