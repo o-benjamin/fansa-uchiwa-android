@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,8 +79,13 @@ fun EditScreen(
             editingTextId = uiState.editingTextId,
             onDecorationTap = viewModel::selectDecoration,
             onDecorationDoubleTap = viewModel::startEditingText,
+            onBackgroundTap = {
+                viewModel.unSelectDecoration()
+                viewModel.finishEditingText()
+            },
             onDecorationDragEnd = viewModel::updateDecorationGraphic,
             onTextChanged = viewModel::updateText,
+            onDoneTextEdit = viewModel::finishEditingText,
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
@@ -100,10 +106,12 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecorationId: String?,
     editingTextId: String?,
-    onDecorationTap: (String?) -> Unit,
+    onDecorationTap: (String) -> Unit,
     onDecorationDoubleTap: (String) -> Unit,
+    onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTextChanged: (String, String) -> Unit,
+    onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -112,7 +120,8 @@ fun UchiwaPreview(
             interactionSource = null,
             indication = null
         ) {
-            onDecorationTap(null)
+            onBackgroundTap()
+            onDoneTextEdit()
             focusManager.clearFocus()
         },
         contentAlignment = Alignment.Center
@@ -209,7 +218,8 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            onTextChanged = { onTextChanged(decoration.id, it) }
+                            onTextChanged = { onTextChanged(decoration.id, it) },
+                            onFinishEditing = onDoneTextEdit
                         )
                         val textMeasurer = rememberTextMeasurer()
                         val decorationSize = textMeasurer.measure(
@@ -399,7 +409,8 @@ private fun TextItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
-    onTextChanged: (String) -> Unit
+    onTextChanged: (String) -> Unit,
+    onFinishEditing: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -420,18 +431,13 @@ private fun TextItem(
     {
         val focusRequester = remember { FocusRequester() }
         val focusManager = LocalFocusManager.current
-        var textFieldValue by remember {
-            mutableStateOf(
-                TextFieldValue(
-                    text = decoration.text,
-                    selection = TextRange(decoration.text.length)
-                )
-            )
-        }
+        val textFieldValue = TextFieldValue(
+            text = decoration.text,
+            selection = TextRange(decoration.text.length)
+        )
         TextField(
             value = textFieldValue,
             onValueChange = {
-                textFieldValue = it
                 onTextChanged(it.text)
             },
             textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
@@ -443,6 +449,12 @@ private fun TextItem(
             ),
             readOnly = !isEditing,
             singleLine = true,
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    focusManager.clearFocus()
+                    onFinishEditing()
+                }
+            ),
             modifier = Modifier
                 .align(Alignment.Center)
                 .then(borderModifier)
@@ -453,6 +465,7 @@ private fun TextItem(
                 focusRequester.requestFocus()
             } else {
                 focusManager.clearFocus()
+                onFinishEditing()
             }
         }
         if (isSelected) {

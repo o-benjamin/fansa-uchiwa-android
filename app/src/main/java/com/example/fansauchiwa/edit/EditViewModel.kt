@@ -44,10 +44,18 @@ class EditViewModel @Inject constructor(
         onDecorationsChanged()
     }
 
-    fun selectDecoration(id: String?) {
+    fun selectDecoration(id: String) {
         _uiState.update { state ->
             state.copy(
                 selectedDecorationId = id
+            )
+        }
+    }
+
+    fun unSelectDecoration() {
+        _uiState.update { state ->
+            state.copy(
+                selectedDecorationId = null
             )
         }
     }
@@ -74,6 +82,14 @@ class EditViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 editingTextId = id
+            )
+        }
+    }
+
+    fun finishEditingText() {
+        _uiState.update { state ->
+            state.copy(
+                editingTextId = null
             )
         }
     }
