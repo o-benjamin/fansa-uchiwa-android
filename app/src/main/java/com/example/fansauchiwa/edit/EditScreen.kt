@@ -236,7 +236,7 @@ fun UchiwaPreview(
                             )
                         ).size.toSize()
                         val decorationDpSize = with(LocalDensity.current) {
-                            decorationSize.toDpSize()
+                            decorationSize.toDpSize() + DpSize(TEXT_ITEM_PADDING, TEXT_ITEM_PADDING)
                         }
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -464,6 +464,7 @@ private fun TextItem(
             ),
             modifier = Modifier
                 .then(borderModifier)
+                .padding(TEXT_ITEM_PADDING)
                 .focusRequester(focusRequester)
                 .width(IntrinsicSize.Min)
         )
@@ -534,6 +535,7 @@ private fun TransformHandleIcon(
 }
 
 private val GESTURE_INPUT_HANDLE_SIZE = 24.dp
+private val TEXT_ITEM_PADDING = 8.dp
 
 @Preview
 @Composable
