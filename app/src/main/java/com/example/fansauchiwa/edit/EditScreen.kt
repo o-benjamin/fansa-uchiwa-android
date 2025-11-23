@@ -138,7 +138,7 @@ fun UchiwaPreview(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         decorations.forEach { decoration ->
-            key(decoration) {
+            key(decoration.id) {
                 var offsetDiff by remember { mutableStateOf(Offset.Zero) }
                 var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
                 var scaleDiff by remember { mutableFloatStateOf(0f) }
@@ -437,18 +437,23 @@ private fun TextItem(
     {
         val focusRequester = remember { FocusRequester() }
         val focusManager = LocalFocusManager.current
-        val textFieldValue = TextFieldValue(
-            text = decoration.text,
-            selection = TextRange(decoration.text.length)
-        )
+        var textFieldValue by remember {
+            mutableStateOf(
+                TextFieldValue(
+                    text = decoration.text,
+                    selection = TextRange(decoration.text.length)
+                )
+            )
+        }
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
+                textFieldValue = it
                 onTextChanged(it.text)
             },
             textStyle = LocalTextStyle.current.copy(
                 fontSize = 24.sp.nonScaledSp,
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 platformStyle = PlatformTextStyle(includeFontPadding = false)
             ),
             readOnly = !isEditing,
