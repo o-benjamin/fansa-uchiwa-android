@@ -38,17 +38,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 
@@ -445,6 +456,8 @@ private fun TextItem(
                 )
             )
         }
+        val measurer = rememberTextMeasurer()
+        val textSize = 24.sp.nonScaledSp
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
@@ -452,7 +465,9 @@ private fun TextItem(
                 onTextChanged(it.text)
             },
             textStyle = LocalTextStyle.current.copy(
-                fontSize = 24.sp.nonScaledSp,
+                fontSize = textSize,
+                // カスタムの文字描画を上書きするため、元の描画は透明にする
+                color = colorResource(R.color.transparent),
                 textAlign = TextAlign.Start,
                 platformStyle = PlatformTextStyle(includeFontPadding = false)
             ),
@@ -469,6 +484,32 @@ private fun TextItem(
                 .padding(TEXT_ITEM_PADDING)
                 .focusRequester(focusRequester)
                 .width(IntrinsicSize.Min)
+                .drawWithContent {
+                    // 基本的な文字設定
+                    val layoutResult = measurer.measure(
+                        text = AnnotatedString(decoration.text),
+                        style = TextStyle(
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.W900,
+                            color = Color.White,
+                            fontSize = textSize,
+                        )
+                    )
+                    // 枠線
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        drawStyle = Stroke(width = 30f, join = StrokeJoin.Round),
+                        color = Color.Black
+                    )
+                    // 塗りつぶし
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        drawStyle = Fill,
+                        color = Color.White
+                    )
+                    // 最後に描画しないと入力カーソルが埋もれて消えてしまうため、明示的に最後に描画
+                    drawContent()
+                }
         )
         LaunchedEffect(isEditing) {
             if (isEditing) {
