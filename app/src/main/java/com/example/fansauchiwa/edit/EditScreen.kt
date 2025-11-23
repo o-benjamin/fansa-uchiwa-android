@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -170,7 +171,9 @@ fun UchiwaPreview(
                         )
 
                         GestureInputLayer(
-                            decoration = decoration,
+                            offset = decoration.offset,
+                            scale = decoration.scale,
+                            rotation = decoration.rotation,
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
@@ -254,7 +257,9 @@ fun UchiwaPreview(
                             corner = HandleCorner.BottomRight
                         )
                         GestureInputLayer(
-                            decoration = decoration,
+                            offset = decoration.offset,
+                            scale = decoration.scale,
+                            rotation = decoration.rotation,
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
@@ -310,7 +315,9 @@ fun UchiwaPreview(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GestureInputLayer(
-    decoration: Decoration,
+    offset: Offset,
+    scale: Float,
+    rotation: Float,
     decorationSize: DpSize,
     isSelected: Boolean,
     onDecorationTap: () -> Unit,
@@ -321,14 +328,15 @@ private fun GestureInputLayer(
     onTransformEnd: () -> Unit,
     onDecorationDoubleTap: () -> Unit = {}
 ) {
+
     Box(
         modifier = Modifier
             .graphicsLayer {
-                translationX = decoration.offset.x
-                translationY = decoration.offset.y
-                scaleX = decoration.scale
-                scaleY = decoration.scale
-                rotationZ = decoration.rotation
+                translationX = offset.x
+                translationY = offset.y
+                scaleX = scale
+                scaleY = scale
+                rotationZ = rotation
             }
             .size(decorationSize)
             .combinedClickable(
@@ -337,15 +345,15 @@ private fun GestureInputLayer(
                 onClick = onDecorationTap,
                 onDoubleClick = onDecorationDoubleTap
             )
-            .pointerInput(Unit) {
+            .pointerInput(offset, scale, rotation) {
                 detectDragGestures(
                     onDrag = { change, dragAmount ->
                         change.consume()
                         onDecorationTap()
                         onDrag(
                             rotatedDragAmount(
-                                decoration.rotation,
-                                decoration.scale,
+                                rotation,
+                                scale,
                                 dragAmount
                             )
                         )
@@ -359,8 +367,8 @@ private fun GestureInputLayer(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * decoration.scale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * decoration.scale
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) * scale,
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) * scale
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
