@@ -1,7 +1,11 @@
 package com.example.fansauchiwa.edit
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
 import com.example.fansauchiwa.data.Transformation
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -68,3 +72,7 @@ internal fun Offset.rotateBy(degrees: Float): Offset {
         y = this.x * sin + this.y * cos
     )
 }
+
+internal val TextUnit.nonScaledSp: TextUnit
+    @Composable
+    get() = (value / LocalDensity.current.fontScale).sp

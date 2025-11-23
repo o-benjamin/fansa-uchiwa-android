@@ -9,14 +9,17 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.OpenWith
@@ -46,6 +49,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -53,6 +57,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
@@ -224,10 +230,13 @@ fun UchiwaPreview(
                         val textMeasurer = rememberTextMeasurer()
                         val decorationSize = textMeasurer.measure(
                             decoration.text,
-                            TextStyle(fontSize = 24.sp)
+                            TextStyle(
+                                fontSize = 24.sp.nonScaledSp,
+                                platformStyle = PlatformTextStyle(includeFontPadding = false)
+                            )
                         ).size.toSize()
                         val decorationDpSize = with(LocalDensity.current) {
-                            decorationSize.toDpSize() + DpSize(16.dp, 16.dp)
+                            decorationSize.toDpSize()
                         }
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -435,17 +444,15 @@ private fun TextItem(
             text = decoration.text,
             selection = TextRange(decoration.text.length)
         )
-        TextField(
+        BasicTextField(
             value = textFieldValue,
             onValueChange = {
                 onTextChanged(it.text)
             },
-            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = colorResource(R.color.transparent),
-                unfocusedIndicatorColor = colorResource(R.color.transparent),
-                focusedContainerColor = colorResource(R.color.transparent),
-                unfocusedContainerColor = colorResource(R.color.transparent)
+            textStyle = LocalTextStyle.current.copy(
+                fontSize = 24.sp.nonScaledSp,
+                textAlign = TextAlign.Center,
+                platformStyle = PlatformTextStyle(includeFontPadding = false)
             ),
             readOnly = !isEditing,
             singleLine = true,
@@ -456,9 +463,9 @@ private fun TextItem(
                 }
             ),
             modifier = Modifier
-                .align(Alignment.Center)
                 .then(borderModifier)
                 .focusRequester(focusRequester)
+                .width(IntrinsicSize.Min)
         )
         LaunchedEffect(isEditing) {
             if (isEditing) {
