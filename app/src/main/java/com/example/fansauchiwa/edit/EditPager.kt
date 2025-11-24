@@ -15,10 +15,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import java.util.UUID
 fun EditPager(
     onStickerClick: (Decoration.Sticker) -> Unit,
     onTextClick: (Decoration.Text) -> Unit,
+    selectedDecoration: Decoration? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -44,9 +46,22 @@ fun EditPager(
         val pagerState = rememberPagerState(pageCount = { DecorationTabType.entries.size })
         val tabIndex = pagerState.currentPage
         val scope = rememberCoroutineScope()
-        ScrollableTabRow(
-            selectedTabIndex = tabIndex,
-            edgePadding = 0.dp
+
+        // selectedDecorationの種類に応じてページを自動的に切り替える
+        LaunchedEffect(selectedDecoration) {
+            if (selectedDecoration != null) {
+                val targetPage = when (selectedDecoration) {
+                    is Decoration.Text -> 0
+                    is Decoration.Sticker -> 1
+                }
+                scope.launch {
+                    pagerState.animateScrollToPage(targetPage)
+                }
+            }
+        }
+
+        TabRow(
+            selectedTabIndex = tabIndex
         ) {
             DecorationTabType.entries.forEachIndexed { index, title ->
                 Tab(
@@ -66,11 +81,11 @@ fun EditPager(
         ) { page ->
             when (page) {
                 0 -> {
-                    StickerPage(onStickerClick = onStickerClick)
+                    TextPage(onTextClick = onTextClick)
                 }
 
                 1 -> {
-                    TextPage(onTextClick = onTextClick)
+                    StickerPage(onStickerClick = onStickerClick)
                 }
 
                 else -> {

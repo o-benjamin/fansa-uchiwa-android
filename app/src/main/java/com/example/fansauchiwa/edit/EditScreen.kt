@@ -1,6 +1,5 @@
 package com.example.fansauchiwa.edit
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -109,6 +108,7 @@ fun EditScreen(
         EditPager(
             onStickerClick = viewModel::addDecoration,
             onTextClick = viewModel::addDecoration,
+            selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
             modifier = Modifier
                 .fillMaxSize()
                 .weight(1f)
