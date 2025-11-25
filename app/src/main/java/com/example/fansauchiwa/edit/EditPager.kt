@@ -95,7 +95,10 @@ fun EditPager(
         ) { page ->
             when (page) {
                 0 -> {
-                    TextPage(onTextClick = onTextClick)
+                    TextPage(
+                        onTextClick = onTextClick,
+                        selectedDecoration = selectedDecoration
+                    )
                 }
 
                 1 -> {
@@ -156,7 +159,8 @@ fun StickerPage(
 
 @Composable
 fun TextPage(
-    onTextClick: (Decoration.Text) -> Unit
+    onTextClick: (Decoration.Text) -> Unit,
+    selectedDecoration: Decoration? = null
 ) {
     Column(
         modifier = Modifier
@@ -165,73 +169,10 @@ fun TextPage(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(
-            text = stringResource(R.string.text_color_and_weight),
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Start,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color.Red, Color.Blue)
-                        )
-                    )
-                    .clickable { }
-            )
-            val weight = remember { mutableFloatStateOf(1f) }
-            Slider(
-                value = weight.floatValue,
-                onValueChange = { weight.floatValue = it },
-                valueRange = 0f..10f,
-                steps = 9,
-                modifier = Modifier.weight(1f)
-            )
+        if (selectedDecoration is Decoration.Text) {
+            TextDecorationControls()
         }
 
-        Text(
-            text = stringResource(R.string.stroke_color_and_weight),
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Start,
-            modifier = Modifier
-                .padding(top = 32.dp)
-                .fillMaxWidth()
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color.Red, Color.Blue)
-                        )
-                    )
-                    .clickable { }
-            )
-            val strokeWidth = remember { mutableFloatStateOf(1f) }
-            Slider(
-                value = strokeWidth.floatValue,
-                onValueChange = { strokeWidth.floatValue = it },
-                valueRange = 0f..10f,
-                steps = 9,
-                modifier = Modifier.weight(1f)
-            )
-        }
         Button(
             onClick = {
                 onTextClick(
@@ -248,6 +189,77 @@ fun TextPage(
         ) {
             Text(text = "テキストを追加")
         }
+    }
+}
+
+@Composable
+fun TextDecorationControls() {
+    Text(
+        text = stringResource(R.string.text_color_and_weight),
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Start,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.Red, Color.Blue)
+                    )
+                )
+                .clickable { }
+        )
+        val weight = remember { mutableFloatStateOf(1f) }
+        Slider(
+            value = weight.floatValue,
+            onValueChange = { weight.floatValue = it },
+            valueRange = 0f..10f,
+            steps = 9,
+            modifier = Modifier.weight(1f)
+        )
+    }
+
+    Text(
+        text = stringResource(R.string.stroke_color_and_weight),
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Start,
+        modifier = Modifier
+            .padding(top = 32.dp)
+            .fillMaxWidth()
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.Red, Color.Blue)
+                    )
+                )
+                .clickable { }
+        )
+        val strokeWidth = remember { mutableFloatStateOf(1f) }
+        Slider(
+            value = strokeWidth.floatValue,
+            onValueChange = { strokeWidth.floatValue = it },
+            valueRange = 0f..10f,
+            steps = 9,
+            modifier = Modifier.weight(1f)
+        )
     }
 
 }
