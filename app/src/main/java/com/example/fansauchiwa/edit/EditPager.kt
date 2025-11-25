@@ -27,14 +27,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,7 +42,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
+import com.example.fansauchiwa.ui.DecorationColors
 import com.example.fansauchiwa.ui.StickerAsset
+import com.example.fansauchiwa.ui.getColor
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -210,6 +212,9 @@ fun ColorAndWeightControl(
     title: String,
     modifier: Modifier = Modifier
 ) {
+    val isColorPickerOpen = remember { mutableStateOf(false) }
+    val selectedColor = remember { mutableStateOf(R.color.decoration_blue) }
+
     Column(modifier = modifier) {
         Text(
             text = title,
@@ -218,35 +223,68 @@ fun ColorAndWeightControl(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
+        if (!isColorPickerOpen.value) {
+            Row(
                 modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color.Red, Color.Blue)
-                        )
-                    )
-                    .clickable { }
-            )
-            val weight = remember { mutableFloatStateOf(1f) }
-            Slider(
-                value = weight.floatValue,
-                onValueChange = { weight.floatValue = it },
-                valueRange = 0f..10f,
-                steps = 9,
-                modifier = Modifier.weight(1f)
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(color = colorResource(selectedColor.value))
+                        .clickable {
+                            isColorPickerOpen.value = true
+                        }
+                )
+                val weight = remember { mutableFloatStateOf(1f) }
+                Slider(
+                    value = weight.floatValue,
+                    onValueChange = { weight.floatValue = it },
+                    valueRange = 0f..10f,
+                    steps = 9,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        } else {
+            ColorPickerRow(
+                onColorSelected = { color ->
+                    selectedColor.value = color.colorResId
+                    isColorPickerOpen.value = false
+                }
             )
         }
     }
 
+}
+
+@Composable
+fun ColorPickerRow(
+    onColorSelected: (DecorationColors) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        DecorationColors.entries.forEach { decorationColor ->
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(color = decorationColor.getColor())
+                    .clickable {
+                        onColorSelected(decorationColor)
+                    }
+            )
+        }
+    }
 }
 
 const val DEFAULT_TEXT = "テキストを入力"
