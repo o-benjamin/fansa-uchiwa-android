@@ -165,7 +165,7 @@ fun TextPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
     ) {
@@ -194,72 +194,57 @@ fun TextPage(
 
 @Composable
 fun TextDecorationControls() {
-    Text(
-        text = stringResource(R.string.text_color_and_weight),
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Start,
-        modifier = Modifier.fillMaxWidth()
+    ColorAndWeightControl(
+        title = stringResource(R.string.text_color_and_weight),
+        modifier = Modifier.padding(top = 32.dp)
     )
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color.Red, Color.Blue)
-                    )
-                )
-                .clickable { }
-        )
-        val weight = remember { mutableFloatStateOf(1f) }
-        Slider(
-            value = weight.floatValue,
-            onValueChange = { weight.floatValue = it },
-            valueRange = 0f..10f,
-            steps = 9,
-            modifier = Modifier.weight(1f)
-        )
-    }
-
-    Text(
-        text = stringResource(R.string.stroke_color_and_weight),
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Start,
-        modifier = Modifier
-            .padding(top = 32.dp)
-            .fillMaxWidth()
+    ColorAndWeightControl(
+        title = stringResource(R.string.stroke_color_and_weight),
+        modifier = Modifier.padding(top = 32.dp)
     )
+}
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
+@Composable
+fun ColorAndWeightControl(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Start,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Row(
             modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color.Red, Color.Blue)
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color.Red, Color.Blue)
+                        )
                     )
-                )
-                .clickable { }
-        )
-        val strokeWidth = remember { mutableFloatStateOf(1f) }
-        Slider(
-            value = strokeWidth.floatValue,
-            onValueChange = { strokeWidth.floatValue = it },
-            valueRange = 0f..10f,
-            steps = 9,
-            modifier = Modifier.weight(1f)
-        )
+                    .clickable { }
+            )
+            val weight = remember { mutableFloatStateOf(1f) }
+            Slider(
+                value = weight.floatValue,
+                onValueChange = { weight.floatValue = it },
+                valueRange = 0f..10f,
+                steps = 9,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 
 }
