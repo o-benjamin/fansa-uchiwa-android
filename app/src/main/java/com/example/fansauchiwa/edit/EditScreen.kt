@@ -108,6 +108,11 @@ fun EditScreen(
         EditPager(
             onStickerClick = viewModel::addDecoration,
             onTextClick = viewModel::addDecoration,
+            onColorSelected = { color ->
+                uiState.selectedDecorationId?.let { decorationId ->
+                    viewModel.updateColor(decorationId, color)
+                }
+            },
             selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
             modifier = Modifier
                 .fillMaxSize()
@@ -466,6 +471,7 @@ private fun TextItem(
         }
         val measurer = rememberTextMeasurer()
         val textSize = 24.sp.nonScaledSp
+        val textColor = colorResource(decoration.color)
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
@@ -513,7 +519,7 @@ private fun TextItem(
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Fill,
-                        color = Color.White
+                        color = textColor
                     )
                     // 最後に描画しないと入力カーソルが埋もれて消えてしまうため、明示的に最後に描画
                     drawContent()

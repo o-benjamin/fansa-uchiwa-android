@@ -12,6 +12,7 @@ sealed interface Decoration {
     val offset: Offset
     val rotation: Float
     val scale: Float
+    val color: Int
 
 
     @Serializable
@@ -22,6 +23,7 @@ sealed interface Decoration {
         override val offset: Offset,
         override val rotation: Float,
         override val scale: Float,
+        override val color: Int
     ) : Decoration
 
     @Serializable
@@ -31,7 +33,8 @@ sealed interface Decoration {
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset,
         override val rotation: Float,
-        override val scale: Float
+        override val scale: Float,
+        override val color: Int
     ) : Decoration {
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }

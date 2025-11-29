@@ -1,5 +1,8 @@
 package com.example.fansauchiwa.edit
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,7 +22,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -54,6 +61,7 @@ fun EditPager(
     modifier: Modifier = Modifier,
     onStickerClick: (Decoration.Sticker) -> Unit,
     onTextClick: (Decoration.Text) -> Unit,
+    onColorSelected: (Int) -> Unit = {},
     selectedDecoration: Decoration? = null,
 ) {
     Column(
@@ -99,6 +107,7 @@ fun EditPager(
                 0 -> {
                     TextPage(
                         onTextClick = onTextClick,
+                        onColorSelected = onColorSelected,
                         selectedDecoration = selectedDecoration
                     )
                 }
@@ -144,7 +153,8 @@ fun StickerPage(
                                 id = UUID.randomUUID().toString(),
                                 offset = Offset.Zero,
                                 rotation = 0f,
-                                scale = 1f
+                                scale = 1f,
+                                color = R.color.decoration_blue
                             )
                         )
                     }
@@ -162,6 +172,7 @@ fun StickerPage(
 @Composable
 fun TextPage(
     onTextClick: (Decoration.Text) -> Unit,
+    onColorSelected: (Int) -> Unit = {},
     selectedDecoration: Decoration? = null
 ) {
     Column(
@@ -172,7 +183,11 @@ fun TextPage(
         verticalArrangement = Arrangement.Top
     ) {
         if (selectedDecoration is Decoration.Text) {
-            TextDecorationControls()
+            TextDecorationControls(
+                onColorSelected = onColorSelected,
+                textColor = selectedDecoration.color,
+                strokeColor = selectedDecoration.color
+            )
         }
 
         Button(
@@ -184,6 +199,7 @@ fun TextPage(
                         offset = Offset.Zero,
                         rotation = 0f,
                         scale = 1f,
+                        color = R.color.decoration_blue
                     )
                 )
             },
@@ -195,25 +211,34 @@ fun TextPage(
 }
 
 @Composable
-fun TextDecorationControls() {
+fun TextDecorationControls(
+    onColorSelected: (Int) -> Unit = {},
+    textColor: Int,
+    strokeColor: Int
+) {
     ColorAndWeightControl(
         title = stringResource(R.string.text_color_and_weight),
-        modifier = Modifier.padding(top = 32.dp)
+        onColorSelected = onColorSelected,
+        modifier = Modifier.padding(top = 32.dp),
+        currentColor = textColor
     )
 
     ColorAndWeightControl(
         title = stringResource(R.string.stroke_color_and_weight),
-        modifier = Modifier.padding(top = 32.dp)
+        onColorSelected = onColorSelected,
+        modifier = Modifier.padding(top = 32.dp),
+        currentColor = strokeColor
     )
 }
 
 @Composable
 fun ColorAndWeightControl(
     title: String,
-    modifier: Modifier = Modifier
+    onColorSelected: (Int) -> Unit = {},
+    modifier: Modifier = Modifier,
+    currentColor: Int
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
-    val selectedColor = remember { mutableStateOf(R.color.decoration_blue) }
 
     Column(modifier = modifier) {
         Text(
@@ -223,37 +248,60 @@ fun ColorAndWeightControl(
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (!isColorPickerOpen.value) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(color = colorResource(selectedColor.value))
-                        .clickable {
-                            isColorPickerOpen.value = true
-                        }
-                )
-                val weight = remember { mutableFloatStateOf(1f) }
-                Slider(
-                    value = weight.floatValue,
-                    onValueChange = { weight.floatValue = it },
-                    valueRange = 0f..10f,
-                    steps = 9,
-                    modifier = Modifier.weight(1f)
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box {
+                IconButton(
+                    onClick = {
+                        isColorPickerOpen.value = false
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExpandLess,
+                        contentDescription = "Color picker toggle"
+                    )
+                }
+                this@Column.AnimatedVisibility(
+                    visible = !isColorPickerOpen.value,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(
+                                color = colorResource(currentColor)
+                            )
+                            .clickable {
+                                isColorPickerOpen.value = true
+                            }
+                    )
+                }
             }
-        } else {
+            val weight = remember { mutableFloatStateOf(1f) }
+            Slider(
+                value = weight.floatValue,
+                onValueChange = {
+                    weight.floatValue = it
+                    isColorPickerOpen.value = false
+                },
+                valueRange = 0f..10f,
+                steps = 9,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        AnimatedVisibility(isColorPickerOpen.value) {
             ColorPickerRow(
                 onColorSelected = { color ->
-                    selectedColor.value = color.colorResId
-                    isColorPickerOpen.value = false
+                    onColorSelected(color.colorResId)
                 }
             )
         }
@@ -270,7 +318,7 @@ fun ColorPickerRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         DecorationColors.entries.forEach { decorationColor ->

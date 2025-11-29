@@ -99,4 +99,14 @@ class EditViewModel @Inject constructor(
             (decoration as? Decoration.Text)?.copy(text = newText) ?: decoration
         }
     }
+
+    fun updateColor(id: String, newColor: Int) {
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Sticker -> decoration.copy(color = newColor)
+                is Decoration.Text -> decoration.copy(color = newColor)
+            }
+        }
+        onDecorationsChanged()
+    }
 }
