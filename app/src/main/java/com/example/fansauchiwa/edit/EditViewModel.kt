@@ -109,4 +109,13 @@ class EditViewModel @Inject constructor(
         }
         onDecorationsChanged()
     }
+
+    fun updateWidth(id: String, newWidth: Int) {
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(width = newWidth)
+                else -> decoration
+            }
+        }
+    }
 }

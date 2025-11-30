@@ -16,6 +16,6 @@
     <color name="decoration_yellow">#FFFFFF00</color>
     <color name="decoration_magenta">#FFFF00FF</color>
     <color name="decoration_cyan">#FF00FFFF</color>
-    <color name="decoration_gray">#FF808080</color>
+    <color name="decoration_white">#FFFFFFFF</color>
 
 </resources>

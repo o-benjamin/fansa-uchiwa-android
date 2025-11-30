@@ -113,6 +113,16 @@ fun EditScreen(
                     viewModel.updateColor(decorationId, color)
                 }
             },
+            onTextWeightChanged = { weight ->
+                uiState.selectedDecorationId?.let { decorationId ->
+                    viewModel.updateWidth(decorationId, weight)
+                }
+            },
+            onStrokeWeightChanged = { weight ->
+                uiState.selectedDecorationId?.let { decorationId ->
+                    viewModel.updateWidth(decorationId, weight)
+                }
+            },
             selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
             modifier = Modifier
                 .fillMaxSize()
@@ -504,9 +514,9 @@ private fun TextItem(
                         text = AnnotatedString(decoration.text),
                         style = TextStyle(
                             fontFamily = FontFamily.SansSerif,
-                            fontWeight = FontWeight.W900,
+                            fontWeight = FontWeight(decoration.width),
                             color = Color.White,
-                            fontSize = textSize,
+                            fontSize = textSize
                         )
                     )
                     // 枠線

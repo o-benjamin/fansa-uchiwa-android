@@ -33,7 +33,6 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,7 +60,9 @@ fun EditPager(
     modifier: Modifier = Modifier,
     onStickerClick: (Decoration.Sticker) -> Unit,
     onTextClick: (Decoration.Text) -> Unit,
-    onColorSelected: (Int) -> Unit = {},
+    onColorSelected: (Int) -> Unit,
+    onTextWeightChanged: (Int) -> Unit,
+    onStrokeWeightChanged: (Int) -> Unit,
     selectedDecoration: Decoration? = null,
 ) {
     Column(
@@ -108,6 +109,8 @@ fun EditPager(
                     TextPage(
                         onTextClick = onTextClick,
                         onColorSelected = onColorSelected,
+                        onTextWeightChanged = onTextWeightChanged,
+                        onStrokeWeightChanged = onStrokeWeightChanged,
                         selectedDecoration = selectedDecoration
                     )
                 }
@@ -173,6 +176,8 @@ fun StickerPage(
 fun TextPage(
     onTextClick: (Decoration.Text) -> Unit,
     onColorSelected: (Int) -> Unit = {},
+    onTextWeightChanged: (Int) -> Unit = {},
+    onStrokeWeightChanged: (Int) -> Unit = {},
     selectedDecoration: Decoration? = null
 ) {
     Column(
@@ -185,8 +190,11 @@ fun TextPage(
         if (selectedDecoration is Decoration.Text) {
             TextDecorationControls(
                 onColorSelected = onColorSelected,
+                onTextWeightChanged = onTextWeightChanged,
+                onStrokeWeightChanged = onStrokeWeightChanged,
                 textColor = selectedDecoration.color,
-                strokeColor = selectedDecoration.color
+                strokeColor = selectedDecoration.color,
+                textWidth = selectedDecoration.width
             )
         }
 
@@ -199,7 +207,8 @@ fun TextPage(
                         offset = Offset.Zero,
                         rotation = 0f,
                         scale = 1f,
-                        color = R.color.decoration_blue
+                        color = R.color.decoration_white,
+                        width = FontWeight.W900.weight
                     )
                 )
             },
@@ -212,31 +221,39 @@ fun TextPage(
 
 @Composable
 fun TextDecorationControls(
-    onColorSelected: (Int) -> Unit = {},
+    onColorSelected: (Int) -> Unit,
+    onTextWeightChanged: (Int) -> Unit,
+    onStrokeWeightChanged: (Int) -> Unit,
+    strokeColor: Int,
     textColor: Int,
-    strokeColor: Int
+    textWidth: Int = 0,
 ) {
     ColorAndWeightControl(
         title = stringResource(R.string.text_color_and_weight),
+        color = textColor,
+        width = textWidth,
         onColorSelected = onColorSelected,
-        modifier = Modifier.padding(top = 32.dp),
-        currentColor = textColor
+        onWeightChanged = onTextWeightChanged,
+        modifier = Modifier.padding(top = 32.dp)
     )
 
     ColorAndWeightControl(
         title = stringResource(R.string.stroke_color_and_weight),
+        color = strokeColor,
         onColorSelected = onColorSelected,
-        modifier = Modifier.padding(top = 32.dp),
-        currentColor = strokeColor
+        onWeightChanged = onStrokeWeightChanged,
+        modifier = Modifier.padding(top = 32.dp)
     )
 }
 
 @Composable
 fun ColorAndWeightControl(
     title: String,
+    color: Int,
+    width: Int = 0,
     onColorSelected: (Int) -> Unit = {},
+    onWeightChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
-    currentColor: Int
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
 
@@ -277,7 +294,7 @@ fun ColorAndWeightControl(
                             .size(24.dp)
                             .clip(CircleShape)
                             .background(
-                                color = colorResource(currentColor)
+                                color = colorResource(color)
                             )
                             .clickable {
                                 isColorPickerOpen.value = true
@@ -285,14 +302,13 @@ fun ColorAndWeightControl(
                     )
                 }
             }
-            val weight = remember { mutableFloatStateOf(1f) }
             Slider(
-                value = weight.floatValue,
-                onValueChange = {
-                    weight.floatValue = it
+                value = width.toFloat(),
+                onValueChange = { newValue ->
+                    onWeightChanged(newValue.toInt())
                     isColorPickerOpen.value = false
                 },
-                valueRange = 0f..10f,
+                valueRange = 100f..900f,
                 steps = 9,
                 modifier = Modifier.weight(1f)
             )

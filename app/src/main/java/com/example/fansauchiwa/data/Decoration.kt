@@ -23,7 +23,8 @@ sealed interface Decoration {
         override val offset: Offset,
         override val rotation: Float,
         override val scale: Float,
-        override val color: Int
+        override val color: Int,
+        val width: Int
     ) : Decoration
 
     @Serializable
