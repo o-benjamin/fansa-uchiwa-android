@@ -61,8 +61,8 @@ fun EditPager(
     onStickerClick: (Decoration.Sticker) -> Unit,
     onTextClick: (Decoration.Text) -> Unit,
     onColorSelected: (Int) -> Unit,
-    onStrokeColorSelected: (Int) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
+    onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     selectedDecoration: Decoration? = null,
 ) {
@@ -111,6 +111,7 @@ fun EditPager(
                         onTextClick = onTextClick,
                         onColorSelected = onColorSelected,
                         onTextWeightChanged = onTextWeightChanged,
+                        onStrokeColorSelected = onStrokeColorSelected,
                         onStrokeWeightChanged = onStrokeWeightChanged,
                         selectedDecoration = selectedDecoration
                     )
@@ -178,9 +179,10 @@ fun StickerPage(
 @Composable
 fun TextPage(
     onTextClick: (Decoration.Text) -> Unit,
-    onColorSelected: (Int) -> Unit = {},
-    onTextWeightChanged: (Int) -> Unit = {},
-    onStrokeWeightChanged: (Float) -> Unit = {},
+    onColorSelected: (Int) -> Unit,
+    onTextWeightChanged: (Int) -> Unit,
+    onStrokeColorSelected: (Int) -> Unit,
+    onStrokeWeightChanged: (Float) -> Unit,
     selectedDecoration: Decoration? = null
 ) {
     Column(
@@ -194,9 +196,10 @@ fun TextPage(
             TextDecorationControls(
                 onColorSelected = onColorSelected,
                 onTextWeightChanged = onTextWeightChanged,
+                onStrokeColorSelected = onStrokeColorSelected,
                 onStrokeWeightChanged = onStrokeWeightChanged,
                 textColor = selectedDecoration.color,
-                strokeColor = selectedDecoration.color,
+                strokeColor = selectedDecoration.strokeColor,
                 textWidth = selectedDecoration.width,
                 strokeWidth = selectedDecoration.strokeWidth
             )
@@ -213,7 +216,7 @@ fun TextPage(
                         scale = 1f,
                         color = R.color.decoration_white,
                         width = FontWeight.W900.weight,
-                        strokeColor = R.color.decoration_yellow,
+                        strokeColor = R.color.decoration_black,
                         strokeWidth = 30f
                     )
                 )
@@ -229,6 +232,7 @@ fun TextPage(
 fun TextDecorationControls(
     onColorSelected: (Int) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
+    onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     textColor: Int,
     textWidth: Int,
@@ -248,7 +252,7 @@ fun TextDecorationControls(
         title = stringResource(R.string.stroke_color_and_weight),
         color = strokeColor,
         width = (strokeWidth * 10f).toInt(),
-        onColorSelected = onColorSelected,
+        onColorSelected = onStrokeColorSelected,
         onWeightChanged = { newValue ->
             onStrokeWeightChanged(newValue.toFloat() / 10)
         },

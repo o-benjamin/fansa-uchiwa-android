@@ -10,12 +10,12 @@
     <color name="transparent">#00000000</color>
 
     <!-- Decoration Colors -->
+    <color name="decoration_black">#FF000000</color>
     <color name="decoration_red">#FFFF0000</color>
+    <color name="decoration_magenta">#FFFF00FF</color>
     <color name="decoration_blue">#FF0000FF</color>
     <color name="decoration_green">#FF00FF00</color>
     <color name="decoration_yellow">#FFFFFF00</color>
-    <color name="decoration_magenta">#FFFF00FF</color>
-    <color name="decoration_cyan">#FF00FFFF</color>
     <color name="decoration_white">#FFFFFFFF</color>
 
 </resources>

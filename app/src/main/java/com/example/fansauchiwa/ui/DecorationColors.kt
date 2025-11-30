@@ -6,12 +6,12 @@ import androidx.compose.ui.res.colorResource
 import com.example.fansauchiwa.R
 
 enum class DecorationColors(val colorResId: Int) {
+    CYAN(R.color.decoration_black),
     RED(R.color.decoration_red),
+    MAGENTA(R.color.decoration_magenta),
     BLUE(R.color.decoration_blue),
     GREEN(R.color.decoration_green),
     YELLOW(R.color.decoration_yellow),
-    MAGENTA(R.color.decoration_magenta),
-    CYAN(R.color.decoration_cyan),
     WHITE(R.color.decoration_white),
 }
 

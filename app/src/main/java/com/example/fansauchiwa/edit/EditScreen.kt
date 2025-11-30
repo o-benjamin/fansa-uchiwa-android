@@ -487,6 +487,7 @@ private fun TextItem(
         val measurer = rememberTextMeasurer()
         val textSize = 24.sp.nonScaledSp
         val textColor = colorResource(decoration.color)
+        val strokeColor = colorResource(decoration.strokeColor)
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
@@ -528,7 +529,7 @@ private fun TextItem(
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
-                        color = Color.Black
+                        color = strokeColor
                     )
                     // 塗りつぶし
                     drawText(
