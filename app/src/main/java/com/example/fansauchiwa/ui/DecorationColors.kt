@@ -12,7 +12,7 @@ enum class DecorationColors(val colorResId: Int) {
     YELLOW(R.color.decoration_yellow),
     MAGENTA(R.color.decoration_magenta),
     CYAN(R.color.decoration_cyan),
-    GRAY(R.color.decoration_gray),
+    WHITE(R.color.decoration_white),
 }
 
 @Composable

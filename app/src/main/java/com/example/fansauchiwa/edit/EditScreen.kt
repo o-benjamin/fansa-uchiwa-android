@@ -113,6 +113,11 @@ fun EditScreen(
                     viewModel.updateColor(decorationId, color)
                 }
             },
+            onStrokeColorSelected = { color ->
+                uiState.selectedDecorationId?.let { decorationId ->
+                    viewModel.updateStrokeColor(decorationId, color)
+                }
+            },
             onTextWeightChanged = { weight ->
                 uiState.selectedDecorationId?.let { decorationId ->
                     viewModel.updateWidth(decorationId, weight)
@@ -120,7 +125,7 @@ fun EditScreen(
             },
             onStrokeWeightChanged = { weight ->
                 uiState.selectedDecorationId?.let { decorationId ->
-                    viewModel.updateWidth(decorationId, weight)
+                    viewModel.updateStrokeWidth(decorationId, weight)
                 }
             },
             selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
@@ -522,7 +527,7 @@ private fun TextItem(
                     // 枠線
                     drawText(
                         textLayoutResult = layoutResult,
-                        drawStyle = Stroke(width = 30f, join = StrokeJoin.Round),
+                        drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
                         color = Color.Black
                     )
                     // 塗りつぶし

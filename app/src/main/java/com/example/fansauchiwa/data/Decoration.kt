@@ -13,6 +13,8 @@ sealed interface Decoration {
     val rotation: Float
     val scale: Float
     val color: Int
+    val strokeColor: Int
+    val strokeWidth: Float
 
 
     @Serializable
@@ -24,6 +26,8 @@ sealed interface Decoration {
         override val rotation: Float,
         override val scale: Float,
         override val color: Int,
+        override val strokeColor: Int,
+        override val strokeWidth: Float,
         val width: Int
     ) : Decoration
 
@@ -35,7 +39,9 @@ sealed interface Decoration {
         override val offset: Offset,
         override val rotation: Float,
         override val scale: Float,
-        override val color: Int
+        override val color: Int,
+        override val strokeColor: Int,
+        override val strokeWidth: Float
     ) : Decoration {
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }

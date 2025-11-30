@@ -110,10 +110,29 @@ class EditViewModel @Inject constructor(
         onDecorationsChanged()
     }
 
+    fun updateStrokeColor(id: String, newColor: Int) {
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(strokeColor = newColor)
+                is Decoration.Sticker -> decoration
+            }
+        }
+    }
+
     fun updateWidth(id: String, newWidth: Int) {
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(width = newWidth)
+                else -> decoration
+            }
+        }
+    }
+
+    fun updateStrokeWidth(id: String, newWidth: Float) {
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(strokeWidth = newWidth)
+                // TODO: いずれはStickerの枠線の太さも変更したい
                 else -> decoration
             }
         }
