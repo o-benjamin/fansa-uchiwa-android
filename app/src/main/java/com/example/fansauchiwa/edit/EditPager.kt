@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -307,6 +308,7 @@ fun ColorAndWeightControl(
                         modifier = Modifier
                             .size(24.dp)
                             .clip(CircleShape)
+                            .border(1.dp, colorResource(R.color.black), CircleShape)
                             .background(
                                 color = colorResource(color)
                             )
@@ -356,6 +358,7 @@ fun ColorPickerRow(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
+                    .border(1.dp, colorResource(R.color.black), CircleShape)
                     .background(color = decorationColor.getColor())
                     .clickable {
                         onColorSelected(decorationColor)
