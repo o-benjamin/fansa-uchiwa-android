@@ -431,7 +431,7 @@ private fun GestureInputLayer(
                     .align(Alignment.TopEnd)
                     .offset(
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * scale,
-                        - ((GESTURE_INPUT_HANDLE_SIZE / 2) * scale)
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * scale)
                     )
             )
         }
@@ -491,7 +491,7 @@ private fun StickerItem(
                     .align(Alignment.TopEnd)
                     .offset(
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        - ((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
                     )
             )
         }
@@ -623,7 +623,7 @@ private fun TextItem(
                     .align(Alignment.TopEnd)
                     .offset(
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        - ((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
                     )
             )
         }
