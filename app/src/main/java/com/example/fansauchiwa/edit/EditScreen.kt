@@ -642,3 +642,57 @@ private fun EditScreenPreview() {
         EditScreen()
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+private fun StickerItemPreview() {
+    FansaUchiwaTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            StickerItem(
+                decoration = Decoration.Sticker(
+                    label = "heart",
+                    id = "",
+                    offset = Offset.Zero,
+                    rotation = 0f,
+                    scale = 1f,
+                    color = R.color.decoration_white,
+                    strokeColor = R.color.decoration_black,
+                    strokeWidth = 10f
+                ),
+                isSelected = true,
+                currentOffset = Offset.Zero,
+                currentScale = 1f,
+                currentRotation = 0f
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TextItemPreview() {
+    FansaUchiwaTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            TextItem(
+                decoration = Decoration.Text(
+                    text = "サンプルテキスト",
+                    id = "",
+                    offset = Offset.Zero,
+                    rotation = 0f,
+                    scale = 1f,
+                    color = R.color.decoration_green,
+                    strokeColor = R.color.decoration_red,
+                    strokeWidth = 30f,
+                    width = 900
+                ),
+                isSelected = true,
+                isEditing = false,
+                currentOffset = Offset.Zero,
+                currentScale = 1f,
+                currentRotation = 0f,
+                onTextChanged = {},
+                onFinishEditing = {}
+            )
+        }
+    }
+}
