@@ -9,5 +9,5 @@
     <string name="text_color_and_weight">文字色・太さ</string>
     <string name="stroke_color_and_weight">枠線色・太さ</string>
 
-
+    <string name="snackbar_input_too_short">1文字以上入力してください</string>
 </resources>

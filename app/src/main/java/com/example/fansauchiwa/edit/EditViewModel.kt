@@ -3,6 +3,7 @@ package com.example.fansauchiwa.edit
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.FansaUchiwaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,10 +46,12 @@ class EditViewModel @Inject constructor(
     }
 
     fun selectDecoration(id: String) {
-        _uiState.update { state ->
-            state.copy(
-                selectedDecorationId = id
-            )
+        if (canEdit()) {
+            _uiState.update { state ->
+                state.copy(
+                    selectedDecorationId = id
+                )
+            }
         }
     }
 
@@ -56,6 +59,14 @@ class EditViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 selectedDecorationId = null
+            )
+        }
+    }
+
+    fun snackbarMessageShown() {
+        _uiState.update { state ->
+            state.copy(
+                userMessage = null
             )
         }
     }
@@ -79,10 +90,12 @@ class EditViewModel @Inject constructor(
     }
 
     fun startEditingText(id: String) {
-        _uiState.update { state ->
-            state.copy(
-                editingTextId = id
-            )
+        if (canEdit()) {
+            _uiState.update { state ->
+                state.copy(
+                    editingTextId = id
+                )
+            }
         }
     }
 
@@ -136,5 +149,17 @@ class EditViewModel @Inject constructor(
                 else -> decoration
             }
         }
+    }
+
+    private fun canEdit(): Boolean {
+        (_uiState.value.decorations.find { it.id == _uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
+            if (it.text.isEmpty()) {
+                _uiState.update { state ->
+                    state.copy(userMessage = R.string.snackbar_input_too_short)
+                }
+                return false
+            }
+        }
+        return true
     }
 }

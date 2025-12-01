@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,6 +28,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +56,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
@@ -79,60 +84,80 @@ fun EditScreen(
     viewModel: EditViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        UchiwaPreview(
-            decorations = uiState.decorations,
-            selectedDecorationId = uiState.selectedDecorationId,
-            editingTextId = uiState.editingTextId,
-            onDecorationTap = viewModel::selectDecoration,
-            onDecorationDoubleTap = { decorationId ->
-                viewModel.selectDecoration(decorationId)
-                viewModel.startEditingText(decorationId)
-            },
-            onBackgroundTap = {
-                viewModel.unSelectDecoration()
-                viewModel.finishEditingText()
-            },
-            onDecorationDragEnd = viewModel::updateDecorationGraphic,
-            onTextChanged = viewModel::updateText,
-            onDoneTextEdit = viewModel::finishEditingText,
+    uiState.userMessage?.let { userMessage ->
+        val snackbarText = stringResource(userMessage)
+        LaunchedEffect(snackbarHostState, viewModel, userMessage, snackbarText) {
+            snackbarHostState.showSnackbar(snackbarText)
+            viewModel.snackbarMessageShown()
+        }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.imePadding()
+            )
+        }
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f)
-        )
+                .padding(paddingValues),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            UchiwaPreview(
+                decorations = uiState.decorations,
+                selectedDecorationId = uiState.selectedDecorationId,
+                editingTextId = uiState.editingTextId,
+                onDecorationTap = viewModel::selectDecoration,
+                onDecorationDoubleTap = { decorationId ->
+                    viewModel.selectDecoration(decorationId)
+                    viewModel.startEditingText(decorationId)
+                },
+                onBackgroundTap = {
+                    viewModel.unSelectDecoration()
+                    viewModel.finishEditingText()
+                },
+                onDecorationDragEnd = viewModel::updateDecorationGraphic,
+                onTextChanged = viewModel::updateText,
+                onDoneTextEdit = viewModel::finishEditingText,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            )
 
-        EditPager(
-            onStickerClick = viewModel::addDecoration,
-            onTextClick = viewModel::addDecoration,
-            onColorSelected = { color ->
-                uiState.selectedDecorationId?.let { decorationId ->
-                    viewModel.updateColor(decorationId, color)
-                }
-            },
-            onStrokeColorSelected = { color ->
-                uiState.selectedDecorationId?.let { decorationId ->
-                    viewModel.updateStrokeColor(decorationId, color)
-                }
-            },
-            onTextWeightChanged = { weight ->
-                uiState.selectedDecorationId?.let { decorationId ->
-                    viewModel.updateWidth(decorationId, weight)
-                }
-            },
-            onStrokeWeightChanged = { weight ->
-                uiState.selectedDecorationId?.let { decorationId ->
-                    viewModel.updateStrokeWidth(decorationId, weight)
-                }
-            },
-            selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
-        )
+            EditPager(
+                onStickerClick = viewModel::addDecoration,
+                onTextClick = viewModel::addDecoration,
+                onColorSelected = { color ->
+                    uiState.selectedDecorationId?.let { decorationId ->
+                        viewModel.updateColor(decorationId, color)
+                    }
+                },
+                onStrokeColorSelected = { color ->
+                    uiState.selectedDecorationId?.let { decorationId ->
+                        viewModel.updateStrokeColor(decorationId, color)
+                    }
+                },
+                onTextWeightChanged = { weight ->
+                    uiState.selectedDecorationId?.let { decorationId ->
+                        viewModel.updateWidth(decorationId, weight)
+                    }
+                },
+                onStrokeWeightChanged = { weight ->
+                    uiState.selectedDecorationId?.let { decorationId ->
+                        viewModel.updateStrokeWidth(decorationId, weight)
+                    }
+                },
+                selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            )
+        }
     }
 }
 
