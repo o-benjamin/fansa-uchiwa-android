@@ -45,6 +45,15 @@ class EditViewModel @Inject constructor(
         onDecorationsChanged()
     }
 
+    fun deleteDecoration(id: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                decorations = currentState.decorations.filter { it.id != id }
+            )
+        }
+        onDecorationsChanged()
+    }
+
     fun selectDecoration(id: String) {
         if (canEdit()) {
             _uiState.update { state ->

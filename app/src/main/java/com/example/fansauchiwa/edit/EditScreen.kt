@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -122,6 +123,7 @@ fun EditScreen(
                     viewModel.finishEditingText()
                 },
                 onDecorationDragEnd = viewModel::updateDecorationGraphic,
+                onTapDelete = viewModel::deleteDecoration,
                 onTextChanged = viewModel::updateText,
                 onDoneTextEdit = viewModel::finishEditingText,
                 modifier = Modifier
@@ -170,6 +172,7 @@ fun UchiwaPreview(
     onDecorationDoubleTap: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
+    onTapDelete: (String) -> Unit,
     onTextChanged: (String, String) -> Unit,
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
@@ -261,7 +264,8 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
-                            }
+                            },
+                            onTapDelete = { onTapDelete(decoration.id) }
                         )
                         StickerItem(
                             decoration = decoration,
@@ -348,7 +352,8 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
-                            }
+                            },
+                            onTapDelete = { onTapDelete(decoration.id) }
                         )
                     }
                 }
@@ -371,6 +376,7 @@ private fun GestureInputLayer(
     onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
+    onTapDelete: () -> Unit,
     onDecorationDoubleTap: () -> Unit = {}
 ) {
 
@@ -419,6 +425,15 @@ private fun GestureInputLayer(
                 onTransform = onTransform,
                 onTransformEnd = onTransformEnd
             )
+            TapInputHandle(
+                onTap = onTapDelete,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) * scale,
+                        - ((GESTURE_INPUT_HANDLE_SIZE / 2) * scale)
+                    )
+            )
         }
     }
 }
@@ -465,6 +480,18 @@ private fun StickerItem(
                     .offset(
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
+                    )
+            )
+            DeleteIcon(
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / currentScale
+                        scaleY = 1 / currentScale
+                    }
+                    .align(Alignment.TopEnd)
+                    .offset(
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
+                        - ((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
                     )
             )
         }
@@ -587,6 +614,18 @@ private fun TextItem(
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
                     )
             )
+            DeleteIcon(
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / currentScale
+                        scaleY = 1 / currentScale
+                    }
+                    .align(Alignment.TopEnd)
+                    .offset(
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
+                        - ((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                    )
+            )
         }
     }
 }
@@ -618,12 +657,43 @@ private fun GestureInputHandle(
 }
 
 @Composable
+private fun TapInputHandle(
+    onTap: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(GESTURE_INPUT_HANDLE_SIZE)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                onClick = onTap
+            )
+    )
+}
+
+@Composable
 private fun TransformHandleIcon(
     modifier: Modifier
 ) {
     Icon(
         imageVector = Icons.Default.OpenWith,
         contentDescription = "Zoom and Rotate",
+        tint = MaterialTheme.colorScheme.onPrimary,
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primary, CircleShape)
+            .size(GESTURE_INPUT_HANDLE_SIZE)
+            .padding(4.dp)
+    )
+}
+
+@Composable
+private fun DeleteIcon(
+    modifier: Modifier
+) {
+    Icon(
+        imageVector = Icons.Default.Delete,
+        contentDescription = "Delete",
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)
