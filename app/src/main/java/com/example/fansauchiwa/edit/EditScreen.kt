@@ -63,7 +63,6 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -78,6 +77,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.example.fansauchiwa.ui.theme.zenMaruGothicFontFamily
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -571,7 +571,8 @@ private fun TextItem(
                     val layoutResult = measurer.measure(
                         text = AnnotatedString(decoration.text),
                         style = TextStyle(
-                            fontFamily = FontFamily.SansSerif,
+                            // TODO: Fontを外から入れられるようにする
+                            fontFamily = zenMaruGothicFontFamily,
                             fontWeight = FontWeight(decoration.width),
                             color = Color.White,
                             fontSize = textSize
