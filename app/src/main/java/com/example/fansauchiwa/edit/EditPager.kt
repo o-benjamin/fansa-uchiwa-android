@@ -207,41 +207,25 @@ fun TextPage(
 
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(top = 32.dp)
         ) {
-            Button(
-                onClick = {
-                    onTextClick(
-                        Decoration.Text(
-                            id = UUID.randomUUID().toString(),
-                            font = FontFamilies.ZEN_MARU_GOTHIC
+            FontFamilies.entries.forEach {
+                Button(
+                    onClick = {
+                        onTextClick(
+                            Decoration.Text(
+                                id = UUID.randomUUID().toString(),
+                                font = it
+                            )
                         )
+                    }
+                ) {
+                    Text(
+                        text = "推し",
+                        fontSize = 24.sp,
+                        fontFamily = it.value
                     )
-                },
-                modifier = Modifier.padding(top = 32.dp)
-            ) {
-                Text(
-                    text = "推し",
-                    fontSize = 16.sp,
-                    fontFamily = FontFamilies.ZEN_MARU_GOTHIC.value
-                )
-            }
-
-            Button(
-                onClick = {
-                    onTextClick(
-                        Decoration.Text(
-                            id = UUID.randomUUID().toString(),
-                            font = FontFamilies.HACHI_MARU_POP
-                        )
-                    )
-                },
-                modifier = Modifier.padding(top = 32.dp)
-            ) {
-                Text(
-                    text = "推し",
-                    fontSize = 16.sp,
-                    fontFamily = FontFamilies.HACHI_MARU_POP.value
-                )
+                }
             }
         }
     }
