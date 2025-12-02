@@ -43,7 +43,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -161,12 +160,6 @@ fun StickerPage(
                             Decoration.Sticker(
                                 label = sticker.type,
                                 id = UUID.randomUUID().toString(),
-                                offset = Offset.Zero,
-                                rotation = 0f,
-                                scale = 1f,
-                                color = R.color.decoration_blue,
-                                strokeColor = R.color.decoration_yellow,
-                                strokeWidth = 200f
                             )
                         )
                     }
@@ -219,15 +212,7 @@ fun TextPage(
                 onClick = {
                     onTextClick(
                         Decoration.Text(
-                            text = DEFAULT_TEXT,
                             id = UUID.randomUUID().toString(),
-                            offset = Offset.Zero,
-                            rotation = 0f,
-                            scale = 1f,
-                            color = R.color.decoration_white,
-                            width = FontWeight.W900.weight,
-                            strokeColor = R.color.decoration_black,
-                            strokeWidth = 30f,
                             font = FontFamilies.ZEN_MARU_GOTHIC
                         )
                     )
@@ -245,15 +230,7 @@ fun TextPage(
                 onClick = {
                     onTextClick(
                         Decoration.Text(
-                            text = DEFAULT_TEXT,
                             id = UUID.randomUUID().toString(),
-                            offset = Offset.Zero,
-                            rotation = 0f,
-                            scale = 1f,
-                            color = R.color.decoration_white,
-                            width = FontWeight.W900.weight,
-                            strokeColor = R.color.decoration_black,
-                            strokeWidth = 30f,
                             font = FontFamilies.HACHI_MARU_POP
                         )
                     )
@@ -408,5 +385,3 @@ fun ColorPickerRow(
         }
     }
 }
-
-const val DEFAULT_TEXT = "テキストを入力"
