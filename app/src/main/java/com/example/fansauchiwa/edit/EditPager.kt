@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.DecorationColors
@@ -210,25 +212,60 @@ fun TextPage(
             )
         }
 
-        Button(
-            onClick = {
-                onTextClick(
-                    Decoration.Text(
-                        text = DEFAULT_TEXT,
-                        id = UUID.randomUUID().toString(),
-                        offset = Offset.Zero,
-                        rotation = 0f,
-                        scale = 1f,
-                        color = R.color.decoration_white,
-                        width = FontWeight.W900.weight,
-                        strokeColor = R.color.decoration_black,
-                        strokeWidth = 30f
-                    )
-                )
-            },
-            modifier = Modifier.padding(top = 32.dp)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(text = "テキストを追加")
+            Button(
+                onClick = {
+                    onTextClick(
+                        Decoration.Text(
+                            text = DEFAULT_TEXT,
+                            id = UUID.randomUUID().toString(),
+                            offset = Offset.Zero,
+                            rotation = 0f,
+                            scale = 1f,
+                            color = R.color.decoration_white,
+                            width = FontWeight.W900.weight,
+                            strokeColor = R.color.decoration_black,
+                            strokeWidth = 30f,
+                            font = FontFamilies.ZEN_MARU_GOTHIC
+                        )
+                    )
+                },
+                modifier = Modifier.padding(top = 32.dp)
+            ) {
+                Text(
+                    text = "推し",
+                    fontSize = 16.sp,
+                    fontFamily = FontFamilies.ZEN_MARU_GOTHIC.value
+                )
+            }
+
+            Button(
+                onClick = {
+                    onTextClick(
+                        Decoration.Text(
+                            text = DEFAULT_TEXT,
+                            id = UUID.randomUUID().toString(),
+                            offset = Offset.Zero,
+                            rotation = 0f,
+                            scale = 1f,
+                            color = R.color.decoration_white,
+                            width = FontWeight.W900.weight,
+                            strokeColor = R.color.decoration_black,
+                            strokeWidth = 30f,
+                            font = FontFamilies.HACHI_MARU_POP
+                        )
+                    )
+                },
+                modifier = Modifier.padding(top = 32.dp)
+            ) {
+                Text(
+                    text = "推し",
+                    fontSize = 16.sp,
+                    fontFamily = FontFamilies.HACHI_MARU_POP.value
+                )
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.fansauchiwa.data
 
 import androidx.compose.ui.geometry.Offset
+import com.example.fansauchiwa.edit.FontFamilies
 import com.example.fansauchiwa.ui.StickerAsset
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
@@ -28,7 +29,8 @@ sealed interface Decoration {
         override val color: Int,
         override val strokeColor: Int,
         override val strokeWidth: Float,
-        val width: Int
+        val width: Int,
+        val font: FontFamilies
     ) : Decoration
 
     @Serializable

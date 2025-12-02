@@ -77,8 +77,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
-import com.example.fansauchiwa.ui.theme.hachiMaruPop
-import com.example.fansauchiwa.ui.theme.zenMaruGothicFontFamily
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -572,8 +570,7 @@ private fun TextItem(
                     val layoutResult = measurer.measure(
                         text = AnnotatedString(decoration.text),
                         style = TextStyle(
-                            // TODO: Fontを外から入れられるようにする
-                            fontFamily = hachiMaruPop,
+                            fontFamily = decoration.font.value,
                             fontWeight = FontWeight(decoration.width),
                             color = Color.White,
                             fontSize = textSize
@@ -755,7 +752,8 @@ private fun TextItemPreview() {
                     color = R.color.decoration_green,
                     strokeColor = R.color.decoration_red,
                     strokeWidth = 30f,
-                    width = 900
+                    width = 900,
+                    font = FontFamilies.ZEN_MARU_GOTHIC
                 ),
                 isSelected = true,
                 isEditing = false,
