@@ -22,3 +22,9 @@ val zenMaruGothicFontFamily = FontFamily(
     Font(googleFont = ZenMaruGothicFont, fontProvider = provider, weight = FontWeight.W400),
     Font(googleFont = ZenMaruGothicFont, fontProvider = provider, weight = FontWeight.W300),
 )
+
+val HachiMaruPopFont = GoogleFont(name = "Hachi Maru Pop")
+
+val hachiMaruPop = FontFamily(
+    Font(googleFont = HachiMaruPopFont, fontProvider = provider),
+)
