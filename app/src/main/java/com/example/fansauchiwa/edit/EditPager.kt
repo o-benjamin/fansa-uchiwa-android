@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,10 +29,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -48,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fansauchiwa.R
@@ -122,53 +127,16 @@ fun EditPager(
                 }
 
                 1 -> {
+                    ImagePage(
+                        onClick = {},
+                        images = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                    )
+                }
+
+                2 -> {
                     StickerPage(onStickerClick = onStickerClick)
-                }
-
-                else -> {
                     // Placeholder for other tabs
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "${DecorationTabType.entries[page]} content")
-                    }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun StickerPage(
-    onStickerClick: (Decoration.Sticker) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 64.dp),
-        modifier = modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(StickerAsset.entries) { sticker ->
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .clickable {
-                        onStickerClick(
-                            Decoration.Sticker(
-                                label = sticker.type,
-                                id = UUID.randomUUID().toString(),
-                            )
-                        )
-                    }
-            ) {
-                Image(
-                    painter = painterResource(id = sticker.resId),
-                    contentDescription = sticker.type,
-                    modifier = Modifier.fillMaxSize()
-                )
             }
         }
     }
@@ -226,6 +194,82 @@ fun TextPage(
                         fontFamily = it.value
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ImagePage(
+    onClick: () -> Unit,
+    images: List<Int>
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 48.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(16.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        item {
+            IconButton(
+                onClick = onClick,
+                shape = RoundedCornerShape(8.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(),
+                modifier = Modifier
+
+                    .aspectRatio(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                )
+            }
+        }
+        items(images) {
+            images.onEach {
+                // TODO: 写真を入れられるようにする
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(color = colorResource(R.color.purple_200))
+                        .aspectRatio(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StickerPage(
+    onStickerClick: (Decoration.Sticker) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 64.dp),
+        modifier = modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(StickerAsset.entries) { sticker ->
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable {
+                        onStickerClick(
+                            Decoration.Sticker(
+                                label = sticker.type,
+                                id = UUID.randomUUID().toString(),
+                            )
+                        )
+                    }
+            ) {
+                Image(
+                    painter = painterResource(id = sticker.resId),
+                    contentDescription = sticker.type,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
@@ -368,4 +412,13 @@ fun ColorPickerRow(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ImagePagePreview() {
+    ImagePage(
+        onClick = {},
+        images = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+    )
 }
