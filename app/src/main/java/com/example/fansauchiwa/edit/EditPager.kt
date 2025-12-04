@@ -1,5 +1,9 @@
 package com.example.fansauchiwa.edit
 
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -73,8 +77,16 @@ fun EditPager(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
+    onClickAddImage: () -> Unit,
     selectedDecoration: Decoration? = null,
 ) {
+    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            Log.d("PhotoPicker", "Selected URI: $uri")
+        } else {
+            Log.d("PhotoPicker", "No media selected")
+        }
+    }
     Column(
         modifier = modifier
     ) {
@@ -128,7 +140,9 @@ fun EditPager(
 
                 1 -> {
                     ImagePage(
-                        onClick = {},
+                        onClick = {
+                            pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
                         images = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
                     )
                 }
@@ -217,7 +231,6 @@ fun ImagePage(
                 shape = RoundedCornerShape(8.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(),
                 modifier = Modifier
-
                     .aspectRatio(1f)
             ) {
                 Icon(

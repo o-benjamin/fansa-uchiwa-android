@@ -72,6 +72,10 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun saveImage() {
+
+    }
+
     fun snackbarMessageShown() {
         _uiState.update { state ->
             state.copy(
