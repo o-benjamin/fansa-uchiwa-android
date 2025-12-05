@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.data
 
+import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import com.example.fansauchiwa.R
@@ -49,4 +50,18 @@ sealed interface Decoration {
     ) : Decoration {
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }
+
+    @Serializable
+    data class Image(
+        @Serializable(with = UriSerializer::class)
+        val uri: Uri,
+        override val id: String,
+        @Serializable(with = OffsetSerializer::class)
+        override val offset: Offset = Offset.Zero,
+        override val rotation: Float = 0f,
+        override val scale: Float = 1f,
+        override val color: Int = R.color.decoration_white,
+        override val strokeColor: Int = R.color.decoration_black,
+        override val strokeWidth: Float = 30f,
+        ) : Decoration
 }

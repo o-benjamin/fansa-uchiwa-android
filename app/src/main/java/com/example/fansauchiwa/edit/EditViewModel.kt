@@ -72,10 +72,6 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun saveImage() {
-
-    }
-
     fun snackbarMessageShown() {
         _uiState.update { state ->
             state.copy(
@@ -96,7 +92,13 @@ class EditViewModel @Inject constructor(
                 is Decoration.Text -> decoration.copy(
                     offset = decoration.offset + offset,
                     scale = decoration.scale + scale,
-                    rotation = decoration.rotation + rotation,
+                    rotation = decoration.rotation + rotation
+                )
+
+                is Decoration.Image -> decoration.copy(
+                    offset = decoration.offset + offset,
+                    scale = decoration.scale + scale,
+                    rotation = decoration.rotation + rotation
                 )
             }
         }
@@ -131,6 +133,7 @@ class EditViewModel @Inject constructor(
             when (decoration) {
                 is Decoration.Sticker -> decoration.copy(color = newColor)
                 is Decoration.Text -> decoration.copy(color = newColor)
+                is Decoration.Image -> decoration.copy(color = newColor)
             }
         }
         onDecorationsChanged()
@@ -140,7 +143,8 @@ class EditViewModel @Inject constructor(
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(strokeColor = newColor)
-                is Decoration.Sticker -> decoration
+                is Decoration.Sticker -> decoration.copy(strokeColor = newColor)
+                is Decoration.Image -> decoration.copy(strokeColor = newColor)
             }
         }
     }

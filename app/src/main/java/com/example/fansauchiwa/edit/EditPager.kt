@@ -77,16 +77,23 @@ fun EditPager(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
-    onClickAddImage: () -> Unit,
+    onAddImage: (Decoration.Image) -> Unit,
     selectedDecoration: Decoration? = null,
 ) {
-    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            Log.d("PhotoPicker", "Selected URI: $uri")
-        } else {
-            Log.d("PhotoPicker", "No media selected")
+    val pickMedia =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) {
+                onAddImage(
+                    Decoration.Image(
+                        id = UUID.randomUUID().toString(),
+                        uri = uri
+                    )
+                )
+            } else {
+                Log.d("PhotoPicker", "No media selected")
+            }
         }
-    }
+
     Column(
         modifier = modifier
     ) {
@@ -99,7 +106,8 @@ fun EditPager(
             if (selectedDecoration != null) {
                 val targetPage = when (selectedDecoration) {
                     is Decoration.Text -> 0
-                    is Decoration.Sticker -> 1
+                    is Decoration.Image -> 1
+                    is Decoration.Sticker -> 2
                 }
                 scope.launch {
                     pagerState.animateScrollToPage(targetPage)
@@ -149,7 +157,7 @@ fun EditPager(
 
                 2 -> {
                     StickerPage(onStickerClick = onStickerClick)
-                    // Placeholder for other tabs
+
                 }
             }
         }
