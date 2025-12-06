@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -166,6 +167,10 @@ class EditViewModel @Inject constructor(
                 else -> decoration
             }
         }
+    }
+
+    fun saveImage(uri: Uri) {
+        repository.saveImage(uri)
     }
 
     private fun canEdit(): Boolean {

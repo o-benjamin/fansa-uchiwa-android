@@ -155,7 +155,10 @@ fun EditScreen(
                         viewModel.updateStrokeWidth(decorationId, weight)
                     }
                 },
-                onAddImage = viewModel::addDecoration,
+                onAddImage = {
+                    viewModel.addDecoration(it)
+                    viewModel.saveImage(it.uri)
+                },
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 modifier = Modifier
                     .fillMaxSize()

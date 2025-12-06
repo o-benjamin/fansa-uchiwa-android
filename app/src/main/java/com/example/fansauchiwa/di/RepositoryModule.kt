@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.example.fansauchiwa.data.FansaUchiwaRepository
 import com.example.fansauchiwa.data.FansaUchiwaRepositoryImpl
+import com.example.fansauchiwa.data.ImageDataSource
+import com.example.fansauchiwa.data.ImageLocalSource
 import com.example.fansauchiwa.data.source.FansaUchiwaDao
 import com.example.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
@@ -23,6 +25,17 @@ abstract class RepositoryModule {
     abstract fun bindFansaUchiwaRepository(
         fansaUchiwaRepositoryImpl: FansaUchiwaRepositoryImpl
     ): FansaUchiwaRepository
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class StorageModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindImageDataSource(
+        impl: ImageLocalSource
+    ): ImageDataSource
 }
 
 @Module
