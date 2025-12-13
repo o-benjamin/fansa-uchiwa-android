@@ -15,7 +15,7 @@ import javax.inject.Inject
 class ImageLocalSource @Inject constructor(
     @field:ApplicationContext private val context: Context
 ) : ImageDataSource {
-    override fun save(uri: Uri): String? {
+    override fun save(uri: Uri, id: String): String? {
         val stream = context.contentResolver.openInputStream(uri)
         val bitmap = BitmapFactory.decodeStream(BufferedInputStream(stream))
 

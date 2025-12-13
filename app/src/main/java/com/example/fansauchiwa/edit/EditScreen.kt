@@ -155,9 +155,9 @@ fun EditScreen(
                         viewModel.updateStrokeWidth(decorationId, weight)
                     }
                 },
-                onAddImage = {
-                    viewModel.addDecoration(it)
-                    viewModel.saveImage(it.uri)
+                onAddImage = { (image, uri) ->
+                    viewModel.addDecoration(image)
+                    viewModel.saveImage(uri, image.id)
                 },
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 modifier = Modifier
@@ -732,7 +732,8 @@ private fun ImageItem(
     )
     {
         AsyncImage(
-            model = decoration.uri,
+            // TODO: Decorationとは別なプロパティとして画像データを保持することにする
+            model = decoration,
             contentDescription = null,
             modifier = Modifier
                 .size(IMAGE_SIZE_DEFAULT)

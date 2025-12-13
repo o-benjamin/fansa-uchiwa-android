@@ -1,6 +1,5 @@
 package com.example.fansauchiwa.data
 
-import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import com.example.fansauchiwa.R
@@ -53,8 +52,6 @@ sealed interface Decoration {
 
     @Serializable
     data class Image(
-        @Serializable(with = UriSerializer::class)
-        val uri: Uri,
         override val id: String,
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset = Offset.Zero,

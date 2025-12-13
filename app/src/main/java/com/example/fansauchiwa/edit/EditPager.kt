@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -77,16 +78,16 @@ fun EditPager(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
-    onAddImage: (Decoration.Image) -> Unit,
+    onAddImage: (Pair<Decoration.Image, Uri>) -> Unit,
     selectedDecoration: Decoration? = null,
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
                 onAddImage(
-                    Decoration.Image(
-                        id = UUID.randomUUID().toString(),
-                        uri = uri
+                    Pair(
+                        Decoration.Image(id = UUID.randomUUID().toString()),
+                        uri
                     )
                 )
             } else {

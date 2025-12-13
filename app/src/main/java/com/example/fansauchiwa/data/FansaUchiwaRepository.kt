@@ -8,7 +8,7 @@ import javax.inject.Inject
 
 interface FansaUchiwaRepository {
     // region image
-    fun saveImage(uri: Uri): String?
+    fun saveImage(uri: Uri, id: String): String?
     fun loadImage(imageId: String): Bitmap?
     fun getAllImageIds(): List<String>
     fun deleteImage(imageId: String): Boolean
@@ -28,8 +28,8 @@ class FansaUchiwaRepositoryImpl @Inject constructor(
     private val converters = Converters()
 
     // region image
-    override fun saveImage(uri: Uri): String? {
-        return imageDataSource.save(uri)
+    override fun saveImage(uri: Uri, id: String): String? {
+        return imageDataSource.save(uri, id)
     }
 
     override fun loadImage(imageId: String): Bitmap? {

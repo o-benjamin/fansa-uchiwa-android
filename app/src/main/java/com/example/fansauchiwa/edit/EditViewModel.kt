@@ -169,8 +169,8 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun saveImage(uri: Uri) {
-        repository.saveImage(uri)
+    fun saveImage(uri: Uri, id: String) {
+        repository.saveImage(uri, id)
     }
 
     private fun canEdit(): Boolean {
