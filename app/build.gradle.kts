@@ -79,4 +79,7 @@ dependencies {
     // Coil
     implementation(libs.coil3.compose)
     implementation(libs.coil3.okhttp)
+
+    // Log
+    implementation(libs.footprint)
 }
