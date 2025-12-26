@@ -48,12 +48,16 @@ class ImageLocalSource @Inject constructor(
         }
     }
 
-    override fun getAllImageIds(): List<String> {
+    override fun getAllImages(): List<Bitmap> {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
 
         return directory.listFiles()
             ?.filter { it.isFile && it.extension == "jpg" }
-            ?.map { it.nameWithoutExtension }
+            ?.mapNotNull { file ->
+                file.inputStream().use { inputStream ->
+                    BitmapFactory.decodeStream(BufferedInputStream(inputStream))
+                }
+            }
             ?: emptyList()
     }
 

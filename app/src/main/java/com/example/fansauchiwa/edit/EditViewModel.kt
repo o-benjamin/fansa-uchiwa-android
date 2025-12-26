@@ -22,6 +22,10 @@ class EditViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(EditUiState())
     val uiState: StateFlow<EditUiState> = _uiState.asStateFlow()
 
+    init {
+        loadAllImages()
+    }
+
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -185,6 +189,15 @@ class EditViewModel @Inject constructor(
             val bitmap = repository.loadImage(imageId)
             _uiState.update { state ->
                 state.copy(image = bitmap)
+            }
+        }
+    }
+
+    fun loadAllImages() {
+        viewModelScope.launch {
+            val images = repository.getAllImages()
+            _uiState.update { state ->
+                state.copy(allImages = images)
             }
         }
     }

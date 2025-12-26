@@ -8,5 +8,6 @@ data class EditUiState(
     val selectedDecorationId: String? = null,
     val editingTextId: String? = null,
     val userMessage: Int? = null,
-    val image: Bitmap? = null
+    val image: Bitmap? = null,
+    val allImages: List<Bitmap> = emptyList()
 )

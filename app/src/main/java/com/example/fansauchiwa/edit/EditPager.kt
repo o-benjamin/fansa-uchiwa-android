@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -52,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -60,6 +62,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.ui.DecorationColors
@@ -80,6 +83,7 @@ fun EditPager(
     onStrokeWeightChanged: (Float) -> Unit,
     onAddImage: (Decoration.Image, Uri) -> Unit,
     selectedDecoration: Decoration? = null,
+    allImages: List<Bitmap> = emptyList(),
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -148,7 +152,7 @@ fun EditPager(
                         onClick = {
                             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
-                        images = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                        images = allImages
                     )
                 }
 
@@ -221,7 +225,7 @@ fun TextPage(
 @Composable
 fun ImagePage(
     onClick: () -> Unit,
-    images: List<Int>
+    images: List<Bitmap>
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 48.dp),
@@ -244,16 +248,15 @@ fun ImagePage(
                 )
             }
         }
-        items(images) {
-            images.onEach {
-                // TODO: 写真を入れられるようにする
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(color = colorResource(R.color.purple_200))
-                        .aspectRatio(1f)
-                )
-            }
+        items(images) { image ->
+            AsyncImage(
+                model = image,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .aspectRatio(1f)
+            )
         }
     }
 }
@@ -437,6 +440,6 @@ fun ColorPickerRow(
 fun ImagePagePreview() {
     ImagePage(
         onClick = {},
-        images = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9)
+        images = emptyList()
     )
 }

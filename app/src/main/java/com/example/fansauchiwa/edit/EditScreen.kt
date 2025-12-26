@@ -163,6 +163,7 @@ fun EditScreen(
                     }
                 },
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
+                allImages = uiState.allImages,
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
