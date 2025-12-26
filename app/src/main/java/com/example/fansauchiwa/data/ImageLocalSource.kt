@@ -9,11 +9,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.util.UUID
 import javax.inject.Inject
 
 class ImageLocalSource @Inject constructor(
-    @field:ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context
 ) : ImageDataSource {
     override fun save(uri: Uri, id: String): String? {
         val stream = context.contentResolver.openInputStream(uri)
@@ -23,15 +22,14 @@ class ImageLocalSource @Inject constructor(
             "image",
             Context.MODE_PRIVATE
         )
-        val imageId = UUID.randomUUID().toString()
-        val file = File(directory, "$imageId.jpg")
+        val file = File(directory, "$id.jpg")
 
         val result = FileOutputStream(file).use { stream ->
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
         }
 
         return if (result) {
-            imageId
+            id
         } else {
             null
         }

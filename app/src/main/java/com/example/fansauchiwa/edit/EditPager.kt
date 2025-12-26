@@ -78,18 +78,14 @@ fun EditPager(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
-    onAddImage: (Pair<Decoration.Image, Uri>) -> Unit,
+    onAddImage: (Decoration.Image, Uri) -> Unit,
     selectedDecoration: Decoration? = null,
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
-                onAddImage(
-                    Pair(
-                        Decoration.Image(id = UUID.randomUUID().toString()),
-                        uri
-                    )
-                )
+                val image = Decoration.Image(id = UUID.randomUUID().toString())
+                onAddImage(image, uri)
             } else {
                 Log.d("PhotoPicker", "No media selected")
             }

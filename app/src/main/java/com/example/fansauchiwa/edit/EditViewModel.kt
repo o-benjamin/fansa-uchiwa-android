@@ -44,6 +44,10 @@ class EditViewModel @Inject constructor(
             it.copy(decorations = it.decorations + decoration)
         }
         onDecorationsChanged()
+
+        if (decoration is Decoration.Image) {
+            loadImage(decoration.id)
+        }
     }
 
     fun deleteDecoration(id: String) {
@@ -169,8 +173,20 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun saveImage(uri: Uri, id: String) {
-        repository.saveImage(uri, id)
+    fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.saveImage(uri, id)
+            onSaved()
+        }
+    }
+
+    private fun loadImage(imageId: String) {
+        viewModelScope.launch {
+            val bitmap = repository.loadImage(imageId)
+            _uiState.update { state ->
+                state.copy(image = bitmap)
+            }
+        }
     }
 
     private fun canEdit(): Boolean {

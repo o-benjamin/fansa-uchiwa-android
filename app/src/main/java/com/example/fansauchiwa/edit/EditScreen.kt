@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -129,7 +130,8 @@ fun EditScreen(
                 onDoneTextEdit = viewModel::finishEditingText,
                 modifier = Modifier
                     .fillMaxSize()
-                    .weight(1f)
+                    .weight(1f),
+                image = uiState.image
             )
 
             EditPager(
@@ -155,9 +157,10 @@ fun EditScreen(
                         viewModel.updateStrokeWidth(decorationId, weight)
                     }
                 },
-                onAddImage = { (image, uri) ->
-                    viewModel.addDecoration(image)
-                    viewModel.saveImage(uri, image.id)
+                onAddImage = { image, uri ->
+                    viewModel.saveImage(uri, image.id) {
+                        viewModel.addDecoration(image)
+                    }
                 },
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 modifier = Modifier
@@ -181,6 +184,7 @@ fun UchiwaPreview(
     onTextChanged: (String, String) -> Unit,
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
+    image: Bitmap? = null,
 ) {
     val focusManager = LocalFocusManager.current
     Box(
@@ -429,7 +433,8 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff
+                            currentRotation = decoration.rotation + rotationDiff,
+                            image = image
                         )
                     }
                 }
@@ -713,6 +718,7 @@ private fun ImageItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    image: Bitmap? = null,
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -732,8 +738,7 @@ private fun ImageItem(
     )
     {
         AsyncImage(
-            // TODO: Decorationとは別なプロパティとして画像データを保持することにする
-            model = decoration,
+            model = image,
             contentDescription = null,
             modifier = Modifier
                 .size(IMAGE_SIZE_DEFAULT)
