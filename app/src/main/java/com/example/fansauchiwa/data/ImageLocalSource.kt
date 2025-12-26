@@ -48,14 +48,28 @@ class ImageLocalSource @Inject constructor(
         }
     }
 
-    override fun getAllImages(): List<Bitmap> {
+    override fun getImagesByIds(ids: List<String>): List<Bitmap> {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
 
-        return directory.listFiles()
-            ?.filter { it.isFile && it.extension == "jpg" }
-            ?.mapNotNull { file ->
+        return ids.mapNotNull { id ->
+            val file = File(directory, "$id.jpg")
+            if (file.exists()) {
                 file.inputStream().use { inputStream ->
                     BitmapFactory.decodeStream(BufferedInputStream(inputStream))
+                }
+            } else {
+                null
+            }
+        }
+    }
+
+    override fun getAllImages(): List<ImageBitmap> {
+        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
+        return directory.listFiles()
+            ?.mapNotNull { file ->
+                file.inputStream().use { input ->
+                    val bitmap = BitmapFactory.decodeStream(BufferedInputStream(input))
+                    bitmap?.let { ImageBitmap(file.nameWithoutExtension, it) }
                 }
             }
             ?: emptyList()

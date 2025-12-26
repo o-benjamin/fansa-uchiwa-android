@@ -10,7 +10,8 @@ interface FansaUchiwaRepository {
     // region image
     fun saveImage(uri: Uri, id: String): String?
     fun loadImage(imageId: String): Bitmap?
-    fun getAllImages(): List<Bitmap>
+    fun getImagesByIds(ids: List<String>): List<Bitmap>
+    fun getAllImages(): List<ImageBitmap>
     fun deleteImage(imageId: String): Boolean
     // endregion
 
@@ -36,7 +37,11 @@ class FansaUchiwaRepositoryImpl @Inject constructor(
         return imageDataSource.load(imageId)
     }
 
-    override fun getAllImages(): List<Bitmap> {
+    override fun getImagesByIds(ids: List<String>): List<Bitmap> {
+        return imageDataSource.getImagesByIds(ids)
+    }
+
+    override fun getAllImages(): List<ImageBitmap> {
         return imageDataSource.getAllImages()
     }
 

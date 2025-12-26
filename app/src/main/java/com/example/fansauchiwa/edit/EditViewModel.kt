@@ -180,6 +180,7 @@ class EditViewModel @Inject constructor(
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
         viewModelScope.launch {
             repository.saveImage(uri, id)
+            loadAllImages()
             onSaved()
         }
     }

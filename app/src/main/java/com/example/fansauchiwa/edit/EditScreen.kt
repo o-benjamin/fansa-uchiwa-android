@@ -162,6 +162,7 @@ fun EditScreen(
                         viewModel.addDecoration(image)
                     }
                 },
+                onImageClick = viewModel::addDecoration,
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 allImages = uiState.allImages,
                 modifier = Modifier

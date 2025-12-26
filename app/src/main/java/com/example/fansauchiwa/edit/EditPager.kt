@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
+import com.example.fansauchiwa.data.ImageBitmap
 import com.example.fansauchiwa.ui.DecorationColors
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.getColor
@@ -82,8 +83,9 @@ fun EditPager(
     onStrokeColorSelected: (Int) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     onAddImage: (Decoration.Image, Uri) -> Unit,
+    onImageClick: (Decoration.Image) -> Unit,
     selectedDecoration: Decoration? = null,
-    allImages: List<Bitmap> = emptyList(),
+    allImages: List<ImageBitmap> = emptyList(),
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -152,7 +154,8 @@ fun EditPager(
                         onClick = {
                             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
-                        images = allImages
+                        images = allImages,
+                        onImageClick = onImageClick
                     )
                 }
 
@@ -225,7 +228,8 @@ fun TextPage(
 @Composable
 fun ImagePage(
     onClick: () -> Unit,
-    images: List<Bitmap>
+    images: List<ImageBitmap>,
+    onImageClick: (Decoration.Image) -> Unit,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 48.dp),
@@ -250,12 +254,13 @@ fun ImagePage(
         }
         items(images) { image ->
             AsyncImage(
-                model = image,
+                model = image.bitmap,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
                     .aspectRatio(1f)
+                    .clickable { onImageClick(Decoration.Image(image.id)) }
             )
         }
     }
@@ -440,6 +445,7 @@ fun ColorPickerRow(
 fun ImagePagePreview() {
     ImagePage(
         onClick = {},
-        images = emptyList()
+        images = emptyList(),
+        onImageClick = {}
     )
 }
