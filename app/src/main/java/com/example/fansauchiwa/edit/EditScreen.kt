@@ -1,6 +1,5 @@
 package com.example.fansauchiwa.edit
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -79,7 +78,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
-import com.example.fansauchiwa.data.ImageBitmap
+import com.example.fansauchiwa.data.ImageReference
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -187,7 +186,7 @@ fun UchiwaPreview(
     onTextChanged: (String, String) -> Unit,
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
-    images: List<ImageBitmap> = emptyList(),
+    images: List<ImageReference> = emptyList(),
 ) {
     val focusManager = LocalFocusManager.current
     Box(
@@ -437,7 +436,7 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            image = images.find { it.id == decoration.id }?.bitmap
+                            imagePath = images.find { it.id == decoration.id }?.path
                         )
                     }
                 }
@@ -721,7 +720,7 @@ private fun ImageItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
-    image: Bitmap? = null,
+    imagePath: String? = null,
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -741,7 +740,7 @@ private fun ImageItem(
     )
     {
         AsyncImage(
-            model = image,
+            model = imagePath,
             contentDescription = null,
             modifier = Modifier
                 .size(IMAGE_SIZE_DEFAULT)

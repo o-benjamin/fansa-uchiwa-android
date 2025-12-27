@@ -1,6 +1,5 @@
 package com.example.fansauchiwa.edit
 
-import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -65,7 +64,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
-import com.example.fansauchiwa.data.ImageBitmap
+import com.example.fansauchiwa.data.ImageReference
 import com.example.fansauchiwa.ui.DecorationColors
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.getColor
@@ -85,7 +84,7 @@ fun EditPager(
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     selectedDecoration: Decoration? = null,
-    allImages: List<ImageBitmap> = emptyList(),
+    allImages: List<ImageReference> = emptyList(),
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -228,7 +227,7 @@ fun TextPage(
 @Composable
 fun ImagePage(
     onClick: () -> Unit,
-    images: List<ImageBitmap>,
+    images: List<ImageReference>,
     onImageClick: (Decoration.Image) -> Unit,
 ) {
     LazyVerticalGrid(
@@ -254,7 +253,7 @@ fun ImagePage(
         }
         items(images) { image ->
             AsyncImage(
-                model = image.bitmap,
+                model = image.path,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

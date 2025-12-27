@@ -2,11 +2,8 @@ package com.example.fansauchiwa.data
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -15,63 +12,40 @@ class ImageLocalSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ImageDataSource {
     override fun save(uri: Uri, id: String): String? {
-        val stream = context.contentResolver.openInputStream(uri)
-        val bitmap = BitmapFactory.decodeStream(BufferedInputStream(stream))
-
         val directory = ContextWrapper(context).getDir(
             "image",
             Context.MODE_PRIVATE
         )
         val file = File(directory, "$id.jpg")
 
-        val result = FileOutputStream(file).use { stream ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
-        }
-
-        return if (result) {
-            id
-        } else {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                FileOutputStream(file).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            file.absolutePath
+        } catch (e: Exception) {
             null
         }
     }
 
-    override fun load(imageId: String): ImageBitmap? {
+    override fun load(imageId: String): ImageReference? {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
         val file = File(directory, "$imageId.jpg")
 
         return if (file.exists()) {
-            file.inputStream().use { inputStream ->
-                val bitmap = BitmapFactory.decodeStream(BufferedInputStream(inputStream))
-                ImageBitmap(imageId, bitmap)
-            }
+            ImageReference(imageId, file.absolutePath)
         } else {
             null
         }
     }
 
-    override fun getImagesByIds(ids: List<String>): List<Bitmap> {
-        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
-
-        return ids.mapNotNull { id ->
-            val file = File(directory, "$id.jpg")
-            if (file.exists()) {
-                file.inputStream().use { inputStream ->
-                    BitmapFactory.decodeStream(BufferedInputStream(inputStream))
-                }
-            } else {
-                null
-            }
-        }
-    }
-
-    override fun getAllImages(): List<ImageBitmap> {
+    override fun getAllImages(): List<ImageReference> {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
         return directory.listFiles()
-            ?.mapNotNull { file ->
-                file.inputStream().use { input ->
-                    val bitmap = BitmapFactory.decodeStream(BufferedInputStream(input))
-                    bitmap?.let { ImageBitmap(file.nameWithoutExtension, it) }
-                }
+            ?.map { file ->
+                ImageReference(file.nameWithoutExtension, file.absolutePath)
             }
             ?: emptyList()
     }

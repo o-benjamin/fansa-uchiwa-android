@@ -1,6 +1,5 @@
 package com.example.fansauchiwa.data
 
-import android.graphics.Bitmap
 import android.net.Uri
 import com.example.fansauchiwa.data.source.FansaUchiwaDao
 import com.example.fansauchiwa.data.source.FansaUchiwaEntity
@@ -9,9 +8,8 @@ import javax.inject.Inject
 interface FansaUchiwaRepository {
     // region image
     fun saveImage(uri: Uri, id: String): String?
-    fun loadImage(imageId: String): ImageBitmap?
-    fun getImagesByIds(ids: List<String>): List<Bitmap>
-    fun getAllImages(): List<ImageBitmap>
+    fun loadImage(imageId: String): ImageReference?
+    fun getAllImages(): List<ImageReference>
     fun deleteImage(imageId: String): Boolean
     // endregion
 
@@ -33,15 +31,11 @@ class FansaUchiwaRepositoryImpl @Inject constructor(
         return imageDataSource.save(uri, id)
     }
 
-    override fun loadImage(imageId: String): ImageBitmap? {
+    override fun loadImage(imageId: String): ImageReference? {
         return imageDataSource.load(imageId)
     }
 
-    override fun getImagesByIds(ids: List<String>): List<Bitmap> {
-        return imageDataSource.getImagesByIds(ids)
-    }
-
-    override fun getAllImages(): List<ImageBitmap> {
+    override fun getAllImages(): List<ImageReference> {
         return imageDataSource.getAllImages()
     }
 

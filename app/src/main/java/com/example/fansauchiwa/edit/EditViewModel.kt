@@ -187,10 +187,10 @@ class EditViewModel @Inject constructor(
 
     private fun loadImage(imageId: String) {
         viewModelScope.launch {
-            val bitmap = repository.loadImage(imageId)
-            if (bitmap != null) {
+            val imageData = repository.loadImage(imageId)
+            if (imageData != null) {
                 _uiState.update { state ->
-                    val updatedImages = state.images.filter { it.id != imageId } + bitmap
+                    val updatedImages = state.images.filter { it.id != imageId } + imageData
                     state.copy(images = updatedImages)
                 }
             }
