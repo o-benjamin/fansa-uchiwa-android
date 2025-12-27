@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
@@ -76,6 +77,8 @@ import androidx.compose.ui.unit.toSize
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.size.SizeResolver
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.ImageReference
@@ -740,7 +743,10 @@ private fun ImageItem(
     )
     {
         AsyncImage(
-            model = imagePath,
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imagePath)
+                .size(SizeResolver.ORIGINAL)
+                .build(),
             contentDescription = null,
             modifier = Modifier
                 .size(IMAGE_SIZE_DEFAULT)
