@@ -9,7 +9,7 @@ import javax.inject.Inject
 interface FansaUchiwaRepository {
     // region image
     fun saveImage(uri: Uri, id: String): String?
-    fun loadImage(imageId: String): Bitmap?
+    fun loadImage(imageId: String): ImageBitmap?
     fun getImagesByIds(ids: List<String>): List<Bitmap>
     fun getAllImages(): List<ImageBitmap>
     fun deleteImage(imageId: String): Boolean
@@ -33,7 +33,7 @@ class FansaUchiwaRepositoryImpl @Inject constructor(
         return imageDataSource.save(uri, id)
     }
 
-    override fun loadImage(imageId: String): Bitmap? {
+    override fun loadImage(imageId: String): ImageBitmap? {
         return imageDataSource.load(imageId)
     }
 

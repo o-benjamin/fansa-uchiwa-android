@@ -35,13 +35,14 @@ class ImageLocalSource @Inject constructor(
         }
     }
 
-    override fun load(imageId: String): Bitmap? {
+    override fun load(imageId: String): ImageBitmap? {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
         val file = File(directory, "$imageId.jpg")
 
         return if (file.exists()) {
             file.inputStream().use { inputStream ->
-                BitmapFactory.decodeStream(BufferedInputStream(inputStream))
+                val bitmap = BitmapFactory.decodeStream(BufferedInputStream(inputStream))
+                ImageBitmap(imageId, bitmap)
             }
         } else {
             null

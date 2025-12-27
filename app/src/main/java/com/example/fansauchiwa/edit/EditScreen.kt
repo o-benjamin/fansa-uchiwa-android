@@ -79,6 +79,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
+import com.example.fansauchiwa.data.ImageBitmap
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -131,7 +132,7 @@ fun EditScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f),
-                image = uiState.image
+                images = uiState.images
             )
 
             EditPager(
@@ -186,7 +187,7 @@ fun UchiwaPreview(
     onTextChanged: (String, String) -> Unit,
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
-    image: Bitmap? = null,
+    images: List<ImageBitmap> = emptyList(),
 ) {
     val focusManager = LocalFocusManager.current
     Box(
@@ -436,7 +437,7 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            image = image
+                            image = images.find { it.id == decoration.id }?.bitmap
                         )
                     }
                 }
