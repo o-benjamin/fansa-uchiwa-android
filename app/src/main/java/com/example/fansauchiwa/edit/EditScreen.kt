@@ -373,14 +373,17 @@ fun UchiwaPreview(
 
                     is Decoration.Image -> {
                         val imageDpSize = DpSize(IMAGE_SIZE_DEFAULT, IMAGE_SIZE_DEFAULT)
+                        val decorationSize = with(LocalDensity.current) {
+                            Size(
+                                IMAGE_SIZE_DEFAULT.toPx(),
+                                IMAGE_SIZE_DEFAULT.toPx()
+                            )
+                        }
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
                             scale = decoration.scale,
                             rotation = decoration.rotation,
-                            decorationSize = Size(
-                                IMAGE_SIZE_DEFAULT.value,
-                                IMAGE_SIZE_DEFAULT.value
-                            ),
+                            decorationSize = decorationSize,
                             corner = HandleCorner.BottomRight
                         )
 
