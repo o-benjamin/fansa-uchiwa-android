@@ -10,5 +10,6 @@ data class EditUiState(
     val userMessage: Int? = null,
     val images: List<ImageReference> = emptyList(),
     val allImages: List<ImageReference> = emptyList(),
-    val isDeletingImage: Boolean = false
+    val isDeletingImage: Boolean = false,
+    val selectedDeletingImages: List<String> = emptyList()
 )

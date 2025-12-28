@@ -187,6 +187,8 @@ fun EditScreen(
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 allImages = uiState.allImages,
                 isDeletingImage = uiState.isDeletingImage,
+                selectedDeletingImages = uiState.selectedDeletingImages,
+                onImageToggleSelection = viewModel::toggleImageSelection,
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)

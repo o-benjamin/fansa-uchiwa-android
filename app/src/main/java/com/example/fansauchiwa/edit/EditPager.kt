@@ -37,7 +37,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,6 +91,8 @@ fun EditPager(
     selectedDecoration: Decoration? = null,
     allImages: List<ImageReference> = emptyList(),
     isDeletingImage: Boolean = false,
+    selectedDeletingImages: List<String> = emptyList(),
+    onImageToggleSelection: (String) -> Unit = {},
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -153,6 +157,7 @@ fun EditPager(
 
         HorizontalPager(
             state = pagerState,
+            userScrollEnabled = !isDeletingImage
         ) { page ->
             when (page) {
                 0 -> {
@@ -173,7 +178,10 @@ fun EditPager(
                         },
                         images = allImages,
                         onImageClick = onImageClick,
-                        onImageLongPress = onImageLongPress
+                        onImageLongPress = onImageLongPress,
+                        isDeletingImage = isDeletingImage,
+                        selectedImages = selectedDeletingImages,
+                        onImageToggleSelection = onImageToggleSelection
                     )
                 }
 
@@ -249,6 +257,9 @@ fun ImagePage(
     images: List<ImageReference>,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
+    isDeletingImage: Boolean = false,
+    selectedImages: List<String> = emptyList(),
+    onImageToggleSelection: (String) -> Unit = {},
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 48.dp),
@@ -272,18 +283,49 @@ fun ImagePage(
             }
         }
         items(images) { image ->
-            AsyncImage(
-                model = image.path,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            val isSelected = selectedImages.contains(image.id)
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
                     .aspectRatio(1f)
-                    .combinedClickable(
-                        onClick = { onImageClick(Decoration.Image(image.id)) },
-                        onLongClick = { onImageLongPress() }
+            ) {
+                AsyncImage(
+                    model = image.path,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(4.dp))
+                        .combinedClickable(
+                            onClick = {
+                                if (isDeletingImage) {
+                                    onImageToggleSelection(image.id)
+                                } else {
+                                    onImageClick(Decoration.Image(image.id))
+                                }
+                            },
+                            onLongClick = { onImageLongPress() }
+                        )
+                )
+                if (isDeletingImage) {
+                    Icon(
+                        imageVector = if (isSelected) {
+                            Icons.Filled.CheckCircle
+                        } else {
+                            Icons.Outlined.Circle
+                        },
+                        contentDescription = if (isSelected) "Selected" else "Not selected",
+                        tint = if (isSelected) {
+                            colorResource(id = R.color.purple_500)
+                        } else {
+                            colorResource(R.color.white).copy(alpha = 0.5f)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(24.dp)
                     )
-            )
+                }
+            }
         }
     }
 }
@@ -462,13 +504,36 @@ fun ColorPickerRow(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, name = "Normal Mode")
 @Composable
 fun ImagePagePreview() {
     ImagePage(
         onClick = {},
         images = emptyList(),
         onImageClick = {},
-        onImageLongPress = {}
+        onImageLongPress = {},
+        isDeletingImage = false,
+        selectedImages = emptyList(),
+        onImageToggleSelection = {}
+    )
+}
+
+@Preview(showBackground = true, name = "Delete Mode - With Selection")
+@Composable
+fun ImagePageDeleteModePreview() {
+    val sampleImages = listOf(
+        ImageReference(id = "1", path = "sample1.jpg"),
+        ImageReference(id = "2", path = "sample2.jpg"),
+        ImageReference(id = "3", path = "sample3.jpg"),
+        ImageReference(id = "4", path = "sample4.jpg")
+    )
+    ImagePage(
+        onClick = {},
+        images = sampleImages,
+        onImageClick = {},
+        onImageLongPress = {},
+        isDeletingImage = true,
+        selectedImages = listOf("1", "3"), // 1st and 3rd images are selected
+        onImageToggleSelection = {}
     )
 }

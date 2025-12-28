@@ -212,6 +212,18 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun toggleImageSelection(imageId: String) {
+        _uiState.update { state ->
+            val currentSelected = state.selectedDeletingImages
+            val newSelected = if (currentSelected.contains(imageId)) {
+                currentSelected - imageId
+            } else {
+                currentSelected + imageId
+            }
+            state.copy(selectedDeletingImages = newSelected)
+        }
+    }
+
     private fun canEdit(): Boolean {
         (_uiState.value.decorations.find { it.id == _uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
             if (it.text.isEmpty()) {
