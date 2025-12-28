@@ -166,6 +166,7 @@ fun EditScreen(
                     }
                 },
                 onImageClick = viewModel::addDecoration,
+                onImageLongPress = viewModel::startImageDeletionMode,
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 allImages = uiState.allImages,
                 modifier = Modifier

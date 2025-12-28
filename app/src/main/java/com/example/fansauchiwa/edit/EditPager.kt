@@ -13,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +84,7 @@ fun EditPager(
     onStrokeWeightChanged: (Float) -> Unit,
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
+    onImageLongPress: () -> Unit,
     selectedDecoration: Decoration? = null,
     allImages: List<ImageReference> = emptyList(),
 ) {
@@ -154,7 +156,8 @@ fun EditPager(
                             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
                         images = allImages,
-                        onImageClick = onImageClick
+                        onImageClick = onImageClick,
+                        onImageLongPress = onImageLongPress
                     )
                 }
 
@@ -229,6 +232,7 @@ fun ImagePage(
     onClick: () -> Unit,
     images: List<ImageReference>,
     onImageClick: (Decoration.Image) -> Unit,
+    onImageLongPress: () -> Unit,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 48.dp),
@@ -259,7 +263,10 @@ fun ImagePage(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
                     .aspectRatio(1f)
-                    .clickable { onImageClick(Decoration.Image(image.id)) }
+                    .combinedClickable(
+                        onClick = { onImageClick(Decoration.Image(image.id)) },
+                        onLongClick = { onImageLongPress() }
+                    )
             )
         }
     }
@@ -445,6 +452,7 @@ fun ImagePagePreview() {
     ImagePage(
         onClick = {},
         images = emptyList(),
-        onImageClick = {}
+        onImageClick = {},
+        onImageLongPress = {}
     )
 }

@@ -206,6 +206,12 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun startImageDeletionMode() {
+        _uiState.update { state ->
+            state.copy(isDeletingImage = true)
+        }
+    }
+
     private fun canEdit(): Boolean {
         (_uiState.value.decorations.find { it.id == _uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
             if (it.text.isEmpty()) {
