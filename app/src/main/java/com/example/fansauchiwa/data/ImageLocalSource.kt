@@ -50,12 +50,11 @@ class ImageLocalSource @Inject constructor(
             ?: emptyList()
     }
 
-    override fun delete(imageId: String): Boolean {
-        val directory = ContextWrapper(context).getDir(
-            "image",
-            Context.MODE_PRIVATE
-        )
-        val file = File(directory, "$imageId.jpg")
-        return file.delete()
+    override fun deleteImages(imageIds: List<String>): Boolean {
+        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
+        return imageIds.all { imageId ->
+            val file = File(directory, "$imageId.jpg")
+            file.delete()
+        }
     }
 }

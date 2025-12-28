@@ -10,7 +10,7 @@ interface FansaUchiwaRepository {
     fun saveImage(uri: Uri, id: String): String?
     fun loadImage(imageId: String): ImageReference?
     fun getAllImages(): List<ImageReference>
-    fun deleteImage(imageId: String): Boolean
+    fun deleteImages(imageIds: List<String>): Boolean
     // endregion
 
     // region decoration
@@ -39,8 +39,8 @@ class FansaUchiwaRepositoryImpl @Inject constructor(
         return imageDataSource.getAllImages()
     }
 
-    override fun deleteImage(imageId: String): Boolean {
-        return imageDataSource.delete(imageId)
+    override fun deleteImages(imageIds: List<String>): Boolean {
+        return imageDataSource.deleteImages(imageIds)
     }
     // endregion
 

@@ -6,5 +6,5 @@ interface ImageDataSource {
     fun save(uri: Uri, id: String): String?
     fun load(imageId: String): ImageReference?
     fun getAllImages(): List<ImageReference>
-    fun delete(imageId: String): Boolean
+    fun deleteImages(imageIds: List<String>): Boolean
 }

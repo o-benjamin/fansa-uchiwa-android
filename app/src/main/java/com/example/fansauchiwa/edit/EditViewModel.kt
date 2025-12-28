@@ -224,6 +224,26 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun deleteSelectedImages() {
+        viewModelScope.launch {
+            val selectedIds = _uiState.value.selectedDeletingImages
+            if (selectedIds.isNotEmpty()) {
+                repository.deleteImages(selectedIds)
+                loadAllImages()
+                cancelImageDeletionMode()
+            }
+        }
+    }
+
+    fun cancelImageDeletionMode() {
+        _uiState.update { state ->
+            state.copy(
+                isDeletingImage = false,
+                selectedDeletingImages = emptyList()
+            )
+        }
+    }
+
     private fun canEdit(): Boolean {
         (_uiState.value.decorations.find { it.id == _uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
             if (it.text.isEmpty()) {
