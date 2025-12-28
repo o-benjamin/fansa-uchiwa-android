@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,6 +88,7 @@ fun EditPager(
     onImageLongPress: () -> Unit,
     selectedDecoration: Decoration? = null,
     allImages: List<ImageReference> = emptyList(),
+    isDeletingImage: Boolean = false,
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -119,18 +121,32 @@ fun EditPager(
             }
         }
 
-        TabRow(
-            selectedTabIndex = tabIndex
-        ) {
-            DecorationTabType.entries.forEachIndexed { index, title ->
-                Tab(
-                    selected = tabIndex == index,
-                    onClick = {
-                        scope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
-                    text = { Text(text = title.tabText, maxLines = 1) }
+        Box {
+            TabRow(
+                selectedTabIndex = tabIndex
+            ) {
+                DecorationTabType.entries.forEachIndexed { index, title ->
+                    Tab(
+                        selected = tabIndex == index,
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        text = { Text(text = title.tabText, maxLines = 1) }
+                    )
+                }
+            }
+
+            if (isDeletingImage) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(colorResource(R.color.black).copy(alpha = 0.5f))
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { /* タップを無効化 */ }
                 )
             }
         }

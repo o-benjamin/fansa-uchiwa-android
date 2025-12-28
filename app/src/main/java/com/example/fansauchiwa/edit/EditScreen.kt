@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -114,28 +115,44 @@ fun EditScreen(
                 .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            UchiwaPreview(
-                decorations = uiState.decorations,
-                selectedDecorationId = uiState.selectedDecorationId,
-                editingTextId = uiState.editingTextId,
-                onDecorationTap = viewModel::selectDecoration,
-                onDecorationDoubleTap = { decorationId ->
-                    viewModel.selectDecoration(decorationId)
-                    viewModel.startEditingText(decorationId)
-                },
-                onBackgroundTap = {
-                    viewModel.unSelectDecoration()
-                    viewModel.finishEditingText()
-                },
-                onDecorationDragEnd = viewModel::updateDecorationGraphic,
-                onTapDelete = viewModel::deleteDecoration,
-                onTextChanged = viewModel::updateText,
-                onDoneTextEdit = viewModel::finishEditingText,
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .weight(1f),
-                images = uiState.images
-            )
+                    .weight(1f)
+            ) {
+                UchiwaPreview(
+                    decorations = uiState.decorations,
+                    selectedDecorationId = uiState.selectedDecorationId,
+                    editingTextId = uiState.editingTextId,
+                    onDecorationTap = viewModel::selectDecoration,
+                    onDecorationDoubleTap = { decorationId ->
+                        viewModel.selectDecoration(decorationId)
+                        viewModel.startEditingText(decorationId)
+                    },
+                    onBackgroundTap = {
+                        viewModel.unSelectDecoration()
+                        viewModel.finishEditingText()
+                    },
+                    onDecorationDragEnd = viewModel::updateDecorationGraphic,
+                    onTapDelete = viewModel::deleteDecoration,
+                    onTextChanged = viewModel::updateText,
+                    onDoneTextEdit = viewModel::finishEditingText,
+                    modifier = Modifier.fillMaxSize(),
+                    images = uiState.images
+                )
+
+                if (uiState.isDeletingImage) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(colorResource(R.color.black).copy(alpha = 0.5f))
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { /* タップを無効化 */ }
+                    )
+                }
+            }
 
             EditPager(
                 onStickerClick = viewModel::addDecoration,
@@ -169,6 +186,7 @@ fun EditScreen(
                 onImageLongPress = viewModel::startImageDeletionMode,
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 allImages = uiState.allImages,
+                isDeletingImage = uiState.isDeletingImage,
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
