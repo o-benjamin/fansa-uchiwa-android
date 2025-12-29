@@ -1,16 +1,20 @@
 package com.example.fansauchiwa.data
 
+import android.os.Parcelable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.edit.FontFamilies
+import com.example.fansauchiwa.edit.FontFamiliesParceler
 import com.example.fansauchiwa.ui.StickerAsset
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.TypeParceler
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 
 @Polymorphic
 @Serializable
-sealed interface Decoration {
+sealed interface Decoration : Parcelable {
     val id: String
     val offset: Offset
     val rotation: Float
@@ -20,7 +24,10 @@ sealed interface Decoration {
     val strokeWidth: Float
 
 
+    @Parcelize
     @Serializable
+    @TypeParceler<Offset, OffsetParceler>
+    @TypeParceler<FontFamilies, FontFamiliesParceler>
     data class Text(
         val text: String = "テキストを入力",
         override val id: String,
@@ -35,7 +42,9 @@ sealed interface Decoration {
         val font: FontFamilies
     ) : Decoration
 
+    @Parcelize
     @Serializable
+    @TypeParceler<Offset, OffsetParceler>
     data class Sticker(
         val label: String,
         override val id: String,
@@ -50,7 +59,9 @@ sealed interface Decoration {
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }
 
+    @Parcelize
     @Serializable
+    @TypeParceler<Offset, OffsetParceler>
     data class Image(
         override val id: String,
         @Serializable(with = OffsetSerializer::class)

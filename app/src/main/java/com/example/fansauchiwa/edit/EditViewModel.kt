@@ -2,51 +2,51 @@ package com.example.fansauchiwa.edit
 
 import android.net.Uri
 import androidx.compose.ui.geometry.Offset
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.FansaUchiwaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val UI_STATE_KEY = "ui_state"
+
 @HiltViewModel
 class EditViewModel @Inject constructor(
-    private val repository: FansaUchiwaRepository
+    private val repository: FansaUchiwaRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(EditUiState())
-    val uiState: StateFlow<EditUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
 
     init {
         loadAllImages()
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                decorations = currentState.decorations.map { decoration ->
-                    if (decoration.id == id) transform(decoration) else decoration
-                }
-            )
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = currentState.decorations.map { decoration ->
+                if (decoration.id == id) transform(decoration) else decoration
+            }
+        )
     }
 
     private fun onDecorationsChanged() {
         viewModelScope.launch {
             // TODO: use savedStateHandle instead
-            repository.saveDecorations(_uiState.value.decorations)
+            repository.saveDecorations(uiState.value.decorations)
         }
     }
 
     fun addDecoration(decoration: Decoration) {
-        _uiState.update {
-            it.copy(decorations = it.decorations + decoration)
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = currentState.decorations + decoration
+        )
         onDecorationsChanged()
 
         if (decoration is Decoration.Image) {
@@ -55,38 +55,34 @@ class EditViewModel @Inject constructor(
     }
 
     fun deleteDecoration(id: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                decorations = currentState.decorations.filter { it.id != id }
-            )
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = currentState.decorations.filter { it.id != id }
+        )
         onDecorationsChanged()
     }
 
     fun selectDecoration(id: String) {
         if (canEdit()) {
-            _uiState.update { state ->
-                state.copy(
-                    selectedDecorationId = id
-                )
-            }
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                selectedDecorationId = id
+            )
         }
     }
 
     fun unSelectDecoration() {
-        _uiState.update { state ->
-            state.copy(
-                selectedDecorationId = null
-            )
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            selectedDecorationId = null
+        )
     }
 
     fun snackbarMessageShown() {
-        _uiState.update { state ->
-            state.copy(
-                userMessage = null
-            )
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            userMessage = null
+        )
     }
 
     fun updateDecorationGraphic(id: String, offset: Offset, scale: Float, rotation: Float) {
@@ -115,20 +111,18 @@ class EditViewModel @Inject constructor(
 
     fun startEditingText(id: String) {
         if (canEdit()) {
-            _uiState.update { state ->
-                state.copy(
-                    editingTextId = id
-                )
-            }
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                editingTextId = id
+            )
         }
     }
 
     fun finishEditingText() {
-        _uiState.update { state ->
-            state.copy(
-                editingTextId = null
-            )
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            editingTextId = null
+        )
     }
 
     fun updateText(id: String, newText: String) {
@@ -189,10 +183,9 @@ class EditViewModel @Inject constructor(
         viewModelScope.launch {
             val imageData = repository.loadImage(imageId)
             if (imageData != null) {
-                _uiState.update { state ->
-                    val updatedImages = state.images.filter { it.id != imageId } + imageData
-                    state.copy(images = updatedImages)
-                }
+                val currentState = uiState.value
+                val updatedImages = currentState.images.filter { it.id != imageId } + imageData
+                savedStateHandle[UI_STATE_KEY] = currentState.copy(images = updatedImages)
             }
         }
     }
@@ -200,33 +193,30 @@ class EditViewModel @Inject constructor(
     fun loadAllImages() {
         viewModelScope.launch {
             val images = repository.getAllImages()
-            _uiState.update { state ->
-                state.copy(allImages = images)
-            }
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(allImages = images)
         }
     }
 
     fun startImageDeletionMode() {
-        _uiState.update { state ->
-            state.copy(isDeletingImage = true)
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(isDeletingImage = true)
     }
 
     fun toggleImageSelection(imageId: String) {
-        _uiState.update { state ->
-            val currentSelected = state.selectedDeletingImages
-            val newSelected = if (currentSelected.contains(imageId)) {
-                currentSelected - imageId
-            } else {
-                currentSelected + imageId
-            }
-            state.copy(selectedDeletingImages = newSelected)
+        val currentState = uiState.value
+        val currentSelected = currentState.selectedDeletingImages
+        val newSelected = if (currentSelected.contains(imageId)) {
+            currentSelected - imageId
+        } else {
+            currentSelected + imageId
         }
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(selectedDeletingImages = newSelected)
     }
 
     fun deleteSelectedImages() {
         viewModelScope.launch {
-            val selectedIds = _uiState.value.selectedDeletingImages
+            val selectedIds = uiState.value.selectedDeletingImages
             if (selectedIds.isNotEmpty()) {
                 repository.deleteImages(selectedIds)
                 loadAllImages()
@@ -236,23 +226,24 @@ class EditViewModel @Inject constructor(
     }
 
     fun cancelImageDeletionMode() {
-        _uiState.update { state ->
-            state.copy(
-                isDeletingImage = false,
-                selectedDeletingImages = emptyList()
-            )
-        }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            isDeletingImage = false,
+            selectedDeletingImages = emptyList()
+        )
     }
 
     private fun canEdit(): Boolean {
-        (_uiState.value.decorations.find { it.id == _uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
+        (uiState.value.decorations.find { it.id == uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
             if (it.text.isEmpty()) {
-                _uiState.update { state ->
-                    state.copy(userMessage = R.string.snackbar_input_too_short)
-                }
+                val currentState = uiState.value
+                savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                    userMessage = R.string.snackbar_input_too_short
+                )
                 return false
             }
         }
         return true
     }
 }
+
