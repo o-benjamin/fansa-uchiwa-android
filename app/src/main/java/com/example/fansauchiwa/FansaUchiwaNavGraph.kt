@@ -58,7 +58,7 @@ fun FansaUchiwaNavGraph(
             }
         },
         floatingActionButton = {
-            if (currentRoute != FansaUchiwaDestinations.EDIT && currentRoute != FansaUchiwaDestinations.PREVIEW) {
+            if (currentRoute == FansaUchiwaDestinations.HOME) {
                 FloatingActionButton(onClick = { navController.navigate(FansaUchiwaScreens.EDIT_SCREEN) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_add),
