@@ -9,7 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.UCHIWA_ID_ARG
 import com.example.fansauchiwa.data.Decoration
-import com.example.fansauchiwa.data.FansaUchiwaRepository
+import com.example.fansauchiwa.data.LocalDatabaseRepository
+import com.example.fansauchiwa.data.LocalImageRepository
 import com.example.fansauchiwa.data.MasterpieceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ private const val UCHIWA_ID_KEY = "uchiwa_id"
 
 @HiltViewModel
 class EditViewModel @Inject constructor(
-    private val repository: FansaUchiwaRepository,
+    private val localImageRepository: LocalImageRepository,
+    private val localDatabaseRepository: LocalDatabaseRepository,
     private val masterpieceRepository: MasterpieceRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -38,7 +40,7 @@ class EditViewModel @Inject constructor(
             val uchiwaId: String? = savedStateHandle[UCHIWA_ID_ARG]
             if (uchiwaId != null) {
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
-                val decorations = repository.getDecorations(uchiwaId)
+                val decorations = localDatabaseRepository.getDecorations(uchiwaId)
                 if (decorations != null) {
                     val currentState = uiState.value
                     savedStateHandle[UI_STATE_KEY] = currentState.copy(
@@ -196,7 +198,7 @@ class EditViewModel @Inject constructor(
 
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
         viewModelScope.launch {
-            repository.saveImage(uri, id)
+            localImageRepository.saveImage(uri, id)
             loadAllImages()
             onSaved()
         }
@@ -204,7 +206,7 @@ class EditViewModel @Inject constructor(
 
     private fun loadImage(imageId: String) {
         viewModelScope.launch {
-            val imageData = repository.loadImage(imageId)
+            val imageData = localImageRepository.loadImage(imageId)
             if (imageData != null) {
                 val currentState = uiState.value
                 val updatedImages = currentState.images.filter { it.id != imageId } + imageData
@@ -215,7 +217,7 @@ class EditViewModel @Inject constructor(
 
     fun loadAllImages() {
         viewModelScope.launch {
-            val images = repository.getAllImages()
+            val images = localImageRepository.getAllImages()
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(allImages = images)
         }
@@ -241,7 +243,7 @@ class EditViewModel @Inject constructor(
         viewModelScope.launch {
             val selectedIds = uiState.value.selectedDeletingImages
             if (selectedIds.isNotEmpty()) {
-                repository.deleteImages(selectedIds)
+                localImageRepository.deleteImages(selectedIds)
                 loadAllImages()
                 cancelImageDeletionMode()
             }
@@ -272,7 +274,7 @@ class EditViewModel @Inject constructor(
     fun saveDecorations(onDecorationSave: (String) -> Unit) {
         viewModelScope.launch {
             val state = uiState.value
-            repository.saveDecorations(state.uchiwaId, state.decorations)
+            localDatabaseRepository.saveDecorations(state.uchiwaId, state.decorations)
             onDecorationSave(state.uchiwaId)
         }
     }

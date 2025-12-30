@@ -2,12 +2,14 @@ package com.example.fansauchiwa.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.fansauchiwa.data.FansaUchiwaRepository
-import com.example.fansauchiwa.data.FansaUchiwaRepositoryImpl
 import com.example.fansauchiwa.data.GalleryImageDataSource
 import com.example.fansauchiwa.data.GalleryImageLocalSource
 import com.example.fansauchiwa.data.ImageDataSource
 import com.example.fansauchiwa.data.ImageLocalSource
+import com.example.fansauchiwa.data.LocalDatabaseRepository
+import com.example.fansauchiwa.data.LocalDatabaseRepositoryImpl
+import com.example.fansauchiwa.data.LocalImageRepository
+import com.example.fansauchiwa.data.LocalImageRepositoryImpl
 import com.example.fansauchiwa.data.MasterpieceDataSource
 import com.example.fansauchiwa.data.MasterpieceLocalSource
 import com.example.fansauchiwa.data.MasterpieceRepository
@@ -28,15 +30,21 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindFansaUchiwaRepository(
-        fansaUchiwaRepositoryImpl: FansaUchiwaRepositoryImpl
-    ): FansaUchiwaRepository
-
-    @Binds
-    @Singleton
     abstract fun bindMasterpieceRepository(
         masterpieceRepositoryImpl: MasterpieceRepositoryImpl
     ): MasterpieceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalImageRepository(
+        localImageRepositoryImpl: LocalImageRepositoryImpl
+    ): LocalImageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalDatabaseRepository(
+        localDatabaseRepositoryImpl: LocalDatabaseRepositoryImpl
+    ): LocalDatabaseRepository
 }
 
 @Module
