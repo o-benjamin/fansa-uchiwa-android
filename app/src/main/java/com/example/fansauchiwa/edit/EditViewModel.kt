@@ -247,13 +247,6 @@ class EditViewModel @Inject constructor(
         return true
     }
 
-    fun triggerSaveBitmap() {
-        val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            shouldSaveBitmap = true
-        )
-    }
-
     @Suppress("UNUSED_PARAMETER")
     fun saveUchiwaBitmap(bitmap: Bitmap) {
         viewModelScope.launch {
@@ -271,6 +264,18 @@ class EditViewModel @Inject constructor(
     fun onBitmapSaved() {
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            shouldSaveBitmap = false
+        )
+    }
+
+    fun resetEditUiState() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            selectedDecorationId = null,
+            editingTextId = null,
+            userMessage = null,
+            isDeletingImage = false,
+            selectedDeletingImages = emptyList(),
             shouldSaveBitmap = false
         )
     }

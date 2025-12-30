@@ -133,6 +133,7 @@ fun EditScreen(
                 actions = {
                     IconButton(
                         onClick = {
+                            viewModel.resetEditUiState()
                             coroutineScope.launch {
                                 val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                                 viewModel.saveUchiwaBitmap(bitmap)
