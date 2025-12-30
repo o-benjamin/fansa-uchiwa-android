@@ -15,5 +15,5 @@ data class EditUiState(
     val allImages: List<ImageReference> = emptyList(),
     val isDeletingImage: Boolean = false,
     val selectedDeletingImages: List<String> = emptyList(),
-    val isUchiwaSaved: Boolean = false
+    val savedPath: String? = null
 ) : Parcelable

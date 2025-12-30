@@ -7,6 +7,7 @@
     <string name="back">戻る</string>
     <string name="save">保存</string>
     <string name="preview">プレビュー</string>
+    <string name="uchiwa_preview">うちわプレビュー</string>
     <string name="text_color_and_weight">文字色・太さ</string>
     <string name="stroke_color_and_weight">枠線色・太さ</string>
 

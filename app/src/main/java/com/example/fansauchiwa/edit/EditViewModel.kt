@@ -262,7 +262,7 @@ class EditViewModel @Inject constructor(
                     // TODO: エラーメッセージ用のリソースを追加する場合はここで指定
                     R.string.snackbar_saved
                 },
-                isUchiwaSaved = true
+                savedPath = savedPath
             )
         }
     }
@@ -275,14 +275,14 @@ class EditViewModel @Inject constructor(
             userMessage = null,
             isDeletingImage = false,
             selectedDeletingImages = emptyList(),
-            isUchiwaSaved = false
+            savedPath = null
         )
     }
 
     fun resetIsUchiwaSaved() {
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            isUchiwaSaved = false
+            savedPath = null
         )
     }
 }

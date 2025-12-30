@@ -98,13 +98,14 @@ import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.ImageReference
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel(),
     onBack: () -> Unit,
-    onPreview: () -> Unit
+    onPreview: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -119,10 +120,10 @@ fun EditScreen(
         }
     }
 
-    LaunchedEffect(uiState.isUchiwaSaved) {
-        if (uiState.isUchiwaSaved) {
+    LaunchedEffect(uiState.savedPath) {
+        uiState.savedPath?.let {
             viewModel.resetIsUchiwaSaved()
-            onPreview()
+            onPreview(URLEncoder.encode(it, "UTF-8"))
         }
     }
 

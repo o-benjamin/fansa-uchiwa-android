@@ -23,15 +23,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.fansauchiwa.album.AlbumScreen
 import com.example.fansauchiwa.edit.EditScreen
 import com.example.fansauchiwa.edit.EditViewModel
 import com.example.fansauchiwa.home.HomeScreen
+import com.example.fansauchiwa.preview.IMAGE_PATH_ARG
 import com.example.fansauchiwa.preview.UchiwaPreviewScreen
+import com.example.fansauchiwa.preview.UchiwaPreviewViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,11 +116,19 @@ fun FansaUchiwaNavGraph(
                 EditScreen(
                     viewModel = viewModel,
                     onBack = { navController.navigateUp() },
-                    onPreview = { navController.navigate(FansaUchiwaDestinations.PREVIEW) }
+                    onPreview = { path ->
+                        navController.navigate("${FansaUchiwaDestinations.PREVIEW}/$path")
+                    }
                 )
             }
-            composable(FansaUchiwaDestinations.PREVIEW) {
-                UchiwaPreviewScreen()
+            composable(
+                route = "${FansaUchiwaDestinations.PREVIEW}/{$IMAGE_PATH_ARG}",
+                arguments = listOf(
+                    navArgument(IMAGE_PATH_ARG) { type = NavType.StringType }
+                )
+            ) {
+                val viewModel: UchiwaPreviewViewModel = hiltViewModel()
+                UchiwaPreviewScreen(viewModel = viewModel)
             }
         }
     }
