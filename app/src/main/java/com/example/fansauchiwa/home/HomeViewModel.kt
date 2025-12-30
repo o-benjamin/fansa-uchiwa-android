@@ -29,5 +29,10 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(masterpiecePathList = pathList) }
         }
     }
+
+    fun extractUchiwaId(path: String): String {
+        // ファイルパスからuchiwaId（ファイル名から.pngを除いた部分）を抽出
+        return path.substringAfterLast("/").substringBeforeLast(".png")
+    }
 }
 

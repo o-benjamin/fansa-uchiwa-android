@@ -12,10 +12,12 @@ object FansaUchiwaScreens {
     const val PREVIEW_SCREEN = "preview"
 }
 
+const val UCHIWA_ID_ARG = "uchiwaId"
+
 object FansaUchiwaDestinations {
     const val HOME = HOME_SCREEN
     const val ALBUM = ALBUM_SCREEN
-    const val EDIT = EDIT_SCREEN
+    const val EDIT = "$EDIT_SCREEN?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}"
     const val PREVIEW = PREVIEW_SCREEN
 }
 

@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.R
+import com.example.fansauchiwa.UCHIWA_ID_ARG
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.FansaUchiwaRepository
 import com.example.fansauchiwa.data.MasterpieceRepository
@@ -28,21 +29,33 @@ class EditViewModel @Inject constructor(
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
 
     init {
-        initializeUchiwaId()
+        loadExistingDecorations()
         loadAllImages()
     }
 
-    private fun initializeUchiwaId() {
-        val existingId: String? = savedStateHandle[UCHIWA_ID_KEY]
-        val uchiwaId = existingId ?: UUID.randomUUID().toString()
-
-        if (existingId == null) {
-            savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
-        }
-
-        val currentState = uiState.value
-        if (currentState.uchiwaId.isEmpty()) {
-            savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
+    private fun loadExistingDecorations() {
+        viewModelScope.launch {
+            val uchiwaId: String? = savedStateHandle[UCHIWA_ID_ARG]
+            if (uchiwaId != null) {
+                savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
+                val decorations = repository.getDecorations(uchiwaId)
+                if (decorations != null) {
+                    val currentState = uiState.value
+                    savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                        uchiwaId = uchiwaId,
+                        decorations = decorations
+                    )
+                    // 画像デコレーションがある場合、それらの画像をロード
+                    decorations.filterIsInstance<Decoration.Image>().forEach { decoration ->
+                        loadImage(decoration.id)
+                    }
+                }
+            } else {
+                val newUchiwaId = UUID.randomUUID().toString()
+                savedStateHandle[UCHIWA_ID_KEY] = newUchiwaId
+                val currentState = uiState.value
+                savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = newUchiwaId)
+            }
         }
     }
 

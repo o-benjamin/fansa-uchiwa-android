@@ -91,7 +91,7 @@ fun FansaUchiwaNavGraph(
         },
         floatingActionButton = {
             if (currentRoute != FansaUchiwaDestinations.EDIT && currentRoute != FansaUchiwaDestinations.PREVIEW) {
-                FloatingActionButton(onClick = { navController.navigate(FansaUchiwaDestinations.EDIT) }) {
+                FloatingActionButton(onClick = { navController.navigate(FansaUchiwaScreens.EDIT_SCREEN) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_add),
                         contentDescription = stringResource(R.string.add)
@@ -107,15 +107,24 @@ fun FansaUchiwaNavGraph(
         ) {
             composable(FansaUchiwaDestinations.HOME) {
                 HomeScreen(
-                    onImageClick = { path ->
-                        navController.navigate(FansaUchiwaDestinations.EDIT)
+                    onImageClick = { id ->
+                        navController.navigate("${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG=$id")
                     }
                 )
             }
             composable(FansaUchiwaDestinations.ALBUM) {
                 AlbumScreen()
             }
-            composable(FansaUchiwaDestinations.EDIT) {
+            composable(
+                route = FansaUchiwaDestinations.EDIT,
+                arguments = listOf(
+                    navArgument(UCHIWA_ID_ARG) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) {
                 val viewModel: EditViewModel = hiltViewModel()
                 EditScreen(
                     viewModel = viewModel,
