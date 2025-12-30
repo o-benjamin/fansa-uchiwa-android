@@ -6,6 +6,7 @@ import javax.inject.Inject
 interface MasterpieceRepository {
     fun saveMasterpieceBitmap(bitmap: Bitmap): String?
     fun saveMasterpieceToGallery(imagePath: String): Boolean
+    fun loadAllMasterpieces(): List<String>
 }
 
 class MasterpieceRepositoryImpl @Inject constructor(
@@ -19,6 +20,10 @@ class MasterpieceRepositoryImpl @Inject constructor(
 
     override fun saveMasterpieceToGallery(imagePath: String): Boolean {
         return galleryImageDataSource.saveImageToGallery(imagePath)
+    }
+
+    override fun loadAllMasterpieces(): List<String> {
+        return masterpieceDataSource.loadAllMasterpieces()
     }
 }
 

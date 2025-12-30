@@ -106,7 +106,11 @@ fun FansaUchiwaNavGraph(
             modifier = Modifier.padding(contentPadding)
         ) {
             composable(FansaUchiwaDestinations.HOME) {
-                HomeScreen()
+                HomeScreen(
+                    onImageClick = { path ->
+                        navController.navigate(FansaUchiwaDestinations.EDIT)
+                    }
+                )
             }
             composable(FansaUchiwaDestinations.ALBUM) {
                 AlbumScreen()

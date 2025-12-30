@@ -27,5 +27,21 @@ class MasterpieceLocalSource @Inject constructor(
             null
         }
     }
+
+    override fun loadAllMasterpieces(): List<String> {
+        val directory = ContextWrapper(context).getDir(
+            "masterpiece",
+            Context.MODE_PRIVATE
+        )
+        return try {
+            directory.listFiles()
+                ?.filter { it.extension == "png" }
+                ?.sortedByDescending { it.lastModified() }
+                ?.map { it.absolutePath }
+                ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
 }
 
