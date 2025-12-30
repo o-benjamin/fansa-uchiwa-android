@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.morayl.footprint.footprint
 import java.io.File
 
 @Composable
@@ -37,7 +36,6 @@ fun HomeScreen(
         masterpiecePathList = uiState.masterpiecePathList,
         onImageClick = { path ->
             val uchiwaId = viewModel.extractUchiwaId(path)
-            footprint("uchiwaId = $uchiwaId")
             onImageClick(uchiwaId)
         }
     )

@@ -22,7 +22,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.fansauchiwa.album.AlbumScreen
 import com.example.fansauchiwa.edit.EditScreen
 import com.example.fansauchiwa.edit.EditViewModel
 import com.example.fansauchiwa.home.HomeScreen
@@ -34,7 +33,7 @@ import com.example.fansauchiwa.preview.UchiwaPreviewViewModel
 @Composable
 fun FansaUchiwaNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = FansaUchiwaDestinations.ALBUM
+    startDestination: String = FansaUchiwaDestinations.HOME
 ) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -80,9 +79,6 @@ fun FansaUchiwaNavGraph(
                         navController.navigate("${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG=$id")
                     }
                 )
-            }
-            composable(FansaUchiwaDestinations.ALBUM) {
-                AlbumScreen()
             }
             composable(
                 route = FansaUchiwaDestinations.EDIT,
