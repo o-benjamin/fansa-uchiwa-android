@@ -26,6 +26,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.addLastModifiedToFileCacheKey
+import coil3.size.SizeResolver
 import com.example.fansauchiwa.R
 
 @Composable
@@ -72,6 +74,8 @@ fun UchiwaPreviewScreen(
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(path)
+                            .size(SizeResolver.ORIGINAL)
+                            .addLastModifiedToFileCacheKey(true)
                             .build(),
                         contentDescription = stringResource(R.string.uchiwa_preview),
                         contentScale = ContentScale.Fit,

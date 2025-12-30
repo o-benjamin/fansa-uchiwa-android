@@ -17,11 +17,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import java.io.File
+import coil3.request.ImageRequest
+import coil3.request.addLastModifiedToFileCacheKey
 
 @Composable
 fun HomeScreen(
@@ -85,7 +87,10 @@ private fun MasterpieceItem(
             .clickable(onClick = onClick)
     ) {
         AsyncImage(
-            model = File(imagePath),
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imagePath)
+                .addLastModifiedToFileCacheKey(true)
+                .build(),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
