@@ -521,12 +521,7 @@ fun ImagePagePreview() {
 @Preview(showBackground = true, name = "Delete Mode - With Selection")
 @Composable
 fun ImagePageDeleteModePreview() {
-    val sampleImages = listOf(
-        ImageReference(id = "1", path = "sample1.jpg"),
-        ImageReference(id = "2", path = "sample2.jpg"),
-        ImageReference(id = "3", path = "sample3.jpg"),
-        ImageReference(id = "4", path = "sample4.jpg")
-    )
+    val sampleImages = emptyList<ImageReference>()
     ImagePage(
         onClick = {},
         images = sampleImages,

@@ -16,7 +16,7 @@ class ImageLocalSource @Inject constructor(
             "image",
             Context.MODE_PRIVATE
         )
-        val file = File(directory, "$id.jpg")
+        val file = File(directory, "$id.png")
 
         return try {
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -32,7 +32,7 @@ class ImageLocalSource @Inject constructor(
 
     override fun load(imageId: String): ImageReference? {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
-        val file = File(directory, "$imageId.jpg")
+        val file = File(directory, "$imageId.png")
 
         return if (file.exists()) {
             ImageReference(imageId, file.absolutePath)
@@ -53,7 +53,7 @@ class ImageLocalSource @Inject constructor(
     override fun deleteImages(imageIds: List<String>): Boolean {
         val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
         return imageIds.all { imageId ->
-            val file = File(directory, "$imageId.jpg")
+            val file = File(directory, "$imageId.png")
             file.delete()
         }
     }
