@@ -11,4 +11,7 @@ interface FansaUchiwaDao {
 
     @Query("SELECT * FROM fansa_uchiwa_data WHERE id = :id")
     suspend fun getUchiwaById(id: String): FansaUchiwaEntity?
+
+    @Query("DELETE FROM fansa_uchiwa_data WHERE id = :id")
+    suspend fun deleteUchiwaById(id: String)
 }

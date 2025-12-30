@@ -7,6 +7,7 @@ import javax.inject.Inject
 interface LocalDatabaseRepository {
     suspend fun saveDecorations(id: String, decorations: List<Decoration>)
     suspend fun getDecorations(id: String): List<Decoration>?
+    suspend fun deleteDecorations(id: String)
 }
 
 class LocalDatabaseRepositoryImpl @Inject constructor(
@@ -26,6 +27,10 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
         return uchiwaData?.let {
             converters.decorationsFromJson(it.decorations)
         }
+    }
+
+    override suspend fun deleteDecorations(id: String) {
+        fansaUchiwaDao.deleteUchiwaById(id)
     }
 }
 

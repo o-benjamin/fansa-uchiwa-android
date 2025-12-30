@@ -5,6 +5,7 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class HomeUiState(
-    val masterpiecePathList: List<String> = emptyList()
+    val masterpiecePathList: List<String> = emptyList(),
+    val isDeletingMode: Boolean = false,
+    val selectedDeletingPaths: List<String> = emptyList()
 ) : Parcelable
-

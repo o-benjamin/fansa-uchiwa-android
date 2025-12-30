@@ -7,6 +7,7 @@ interface MasterpieceRepository {
     fun saveMasterpieceBitmap(bitmap: Bitmap, id: String): String?
     fun saveMasterpieceToGallery(imagePath: String): Boolean
     fun loadAllMasterpieces(): List<String>
+    fun deleteMasterpiece(filePath: String): Boolean
 }
 
 class MasterpieceRepositoryImpl @Inject constructor(
@@ -24,5 +25,8 @@ class MasterpieceRepositoryImpl @Inject constructor(
     override fun loadAllMasterpieces(): List<String> {
         return masterpieceDataSource.loadAllMasterpieces()
     }
-}
 
+    override fun deleteMasterpiece(filePath: String): Boolean {
+        return masterpieceDataSource.deleteMasterpiece(filePath)
+    }
+}

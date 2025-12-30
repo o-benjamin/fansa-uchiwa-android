@@ -43,5 +43,13 @@ class MasterpieceLocalSource @Inject constructor(
             emptyList()
         }
     }
-}
 
+    override fun deleteMasterpiece(filePath: String): Boolean {
+        return try {
+            val file = File(filePath)
+            file.delete()
+        } catch (_: Exception) {
+            false
+        }
+    }
+}
