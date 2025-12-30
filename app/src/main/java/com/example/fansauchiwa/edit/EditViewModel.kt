@@ -261,13 +261,6 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun onBitmapSaved() {
-        val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            shouldSaveBitmap = false
-        )
-    }
-
     fun resetEditUiState() {
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
@@ -276,7 +269,6 @@ class EditViewModel @Inject constructor(
             userMessage = null,
             isDeletingImage = false,
             selectedDeletingImages = emptyList(),
-            shouldSaveBitmap = false
         )
     }
 }

@@ -137,7 +137,6 @@ fun EditScreen(
                             coroutineScope.launch {
                                 val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                                 viewModel.saveUchiwaBitmap(bitmap)
-                                viewModel.onBitmapSaved()
                             }
                             onPreview()
                         }

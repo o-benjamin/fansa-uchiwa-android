@@ -14,6 +14,5 @@ data class EditUiState(
     val images: List<ImageReference> = emptyList(),
     val allImages: List<ImageReference> = emptyList(),
     val isDeletingImage: Boolean = false,
-    val selectedDeletingImages: List<String> = emptyList(),
-    val shouldSaveBitmap: Boolean = false
+    val selectedDeletingImages: List<String> = emptyList()
 ) : Parcelable
