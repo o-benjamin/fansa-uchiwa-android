@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,9 +61,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -118,6 +119,14 @@ fun EditScreen(
         }
     }
 
+    LaunchedEffect(uiState.isUchiwaSaved) {
+        if (uiState.isUchiwaSaved) {
+            viewModel.resetIsUchiwaSaved()
+            onPreview()
+        }
+    }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -135,10 +144,11 @@ fun EditScreen(
                         onClick = {
                             viewModel.resetEditUiState()
                             coroutineScope.launch {
+                                // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
+                                withFrameMillis { }
                                 val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                                 viewModel.saveUchiwaBitmap(bitmap)
                             }
-                            onPreview()
                         }
                     ) {
                         Icon(

@@ -6,6 +6,10 @@ import com.example.fansauchiwa.data.FansaUchiwaRepository
 import com.example.fansauchiwa.data.FansaUchiwaRepositoryImpl
 import com.example.fansauchiwa.data.ImageDataSource
 import com.example.fansauchiwa.data.ImageLocalSource
+import com.example.fansauchiwa.data.MasterpieceDataSource
+import com.example.fansauchiwa.data.MasterpieceLocalSource
+import com.example.fansauchiwa.data.MasterpieceRepository
+import com.example.fansauchiwa.data.MasterpieceRepositoryImpl
 import com.example.fansauchiwa.data.source.FansaUchiwaDao
 import com.example.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
@@ -25,6 +29,12 @@ abstract class RepositoryModule {
     abstract fun bindFansaUchiwaRepository(
         fansaUchiwaRepositoryImpl: FansaUchiwaRepositoryImpl
     ): FansaUchiwaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMasterpieceRepository(
+        masterpieceRepositoryImpl: MasterpieceRepositoryImpl
+    ): MasterpieceRepository
 }
 
 @Module
@@ -36,6 +46,12 @@ abstract class StorageModule {
     abstract fun bindImageDataSource(
         impl: ImageLocalSource
     ): ImageDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindMasterpieceDataSource(
+        impl: MasterpieceLocalSource
+    ): MasterpieceDataSource
 }
 
 @Module

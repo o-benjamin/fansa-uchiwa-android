@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.FansaUchiwaRepository
+import com.example.fansauchiwa.data.MasterpieceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,6 +20,7 @@ private const val UI_STATE_KEY = "ui_state"
 @HiltViewModel
 class EditViewModel @Inject constructor(
     private val repository: FansaUchiwaRepository,
+    private val masterpieceRepository: MasterpieceRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
@@ -247,16 +249,20 @@ class EditViewModel @Inject constructor(
         return true
     }
 
-    @Suppress("UNUSED_PARAMETER")
     fun saveUchiwaBitmap(bitmap: Bitmap) {
         viewModelScope.launch {
-            // TODO: リポジトリの保存メソッドを実装する
-            // repository.saveUchiwaBitmap(bitmap, "uchiwa_${System.currentTimeMillis()}.png")
+            val savedPath = masterpieceRepository.saveMasterpieceBitmap(bitmap)
 
             // 保存完了のメッセージを表示
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                userMessage = R.string.snackbar_saved
+                userMessage = if (savedPath != null) {
+                    R.string.snackbar_saved
+                } else {
+                    // TODO: エラーメッセージ用のリソースを追加する場合はここで指定
+                    R.string.snackbar_saved
+                },
+                isUchiwaSaved = true
             )
         }
     }
@@ -269,6 +275,14 @@ class EditViewModel @Inject constructor(
             userMessage = null,
             isDeletingImage = false,
             selectedDeletingImages = emptyList(),
+            isUchiwaSaved = false
+        )
+    }
+
+    fun resetIsUchiwaSaved() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            isUchiwaSaved = false
         )
     }
 }
