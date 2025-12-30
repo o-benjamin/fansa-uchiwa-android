@@ -6,10 +6,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -29,34 +34,58 @@ fun UchiwaPreviewScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-        ) {
-            uiState.imagePath?.let { path ->
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(path)
-                        .build(),
-                    contentDescription = stringResource(R.string.uchiwa_preview),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize()
-                )
+    LaunchedEffect(uiState.saveSuccess) {
+        when (uiState.saveSuccess) {
+            true -> {
+                snackbarHostState.showSnackbar("ギャラリーに保存しました")
+                viewModel.clearSaveStatus()
             }
-        }
 
-        TextButton(
-            onClick = { /* TODO: 画像保存処理 */ }
+            false -> {
+                snackbarHostState.showSnackbar("保存に失敗しました")
+                viewModel.clearSaveStatus()
+            }
+
+            null -> {}
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = modifier
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = stringResource(R.string.save_as_image))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+            ) {
+                uiState.imagePath?.let { path ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(path)
+                            .build(),
+                        contentDescription = stringResource(R.string.uchiwa_preview),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            TextButton(
+                onClick = { viewModel.saveToGallery() },
+                enabled = uiState.imagePath != null && !uiState.isSaving
+            ) {
+                Text(text = stringResource(R.string.save_as_image))
+            }
         }
     }
 }

@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.example.fansauchiwa.data.FansaUchiwaRepository
 import com.example.fansauchiwa.data.FansaUchiwaRepositoryImpl
+import com.example.fansauchiwa.data.GalleryImageDataSource
+import com.example.fansauchiwa.data.GalleryImageLocalSource
 import com.example.fansauchiwa.data.ImageDataSource
 import com.example.fansauchiwa.data.ImageLocalSource
 import com.example.fansauchiwa.data.MasterpieceDataSource
@@ -52,6 +54,12 @@ abstract class StorageModule {
     abstract fun bindMasterpieceDataSource(
         impl: MasterpieceLocalSource
     ): MasterpieceDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindGalleryImageDataSource(
+        impl: GalleryImageLocalSource
+    ): GalleryImageDataSource
 }
 
 @Module
