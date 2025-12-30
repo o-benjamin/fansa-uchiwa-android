@@ -285,7 +285,7 @@ fun EditScreen(
                     }
                 },
                 onAddImage = { image, uri ->
-                    viewModel.saveImage(uri, image.id) {
+                    viewModel.saveImage(uri, image.imageId) {
                         viewModel.addDecoration(image)
                     }
                 },
@@ -609,7 +609,7 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            imagePath = images.find { it.id == decoration.id }?.path
+                            imagePath = images.find { it.id == decoration.imageId }?.path
                         )
                     }
                 }

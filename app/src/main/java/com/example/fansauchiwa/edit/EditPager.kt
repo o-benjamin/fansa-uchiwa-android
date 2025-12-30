@@ -97,7 +97,11 @@ fun EditPager(
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
-                val image = Decoration.Image(id = UUID.randomUUID().toString())
+                val imageId = UUID.randomUUID().toString()
+                val image = Decoration.Image(
+                    id = UUID.randomUUID().toString(),
+                    imageId = imageId
+                )
                 onAddImage(image, uri)
             } else {
                 Log.d("PhotoPicker", "No media selected")
@@ -300,7 +304,10 @@ fun ImagePage(
                                 if (isDeletingImage) {
                                     onImageToggleSelection(image.id)
                                 } else {
-                                    onImageClick(Decoration.Image(image.id))
+                                    onImageClick(Decoration.Image(
+                                        id = UUID.randomUUID().toString(),
+                                        imageId = image.id
+                                    ))
                                 }
                             },
                             onLongClick = { onImageLongPress() }

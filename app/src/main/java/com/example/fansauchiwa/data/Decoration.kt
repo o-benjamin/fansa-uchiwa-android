@@ -64,6 +64,7 @@ sealed interface Decoration : Parcelable {
     @TypeParceler<Offset, OffsetParceler>
     data class Image(
         override val id: String,
+        val imageId: String,
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset = Offset.Zero,
         override val rotation: Float = 0f,

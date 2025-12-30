@@ -13,6 +13,7 @@ class Converters {
             polymorphic(Decoration::class) {
                 subclass(Decoration.Text::class)
                 subclass(Decoration.Sticker::class)
+                subclass(Decoration.Image::class)
             }
         }
     }

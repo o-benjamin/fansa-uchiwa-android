@@ -49,7 +49,7 @@ class EditViewModel @Inject constructor(
                     )
                     // 画像デコレーションがある場合、それらの画像をロード
                     decorations.filterIsInstance<Decoration.Image>().forEach { decoration ->
-                        loadImage(decoration.id)
+                        loadImage(decoration.imageId)
                     }
                 }
             } else {
@@ -77,7 +77,7 @@ class EditViewModel @Inject constructor(
         )
 
         if (decoration is Decoration.Image) {
-            loadImage(decoration.id)
+            loadImage(decoration.imageId)
         }
     }
 
