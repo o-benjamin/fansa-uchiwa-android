@@ -280,16 +280,8 @@ class EditViewModel @Inject constructor(
     fun saveUchiwaBitmap(bitmap: Bitmap, uchiwaId: String) {
         viewModelScope.launch {
             val savedPath = masterpieceRepository.saveMasterpieceBitmap(bitmap, uchiwaId)
-
-            // 保存完了のメッセージを表示
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                userMessage = if (savedPath != null) {
-                    R.string.snackbar_saved
-                } else {
-                    // TODO: エラーメッセージ用のリソースを追加する場合はここで指定
-                    R.string.snackbar_saved
-                },
                 savedPath = savedPath
             )
         }
