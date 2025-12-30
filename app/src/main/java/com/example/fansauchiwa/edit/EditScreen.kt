@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -40,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -111,6 +113,7 @@ fun EditScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val graphicsLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
+    val showBackDialog = remember { mutableStateOf(false) }
 
     uiState.userMessage?.let { userMessage ->
         val snackbarText = stringResource(userMessage)
@@ -133,7 +136,7 @@ fun EditScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { showBackDialog.value = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -293,6 +296,45 @@ fun EditScreen(
                     .weight(1f)
             )
         }
+    }
+
+    // 保存確認ダイアログ
+    if (showBackDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showBackDialog.value = false },
+            title = {
+                Text(text = stringResource(R.string.confirm_save_dialog_title))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showBackDialog.value = false
+                        viewModel.saveDecorations { uchiwaId ->
+                            viewModel.resetEditUiState()
+                            coroutineScope.launch {
+                                withFrameMillis { }
+                                val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
+                                viewModel.saveUchiwaBitmap(bitmap, uchiwaId)
+                                // 保存完了後に戻る
+                                onBack()
+                            }
+                        }
+                    }
+                ) {
+                    Text(text = stringResource(R.string.save_and_back))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showBackDialog.value = false
+                        onBack()
+                    }
+                ) {
+                    Text(text = stringResource(R.string.discard))
+                }
+            }
+        )
     }
 }
 

@@ -16,4 +16,7 @@
     <string name="delete_images">%d個の写真を削除</string>
     <string name="cancel">キャンセル</string>
     <string name="save_as_image">画像として保存する</string>
+    <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
+    <string name="save_and_back">保存して戻る</string>
+    <string name="discard">破棄</string>
 </resources>
