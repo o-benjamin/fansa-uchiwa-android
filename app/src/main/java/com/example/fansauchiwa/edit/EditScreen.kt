@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -130,6 +131,10 @@ fun EditScreen(
         }
     }
 
+    // バックキー押下時にダイアログを表示
+    BackHandler {
+        showBackDialog.value = true
+    }
 
     Scaffold(
         topBar = {
