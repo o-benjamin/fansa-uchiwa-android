@@ -41,7 +41,8 @@ import com.example.fansauchiwa.R
 fun UchiwaPreviewScreen(
     viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onBackToHome: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -110,6 +111,12 @@ fun UchiwaPreviewScreen(
                 enabled = uiState.imagePath != null && !uiState.isSaving
             ) {
                 Text(text = stringResource(R.string.save_as_image))
+            }
+            TextButton(
+                onClick = onBackToHome,
+                enabled = uiState.imagePath != null && !uiState.isSaving
+            ) {
+                Text(text = stringResource(R.string.back_to_home))
             }
         }
     }

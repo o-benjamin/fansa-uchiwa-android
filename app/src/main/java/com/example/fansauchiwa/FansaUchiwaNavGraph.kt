@@ -62,7 +62,13 @@ fun FansaUchiwaNavGraph(
             val viewModel: UchiwaPreviewViewModel = hiltViewModel()
             UchiwaPreviewScreen(
                 viewModel = viewModel,
-                onBack = { navController.navigateUp() }
+                onBack = { navController.navigateUp() },
+                onBackToHome = {
+                    navController.popBackStack(
+                        route = FansaUchiwaDestinations.HOME,
+                        inclusive = false
+                    )
+                }
             )
         }
     }

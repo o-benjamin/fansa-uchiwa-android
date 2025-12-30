@@ -8,9 +8,9 @@
     <string name="save">保存</string>
     <string name="preview">プレビュー</string>
     <string name="uchiwa_preview">うちわプレビュー</string>
+    <string name="back_to_home">ホームに戻る</string>
     <string name="text_color_and_weight">文字色・太さ</string>
     <string name="stroke_color_and_weight">枠線色・太さ</string>
-
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
     <string name="snackbar_saved">画像を保存しました</string>
     <string name="delete_images">%d個の写真を削除</string>
