@@ -7,17 +7,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarDefaults
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -43,7 +36,6 @@ fun FansaUchiwaNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = FansaUchiwaDestinations.ALBUM
 ) {
-    var selectedDestination by rememberSaveable { mutableIntStateOf(TabDestinations.HOME.ordinal) }
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
@@ -64,29 +56,6 @@ fun FansaUchiwaNavGraph(
                         }
                     }
                 )
-            }
-        },
-        bottomBar = {
-            if (currentRoute != FansaUchiwaDestinations.EDIT && currentRoute != FansaUchiwaDestinations.PREVIEW) {
-                NavigationBar(windowInsets = NavigationBarDefaults.windowInsets) {
-                    TabDestinations.entries.forEachIndexed { index, destination ->
-                        NavigationBarItem(
-                            selected = selectedDestination == index,
-                            onClick = {
-                                navController.navigate(route = destination.route)
-                                selectedDestination = index
-                            },
-                            icon = {
-                                Icon(
-                                    painter = painterResource(destination.icon),
-                                    contentDescription = stringResource(destination.label)
-                                )
-                            },
-                            label = { Text(stringResource(destination.label)) },
-                            alwaysShowLabel = false
-                        )
-                    }
-                }
             }
         },
         floatingActionButton = {

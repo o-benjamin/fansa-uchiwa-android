@@ -20,8 +20,3 @@ object FansaUchiwaDestinations {
     const val EDIT = "$EDIT_SCREEN?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}"
     const val PREVIEW = PREVIEW_SCREEN
 }
-
-enum class TabDestinations(val icon: Int, val route: String, val label: Int) {
-    HOME(R.drawable.ic_home, FansaUchiwaDestinations.HOME, R.string.home),
-    ALBUM(R.drawable.ic_album, FansaUchiwaDestinations.ALBUM, R.string.album)
-}
