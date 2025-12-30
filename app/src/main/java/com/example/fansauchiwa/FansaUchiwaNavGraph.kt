@@ -3,7 +3,6 @@ package com.example.fansauchiwa
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -22,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,6 +29,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.fansauchiwa.album.AlbumScreen
 import com.example.fansauchiwa.edit.EditScreen
+import com.example.fansauchiwa.edit.EditViewModel
 import com.example.fansauchiwa.home.HomeScreen
 import com.example.fansauchiwa.preview.UchiwaPreviewScreen
 
@@ -44,31 +45,22 @@ fun FansaUchiwaNavGraph(
 
     Scaffold(
         topBar = {
-
-            TopAppBar(
-                title = { },
-                navigationIcon = {
-                    if (currentRoute == FansaUchiwaDestinations.EDIT || currentRoute == FansaUchiwaDestinations.PREVIEW) {
-                        IconButton(onClick = { navController.navigateUp() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
+            // EditScreenは独自のTopAppBarを持つため、ここでは表示しない
+            if (currentRoute != FansaUchiwaDestinations.EDIT) {
+                TopAppBar(
+                    title = { },
+                    navigationIcon = {
+                        if (currentRoute == FansaUchiwaDestinations.PREVIEW) {
+                            IconButton(onClick = { navController.navigateUp() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back)
+                                )
+                            }
                         }
                     }
-                },
-                actions = {
-                    if (currentRoute == FansaUchiwaDestinations.EDIT) {
-                        IconButton(onClick = { navController.navigate(FansaUchiwaDestinations.PREVIEW) }) {
-                            Icon(
-                                imageVector = Icons.Default.SaveAlt,
-                                contentDescription = stringResource(R.string.save)
-                            )
-                        }
-                    }
-                }
-            )
-
+                )
+            }
         },
         bottomBar = {
             if (currentRoute != FansaUchiwaDestinations.EDIT && currentRoute != FansaUchiwaDestinations.PREVIEW) {
@@ -116,7 +108,12 @@ fun FansaUchiwaNavGraph(
                 AlbumScreen()
             }
             composable(FansaUchiwaDestinations.EDIT) {
-                EditScreen()
+                val viewModel: EditViewModel = hiltViewModel()
+                EditScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.navigateUp() },
+                    onPreview = { navController.navigate(FansaUchiwaDestinations.PREVIEW) }
+                )
             }
             composable(FansaUchiwaDestinations.PREVIEW) {
                 UchiwaPreviewScreen()

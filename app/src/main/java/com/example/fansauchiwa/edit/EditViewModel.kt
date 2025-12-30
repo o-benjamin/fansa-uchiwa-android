@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.edit
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.SavedStateHandle
@@ -244,6 +245,34 @@ class EditViewModel @Inject constructor(
             }
         }
         return true
+    }
+
+    fun triggerSaveBitmap() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            shouldSaveBitmap = true
+        )
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun saveUchiwaBitmap(bitmap: Bitmap) {
+        viewModelScope.launch {
+            // TODO: リポジトリの保存メソッドを実装する
+            // repository.saveUchiwaBitmap(bitmap, "uchiwa_${System.currentTimeMillis()}.png")
+
+            // 保存完了のメッセージを表示
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                userMessage = R.string.snackbar_saved
+            )
+        }
+    }
+
+    fun onBitmapSaved() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            shouldSaveBitmap = false
+        )
     }
 }
 

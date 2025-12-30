@@ -11,6 +11,7 @@
     <string name="stroke_color_and_weight">枠線色・太さ</string>
 
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
+    <string name="snackbar_saved">画像を保存しました</string>
     <string name="delete_images">%d個の写真を削除</string>
     <string name="cancel">キャンセル</string>
     <string name="save_as_image">画像として保存する</string>
