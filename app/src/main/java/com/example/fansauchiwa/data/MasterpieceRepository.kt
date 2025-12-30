@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import javax.inject.Inject
 
 interface MasterpieceRepository {
-    fun saveMasterpieceBitmap(bitmap: Bitmap): String?
+    fun saveMasterpieceBitmap(bitmap: Bitmap, id: String): String?
     fun saveMasterpieceToGallery(imagePath: String): Boolean
     fun loadAllMasterpieces(): List<String>
 }
@@ -13,8 +13,7 @@ class MasterpieceRepositoryImpl @Inject constructor(
     private val masterpieceDataSource: MasterpieceDataSource,
     private val galleryImageDataSource: GalleryImageDataSource
 ) : MasterpieceRepository {
-    override fun saveMasterpieceBitmap(bitmap: Bitmap): String? {
-        val id = "${System.currentTimeMillis()}"
+    override fun saveMasterpieceBitmap(bitmap: Bitmap, id: String): String? {
         return masterpieceDataSource.saveBitmap(bitmap, id)
     }
 

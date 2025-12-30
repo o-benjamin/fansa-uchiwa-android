@@ -7,6 +7,7 @@ import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class EditUiState(
+    val uchiwaId: String = "",
     val decorations: List<Decoration> = emptyList(),
     val selectedDecorationId: String? = null,
     val editingTextId: String? = null,

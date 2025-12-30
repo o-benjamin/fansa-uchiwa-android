@@ -14,8 +14,8 @@ interface FansaUchiwaRepository {
     // endregion
 
     // region decoration
-    suspend fun saveDecorations(decorations: List<Decoration>)
-    suspend fun getDecorations(id: Int): List<Decoration>?
+    suspend fun saveDecorations(id: String, decorations: List<Decoration>)
+    suspend fun getDecorations(id: String): List<Decoration>?
     // endregion
 }
 
@@ -45,13 +45,13 @@ class FansaUchiwaRepositoryImpl @Inject constructor(
     // endregion
 
     // region decoration
-    override suspend fun saveDecorations(decorations: List<Decoration>) {
+    override suspend fun saveDecorations(id: String, decorations: List<Decoration>) {
         val decorationsJson = converters.decorationsToJson(decorations)
-        val fansaUchiwaEntity = FansaUchiwaEntity(decorations = decorationsJson)
+        val fansaUchiwaEntity = FansaUchiwaEntity(id = id, decorations = decorationsJson)
         return fansaUchiwaDao.upsertUchiwaData(fansaUchiwaEntity)
     }
 
-    override suspend fun getDecorations(id: Int): List<Decoration>? {
+    override suspend fun getDecorations(id: String): List<Decoration>? {
         val uchiwaData = fansaUchiwaDao.getUchiwaById(id)
         return uchiwaData?.let {
             converters.decorationsFromJson(it.decorations)

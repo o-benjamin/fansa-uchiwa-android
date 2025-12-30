@@ -143,12 +143,14 @@ fun EditScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            viewModel.resetEditUiState()
-                            coroutineScope.launch {
-                                // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
-                                withFrameMillis { }
-                                val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                                viewModel.saveUchiwaBitmap(bitmap)
+                            viewModel.saveDecorations { uchiwaId ->
+                                viewModel.resetEditUiState()
+                                coroutineScope.launch {
+                                    // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
+                                    withFrameMillis { }
+                                    val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
+                                    viewModel.saveUchiwaBitmap(bitmap, uchiwaId)
+                                }
                             }
                         }
                     ) {

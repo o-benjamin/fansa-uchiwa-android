@@ -13,9 +13,11 @@ import com.example.fansauchiwa.data.MasterpieceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 private const val UI_STATE_KEY = "ui_state"
+private const val UCHIWA_ID_KEY = "uchiwa_id"
 
 @HiltViewModel
 class EditViewModel @Inject constructor(
@@ -26,7 +28,22 @@ class EditViewModel @Inject constructor(
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
 
     init {
+        initializeUchiwaId()
         loadAllImages()
+    }
+
+    private fun initializeUchiwaId() {
+        val existingId: String? = savedStateHandle[UCHIWA_ID_KEY]
+        val uchiwaId = existingId ?: UUID.randomUUID().toString()
+
+        if (existingId == null) {
+            savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
+        }
+
+        val currentState = uiState.value
+        if (currentState.uchiwaId.isEmpty()) {
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
+        }
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
@@ -38,19 +55,11 @@ class EditViewModel @Inject constructor(
         )
     }
 
-    private fun onDecorationsChanged() {
-        viewModelScope.launch {
-            // TODO: use savedStateHandle instead
-            repository.saveDecorations(uiState.value.decorations)
-        }
-    }
-
     fun addDecoration(decoration: Decoration) {
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations + decoration
         )
-        onDecorationsChanged()
 
         if (decoration is Decoration.Image) {
             loadImage(decoration.id)
@@ -62,7 +71,6 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations.filter { it.id != id }
         )
-        onDecorationsChanged()
     }
 
     fun selectDecoration(id: String) {
@@ -142,7 +150,6 @@ class EditViewModel @Inject constructor(
                 is Decoration.Image -> decoration.copy(color = newColor)
             }
         }
-        onDecorationsChanged()
     }
 
     fun updateStrokeColor(id: String, newColor: Int) {
@@ -249,9 +256,17 @@ class EditViewModel @Inject constructor(
         return true
     }
 
-    fun saveUchiwaBitmap(bitmap: Bitmap) {
+    fun saveDecorations(onDecorationSave: (String) -> Unit) {
         viewModelScope.launch {
-            val savedPath = masterpieceRepository.saveMasterpieceBitmap(bitmap)
+            val state = uiState.value
+            repository.saveDecorations(state.uchiwaId, state.decorations)
+            onDecorationSave(state.uchiwaId)
+        }
+    }
+
+    fun saveUchiwaBitmap(bitmap: Bitmap, uchiwaId: String) {
+        viewModelScope.launch {
+            val savedPath = masterpieceRepository.saveMasterpieceBitmap(bitmap, uchiwaId)
 
             // 保存完了のメッセージを表示
             val currentState = uiState.value

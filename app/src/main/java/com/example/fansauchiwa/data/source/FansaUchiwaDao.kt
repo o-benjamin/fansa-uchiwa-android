@@ -10,5 +10,5 @@ interface FansaUchiwaDao {
     suspend fun upsertUchiwaData(uchiwaData: FansaUchiwaEntity)
 
     @Query("SELECT * FROM fansa_uchiwa_data WHERE id = :id")
-    suspend fun getUchiwaById(id: Int): FansaUchiwaEntity?
+    suspend fun getUchiwaById(id: String): FansaUchiwaEntity?
 }
