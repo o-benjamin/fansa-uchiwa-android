@@ -59,11 +59,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -73,6 +75,7 @@ import com.example.fansauchiwa.data.ImageReference
 import com.example.fansauchiwa.ui.DecorationColors
 import com.example.fansauchiwa.ui.StickerAsset
 import com.example.fansauchiwa.ui.getColor
+import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -212,7 +215,7 @@ fun TextPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = 16.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
@@ -231,16 +234,19 @@ fun TextPage(
         }
 
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(top = 32.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .fillMaxWidth()
         ) {
-            FontFamilies.entries.forEach {
+            FontFamilies.entries.forEach { fontFamily ->
                 Button(
                     onClick = {
                         onTextClick(
                             Decoration.Text(
                                 id = UUID.randomUUID().toString(),
-                                font = it
+                                font = fontFamily
                             )
                         )
                     },
@@ -253,12 +259,15 @@ fun TextPage(
                         disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(
                             alpha = 0.38f
                         )
-                    )
+                    ),
+                    modifier = Modifier
+                        .size(108.dp, 54.dp)
                 ) {
+                    val density = LocalDensity.current
                     Text(
                         text = "あA!",
-                        fontSize = 24.sp,
-                        fontFamily = it.value
+                        fontSize = (20.dp.value / density.fontScale).sp,
+                        fontFamily = fontFamily.value
                     )
                 }
             }
@@ -402,7 +411,7 @@ fun TextDecorationControls(
         width = textWidth,
         onColorSelected = onColorSelected,
         onWeightChanged = onTextWeightChanged,
-        modifier = Modifier.padding(top = 32.dp)
+        modifier = Modifier.padding(top = 16.dp)
     )
 
     ColorAndWeightControl(
@@ -413,7 +422,7 @@ fun TextDecorationControls(
         onWeightChanged = { newValue ->
             onStrokeWeightChanged(newValue.toFloat() / 10)
         },
-        modifier = Modifier.padding(top = 32.dp)
+        modifier = Modifier.padding(top = 16.dp)
     )
 }
 
@@ -464,7 +473,7 @@ fun ColorAndWeightControl(
                         modifier = Modifier
                             .size(24.dp)
                             .clip(CircleShape)
-                            .border(1.dp, colorResource(R.color.black), CircleShape)
+                            .border(1.dp, colorResource(R.color.gray), CircleShape)
                             .background(
                                 color = colorResource(color)
                             )
@@ -514,7 +523,7 @@ fun ColorPickerRow(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
-                    .border(1.dp, colorResource(R.color.black), CircleShape)
+                    .border(1.dp, colorResource(R.color.gray), CircleShape)
                     .background(color = decorationColor.getColor())
                     .clickable {
                         onColorSelected(decorationColor)
@@ -523,3 +532,27 @@ fun ColorPickerRow(
         }
     }
 }
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+fun TextPagePreview() {
+    FansaUchiwaTheme {
+        TextPage(
+            onTextClick = {},
+            onColorSelected = {},
+            onTextWeightChanged = {},
+            onStrokeColorSelected = {},
+            onStrokeWeightChanged = {},
+            selectedDecoration = Decoration.Text(
+                id = "preview-id",
+                font = FontFamilies.HACHI_MARU_POP,
+                text = "プレビュー",
+                color = R.color.decoration_black,
+                strokeColor = R.color.decoration_white,
+                width = 700,
+                strokeWidth = 2.5f
+            )
+        )
+    }
+}
+
