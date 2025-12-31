@@ -58,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
@@ -284,9 +285,10 @@ fun ImagePage(
     isDeletingImage: Boolean = false,
     selectedImages: List<String> = emptyList(),
     onImageToggleSelection: (String) -> Unit = {},
+    isPreview: Boolean = false,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 48.dp),
+        columns = GridCells.Adaptive(minSize = 56.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(16.dp),
@@ -312,29 +314,60 @@ fun ImagePage(
                 modifier = Modifier
                     .aspectRatio(1f)
             ) {
-                AsyncImage(
-                    model = image.path,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(4.dp))
-                        .combinedClickable(
-                            onClick = {
-                                if (isDeletingImage) {
-                                    onImageToggleSelection(image.id)
-                                } else {
-                                    onImageClick(
-                                        Decoration.Image(
-                                            id = UUID.randomUUID().toString(),
-                                            imageId = image.id
+                if (isPreview) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(colorResource(R.color.gray))
+                            .combinedClickable(
+                                onClick = {
+                                    if (isDeletingImage) {
+                                        onImageToggleSelection(image.id)
+                                    } else {
+                                        onImageClick(
+                                            Decoration.Image(
+                                                id = UUID.randomUUID().toString(),
+                                                imageId = image.id
+                                            )
                                         )
-                                    )
-                                }
-                            },
-                            onLongClick = { onImageLongPress() }
+                                    }
+                                },
+                                onLongClick = { onImageLongPress() }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Image",
+                            color = colorResource(R.color.black),
+                            fontSize = 12.sp
                         )
-                )
+                    }
+                } else {
+                    AsyncImage(
+                        model = image.path,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(4.dp))
+                            .combinedClickable(
+                                onClick = {
+                                    if (isDeletingImage) {
+                                        onImageToggleSelection(image.id)
+                                    } else {
+                                        onImageClick(
+                                            Decoration.Image(
+                                                id = UUID.randomUUID().toString(),
+                                                imageId = image.id
+                                            )
+                                        )
+                                    }
+                                },
+                                onLongClick = { onImageLongPress() }
+                            )
+                    )
+                }
                 if (isDeletingImage) {
                     Icon(
                         imageVector = if (isSelected) {
@@ -533,7 +566,7 @@ fun ColorPickerRow(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Preview(showBackground = true)
 @Composable
 fun TextPagePreview() {
     FansaUchiwaTheme {
@@ -552,6 +585,40 @@ fun TextPagePreview() {
                 width = 700,
                 strokeWidth = 2.5f
             )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ImagePagePreview() {
+    FansaUchiwaTheme {
+        ImagePage(
+            onClick = {},
+            images = listOf(
+                ImageReference(
+                    id = "image-1",
+                    path = "path/to/image1.jpg"
+                ),
+                ImageReference(
+                    id = "image-2",
+                    path = "path/to/image2.jpg"
+                ),
+                ImageReference(
+                    id = "image-3",
+                    path = "path/to/image3.jpg"
+                ),
+                ImageReference(
+                    id = "image-4",
+                    path = "path/to/image4.jpg"
+                ),
+            ),
+            onImageClick = {},
+            onImageLongPress = {},
+            isDeletingImage = false,
+            selectedImages = emptyList(),
+            onImageToggleSelection = {},
+            isPreview = true
         )
     }
 }
