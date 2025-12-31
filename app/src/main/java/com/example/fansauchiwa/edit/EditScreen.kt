@@ -199,7 +199,7 @@ fun EditScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.cancel),
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp)
                         )
                     }
 
@@ -212,7 +212,7 @@ fun EditScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.delete_images, selectedCount),
-                                modifier = Modifier.padding(horizontal = 4.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp)
                             )
                         }
                     }

@@ -58,7 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
@@ -216,7 +216,7 @@ fun TextPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(16.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
@@ -237,9 +237,7 @@ fun TextPage(
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .padding(top = 16.dp)
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             FontFamilies.entries.forEach { fontFamily ->
                 Button(
@@ -379,12 +377,19 @@ fun ImagePage(
                         tint = if (isSelected) {
                             MaterialTheme.colorScheme.primary
                         } else {
-                            MaterialTheme.colorScheme.onPrimary
+                            colorResource(R.color.white)
                         },
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(4.dp)
-                            .size(24.dp)
+                            .then(
+                                if (isSelected) {
+                                    Modifier
+                                        .background(colorResource(R.color.white), CircleShape)
+                                } else {
+                                    Modifier
+                                }
+                            )
                     )
                 }
             }
@@ -443,8 +448,7 @@ fun TextDecorationControls(
         color = textColor,
         width = textWidth,
         onColorSelected = onColorSelected,
-        onWeightChanged = onTextWeightChanged,
-        modifier = Modifier.padding(top = 16.dp)
+        onWeightChanged = onTextWeightChanged
     )
 
     ColorAndWeightControl(
@@ -454,8 +458,7 @@ fun TextDecorationControls(
         onColorSelected = onStrokeColorSelected,
         onWeightChanged = { newValue ->
             onStrokeWeightChanged(newValue.toFloat() / 10)
-        },
-        modifier = Modifier.padding(top = 16.dp)
+        }
     )
 }
 
@@ -470,7 +473,7 @@ fun ColorAndWeightControl(
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.padding(bottom = 16.dp)) {
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
