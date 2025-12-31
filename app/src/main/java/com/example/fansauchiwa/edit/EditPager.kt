@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -243,10 +244,16 @@ fun TextPage(
                                 font = it
                             )
                         )
-                    }
+                    },
+                    colors = ButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.38f),
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.38f)
+                    )
                 ) {
                     Text(
-                        text = "推し",
+                        text = "あA!",
                         fontSize = 24.sp,
                         fontFamily = it.value
                     )
