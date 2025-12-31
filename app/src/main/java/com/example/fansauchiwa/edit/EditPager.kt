@@ -44,6 +44,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -322,9 +323,9 @@ fun ImagePage(
                         },
                         contentDescription = if (isSelected) "Selected" else "Not selected",
                         tint = if (isSelected) {
-                            colorResource(id = R.color.purple_500)
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            colorResource(R.color.white).copy(alpha = 0.5f)
+                            MaterialTheme.colorScheme.onPrimary
                         },
                         modifier = Modifier
                             .align(Alignment.TopEnd)

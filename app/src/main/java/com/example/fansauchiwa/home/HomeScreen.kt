@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -82,16 +81,13 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FloatingActionButton(
-                        onClick = { viewModel.exitDeletingMode() },
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.onSurface
+                        onClick = { viewModel.exitDeletingMode() }
                     ) {
                         Text(
                             text = stringResource(R.string.cancel),
                             modifier = Modifier.padding(horizontal = 4.dp)
                         )
                     }
-
                     val deletedCount = uiState.selectedDeletingPaths.size
                     if (deletedCount > 0) {
                         FloatingActionButton(
@@ -113,7 +109,11 @@ fun HomeScreen(
                     }
                 }
             } else {
-                FloatingActionButton(onClick = onAddClick) {
+                FloatingActionButton(
+                    onClick = onAddClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_add),
                         contentDescription = stringResource(R.string.add)
@@ -229,9 +229,9 @@ private fun MasterpieceItem(
                     },
                     contentDescription = if (isSelected) "Selected" else "Not selected",
                     tint = if (isSelected) {
-                        colorResource(id = R.color.purple_500)
+                        MaterialTheme.colorScheme.primary
                     } else {
-                        colorResource(R.color.white).copy(alpha = 0.5f)
+                        MaterialTheme.colorScheme.onPrimary
                     },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
