@@ -2,10 +2,9 @@ package com.example.fansauchiwa.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val PassionMagenta = Color(0xFFE91E63)
+val PassionMagentaContainer = Color(0xFFFFD8E4)
+val OnPassionMagentaContainer = Color(0xFF3D0017)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val SecondaryMagenta = Color(0xFF74565F)
+val TertiaryGold = Color(0xFF7C5635)
