@@ -56,13 +56,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -370,13 +370,13 @@ fun UchiwaPreview(
         },
         contentAlignment = Alignment.Center
     ) {
-        // TODO: うちわの形にする
-        Box(
+        Image(
+            painter = painterResource(R.drawable.uchiwa_shape),
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(colorResource(R.color.gray)),
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .aspectRatio(1f)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         decorations.forEach { decoration ->
             key(decoration.id) {
