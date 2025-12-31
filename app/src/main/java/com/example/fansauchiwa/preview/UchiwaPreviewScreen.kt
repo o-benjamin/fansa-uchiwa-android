@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,19 +48,11 @@ fun UchiwaPreviewScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // 保存失敗時のみSnackbarで通知
     LaunchedEffect(uiState.saveSuccess) {
-        when (uiState.saveSuccess) {
-            true -> {
-                snackbarHostState.showSnackbar("ギャラリーに保存しました")
-                viewModel.clearSaveStatus()
-            }
-
-            false -> {
-                snackbarHostState.showSnackbar("保存に失敗しました")
-                viewModel.clearSaveStatus()
-            }
-
-            null -> {}
+        if (uiState.saveSuccess == false) {
+            snackbarHostState.showSnackbar("保存に失敗しました")
+            viewModel.clearSaveStatus()
         }
     }
 
@@ -119,6 +112,28 @@ fun UchiwaPreviewScreen(
                 Text(text = stringResource(R.string.back_to_home))
             }
         }
+    }
+
+    if (uiState.saveSuccess == true) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearSaveStatus() },
+            title = {
+                Text(text = stringResource(R.string.save_success_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.save_success_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearSaveStatus()
+                        onBackToHome()
+                    }
+                ) {
+                    Text(text = stringResource(R.string.ok))
+                }
+            }
+        )
     }
 }
 

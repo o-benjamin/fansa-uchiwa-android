@@ -20,4 +20,7 @@
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
+    <string name="save_success_title">保存成功</string>
+    <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
+    <string name="ok">OK</string>
 </resources>
