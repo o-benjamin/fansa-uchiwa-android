@@ -83,4 +83,7 @@ dependencies {
 
     // Log
     implementation(libs.footprint)
+
+    // Ads
+    implementation(libs.play.service.ads)
 }
