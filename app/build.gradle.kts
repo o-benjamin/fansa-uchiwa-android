@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,13 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -23,12 +32,49 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["ADMOB_APPLICATION_ID"] = "ca-app-pub-3940256099942544~3347511713"
+
+            buildConfigField(
+                "String",
+                "REWARDED_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/5224354917\""
+            )
+
+            buildConfigField(
+                "String",
+                "BANNER_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/9214589741\""
+            )
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            val applicationId = localProperties.getProperty("ADMOB_APPLICATION_ID_RELEASE")
+                ?: throw GradleException(
+                    "ADMOB_APPLICATION_ID_RELEASE not found in local.properties. " +
+                            "Please add it to continue building the release version."
+                )
+            manifestPlaceholders["ADMOB_APPLICATION_ID"] = applicationId
+
+            val rewardedAdId = localProperties.getProperty("ADMOB_REWARDED_ID_RELEASE")
+                ?: throw GradleException(
+                    "ADMOB_REWARDED_ID_RELEASE not found in local.properties. " +
+                            "Please add it to continue building the release version."
+                )
+            buildConfigField("String", "REWARDED_AD_UNIT_ID", "\"$rewardedAdId\"")
+
+            val bannerAdId = localProperties.getProperty("ADMOB_BANNER_ID_RELEASE")
+                ?: throw GradleException(
+                    "ADMOB_BANNER_ID_RELEASE not found in local.properties. " +
+                            "Please add it to continue building the release version."
+                )
+            buildConfigField("String", "BANNER_AD_UNIT_ID", "\"$bannerAdId\"")
         }
     }
     compileOptions {
@@ -40,6 +86,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

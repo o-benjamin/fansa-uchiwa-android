@@ -2,6 +2,7 @@ package com.example.fansauchiwa.data
 
 import android.app.Activity
 import android.content.Context
+import com.example.fansauchiwa.BuildConfig
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -39,10 +40,7 @@ interface AdMobRepository {
 class AdMobRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : AdMobRepository {
-
-    // TODO: 本番IDと入れ替えられるようにする
-    private val adUnitId = "ca-app-pub-3940256099942544/5224354917"
-
+    private val adUnitId = BuildConfig.REWARDED_AD_UNIT_ID
     private var rewardedAd: RewardedAd? = null
     private var isLoadingAd = false
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.example.fansauchiwa.BuildConfig
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
@@ -27,7 +28,7 @@ import com.google.android.gms.ads.admanager.AdManagerAdView
 @Composable
 fun BannerAd(context: Context, modifier: Modifier = Modifier) {
     val adView = AdView(context)
-    adView.adUnitId = "ca-app-pub-3940256099942544/9214589741"
+    adView.adUnitId = BuildConfig.BANNER_AD_UNIT_ID
 
     val deviceWidth = LocalConfiguration.current.screenWidthDp
     val paddingHorizontal = 8
