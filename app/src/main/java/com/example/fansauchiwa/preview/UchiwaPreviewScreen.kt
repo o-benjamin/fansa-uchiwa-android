@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.preview
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -47,6 +48,7 @@ fun UchiwaPreviewScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     // 保存失敗時のみSnackbarで通知
     LaunchedEffect(uiState.saveSuccess) {
@@ -100,7 +102,12 @@ fun UchiwaPreviewScreen(
             }
 
             TextButton(
-                onClick = { viewModel.saveToGallery() },
+                onClick = {
+                    val activity = context as? Activity
+                    if (activity != null) {
+                        viewModel.showRewardedAdAndSave(activity)
+                    }
+                },
                 enabled = uiState.imagePath != null && !uiState.isSaving
             ) {
                 Text(text = stringResource(R.string.save_as_image))

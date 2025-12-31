@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--  Google Mobile Ads SDK (AdMob) 自体のマニフェストファイルに含まれているためここには記載不要だが、可読性のために記載しておく  -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".FansaUchiwaApplication"

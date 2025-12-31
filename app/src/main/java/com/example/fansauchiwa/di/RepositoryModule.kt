@@ -2,6 +2,8 @@ package com.example.fansauchiwa.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.fansauchiwa.data.AdMobRepository
+import com.example.fansauchiwa.data.AdMobRepositoryImpl
 import com.example.fansauchiwa.data.GalleryImageDataSource
 import com.example.fansauchiwa.data.GalleryImageLocalSource
 import com.example.fansauchiwa.data.ImageDataSource
@@ -45,6 +47,12 @@ abstract class RepositoryModule {
     abstract fun bindLocalDatabaseRepository(
         localDatabaseRepositoryImpl: LocalDatabaseRepositoryImpl
     ): LocalDatabaseRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAdMobRepository(
+        adMobRepositoryImpl: AdMobRepositoryImpl
+    ): AdMobRepository
 }
 
 @Module
