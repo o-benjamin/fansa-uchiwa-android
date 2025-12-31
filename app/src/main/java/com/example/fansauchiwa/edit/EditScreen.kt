@@ -14,14 +14,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
@@ -97,6 +100,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.SizeResolver
 import com.example.fansauchiwa.R
+import com.example.fansauchiwa.ads.BannerAd
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.ImageReference
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -168,6 +172,12 @@ fun EditScreen(
                         )
                     }
                 }
+            )
+        },
+        bottomBar = {
+            BannerAd(
+                LocalContext.current,
+                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
             )
         },
         snackbarHost = {

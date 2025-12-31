@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,7 +63,6 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
     LaunchedEffect(Unit) {
@@ -70,8 +70,11 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = {
-            BannerAd(context, modifier.windowInsetsPadding(WindowInsets.statusBars))
+        bottomBar = {
+            BannerAd(
+                LocalContext.current,
+                modifier.windowInsetsPadding(WindowInsets.navigationBars)
+            )
         },
         floatingActionButton = {
             if (uiState.isDeletingMode) {
@@ -123,25 +126,27 @@ fun HomeScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            HomeScreenContent(
-                modifier = Modifier.fillMaxSize(),
-                masterpiecePathList = uiState.masterpiecePathList,
-                isDeletingMode = uiState.isDeletingMode,
-                selectedDeletingPaths = uiState.selectedDeletingPaths,
-                onImageClick = { path ->
-                    if (uiState.isDeletingMode) {
-                        viewModel.togglePathSelection(path)
-                    } else {
-                        val uchiwaId = viewModel.extractUchiwaId(path)
-                        onImageClick(uchiwaId)
-                    }
-                },
-                onImageLongPress = {
-                    viewModel.enterDeletingMode()
+        HomeScreenContent(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding()),
+            masterpiecePathList = uiState.masterpiecePathList,
+            isDeletingMode = uiState.isDeletingMode,
+            selectedDeletingPaths = uiState.selectedDeletingPaths,
+            onImageClick = { path ->
+                if (uiState.isDeletingMode) {
+                    viewModel.togglePathSelection(path)
+                } else {
+                    val uchiwaId = viewModel.extractUchiwaId(path)
+                    onImageClick(uchiwaId)
                 }
-            )
-        }
+            },
+            onImageLongPress = {
+                viewModel.enterDeletingMode()
+            },
+            statusBarPadding = innerPadding.calculateTopPadding()
+        )
+
     }
 }
 
@@ -153,7 +158,8 @@ private fun HomeScreenContent(
     isDeletingMode: Boolean = false,
     selectedDeletingPaths: List<String> = emptyList(),
     onImageClick: (String) -> Unit,
-    onImageLongPress: () -> Unit = {}
+    onImageLongPress: () -> Unit = {},
+    statusBarPadding: Dp
 ) {
     if (masterpiecePathList.isEmpty()) {
         Box(
@@ -166,7 +172,7 @@ private fun HomeScreenContent(
         LazyVerticalGrid(
             columns = GridCells.Adaptive(150.dp),
             modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp),
+            contentPadding = PaddingValues(top = statusBarPadding, start = 8.dp, end = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
