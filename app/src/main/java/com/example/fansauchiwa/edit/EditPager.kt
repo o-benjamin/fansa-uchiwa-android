@@ -64,7 +64,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -248,8 +247,12 @@ fun TextPage(
                     colors = ButtonColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.38f),
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.38f)
+                        disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                            alpha = 0.38f
+                        ),
+                        disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(
+                            alpha = 0.38f
+                        )
                     )
                 ) {
                     Text(
@@ -312,10 +315,12 @@ fun ImagePage(
                                 if (isDeletingImage) {
                                     onImageToggleSelection(image.id)
                                 } else {
-                                    onImageClick(Decoration.Image(
-                                        id = UUID.randomUUID().toString(),
-                                        imageId = image.id
-                                    ))
+                                    onImageClick(
+                                        Decoration.Image(
+                                            id = UUID.randomUUID().toString(),
+                                            imageId = image.id
+                                        )
+                                    )
                                 }
                             },
                             onLongClick = { onImageLongPress() }
@@ -517,33 +522,4 @@ fun ColorPickerRow(
             )
         }
     }
-}
-
-@Preview(showBackground = true, name = "Normal Mode")
-@Composable
-fun ImagePagePreview() {
-    ImagePage(
-        onClick = {},
-        images = emptyList(),
-        onImageClick = {},
-        onImageLongPress = {},
-        isDeletingImage = false,
-        selectedImages = emptyList(),
-        onImageToggleSelection = {}
-    )
-}
-
-@Preview(showBackground = true, name = "Delete Mode - With Selection")
-@Composable
-fun ImagePageDeleteModePreview() {
-    val sampleImages = emptyList<ImageReference>()
-    ImagePage(
-        onClick = {},
-        images = sampleImages,
-        onImageClick = {},
-        onImageLongPress = {},
-        isDeletingImage = true,
-        selectedImages = listOf("1", "3"), // 1st and 3rd images are selected
-        onImageToggleSelection = {}
-    )
 }
