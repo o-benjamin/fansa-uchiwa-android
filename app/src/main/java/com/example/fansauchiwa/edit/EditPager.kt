@@ -58,7 +58,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
@@ -196,7 +195,10 @@ fun EditPager(
 
                 2 -> {
                     StickerPage(onStickerClick = onStickerClick)
+                }
 
+                3 -> {
+                    UchiwaBackgroundPage()
                 }
             }
         }
@@ -478,12 +480,7 @@ fun ColorAndWeightControl(
     val isColorPickerOpen = remember { mutableStateOf(false) }
 
     Column(modifier = modifier.padding(top = 16.dp)) {
-        Text(
-            text = title,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Start,
-            modifier = Modifier.fillMaxWidth()
-        )
+        HeaderTitle(title)
 
         Row(
             modifier = Modifier
@@ -544,6 +541,16 @@ fun ColorAndWeightControl(
         }
     }
 
+}
+
+@Composable
+private fun HeaderTitle(title: String) {
+    Text(
+        text = title,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Start,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -640,3 +647,35 @@ fun StickerPagePreview() {
     }
 }
 
+@Composable
+fun UchiwaBackgroundPage(
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.Top
+    ) {
+        HeaderTitle(title = stringResource(R.string.uchiwa_color))
+        ColorPickerRow(
+            onColorSelected = { /* TODO: うちわ色変更の実装 */ },
+        )
+        HeaderTitle(title = stringResource(R.string.background_color))
+        ColorPickerRow(
+            onColorSelected = { /* TODO: 背景色変更の実装 */ },
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun UchiwaBackgroundPagePreview() {
+    FansaUchiwaTheme {
+        UchiwaBackgroundPage()
+    }
+}
