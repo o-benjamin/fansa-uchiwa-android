@@ -155,7 +155,7 @@ fun EditScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            viewModel.saveDecorations { uchiwaId ->
+                            viewModel.saveUchiwa { uchiwaId ->
                                 viewModel.resetEditUiState()
                                 coroutineScope.launch {
                                     // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
@@ -328,7 +328,7 @@ fun EditScreen(
                 TextButton(
                     onClick = {
                         showBackDialog.value = false
-                        viewModel.saveDecorations { uchiwaId ->
+                        viewModel.saveUchiwa { uchiwaId ->
                             viewModel.resetEditUiState()
                             coroutineScope.launch {
                                 withFrameMillis { }

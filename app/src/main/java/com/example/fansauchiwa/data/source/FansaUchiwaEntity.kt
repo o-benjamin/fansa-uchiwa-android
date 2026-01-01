@@ -6,5 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "fansa_uchiwa_data")
 data class FansaUchiwaEntity(
     @PrimaryKey val id: String,
-    var decorations: String
+    var decorations: String,
+    var uchiwaColorResId: Int,
+    var backgroundColorResId: Int
 )

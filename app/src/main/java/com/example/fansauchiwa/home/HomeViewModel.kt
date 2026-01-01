@@ -61,7 +61,7 @@ class HomeViewModel @Inject constructor(
                 // ファイル削除
                 masterpieceRepository.deleteMasterpiece(path)
                 // データベースのカラム削除
-                localDatabaseRepository.deleteDecorations(uchiwaId)
+                localDatabaseRepository.deleteUchiwa(uchiwaId)
             }
             exitDeletingMode()
             loadAllMasterpieces()

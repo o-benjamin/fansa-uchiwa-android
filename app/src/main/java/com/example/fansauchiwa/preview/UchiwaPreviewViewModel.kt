@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fansauchiwa.data.AdMobRepository
 import com.example.fansauchiwa.data.MasterpieceRepository
-import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -43,12 +42,10 @@ class UchiwaPreviewViewModel @Inject constructor(
         adMobRepository.showRewardedAd(
             activity = activity,
             onUserEarnedReward = {
-                footprint("onUserEarnedReward")
                 // 報酬獲得（広告を最後まで視聴）したら保存を実行
                 saveToGallery()
             },
             onAdFailedOrSkipped = {
-                footprint("onAdFailedOrSkipped")
                 // 広告が表示できなかった場合も保存を実行
                 saveToGallery()
             }

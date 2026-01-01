@@ -40,17 +40,20 @@ class EditViewModel @Inject constructor(
             val uchiwaId: String? = savedStateHandle[UCHIWA_ID_ARG]
             if (uchiwaId != null) {
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
-                val decorations = localDatabaseRepository.getDecorations(uchiwaId)
-                if (decorations != null) {
+                val savedUchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
+                if (savedUchiwa != null) {
                     val currentState = uiState.value
                     savedStateHandle[UI_STATE_KEY] = currentState.copy(
                         uchiwaId = uchiwaId,
-                        decorations = decorations
+                        decorations = savedUchiwa.decorations,
+                        uchiwaColorResId = savedUchiwa.uchiwaColorResId,
+                        backgroundColorResId = savedUchiwa.backgroundColorResId,
                     )
                     // 画像デコレーションがある場合、それらの画像をロード
-                    decorations.filterIsInstance<Decoration.Image>().forEach { decoration ->
-                        loadImage(decoration.imageId)
-                    }
+                    savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
+                        .forEach { decoration ->
+                            loadImage(decoration.imageId)
+                        }
                 }
             } else {
                 val newUchiwaId = UUID.randomUUID().toString()
@@ -281,10 +284,15 @@ class EditViewModel @Inject constructor(
         return true
     }
 
-    fun saveDecorations(onDecorationSave: (String) -> Unit) {
+    fun saveUchiwa(onDecorationSave: (String) -> Unit) {
         viewModelScope.launch {
             val state = uiState.value
-            localDatabaseRepository.saveDecorations(state.uchiwaId, state.decorations)
+            localDatabaseRepository.saveUchiwa(
+                id = state.uchiwaId,
+                decorations = state.decorations,
+                uchiwaColorResId = state.uchiwaColorResId,
+                backgroundColorResId = state.backgroundColorResId
+            )
             onDecorationSave(state.uchiwaId)
         }
     }
