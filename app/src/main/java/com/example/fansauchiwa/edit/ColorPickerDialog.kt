@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.github.skydoves.colorpicker.compose.AlphaTile
+import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 
@@ -82,6 +83,14 @@ fun ColorPickerDialog(
 
                     },
                     initialColor = initialColor
+                )
+                BrightnessSlider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    controller = controller,
+                     initialColor = initialColor
                 )
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
