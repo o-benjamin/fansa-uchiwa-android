@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -423,13 +424,12 @@ fun StickerPage(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
             .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
         if (selectedDecoration is Decoration.Sticker) {
             Column(modifier = Modifier.padding(top = 16.dp)) {
                 HeaderTitle(title = stringResource(R.string.sticker_color))
-
                 ColorPickerRow(
                     onColorSelected = { color ->
                         onColorSelected(color.colorResId)
@@ -440,10 +440,10 @@ fun StickerPage(
         }
 
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .fillMaxWidth()
+                .wrapContentWidth()
                 .padding(vertical = 16.dp)
         ) {
             StickerAsset.entries.forEach { sticker ->
