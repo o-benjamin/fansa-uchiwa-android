@@ -872,6 +872,7 @@ private fun StickerItem(
         Image(
             painter = painterResource(decoration.resId),
             contentDescription = decoration.label,
+            colorFilter = ColorFilter.tint(colorResource(id = decoration.color)),
             modifier = Modifier
                 .then(borderModifier)
         )

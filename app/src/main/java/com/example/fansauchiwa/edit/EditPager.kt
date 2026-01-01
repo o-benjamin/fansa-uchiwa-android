@@ -196,7 +196,11 @@ fun EditPager(
                 }
 
                 2 -> {
-                    StickerPage(onStickerClick = onStickerClick)
+                    StickerPage(
+                        onStickerClick = onStickerClick,
+                        onColorSelected = onColorSelected,
+                        selectedDecoration = selectedDecoration
+                    )
                 }
 
                 3 -> {
@@ -409,35 +413,61 @@ fun ImagePage(
 @Composable
 fun StickerPage(
     onStickerClick: (Decoration.Sticker) -> Unit,
+    onColorSelected: (Int) -> Unit,
+    selectedDecoration: Decoration? = null,
     modifier: Modifier = Modifier,
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 56.dp),
-        modifier = modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(16.dp)
+    val scrollState = rememberScrollState()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .verticalScroll(scrollState),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.Top
     ) {
-        items(StickerAsset.entries) { sticker ->
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .clickable {
-                        onStickerClick(
-                            Decoration.Sticker(
-                                label = sticker.type,
-                                id = UUID.randomUUID().toString(),
-                            )
-                        )
-                    }
-            ) {
-                Image(
-                    painter = painterResource(id = sticker.resId),
-                    contentDescription = sticker.type,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp)
+        if (selectedDecoration is Decoration.Sticker) {
+            Column(modifier = Modifier.padding(top = 16.dp)) {
+                HeaderTitle(title = stringResource(R.string.sticker_color))
+
+                ColorPickerRow(
+                    onColorSelected = { color ->
+                        onColorSelected(color.colorResId)
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
                 )
+            }
+        }
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+        ) {
+            StickerAsset.entries.forEach { sticker ->
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .clickable {
+                            onStickerClick(
+                                Decoration.Sticker(
+                                    label = sticker.type,
+                                    id = UUID.randomUUID().toString(),
+                                )
+                            )
+                        }
+                ) {
+                    Image(
+                        painter = painterResource(id = sticker.resId),
+                        contentDescription = sticker.type,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
+                    )
+                }
             }
         }
     }
@@ -647,7 +677,13 @@ fun ImagePagePreview() {
 fun StickerPagePreview() {
     FansaUchiwaTheme {
         StickerPage(
-            onStickerClick = {}
+            onStickerClick = {},
+            onColorSelected = {},
+            selectedDecoration = Decoration.Sticker(
+                id = "preview-id",
+                label = "star",
+                color = R.color.decoration_red
+            )
         )
     }
 }

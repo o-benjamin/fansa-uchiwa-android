@@ -7,6 +7,7 @@ import com.example.fansauchiwa.R
 import com.example.fansauchiwa.edit.FontFamilies
 import com.example.fansauchiwa.edit.FontFamiliesParceler
 import com.example.fansauchiwa.ui.StickerAsset
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import kotlinx.serialization.Polymorphic
@@ -52,10 +53,11 @@ sealed interface Decoration : Parcelable {
         override val offset: Offset = Offset.Zero,
         override val rotation: Float = 0f,
         override val scale: Float = 1f,
-        override val color: Int = R.color.decoration_white,
+        override val color: Int = R.color.decoration_black,
         override val strokeColor: Int = R.color.decoration_black,
         override val strokeWidth: Float = 30f,
     ) : Decoration {
+        @IgnoredOnParcel
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }
 
@@ -72,5 +74,5 @@ sealed interface Decoration : Parcelable {
         override val color: Int = R.color.decoration_white,
         override val strokeColor: Int = R.color.decoration_black,
         override val strokeWidth: Float = 30f,
-        ) : Decoration
+    ) : Decoration
 }
