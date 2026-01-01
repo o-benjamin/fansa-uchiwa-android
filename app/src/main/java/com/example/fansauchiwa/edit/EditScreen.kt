@@ -229,6 +229,7 @@ fun EditScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .aspectRatio(1.414f)
                     .weight(1f)
                     .drawWithContent {
                         graphicsLayer.record {
@@ -395,8 +396,8 @@ fun UchiwaPreview(
             contentDescription = null,
             colorFilter = ColorFilter.tint(uchiwaColor),
             modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .aspectRatio(1f)
+                .fillMaxWidth(0.95f)
+                .aspectRatio(1.414f)
         )
         decorations.forEach { decoration ->
             key(decoration.id) {
