@@ -216,7 +216,7 @@ fun TextPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
@@ -237,7 +237,9 @@ fun TextPage(
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
         ) {
             FontFamilies.entries.forEach { fontFamily ->
                 Button(
@@ -403,15 +405,15 @@ fun StickerPage(
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 64.dp),
+        columns = GridCells.Adaptive(minSize = 56.dp),
         modifier = modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(16.dp)
     ) {
         items(StickerAsset.entries) { sticker ->
             Box(
                 modifier = Modifier
-                    .size(48.dp)
                     .clip(RoundedCornerShape(4.dp))
                     .clickable {
                         onStickerClick(
@@ -425,7 +427,9 @@ fun StickerPage(
                 Image(
                     painter = painterResource(id = sticker.resId),
                     contentDescription = sticker.type,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
                 )
             }
         }
@@ -473,7 +477,7 @@ fun ColorAndWeightControl(
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.padding(bottom = 16.dp)) {
+    Column(modifier = modifier.padding(top = 16.dp)) {
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
@@ -622,6 +626,16 @@ fun ImagePagePreview() {
             selectedImages = emptyList(),
             onImageToggleSelection = {},
             isPreview = true
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun StickerPagePreview() {
+    FansaUchiwaTheme {
+        StickerPage(
+            onStickerClick = {}
         )
     }
 }
