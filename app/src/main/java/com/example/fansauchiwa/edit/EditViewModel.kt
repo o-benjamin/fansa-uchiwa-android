@@ -196,6 +196,16 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun updateUchiwaColor(colorResId: Int) {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColorResId = colorResId)
+    }
+
+    fun updateBackgroundColor(colorResId: Int) {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColorResId = colorResId)
+    }
+
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
         viewModelScope.launch {
             localImageRepository.saveImage(uri, id)

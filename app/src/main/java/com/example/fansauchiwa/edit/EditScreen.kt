@@ -255,7 +255,9 @@ fun EditScreen(
                     onTextChanged = viewModel::updateText,
                     onDoneTextEdit = viewModel::finishEditingText,
                     modifier = Modifier.fillMaxSize(),
-                    images = uiState.images
+                    images = uiState.images,
+                    uchiwaColorResId = uiState.uchiwaColorResId,
+                    backgroundColorResId = uiState.backgroundColorResId
                 )
 
                 if (uiState.isDeletingImage) {
@@ -301,6 +303,8 @@ fun EditScreen(
                 },
                 onImageClick = viewModel::addDecoration,
                 onImageLongPress = viewModel::startImageDeletionMode,
+                onUchiwaColorSelected = viewModel::updateUchiwaColor,
+                onBackgroundColorSelected = viewModel::updateBackgroundColor,
                 selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
                 allImages = uiState.allImages,
                 isDeletingImage = uiState.isDeletingImage,
@@ -367,23 +371,27 @@ fun UchiwaPreview(
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
+    uchiwaColorResId: Int = R.color.gray,
+    backgroundColorResId: Int = R.color.transparent
 ) {
     val focusManager = LocalFocusManager.current
     Box(
-        modifier = modifier.clickable(
-            interactionSource = null,
-            indication = null
-        ) {
-            onBackgroundTap()
-            onDoneTextEdit()
-            focusManager.clearFocus()
-        },
+        modifier = modifier
+            .background(colorResource(id = backgroundColorResId))
+            .clickable(
+                interactionSource = null,
+                indication = null
+            ) {
+                onBackgroundTap()
+                onDoneTextEdit()
+                focusManager.clearFocus()
+            },
         contentAlignment = Alignment.Center
     ) {
         Image(
             painter = painterResource(R.drawable.uchiwa_shape),
             contentDescription = null,
-            colorFilter = ColorFilter.tint(colorResource(R.color.gray)),
+            colorFilter = ColorFilter.tint(colorResource(id = uchiwaColorResId)),
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .aspectRatio(1f)

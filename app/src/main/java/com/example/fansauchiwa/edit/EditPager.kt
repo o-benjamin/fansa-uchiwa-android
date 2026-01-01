@@ -92,6 +92,8 @@ fun EditPager(
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
+    onUchiwaColorSelected: (Int) -> Unit = {},
+    onBackgroundColorSelected: (Int) -> Unit = {},
     selectedDecoration: Decoration? = null,
     allImages: List<ImageReference> = emptyList(),
     isDeletingImage: Boolean = false,
@@ -198,7 +200,10 @@ fun EditPager(
                 }
 
                 3 -> {
-                    UchiwaBackgroundPage()
+                    UchiwaBackgroundPage(
+                        onUchiwaColorSelected = onUchiwaColorSelected,
+                        onBackgroundColorSelected = onBackgroundColorSelected
+                    )
                 }
             }
         }
@@ -649,7 +654,9 @@ fun StickerPagePreview() {
 
 @Composable
 fun UchiwaBackgroundPage(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUchiwaColorSelected: (Int) -> Unit = {},
+    onBackgroundColorSelected: (Int) -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
 
@@ -663,11 +670,11 @@ fun UchiwaBackgroundPage(
     ) {
         HeaderTitle(title = stringResource(R.string.uchiwa_color))
         ColorPickerRow(
-            onColorSelected = { /* TODO: うちわ色変更の実装 */ },
+            onColorSelected = { color -> onUchiwaColorSelected(color.colorResId) },
         )
         HeaderTitle(title = stringResource(R.string.background_color))
         ColorPickerRow(
-            onColorSelected = { /* TODO: 背景色変更の実装 */ },
+            onColorSelected = { color -> onBackgroundColorSelected(color.colorResId) },
         )
     }
 }
