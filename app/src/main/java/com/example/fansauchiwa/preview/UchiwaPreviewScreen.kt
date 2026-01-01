@@ -183,7 +183,7 @@ fun UchiwaPreviewContent(
                             .addLastModifiedToFileCacheKey(true)
                             .build(),
                         contentDescription = stringResource(R.string.uchiwa_preview),
-                        contentScale = ContentScale.Fit,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
                             .shadow(
