@@ -1,5 +1,6 @@
 package com.example.fansauchiwa.data
 
+import androidx.compose.ui.graphics.Color
 import androidx.room.TypeConverter
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

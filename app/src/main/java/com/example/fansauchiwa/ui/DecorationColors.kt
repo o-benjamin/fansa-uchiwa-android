@@ -1,22 +1,13 @@
 package com.example.fansauchiwa.ui
 
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
-import com.example.fansauchiwa.R
 
-enum class DecorationColors(val colorResId: Int) {
-    CYAN(R.color.decoration_black),
-    RED(R.color.decoration_red),
-    MAGENTA(R.color.decoration_magenta),
-    BLUE(R.color.decoration_blue),
-    GREEN(R.color.decoration_green),
-    YELLOW(R.color.decoration_yellow),
-    WHITE(R.color.decoration_white),
+enum class DecorationColors(val value: Color) {
+    CYAN(Color(0xFF000000)),
+    RED(Color(0xFFFF0000)),
+    MAGENTA(Color(0xFFFF00FF)),
+    BLUE(Color(0xFF0000FF)),
+    GREEN(Color(0xFF00FF00)),
+    YELLOW(Color(0xFFFFFF00)),
+    WHITE(Color(0xFFFFFFFF)),
 }
-
-@Composable
-fun DecorationColors.getColor(): Color {
-    return colorResource(id = colorResId)
-}
-

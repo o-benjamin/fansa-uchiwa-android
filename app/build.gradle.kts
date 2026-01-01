@@ -133,4 +133,7 @@ dependencies {
 
     // Ads
     implementation(libs.play.service.ads)
+
+    // ColorPicker
+    implementation(libs.compose.colorpicker)
 }

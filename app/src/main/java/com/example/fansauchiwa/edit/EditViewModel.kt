@@ -3,6 +3,7 @@ package com.example.fansauchiwa.edit
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,8 +47,8 @@ class EditViewModel @Inject constructor(
                     savedStateHandle[UI_STATE_KEY] = currentState.copy(
                         uchiwaId = uchiwaId,
                         decorations = savedUchiwa.decorations,
-                        uchiwaColorResId = savedUchiwa.uchiwaColorResId,
-                        backgroundColorResId = savedUchiwa.backgroundColorResId,
+                        uchiwaColor = savedUchiwa.uchiwaColor,
+                        backgroundColor = savedUchiwa.backgroundColor,
                     )
                     // 画像デコレーションがある場合、それらの画像をロード
                     savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
@@ -160,7 +161,7 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun updateColor(id: String, newColor: Int) {
+    fun updateColor(id: String, newColor: Color) {
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Sticker -> decoration.copy(color = newColor)
@@ -170,7 +171,7 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun updateStrokeColor(id: String, newColor: Int) {
+    fun updateStrokeColor(id: String, newColor: Color) {
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(strokeColor = newColor)
@@ -199,14 +200,14 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun updateUchiwaColor(colorResId: Int) {
+    fun updateUchiwaColor(color: Color) {
         val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColorResId = colorResId)
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColor = color)
     }
 
-    fun updateBackgroundColor(colorResId: Int) {
+    fun updateBackgroundColor(color: Color) {
         val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColorResId = colorResId)
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
     }
 
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
@@ -290,8 +291,8 @@ class EditViewModel @Inject constructor(
             localDatabaseRepository.saveUchiwa(
                 id = state.uchiwaId,
                 decorations = state.decorations,
-                uchiwaColorResId = state.uchiwaColorResId,
-                backgroundColorResId = state.backgroundColorResId
+                uchiwaColor = state.uchiwaColor,
+                backgroundColor = state.backgroundColor
             )
             onDecorationSave(state.uchiwaId)
         }
@@ -326,4 +327,3 @@ class EditViewModel @Inject constructor(
         )
     }
 }
-

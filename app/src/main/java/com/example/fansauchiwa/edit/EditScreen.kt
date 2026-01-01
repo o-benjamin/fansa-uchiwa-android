@@ -256,8 +256,8 @@ fun EditScreen(
                     onDoneTextEdit = viewModel::finishEditingText,
                     modifier = Modifier.fillMaxSize(),
                     images = uiState.images,
-                    uchiwaColorResId = uiState.uchiwaColorResId,
-                    backgroundColorResId = uiState.backgroundColorResId
+                    uchiwaColor = uiState.uchiwaColor,
+                    backgroundColor = uiState.backgroundColor
                 )
 
                 if (uiState.isDeletingImage) {
@@ -371,13 +371,13 @@ fun UchiwaPreview(
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
-    uchiwaColorResId: Int = R.color.gray,
-    backgroundColorResId: Int = R.color.transparent
+    uchiwaColor: Color = Color(0xFB888888),
+    backgroundColor: Color = Color(0x00000000)
 ) {
     val focusManager = LocalFocusManager.current
     Box(
         modifier = modifier
-            .background(colorResource(id = backgroundColorResId))
+            .background(backgroundColor)
             .clickable(
                 interactionSource = null,
                 indication = null
@@ -391,7 +391,7 @@ fun UchiwaPreview(
         Image(
             painter = painterResource(R.drawable.uchiwa_shape),
             contentDescription = null,
-            colorFilter = ColorFilter.tint(colorResource(id = uchiwaColorResId)),
+            colorFilter = ColorFilter.tint(uchiwaColor),
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .aspectRatio(1f)
@@ -752,8 +752,8 @@ private fun TextItem(
         }
         val measurer = rememberTextMeasurer()
         val textSize = 24.sp.nonScaledSp
-        val textColor = colorResource(decoration.color)
-        val strokeColor = colorResource(decoration.strokeColor)
+        val textColor = decoration.color
+        val strokeColor = decoration.strokeColor
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
@@ -872,7 +872,7 @@ private fun StickerItem(
         Image(
             painter = painterResource(decoration.resId),
             contentDescription = decoration.label,
-            colorFilter = ColorFilter.tint(colorResource(id = decoration.color)),
+            colorFilter = ColorFilter.tint(decoration.color),
             modifier = Modifier
                 .then(borderModifier)
         )
@@ -1066,8 +1066,8 @@ private fun StickerItemPreview() {
                     offset = Offset.Zero,
                     rotation = 0f,
                     scale = 1f,
-                    color = R.color.decoration_white,
-                    strokeColor = R.color.decoration_black,
+                    color = Color(0xFFFFFFFF),
+                    strokeColor = Color(0xFF000000),
                     strokeWidth = 10f
                 ),
                 isSelected = true,
@@ -1091,8 +1091,8 @@ private fun TextItemPreview() {
                     offset = Offset.Zero,
                     rotation = 0f,
                     scale = 1f,
-                    color = R.color.decoration_green,
-                    strokeColor = R.color.decoration_red,
+                    color = Color(0xFF00FF00),
+                    strokeColor = Color(0xFFFF0000),
                     strokeWidth = 30f,
                     width = 900,
                     font = FontFamilies.ZEN_MARU_GOTHIC

@@ -1,21 +1,17 @@
 package com.example.fansauchiwa.data
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toColorLong
 import com.example.fansauchiwa.data.source.FansaUchiwaDao
 import com.example.fansauchiwa.data.source.FansaUchiwaEntity
 import javax.inject.Inject
-
-data class SavedUchiwa(
-    val decorations: List<Decoration>,
-    val uchiwaColorResId: Int,
-    val backgroundColorResId: Int
-)
 
 interface LocalDatabaseRepository {
     suspend fun saveUchiwa(
         id: String,
         decorations: List<Decoration>,
-        uchiwaColorResId: Int,
-        backgroundColorResId: Int
+        uchiwaColor: Color,
+        backgroundColor: Color
     )
 
     suspend fun getUchiwa(id: String): SavedUchiwa?
@@ -26,20 +22,17 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
     private val fansaUchiwaDao: FansaUchiwaDao
 ) : LocalDatabaseRepository {
 
-    private val converters = Converters()
-
     override suspend fun saveUchiwa(
         id: String,
         decorations: List<Decoration>,
-        uchiwaColorResId: Int,
-        backgroundColorResId: Int
+        uchiwaColor: Color,
+        backgroundColor: Color
     ) {
-        val decorationsJson = converters.decorationsToJson(decorations)
         val fansaUchiwaEntity = FansaUchiwaEntity(
             id = id,
-            decorations = decorationsJson,
-            uchiwaColorResId = uchiwaColorResId,
-            backgroundColorResId = backgroundColorResId
+            decorations = decorations,
+            uchiwaColorValue = uchiwaColor.toColorLong(),
+            backgroundColorValue = backgroundColor.toColorLong()
         )
         return fansaUchiwaDao.upsertUchiwaData(fansaUchiwaEntity)
     }
@@ -48,9 +41,9 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
         val uchiwaData = fansaUchiwaDao.getUchiwaById(id)
         return uchiwaData?.let {
             SavedUchiwa(
-                decorations = converters.decorationsFromJson(it.decorations),
-                uchiwaColorResId = it.uchiwaColorResId,
-                backgroundColorResId = it.backgroundColorResId
+                decorations = it.decorations,
+                uchiwaColor = it.uchiwaColor,
+                backgroundColor = it.backgroundColor
             )
         }
     }

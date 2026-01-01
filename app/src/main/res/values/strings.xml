@@ -27,4 +27,6 @@
     <string name="uchiwa_color">うちわ色</string>
     <string name="background_color">背景色</string>
     <string name="sticker_color">ステッカー色</string>
+    <string name="custom_color_picker_title">カスタム色を選択</string>
+    <string name="select">選択</string>
 </resources>

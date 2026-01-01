@@ -17,6 +17,7 @@ kotlinxSerialization = "1.6.3"
 coil3 = "3.3.0"
 footprint = "2.0.0"
 playServiceAds = "24.9.0"
+colorPicker = "1.1.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -47,6 +48,8 @@ coil3-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref
 coil3-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil3" }
 footprint = { group = "io.github.morayl", name = "footprint", version.ref = "footprint" }
 play-service-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServiceAds" }
+compose-colorpicker = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorPicker" }
+
 
 
 [plugins]

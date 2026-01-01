@@ -53,12 +53,16 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
@@ -75,7 +79,6 @@ import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.ImageReference
 import com.example.fansauchiwa.ui.DecorationColors
 import com.example.fansauchiwa.ui.StickerAsset
-import com.example.fansauchiwa.ui.getColor
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -86,15 +89,15 @@ fun EditPager(
     modifier: Modifier = Modifier,
     onStickerClick: (Decoration.Sticker) -> Unit,
     onTextClick: (Decoration.Text) -> Unit,
-    onColorSelected: (Int) -> Unit,
+    onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
-    onStrokeColorSelected: (Int) -> Unit,
+    onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
-    onUchiwaColorSelected: (Int) -> Unit = {},
-    onBackgroundColorSelected: (Int) -> Unit = {},
+    onUchiwaColorSelected: (Color) -> Unit = {},
+    onBackgroundColorSelected: (Color) -> Unit = {},
     selectedDecoration: Decoration? = null,
     allImages: List<ImageReference> = emptyList(),
     isDeletingImage: Boolean = false,
@@ -218,9 +221,9 @@ fun EditPager(
 @Composable
 fun TextPage(
     onTextClick: (Decoration.Text) -> Unit,
-    onColorSelected: (Int) -> Unit,
+    onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
-    onStrokeColorSelected: (Int) -> Unit,
+    onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     selectedDecoration: Decoration? = null
 ) {
@@ -414,7 +417,7 @@ fun ImagePage(
 @Composable
 fun StickerPage(
     onStickerClick: (Decoration.Sticker) -> Unit,
-    onColorSelected: (Int) -> Unit,
+    onColorSelected: (Color) -> Unit,
     selectedDecoration: Decoration? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -431,9 +434,7 @@ fun StickerPage(
             Column(modifier = Modifier.padding(top = 16.dp)) {
                 HeaderTitle(title = stringResource(R.string.sticker_color))
                 ColorPickerRow(
-                    onColorSelected = { color ->
-                        onColorSelected(color.colorResId)
-                    },
+                    onColorSelected = onColorSelected,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
@@ -475,13 +476,13 @@ fun StickerPage(
 
 @Composable
 fun TextDecorationControls(
-    onColorSelected: (Int) -> Unit,
+    onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
-    onStrokeColorSelected: (Int) -> Unit,
+    onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
-    textColor: Int,
+    textColor: Color,
     textWidth: Int,
-    strokeColor: Int,
+    strokeColor: Color,
     strokeWidth: Float
 ) {
     ColorAndWeightControl(
@@ -506,9 +507,9 @@ fun TextDecorationControls(
 @Composable
 fun ColorAndWeightControl(
     title: String,
-    color: Int,
+    color: Color,
     width: Int = FontWeight.W900.weight,
-    onColorSelected: (Int) -> Unit = {},
+    onColorSelected: (Color) -> Unit = {},
     onWeightChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -546,9 +547,7 @@ fun ColorAndWeightControl(
                             .size(24.dp)
                             .clip(CircleShape)
                             .border(1.dp, colorResource(R.color.gray), CircleShape)
-                            .background(
-                                color = colorResource(color)
-                            )
+                            .background(color = color)
                             .clickable {
                                 isColorPickerOpen.value = true
                             }
@@ -569,9 +568,8 @@ fun ColorAndWeightControl(
 
         AnimatedVisibility(isColorPickerOpen.value) {
             ColorPickerRow(
-                onColorSelected = { color ->
-                    onColorSelected(color.colorResId)
-                }
+                onColorSelected = onColorSelected,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
     }
@@ -590,9 +588,11 @@ private fun HeaderTitle(title: String) {
 
 @Composable
 fun ColorPickerRow(
-    onColorSelected: (DecorationColors) -> Unit,
+    onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showColorPickerDialog by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -600,18 +600,47 @@ fun ColorPickerRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .border(1.dp, colorResource(R.color.gray), CircleShape)
+                .background(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            Color.Red,
+                            Color.Yellow,
+                            Color.Green,
+                            Color.Cyan,
+                            Color.Blue,
+                            Color.Magenta,
+                            Color.Red
+                        )
+                    )
+                )
+                .clickable {
+                    showColorPickerDialog = true
+                }
+        )
         DecorationColors.entries.forEach { decorationColor ->
             Box(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
                     .border(1.dp, colorResource(R.color.gray), CircleShape)
-                    .background(color = decorationColor.getColor())
+                    .background(color = decorationColor.value)
                     .clickable {
-                        onColorSelected(decorationColor)
+                        onColorSelected(decorationColor.value)
                     }
             )
         }
+    }
+
+    if (showColorPickerDialog) {
+        ColorPickerDialog(
+            onDismiss = { showColorPickerDialog = false },
+            onColorSelected = onColorSelected
+        )
     }
 }
 
@@ -629,8 +658,8 @@ fun TextPagePreview() {
                 id = "preview-id",
                 font = FontFamilies.HACHI_MARU_POP,
                 text = "プレビュー",
-                color = R.color.decoration_black,
-                strokeColor = R.color.decoration_white,
+                color = Color(0xFF000000),
+                strokeColor = Color(0xFFFFFFFF),
                 width = 700,
                 strokeWidth = 2.5f
             )
@@ -682,7 +711,7 @@ fun StickerPagePreview() {
             selectedDecoration = Decoration.Sticker(
                 id = "preview-id",
                 label = "star",
-                color = R.color.decoration_red
+                color = Color(0xFFFF0000)
             )
         )
     }
@@ -691,8 +720,8 @@ fun StickerPagePreview() {
 @Composable
 fun UchiwaBackgroundPage(
     modifier: Modifier = Modifier,
-    onUchiwaColorSelected: (Int) -> Unit = {},
-    onBackgroundColorSelected: (Int) -> Unit = {}
+    onUchiwaColorSelected: (Color) -> Unit = {},
+    onBackgroundColorSelected: (Color) -> Unit = {}
 ) {
     val scrollState = rememberScrollState()
 
@@ -706,11 +735,17 @@ fun UchiwaBackgroundPage(
     ) {
         HeaderTitle(title = stringResource(R.string.uchiwa_color))
         ColorPickerRow(
-            onColorSelected = { color -> onUchiwaColorSelected(color.colorResId) },
+            onColorSelected = { color ->
+                onUchiwaColorSelected(color)
+            },
+            modifier = Modifier.padding(top = 8.dp)
         )
         HeaderTitle(title = stringResource(R.string.background_color))
         ColorPickerRow(
-            onColorSelected = { color -> onBackgroundColorSelected(color.colorResId) },
+            onColorSelected = { color ->
+                onBackgroundColorSelected(color)
+            },
+            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }
