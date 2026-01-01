@@ -14,5 +14,5 @@ enum class StickerAsset(
     LOCAL_FIRE_DEPARTMENT("local_fire_department", R.drawable.round_local_fire_department_24),
     PETS("pets", R.drawable.round_pets_24),
     THUMB_UP("thumb_up", R.drawable.round_thumb_up_24),
-
+    HEART("heart", R.drawable.sticker_heart),
 }
