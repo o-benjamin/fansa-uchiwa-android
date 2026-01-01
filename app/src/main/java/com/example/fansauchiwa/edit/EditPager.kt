@@ -230,7 +230,7 @@ fun TextPage(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
             .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
         if (selectedDecoration is Decoration.Text) {
@@ -247,10 +247,10 @@ fun TextPage(
         }
 
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .fillMaxWidth()
+                .wrapContentWidth()
                 .padding(vertical = 16.dp)
         ) {
             FontFamilies.entries.forEach { fontFamily ->
