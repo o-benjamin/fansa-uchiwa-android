@@ -16,7 +16,7 @@
     <string name="delete_images">%d個の写真を削除</string>
     <string name="delete_masterpiece">%d個の作品を削除</string>
     <string name="cancel">キャンセル</string>
-    <string name="save_as_image">画像として保存する</string>
+    <string name="save_as_image">画像として保存</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
@@ -29,4 +29,9 @@
     <string name="sticker_color">ステッカー色</string>
     <string name="custom_color_picker_title">カスタム色を選択</string>
     <string name="decide">決定</string>
+    <string name="save_after_ad">広告のあとに保存されます</string>
+    <string name="design_saved">デザインを保存しました！</string>
+    <string name="print_instructions">実際にうちわを作るときは、画像として端末に保存しA3サイズで印刷してください</string>
+    <string name="empty_masterpiece_title">あなただけの\nファンサうちわを\n作ろう！</string>
+    <string name="empty_masterpiece_message">右下のボタンをタップして\n今すぐ作成スタート✨↘️</string>
 </resources>

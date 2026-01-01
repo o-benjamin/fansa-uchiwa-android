@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -46,6 +45,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -187,7 +189,22 @@ private fun HomeScreenContent(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "保存されたうちわがありません")
+            androidx.compose.foundation.layout.Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.empty_masterpiece_title),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.displaySmall,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(R.string.empty_masterpiece_message),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     } else {
         LazyVerticalGrid(
@@ -270,4 +287,32 @@ private fun MasterpieceItem(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenPreview() {
+    HomeScreenContent(
+        modifier = Modifier.fillMaxSize(),
+        masterpiecePathList = (1..10).map { "path_$it" },
+        isDeletingMode = false,
+        selectedDeletingPaths = emptyList(),
+        onImageClick = {},
+        onImageLongPress = {},
+        statusBarPadding = 0.dp
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeScreenPreview_NoItem() {
+    HomeScreenContent(
+        modifier = Modifier.fillMaxSize(),
+        masterpiecePathList = emptyList(),
+        isDeletingMode = false,
+        selectedDeletingPaths = emptyList(),
+        onImageClick = {},
+        onImageLongPress = {},
+        statusBarPadding = 0.dp
+    )
 }

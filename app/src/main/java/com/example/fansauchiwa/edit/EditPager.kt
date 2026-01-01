@@ -583,12 +583,12 @@ fun ColorAndWeightControl(
 }
 
 @Composable
-private fun HeaderTitle(title: String) {
+private fun HeaderTitle(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Start,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     )
 }
 
@@ -741,9 +741,12 @@ fun UchiwaBackgroundPage(
             .padding(horizontal = 16.dp)
             .verticalScroll(scrollState),
         horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.Top
+        verticalArrangement = Arrangement.Top,
     ) {
-        HeaderTitle(title = stringResource(R.string.uchiwa_color))
+        HeaderTitle(
+            title = stringResource(R.string.uchiwa_color),
+            modifier = Modifier.padding(top = 16.dp)
+        )
         ColorPickerRow(
             onColorSelected = { color ->
                 onUchiwaColorSelected(color)
@@ -751,7 +754,10 @@ fun UchiwaBackgroundPage(
             modifier = Modifier.padding(top = 8.dp),
             currentColor = currentUchiwaColor
         )
-        HeaderTitle(title = stringResource(R.string.background_color))
+        HeaderTitle(
+            title = stringResource(R.string.background_color),
+            modifier = Modifier.padding(top = 16.dp)
+        )
         ColorPickerRow(
             onColorSelected = { color ->
                 onBackgroundColorSelected(color)
