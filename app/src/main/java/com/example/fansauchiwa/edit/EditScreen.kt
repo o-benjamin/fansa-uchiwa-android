@@ -310,6 +310,8 @@ fun EditScreen(
                 isDeletingImage = uiState.isDeletingImage,
                 selectedDeletingImages = uiState.selectedDeletingImages,
                 onImageToggleSelection = viewModel::toggleImageSelection,
+                uchiwaColor = uiState.uchiwaColor,
+                backgroundColor = uiState.backgroundColor,
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)

@@ -103,6 +103,8 @@ fun EditPager(
     isDeletingImage: Boolean = false,
     selectedDeletingImages: List<String> = emptyList(),
     onImageToggleSelection: (String) -> Unit = {},
+    uchiwaColor: Color,
+    backgroundColor: Color,
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -210,7 +212,9 @@ fun EditPager(
                 3 -> {
                     UchiwaBackgroundPage(
                         onUchiwaColorSelected = onUchiwaColorSelected,
-                        onBackgroundColorSelected = onBackgroundColorSelected
+                        onBackgroundColorSelected = onBackgroundColorSelected,
+                        currentUchiwaColor = uchiwaColor,
+                        currentBackgroundColor = backgroundColor
                     )
                 }
             }
@@ -435,7 +439,8 @@ fun StickerPage(
                 HeaderTitle(title = stringResource(R.string.sticker_color))
                 ColorPickerRow(
                     onColorSelected = onColorSelected,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
+                    currentColor = selectedDecoration.color
                 )
             }
         }
@@ -569,7 +574,8 @@ fun ColorAndWeightControl(
         AnimatedVisibility(isColorPickerOpen.value) {
             ColorPickerRow(
                 onColorSelected = onColorSelected,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
+                currentColor = color
             )
         }
     }
@@ -589,7 +595,8 @@ private fun HeaderTitle(title: String) {
 @Composable
 fun ColorPickerRow(
     onColorSelected: (Color) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    currentColor: Color
 ) {
     var showColorPickerDialog by remember { mutableStateOf(false) }
 
@@ -638,6 +645,7 @@ fun ColorPickerRow(
 
     if (showColorPickerDialog) {
         ColorPickerDialog(
+            initialColor = currentColor,
             onDismiss = { showColorPickerDialog = false },
             onColorSelected = onColorSelected
         )
@@ -720,8 +728,10 @@ fun StickerPagePreview() {
 @Composable
 fun UchiwaBackgroundPage(
     modifier: Modifier = Modifier,
-    onUchiwaColorSelected: (Color) -> Unit = {},
-    onBackgroundColorSelected: (Color) -> Unit = {}
+    onUchiwaColorSelected: (Color) -> Unit,
+    onBackgroundColorSelected: (Color) -> Unit,
+    currentUchiwaColor: Color,
+    currentBackgroundColor: Color
 ) {
     val scrollState = rememberScrollState()
 
@@ -738,14 +748,16 @@ fun UchiwaBackgroundPage(
             onColorSelected = { color ->
                 onUchiwaColorSelected(color)
             },
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp),
+            currentColor = currentUchiwaColor
         )
         HeaderTitle(title = stringResource(R.string.background_color))
         ColorPickerRow(
             onColorSelected = { color ->
                 onBackgroundColorSelected(color)
             },
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp),
+            currentColor = currentBackgroundColor
         )
     }
 }
@@ -754,6 +766,11 @@ fun UchiwaBackgroundPage(
 @Composable
 fun UchiwaBackgroundPagePreview() {
     FansaUchiwaTheme {
-        UchiwaBackgroundPage()
+        UchiwaBackgroundPage(
+            onUchiwaColorSelected = {},
+            onBackgroundColorSelected = {},
+            currentUchiwaColor = DecorationColors.RED.value,
+            currentBackgroundColor = DecorationColors.BLUE.value
+        )
     }
 }
