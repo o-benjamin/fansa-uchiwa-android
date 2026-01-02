@@ -77,6 +77,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -98,11 +99,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import coil3.size.SizeResolver
 import com.example.fansauchiwa.R
 import com.example.fansauchiwa.ads.BannerAd
 import com.example.fansauchiwa.data.Decoration
 import com.example.fansauchiwa.data.ImageReference
+import com.example.fansauchiwa.data.captureHighResBitmap
 import com.example.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -119,6 +122,8 @@ fun EditScreen(
     val graphicsLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
     val showBackDialog = remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
 
     uiState.userMessage?.let { userMessage ->
         val snackbarText = stringResource(userMessage)
@@ -161,7 +166,12 @@ fun EditScreen(
                                     // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
                                     withFrameMillis { }
                                     val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                                    viewModel.saveUchiwaBitmap(bitmap, uchiwaId)
+                                    val highResBitmap = captureHighResBitmap(
+                                        graphicsLayer,
+                                        density,
+                                        layoutDirection
+                                    ).asAndroidBitmap()
+                                    viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
                                 }
                             }
                         }
@@ -938,6 +948,7 @@ private fun ImageItem(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(imagePath)
                 .size(SizeResolver.ORIGINAL)
+                .allowHardware(false)
                 .build(),
             contentDescription = null,
             modifier = Modifier
