@@ -1,5 +1,7 @@
 package com.example.fansauchiwa.home
 
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -22,23 +24,30 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -62,6 +71,38 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+private fun HomeTopAppBar(
+    onOpenPrivacyPolicy: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    TopAppBar(
+        title = {},
+        actions = {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = stringResource(R.string.more_options)
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.privacy_policy)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenPrivacyPolicy()
+                    }
+                )
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -75,6 +116,7 @@ fun HomeScreen(
     val isFabExpanded by remember {
         derivedStateOf { lazyGridState.firstVisibleItemIndex == 0 }
     }
+    val context = LocalContext.current
 
     // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
     LaunchedEffect(Unit) {
@@ -82,6 +124,16 @@ fun HomeScreen(
     }
 
     Scaffold(
+        topBar = {
+            HomeTopAppBar(
+                onOpenPrivacyPolicy = {
+                    val url =
+                        "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
+                    val customTabsIntent = CustomTabsIntent.Builder().build()
+                    customTabsIntent.launchUrl(context, Uri.parse(url))
+                }
+            )
+        },
         bottomBar = {
             BannerAd(
                 LocalContext.current,

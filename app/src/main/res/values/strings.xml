@@ -34,4 +34,6 @@
     <string name="print_instructions">実際にうちわを作るときは、画像として端末に保存しA3サイズで印刷してください</string>
     <string name="empty_masterpiece_title">あなただけの\nファンサうちわを\n作ろう！</string>
     <string name="empty_masterpiece_message">右下のボタンをタップして\n今すぐ作成スタート✨↘️</string>
+    <string name="privacy_policy">プライバシーポリシー</string>
+    <string name="more_options">その他のオプション</string>
 </resources>

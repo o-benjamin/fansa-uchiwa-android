@@ -136,4 +136,7 @@ dependencies {
 
     // ColorPicker
     implementation(libs.compose.colorpicker)
+
+    // Browser (Chrome Custom Tabs)
+    implementation(libs.androidx.browser)
 }
