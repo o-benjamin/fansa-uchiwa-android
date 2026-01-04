@@ -293,7 +293,6 @@ private fun MasterpieceItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(1f)
     ) {
         Box {
             AsyncImage(
@@ -308,7 +307,7 @@ private fun MasterpieceItem(
                         onClick = onClick,
                         onLongClick = onLongClick
                     ),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
 
             if (isDeletingMode) {

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -149,19 +150,18 @@ fun UchiwaPreviewContent(
     Column(
         modifier = modifier.padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp)
-                .aspectRatio(1f)
         ) {
             if (isPreview && imagePath != null) {
                 // Preview用のサンプルBox
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .background(colorResource(id = R.color.gray)),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -180,9 +180,9 @@ fun UchiwaPreviewContent(
                             .addLastModifiedToFileCacheKey(true)
                             .build(),
                         contentDescription = stringResource(R.string.uchiwa_preview),
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .shadow(
                                 elevation = 8.dp,
                                 shape = RoundedCornerShape(16.dp)
