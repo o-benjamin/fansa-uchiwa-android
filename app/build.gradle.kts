@@ -18,11 +18,11 @@ val localProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.example.fansauchiwa"
+    namespace = "com.fansauchiwa"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.fansauchiwa"
+        applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
         versionCode = 1
