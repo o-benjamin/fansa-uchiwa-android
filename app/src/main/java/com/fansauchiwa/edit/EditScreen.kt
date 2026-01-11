@@ -407,8 +407,10 @@ fun UchiwaPreview(
             colorFilter = ColorFilter.tint(uchiwaColor),
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .aspectRatio(1.414f)
-        )
+                // 保存するときに拡大しやすいよう、A3用紙の比率にする
+                .aspectRatio(1.414f),
+
+            )
         decorations.forEach { decoration ->
             key(decoration.id) {
                 var offsetDiff by remember { mutableStateOf(Offset.Zero) }
