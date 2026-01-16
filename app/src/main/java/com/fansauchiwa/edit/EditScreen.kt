@@ -64,8 +64,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.toRect
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -73,6 +77,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -391,6 +396,9 @@ fun UchiwaPreview(
     Box(
         modifier = modifier
             .background(backgroundColor)
+            .graphicsLayer {
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
             .clickable(
                 interactionSource = null,
                 indication = null
@@ -810,13 +818,15 @@ private fun TextItem(
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
-                        color = strokeColor
+                        color = strokeColor,
+                        blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
                     )
                     // 塗りつぶし
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Fill,
-                        color = textColor
+                        color = textColor,
+                        blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
                     )
                     // 最後に描画しないと入力カーソルが埋もれて消えてしまうため、明示的に最後に描画
                     drawContent()
@@ -884,12 +894,24 @@ private fun StickerItem(
             .wrapContentSize()
     )
     {
+        val painter = painterResource(decoration.resId)
         Image(
-            painter = painterResource(decoration.resId),
+            painter = painter,
             contentDescription = decoration.label,
-            colorFilter = ColorFilter.tint(decoration.color),
             modifier = Modifier
                 .then(borderModifier)
+                .drawWithContent {
+                    drawContext.canvas.withSaveLayer(
+                        bounds = size.toRect(),
+                        paint = Paint().apply {
+                            blendMode = if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
+                        }
+                    ) {
+                        with(painter) {
+                            draw(size, colorFilter = ColorFilter.tint(decoration.color))
+                        }
+                    }
+                }
         )
         if (isSelected) {
             TransformHandleIcon(
@@ -956,6 +978,16 @@ private fun ImageItem(
             modifier = Modifier
                 .size(IMAGE_SIZE_DEFAULT)
                 .then(borderModifier)
+                .drawWithContent {
+                    drawContext.canvas.withSaveLayer(
+                        bounds = size.toRect(),
+                        paint = Paint().apply {
+                            blendMode = if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
+                        }
+                    ) {
+                        drawContent()
+                    }
+                }
         )
         if (isSelected) {
             TransformHandleIcon(
