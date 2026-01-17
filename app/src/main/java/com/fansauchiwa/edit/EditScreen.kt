@@ -1057,7 +1057,7 @@ private fun GestureInputHandle(
     Box(
         modifier = modifier
             .size(GESTURE_INPUT_HANDLE_SIZE / scale)
-            .pointerInput(Unit) {
+            .pointerInput(onTransform, onTransformStart, onTransformEnd) {
                 detectDragGestures(
                     onDragStart = {
                         onTransformStart()
