@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(R.color.black, R.color.black)
+            statusBarStyle = SystemBarStyle.light(R.color.transparent, R.color.transparent)
         )
 
         // 確実に広告を表示するため、アプリ起動時に広告を事前ロード
