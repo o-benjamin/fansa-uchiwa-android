@@ -32,7 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -1098,7 +1097,7 @@ private fun TransformHandleIcon(
     modifier: Modifier
 ) {
     Icon(
-        imageVector = Icons.Default.OpenWith,
+        painter = painterResource(R.drawable.outline_arrows_outward_24),
         contentDescription = "Zoom and Rotate",
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
