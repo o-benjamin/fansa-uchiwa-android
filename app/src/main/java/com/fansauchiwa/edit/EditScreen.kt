@@ -740,20 +740,22 @@ private fun GestureInputLayer(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * scale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * scale
+                        (GESTURE_INPUT_HANDLE_SIZE / 2),
+                        (GESTURE_INPUT_HANDLE_SIZE / 2)
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
-                onTransformEnd = onTransformEnd
+                onTransformEnd = onTransformEnd,
+                scale = scale
             )
             TapInputHandle(
                 onTap = onTapDelete,
+                scale = scale,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * scale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * scale)
+                        (GESTURE_INPUT_HANDLE_SIZE / 2),
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
                     )
             )
         }
@@ -1049,11 +1051,12 @@ private fun GestureInputHandle(
     onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
+    scale: Float,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE)
+            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = {
@@ -1072,11 +1075,12 @@ private fun GestureInputHandle(
 @Composable
 private fun TapInputHandle(
     onTap: () -> Unit,
+    scale: Float,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE)
+            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
             .clickable(
                 interactionSource = null,
                 indication = null,
