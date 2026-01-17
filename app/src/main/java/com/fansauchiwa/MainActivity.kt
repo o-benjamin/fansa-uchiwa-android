@@ -2,6 +2,7 @@ package com.fansauchiwa
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.fansauchiwa.data.AdMobRepository
@@ -17,7 +18,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(R.color.black, R.color.black)
+        )
 
         // 確実に広告を表示するため、アプリ起動時に広告を事前ロード
         adMobRepository.loadRewardedAd()
