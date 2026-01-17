@@ -21,6 +21,6 @@ data class EditUiState(
     val isDeletingImage: Boolean = false,
     val selectedDeletingImages: List<String> = emptyList(),
     val savedPath: String? = null,
-    val uchiwaColor: Color = Color(0xFB888888),
-    val backgroundColor: Color = Color(0x00000000)
+    val uchiwaColor: Color = Color(0xFF000000),
+    val backgroundColor: Color = Color(0x11000000)
 ) : Parcelable

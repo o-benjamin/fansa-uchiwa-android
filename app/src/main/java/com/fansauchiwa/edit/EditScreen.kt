@@ -387,8 +387,8 @@ fun UchiwaPreview(
     onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
-    uchiwaColor: Color = Color(0xFB888888),
-    backgroundColor: Color = Color(0x00000000)
+    uchiwaColor: Color,
+    backgroundColor: Color
 ) {
     val focusManager = LocalFocusManager.current
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
