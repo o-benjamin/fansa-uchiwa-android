@@ -245,9 +245,8 @@ fun EditScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .aspectRatio(1.414f)
-                    .weight(1f)
                     .drawWithContent {
                         graphicsLayer.record {
                             this@drawWithContent.drawContent()
@@ -331,8 +330,6 @@ fun EditScreen(
                 uchiwaColor = uiState.uchiwaColor,
                 backgroundColor = uiState.backgroundColor,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
             )
         }
     }
