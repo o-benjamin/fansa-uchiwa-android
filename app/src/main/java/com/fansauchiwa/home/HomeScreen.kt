@@ -68,11 +68,13 @@ import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTopAppBar(
-    onOpenPrivacyPolicy: () -> Unit
+    onOpenPrivacyPolicy: () -> Unit,
+    onOpenFeedback: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -94,6 +96,13 @@ private fun HomeTopAppBar(
                     onClick = {
                         menuExpanded = false
                         onOpenPrivacyPolicy()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.feedback)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenFeedback()
                     }
                 )
             }
@@ -130,7 +139,12 @@ fun HomeScreen(
                     val url =
                         "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
                     val customTabsIntent = CustomTabsIntent.Builder().build()
-                    customTabsIntent.launchUrl(context, Uri.parse(url))
+                    customTabsIntent.launchUrl(context, url.toUri())
+                },
+                onOpenFeedback = {
+                    val url = "https://forms.gle/UyTgAZ2ewDHzwTwN6"
+                    val customTabsIntent = CustomTabsIntent.Builder().build()
+                    customTabsIntent.launchUrl(context, url.toUri())
                 }
             )
         },
