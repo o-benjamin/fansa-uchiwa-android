@@ -79,6 +79,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -97,6 +98,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
@@ -393,6 +395,8 @@ fun UchiwaPreview(
     backgroundColor: Color = Color(0x00000000)
 ) {
     val focusManager = LocalFocusManager.current
+    var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
+
     Box(
         modifier = modifier
             .background(backgroundColor)
@@ -416,7 +420,10 @@ fun UchiwaPreview(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 // 保存するときに拡大しやすいよう、A3用紙の比率にする
-                .aspectRatio(1.414f),
+                .aspectRatio(1.414f)
+                .onSizeChanged { size ->
+                    uchiwaSize = size
+                },
 
             )
         decorations.forEach { decoration ->
@@ -464,7 +471,14 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDecorationDoubleTap = { onDecorationDoubleTap(decoration.id) },
-                            onDrag = { offsetDiff += it },
+                            onDrag = { dragAmount ->
+                                offsetDiff = calculateClampedOffset(
+                                    currentConfirmedOffset = decoration.offset,
+                                    cumulativeOffset = offsetDiff,
+                                    dragAmount = dragAmount,
+                                    boundarySize = uchiwaSize
+                                )
+                            },
                             onDragEnd = {
                                 onDecorationDragEnd(
                                     decoration.id,
@@ -528,7 +542,14 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDrag = { offsetDiff += it },
+                            onDrag = { dragAmount ->
+                                offsetDiff = calculateClampedOffset(
+                                    currentConfirmedOffset = decoration.offset,
+                                    cumulativeOffset = offsetDiff,
+                                    dragAmount = dragAmount,
+                                    boundarySize = uchiwaSize
+                                )
+                            },
                             onDragEnd = {
                                 onDecorationDragEnd(
                                     decoration.id,
@@ -602,7 +623,14 @@ fun UchiwaPreview(
                             decorationSize = imageDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDrag = { offsetDiff += it },
+                            onDrag = { dragAmount ->
+                                offsetDiff = calculateClampedOffset(
+                                    currentConfirmedOffset = decoration.offset,
+                                    cumulativeOffset = offsetDiff,
+                                    dragAmount = dragAmount,
+                                    boundarySize = uchiwaSize
+                                )
+                            },
                             onDragEnd = {
                                 onDecorationDragEnd(
                                     decoration.id,

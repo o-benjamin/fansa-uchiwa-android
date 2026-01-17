@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.fansauchiwa.data.Transformation
@@ -76,3 +77,43 @@ internal fun Offset.rotateBy(degrees: Float): Offset {
 internal val TextUnit.nonScaledSp: TextUnit
     @Composable
     get() = (value / LocalDensity.current.fontScale).sp
+
+/**
+ * デコレーションアイテムの移動量を境界内に制限する
+ *
+ * @param currentConfirmedOffset 現在の確定座標
+ * @param cumulativeOffset 累積の移動量
+ * @param dragAmount 今回のドラッグ量
+ * @param boundarySize 境界サイズ（うちわ画像のサイズ）
+ * @return 制限を適用した後の新しい累積の移動量
+ */
+internal fun calculateClampedOffset(
+    currentConfirmedOffset: Offset,
+    cumulativeOffset: Offset,
+    dragAmount: Offset,
+    boundarySize: IntSize?
+): Offset {
+    if (boundarySize == null || boundarySize.width == 0 || boundarySize.height == 0) {
+        return cumulativeOffset + dragAmount
+    }
+
+    // 新しい位置を計算
+    val newCumulativeOffset = cumulativeOffset + dragAmount
+    val newPosition = currentConfirmedOffset + newCumulativeOffset
+
+    // 境界範囲を計算（中心が原点なので、-width/2 から width/2 まで）
+    val halfWidth = (boundarySize.width / 2f) * 0.7f
+    val halfHeight = (boundarySize.height / 2f) * 0.9f
+
+    // 新しい位置を境界内に制限
+    val clampedX = newPosition.x.coerceIn(-halfWidth, halfWidth)
+    val clampedY = newPosition.y.coerceIn(-halfHeight, halfHeight)
+
+    // 制限された位置から累積の移動量を逆算
+    return Offset(
+        x = clampedX - currentConfirmedOffset.x,
+        y = clampedY - currentConfirmedOffset.y
+    )
+}
+
+
