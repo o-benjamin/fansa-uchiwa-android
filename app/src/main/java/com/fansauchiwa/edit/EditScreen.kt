@@ -752,6 +752,10 @@ private fun GestureInputLayer(
                 onTap = onTapDelete,
                 scale = scale,
                 modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / scale
+                        scaleY = 1 / scale
+                    }
                     .align(Alignment.TopEnd)
                     .offset(
                         (GESTURE_INPUT_HANDLE_SIZE / 2),
@@ -1064,7 +1068,7 @@ private fun GestureInputHandle(
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        onTransform(dragAmount)
+                        onTransform(dragAmount / scale)
                     },
                     onDragEnd = onTransformEnd
                 )
