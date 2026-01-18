@@ -1078,7 +1078,7 @@ private fun GestureInputHandle(
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        onTransform(dragAmount / scale)
+                        onTransform(dragAmount)
                     },
                     onDragEnd = onTransformEnd
                 )
