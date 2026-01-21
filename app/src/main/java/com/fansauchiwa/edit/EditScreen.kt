@@ -946,11 +946,25 @@ private fun StickerItem(
         val strokeColor = decoration.strokeColor
         val strokeWidth = decoration.strokeWidth
 
+        // intrinsicSizeを基準に、strokeWidth分を考慮した内部スケールを計算
+        val intrinsicSize = painter.intrinsicSize
+        val innerScaleX = if (intrinsicSize.width > strokeWidth * 2) {
+            (intrinsicSize.width - strokeWidth * 10) / intrinsicSize.width
+        } else {
+            0.1f // 最小スケール
+        }
+        val innerScaleY = if (intrinsicSize.height > strokeWidth * 2) {
+            (intrinsicSize.height - strokeWidth * 10) / intrinsicSize.height
+        } else {
+            0.1f // 最小スケール
+        }
+        val innerScale = minOf(innerScaleX, innerScaleY)
+
         Canvas(
             modifier = Modifier
                 .size(
-                    with(LocalDensity.current) { painter.intrinsicSize.width.toDp() },
-                    with(LocalDensity.current) { painter.intrinsicSize.height.toDp() }
+                    with(LocalDensity.current) { intrinsicSize.width.toDp() },
+                    with(LocalDensity.current) { intrinsicSize.height.toDp() }
                 )
                 .then(borderModifier)
                 .graphicsLayer {
@@ -958,12 +972,13 @@ private fun StickerItem(
                 }
                 .drawWithCache {
                     onDrawWithContent {
-                        // 枠線付きステッカーを描画
-                        drawStickerWithStroke(
+                        // 枠線付きステッカーを描画（中心を基点にスケーリング）
+                        drawStickerWithStrokeScaled(
                             imageVector = imageVector,
                             fillColor = fillColor,
                             strokeColor = strokeColor,
-                            strokeWidth = strokeWidth
+                            strokeWidth = strokeWidth,
+                            innerScale = innerScale
                         )
 
                         // 選択されていない場合はうちわ形状でクリップ
@@ -974,10 +989,11 @@ private fun StickerItem(
                                     blendMode = BlendMode.DstIn
                                 }
                             ) {
-                                // ステッカーの形状をマスクとして使用
-                                with(painter) {
-                                    draw(size)
-                                }
+                                // ステッカーの形状をマスクとして使用（同じスケールを適用）
+                                drawStickerMaskScaled(
+                                    imageVector = imageVector,
+                                    innerScale = innerScale
+                                )
                             }
                         }
                     }

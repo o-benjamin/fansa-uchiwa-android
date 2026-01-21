@@ -23,27 +23,105 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * ImageVectorを枠線付きで描画する
+ * ImageVectorを枠線付きで描画する（内部スケーリング対応版）
+ * strokeWidthが大きくなっても外形サイズが変わらないように内部画像を縮小して描画する
  *
  * @param imageVector 描画対象のImageVector
  * @param fillColor 塗りつぶし色
  * @param strokeColor 枠線の色
  * @param strokeWidth 枠線の太さ
+ * @param innerScale 内部画像のスケール（0.0〜1.0）
  */
-internal fun DrawScope.drawStickerWithStroke(
+internal fun DrawScope.drawStickerWithStrokeScaled(
     imageVector: ImageVector,
     fillColor: Color,
     strokeColor: Color,
-    strokeWidth: Float
+    strokeWidth: Float,
+    innerScale: Float
 ) {
-    // viewport と canvas サイズの比率を計算してスケーリング
+    // viewport と canvas サイズの比率を計算
     val scaleX = size.width / imageVector.viewportWidth
     val scaleY = size.height / imageVector.viewportHeight
 
+    // 中心を基点にスケーリングするための平行移動量を計算
+    val centerX = size.width / 2f
+    val centerY = size.height / 2f
+
     withTransform({
+        // 中心を基点にinnerScaleを適用
+        translate(centerX, centerY)
+        scale(innerScale, innerScale, pivot = Offset.Zero)
+        translate(-centerX, -centerY)
+        // 元のviewport→canvasスケーリング
         scale(scaleX, scaleY, pivot = Offset.Zero)
     }) {
-        drawVectorGroup(imageVector.root, fillColor, strokeColor, strokeWidth)
+        // strokeWidthもinnerScaleに合わせて調整（見た目の太さを維持）
+        val adjustedStrokeWidth = strokeWidth / innerScale
+        drawVectorGroup(imageVector.root, fillColor, strokeColor, adjustedStrokeWidth)
+    }
+}
+
+/**
+ * ImageVectorをマスクとして描画する（内部スケーリング対応版）
+ * drawStickerWithStrokeScaledと同じスケールで描画し、クリッピング用のマスクとして使用
+ *
+ * @param imageVector 描画対象のImageVector
+ * @param innerScale 内部画像のスケール（0.0〜1.0）
+ */
+internal fun DrawScope.drawStickerMaskScaled(
+    imageVector: ImageVector,
+    innerScale: Float
+) {
+    // viewport と canvas サイズの比率を計算
+    val scaleX = size.width / imageVector.viewportWidth
+    val scaleY = size.height / imageVector.viewportHeight
+
+    // 中心を基点にスケーリングするための平行移動量を計算
+    val centerX = size.width / 2f
+    val centerY = size.height / 2f
+
+    withTransform({
+        // 中心を基点にinnerScaleを適用
+        translate(centerX, centerY)
+        scale(innerScale, innerScale, pivot = Offset.Zero)
+        translate(-centerX, -centerY)
+        // 元のviewport→canvasスケーリング
+        scale(scaleX, scaleY, pivot = Offset.Zero)
+    }) {
+        // マスク用なので塗りつぶしのみ（枠線なし）
+        drawVectorGroupMask(imageVector.root)
+    }
+}
+
+/**
+ * VectorGroupをマスク用に再帰的に走査して描画する（塗りつぶしのみ）
+ */
+private fun DrawScope.drawVectorGroupMask(group: VectorGroup) {
+    withTransform({
+        translate(group.translationX, group.translationY)
+        rotate(group.rotation, pivot = Offset(group.pivotX, group.pivotY))
+        scale(group.scaleX, group.scaleY, pivot = Offset(group.pivotX, group.pivotY))
+    }) {
+        for (i in 0 until group.size) {
+            when (val node = group[i]) {
+                is VectorPath -> {
+                    val pathData = node.pathData
+                    val androidPath = androidx.compose.ui.graphics.Path()
+                    androidx.compose.ui.graphics.vector.PathParser()
+                        .addPathNodes(pathData)
+                        .toPath(androidPath)
+                    drawPath(
+                        path = androidPath,
+                        color = Color.Black,
+                        style = Fill
+                    )
+                }
+
+                is VectorGroup -> {
+                    drawVectorGroupMask(node)
+                }
+            }
+        }
     }
 }
 
