@@ -66,7 +66,7 @@ sealed interface Decoration : Parcelable {
         override val color: Color = DecorationColors.MAGENTA.value,
         @Serializable(with = ColorSerializer::class)
         override val strokeColor: Color = DecorationColors.WHITE.value,
-        override val strokeWidth: Float = 30f,
+        override val strokeWidth: Float = 3f,
     ) : Decoration {
         @IgnoredOnParcel
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0

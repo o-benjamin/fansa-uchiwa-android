@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -61,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -79,6 +81,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -89,6 +93,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextRange
@@ -935,25 +940,51 @@ private fun StickerItem(
             .wrapContentSize()
     )
     {
-        val painter = painterResource(decoration.resId)
-        Image(
-            painter = painter,
-            contentDescription = decoration.label,
+        val imageVector = ImageVector.vectorResource(id = decoration.resId)
+        val painter = rememberVectorPainter(image = imageVector)
+        val fillColor = decoration.color
+        val strokeColor = decoration.strokeColor
+        val strokeWidth = decoration.strokeWidth
+
+        Canvas(
             modifier = Modifier
+                .size(
+                    with(LocalDensity.current) { painter.intrinsicSize.width.toDp() },
+                    with(LocalDensity.current) { painter.intrinsicSize.height.toDp() }
+                )
                 .then(borderModifier)
-                .drawWithContent {
-                    drawContext.canvas.withSaveLayer(
-                        bounds = size.toRect(),
-                        paint = Paint().apply {
-                            blendMode = if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
-                        }
-                    ) {
-                        with(painter) {
-                            draw(size, colorFilter = ColorFilter.tint(decoration.color))
+                .graphicsLayer {
+                    compositingStrategy = CompositingStrategy.Offscreen
+                }
+                .drawWithCache {
+                    onDrawWithContent {
+                        // 枠線付きステッカーを描画
+                        drawStickerWithStroke(
+                            imageVector = imageVector,
+                            fillColor = fillColor,
+                            strokeColor = strokeColor,
+                            strokeWidth = strokeWidth
+                        )
+
+                        // 選択されていない場合はうちわ形状でクリップ
+                        if (!isSelected) {
+                            drawContext.canvas.withSaveLayer(
+                                bounds = size.toRect(),
+                                paint = Paint().apply {
+                                    blendMode = BlendMode.DstIn
+                                }
+                            ) {
+                                // ステッカーの形状をマスクとして使用
+                                with(painter) {
+                                    draw(size)
+                                }
+                            }
                         }
                     }
                 }
-        )
+        ) {
+            // 描画はdrawWithCache内で行う
+        }
         if (isSelected) {
             TransformHandleIcon(
                 modifier = Modifier

@@ -3,6 +3,15 @@ package com.fansauchiwa.edit
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorGroup
+import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
@@ -12,6 +21,91 @@ import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
+
+/**
+ * ImageVectorを枠線付きで描画する
+ *
+ * @param imageVector 描画対象のImageVector
+ * @param fillColor 塗りつぶし色
+ * @param strokeColor 枠線の色
+ * @param strokeWidth 枠線の太さ
+ */
+internal fun DrawScope.drawStickerWithStroke(
+    imageVector: ImageVector,
+    fillColor: Color,
+    strokeColor: Color,
+    strokeWidth: Float
+) {
+    // viewport と canvas サイズの比率を計算してスケーリング
+    val scaleX = size.width / imageVector.viewportWidth
+    val scaleY = size.height / imageVector.viewportHeight
+
+    withTransform({
+        scale(scaleX, scaleY, pivot = Offset.Zero)
+    }) {
+        drawVectorGroup(imageVector.root, fillColor, strokeColor, strokeWidth)
+    }
+}
+
+/**
+ * VectorGroupを再帰的に走査して描画する
+ */
+private fun DrawScope.drawVectorGroup(
+    group: VectorGroup,
+    fillColor: Color,
+    strokeColor: Color,
+    strokeWidth: Float
+) {
+    withTransform({
+        // VectorGroupのtransformを適用
+        translate(group.translationX, group.translationY)
+        rotate(group.rotation, pivot = Offset(group.pivotX, group.pivotY))
+        scale(group.scaleX, group.scaleY, pivot = Offset(group.pivotX, group.pivotY))
+    }) {
+        // グループ内の各要素を処理
+        for (i in 0 until group.size) {
+            when (val node = group[i]) {
+                is VectorPath -> {
+                    drawVectorPath(node, fillColor, strokeColor, strokeWidth)
+                }
+
+                is VectorGroup -> {
+                    drawVectorGroup(node, fillColor, strokeColor, strokeWidth)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * VectorPathを枠線と塗りつぶしで描画する
+ */
+private fun DrawScope.drawVectorPath(
+    path: VectorPath,
+    fillColor: Color,
+    strokeColor: Color,
+    strokeWidth: Float
+) {
+    val pathData = path.pathData
+    val androidPath = androidx.compose.ui.graphics.Path()
+    androidx.compose.ui.graphics.vector.PathParser().addPathNodes(pathData).toPath(androidPath)
+
+    // 枠線を描画（strokeWidthが0より大きい場合のみ）
+    if (strokeWidth > 0f) {
+        drawPath(
+            path = androidPath,
+            color = strokeColor,
+            style = Stroke(width = strokeWidth, join = StrokeJoin.Round)
+        )
+    }
+
+    // 塗りつぶしを描画
+    drawPath(
+        path = androidPath,
+        color = fillColor,
+        style = Fill
+    )
+}
 
 internal fun calculateTransformations(
     cumulativeOffset: Offset,
@@ -115,5 +209,3 @@ internal fun calculateClampedOffset(
         y = clampedY - currentConfirmedOffset.y
     )
 }
-
-
