@@ -194,8 +194,8 @@ class EditViewModel @Inject constructor(
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(strokeWidth = newWidth)
-                // TODO: いずれはStickerの枠線の太さも変更したい
-                else -> decoration
+                is Decoration.Sticker -> decoration.copy(strokeWidth = newWidth)
+                is Decoration.Image -> decoration.copy(strokeWidth = newWidth)
             }
         }
     }

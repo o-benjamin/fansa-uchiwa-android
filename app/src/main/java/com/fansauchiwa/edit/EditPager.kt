@@ -205,6 +205,8 @@ fun EditPager(
                     StickerPage(
                         onStickerClick = onStickerClick,
                         onColorSelected = onColorSelected,
+                        onStrokeColorSelected = onStrokeColorSelected,
+                        onStrokeWeightChanged = onStrokeWeightChanged,
                         selectedDecoration = selectedDecoration
                     )
                 }
@@ -422,6 +424,8 @@ fun ImagePage(
 fun StickerPage(
     onStickerClick: (Decoration.Sticker) -> Unit,
     onColorSelected: (Color) -> Unit,
+    onStrokeColorSelected: (Color) -> Unit,
+    onStrokeWeightChanged: (Float) -> Unit,
     selectedDecoration: Decoration? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -443,6 +447,16 @@ fun StickerPage(
                     currentColor = selectedDecoration.color
                 )
             }
+
+            ColorAndWeightControl(
+                title = stringResource(R.string.stroke_color_and_weight),
+                color = selectedDecoration.strokeColor,
+                width = selectedDecoration.strokeWidth,
+                valueRange = 0f..16f,
+                steps = 8,
+                onColorSelected = onStrokeColorSelected,
+                onWeightChanged = onStrokeWeightChanged
+            )
         }
 
         FlowRow(
@@ -493,19 +507,23 @@ fun TextDecorationControls(
     ColorAndWeightControl(
         title = stringResource(R.string.text_color_and_weight),
         color = textColor,
-        width = textWidth,
+        width = textWidth.toFloat(),
+        valueRange = 0f..900f,
+        steps = 10,
         onColorSelected = onColorSelected,
-        onWeightChanged = onTextWeightChanged
+        onWeightChanged = { newValue ->
+            onTextWeightChanged(newValue.toInt())
+        }
     )
 
     ColorAndWeightControl(
         title = stringResource(R.string.stroke_color_and_weight),
         color = strokeColor,
-        width = (strokeWidth * 10f).toInt(),
+        width = strokeWidth,
+        valueRange = 0f..90f,
+        steps = 10,
         onColorSelected = onStrokeColorSelected,
-        onWeightChanged = { newValue ->
-            onStrokeWeightChanged(newValue.toFloat() / 10)
-        }
+        onWeightChanged = onStrokeWeightChanged
     )
 }
 
@@ -513,9 +531,11 @@ fun TextDecorationControls(
 fun ColorAndWeightControl(
     title: String,
     color: Color,
-    width: Int = FontWeight.W900.weight,
+    width: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
     onColorSelected: (Color) -> Unit = {},
-    onWeightChanged: (Int) -> Unit = {},
+    onWeightChanged: (Float) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
@@ -560,13 +580,13 @@ fun ColorAndWeightControl(
                 }
             }
             Slider(
-                value = width.toFloat(),
+                value = width,
                 onValueChange = { newValue ->
-                    onWeightChanged(newValue.toInt())
+                    onWeightChanged(newValue)
                     isColorPickerOpen.value = false
                 },
-                valueRange = 100f..900f,
-                steps = 9,
+                valueRange = valueRange,
+                steps = steps,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -716,6 +736,8 @@ fun StickerPagePreview() {
         StickerPage(
             onStickerClick = {},
             onColorSelected = {},
+            onStrokeColorSelected = {},
+            onStrokeWeightChanged = {},
             selectedDecoration = Decoration.Sticker(
                 id = "preview-id",
                 label = "star",
