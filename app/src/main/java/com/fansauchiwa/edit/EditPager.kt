@@ -93,6 +93,8 @@ fun EditPager(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
+    onSecondBorderColorSelected: (Color) -> Unit,
+    onSecondBorderWeightChanged: (Float) -> Unit,
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
@@ -183,6 +185,8 @@ fun EditPager(
                         onTextWeightChanged = onTextWeightChanged,
                         onStrokeColorSelected = onStrokeColorSelected,
                         onStrokeWeightChanged = onStrokeWeightChanged,
+                        onSecondBorderColorSelected = onSecondBorderColorSelected,
+                        onSecondBorderWeightChanged = onSecondBorderWeightChanged,
                         selectedDecoration = selectedDecoration
                     )
                 }
@@ -231,6 +235,8 @@ fun TextPage(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
+    onSecondBorderColorSelected: (Color) -> Unit,
+    onSecondBorderWeightChanged: (Float) -> Unit,
     selectedDecoration: Decoration? = null
 ) {
     val scrollState = rememberScrollState()
@@ -248,10 +254,14 @@ fun TextPage(
                 onTextWeightChanged = onTextWeightChanged,
                 onStrokeColorSelected = onStrokeColorSelected,
                 onStrokeWeightChanged = onStrokeWeightChanged,
+                onSecondBorderColorSelected = onSecondBorderColorSelected,
+                onSecondBorderWeightChanged = onSecondBorderWeightChanged,
                 textColor = selectedDecoration.color,
                 strokeColor = selectedDecoration.strokeColor,
                 textWidth = selectedDecoration.width,
-                strokeWidth = selectedDecoration.strokeWidth
+                strokeWidth = selectedDecoration.strokeWidth,
+                secondBorderColor = selectedDecoration.secondBorderColor,
+                secondBorderWidth = selectedDecoration.secondBorderWidth
             )
         }
 
@@ -499,10 +509,14 @@ fun TextDecorationControls(
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
+    onSecondBorderColorSelected: (Color) -> Unit,
+    onSecondBorderWeightChanged: (Float) -> Unit,
     textColor: Color,
     textWidth: Int,
     strokeColor: Color,
-    strokeWidth: Float
+    strokeWidth: Float,
+    secondBorderColor: Color,
+    secondBorderWidth: Float
 ) {
     ColorAndWeightControl(
         title = stringResource(R.string.text_color_and_weight),
@@ -524,6 +538,16 @@ fun TextDecorationControls(
         steps = 10,
         onColorSelected = onStrokeColorSelected,
         onWeightChanged = onStrokeWeightChanged
+    )
+
+    ColorAndWeightControl(
+        title = stringResource(R.string.second_stroke_color_and_weight),
+        color = secondBorderColor,
+        width = secondBorderWidth,
+        valueRange = 0f..90f,
+        steps = 10,
+        onColorSelected = onSecondBorderColorSelected,
+        onWeightChanged = onSecondBorderWeightChanged
     )
 }
 
@@ -682,6 +706,8 @@ fun TextPagePreview() {
             onTextWeightChanged = {},
             onStrokeColorSelected = {},
             onStrokeWeightChanged = {},
+            onSecondBorderColorSelected = {},
+            onSecondBorderWeightChanged = {},
             selectedDecoration = Decoration.Text(
                 id = "preview-id",
                 font = FontFamilies.HACHI_MARU_POP,

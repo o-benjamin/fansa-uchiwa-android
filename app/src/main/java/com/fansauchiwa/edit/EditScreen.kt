@@ -318,6 +318,11 @@ fun EditScreen(
                         viewModel.updateStrokeColor(decorationId, color)
                     }
                 },
+                onSecondBorderColorSelected = { color ->
+                    uiState.selectedDecorationId?.let { decorationId ->
+                        viewModel.updateSecondBorderColor(decorationId, color)
+                    }
+                },
                 onTextWeightChanged = { weight ->
                     uiState.selectedDecorationId?.let { decorationId ->
                         viewModel.updateWidth(decorationId, weight)
@@ -326,6 +331,11 @@ fun EditScreen(
                 onStrokeWeightChanged = { weight ->
                     uiState.selectedDecorationId?.let { decorationId ->
                         viewModel.updateStrokeWidth(decorationId, weight)
+                    }
+                },
+                onSecondBorderWeightChanged = { weight ->
+                    uiState.selectedDecorationId?.let { decorationId ->
+                        viewModel.updateSecondBorderWidth(decorationId, weight)
                     }
                 },
                 onAddImage = { image, uri ->
@@ -823,6 +833,8 @@ private fun TextItem(
         val textSize = 24.sp.nonScaledSp
         val textColor = decoration.color
         val strokeColor = decoration.strokeColor
+        val secondBorderColor = decoration.secondBorderColor
+        val secondBorderWidth = decoration.secondBorderWidth
         BasicTextField(
             value = textFieldValue,
             onValueChange = {
@@ -860,14 +872,26 @@ private fun TextItem(
                             fontSize = textSize
                         )
                     )
-                    // 枠線
+                    // 二重枠線（最背面）: secondBorderColor で描画（太さ：borderWidth + secondBorderWidth）
+                    if (secondBorderWidth > 0f) {
+                        drawText(
+                            textLayoutResult = layoutResult,
+                            drawStyle = Stroke(
+                                width = decoration.strokeWidth + secondBorderWidth,
+                                join = StrokeJoin.Round
+                            ),
+                            color = secondBorderColor,
+                            blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
+                        )
+                    }
+                    // 枠線（中間）: strokeColor で描画（太さ：borderWidth）
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
                         color = strokeColor,
                         blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
                     )
-                    // 塗りつぶし
+                    // 塗りつぶし（最前面）: color で本体を描画
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Fill,

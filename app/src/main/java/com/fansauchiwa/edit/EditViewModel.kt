@@ -200,6 +200,24 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun updateSecondBorderColor(id: String, newColor: Color) {
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(secondBorderColor = newColor)
+                else -> decoration
+            }
+        }
+    }
+
+    fun updateSecondBorderWidth(id: String, newWidth: Float) {
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(secondBorderWidth = newWidth)
+                else -> decoration
+            }
+        }
+    }
+
     fun updateUchiwaColor(color: Color) {
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColor = color)

@@ -47,6 +47,9 @@ sealed interface Decoration : Parcelable {
         @Serializable(with = ColorSerializer::class)
         override val strokeColor: Color = DecorationColors.MAGENTA.value,
         override val strokeWidth: Float = 30f,
+        @Serializable(with = ColorSerializer::class)
+        val secondBorderColor: Color = DecorationColors.WHITE.value,
+        val secondBorderWidth: Float = 0f,
         val width: Int = FontWeight.W900.weight,
         val font: FontFamilies
     ) : Decoration
