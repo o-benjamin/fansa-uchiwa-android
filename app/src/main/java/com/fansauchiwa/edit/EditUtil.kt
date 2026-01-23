@@ -4,12 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.graphics.vector.VectorGroup
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.platform.LocalDensity
@@ -23,7 +25,14 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * ImageVectorを枠線付きで描画する（内部スケーリング対応版）
+ * 描画モードを定義する列挙型
+ * - StrokeOnly: 枠線のみを描画
+ * - FillOnly: 塗りつぶしのみを描画
+ */
+private enum class DrawMode { StrokeOnly, FillOnly }
+
+/**
+ * ImageVectorを枠線付きで描画する
  * strokeWidthが大きくなっても外形サイズが変わらないように内部画像を縮小して描画する
  *
  * @param imageVector 描画対象のImageVector
@@ -57,82 +66,39 @@ internal fun DrawScope.drawStickerWithStrokeScaled(
     }) {
         // strokeWidthもinnerScaleに合わせて調整（見た目の太さを維持）
         val adjustedStrokeWidth = strokeWidth / innerScale
-        drawVectorGroup(imageVector.root, fillColor, strokeColor, adjustedStrokeWidth)
-    }
-}
 
-/**
- * ImageVectorをマスクとして描画する（内部スケーリング対応版）
- * drawStickerWithStrokeScaledと同じスケールで描画し、クリッピング用のマスクとして使用
- *
- * @param imageVector 描画対象のImageVector
- * @param innerScale 内部画像のスケール（0.0〜1.0）
- */
-internal fun DrawScope.drawStickerMaskScaled(
-    imageVector: ImageVector,
-    innerScale: Float
-) {
-    // viewport と canvas サイズの比率を計算
-    val scaleX = size.width / imageVector.viewportWidth
-    val scaleY = size.height / imageVector.viewportHeight
-
-    // 中心を基点にスケーリングするための平行移動量を計算
-    val centerX = size.width / 2f
-    val centerY = size.height / 2f
-
-    withTransform({
-        // 中心を基点にinnerScaleを適用
-        translate(centerX, centerY)
-        scale(innerScale, innerScale, pivot = Offset.Zero)
-        translate(-centerX, -centerY)
-        // 元のviewport→canvasスケーリング
-        scale(scaleX, scaleY, pivot = Offset.Zero)
-    }) {
-        // マスク用なので塗りつぶしのみ（枠線なし）
-        drawVectorGroupMask(imageVector.root)
-    }
-}
-
-/**
- * VectorGroupをマスク用に再帰的に走査して描画する（塗りつぶしのみ）
- */
-private fun DrawScope.drawVectorGroupMask(group: VectorGroup) {
-    withTransform({
-        translate(group.translationX, group.translationY)
-        rotate(group.rotation, pivot = Offset(group.pivotX, group.pivotY))
-        scale(group.scaleX, group.scaleY, pivot = Offset(group.pivotX, group.pivotY))
-    }) {
-        for (i in 0 until group.size) {
-            when (val node = group[i]) {
-                is VectorPath -> {
-                    val pathData = node.pathData
-                    val androidPath = androidx.compose.ui.graphics.Path()
-                    androidx.compose.ui.graphics.vector.PathParser()
-                        .addPathNodes(pathData)
-                        .toPath(androidPath)
-                    drawPath(
-                        path = androidPath,
-                        color = Color.Black,
-                        style = Fill
-                    )
-                }
-
-                is VectorGroup -> {
-                    drawVectorGroupMask(node)
-                }
-            }
+        // パス1: 全パスの枠線を一括描画（枠線の太さが0より大きい場合のみ）
+        if (adjustedStrokeWidth > 0f) {
+            drawVectorSubtree(
+                imageVector.root,
+                fillColor,
+                strokeColor,
+                adjustedStrokeWidth,
+                DrawMode.StrokeOnly
+            )
         }
+
+        // パス2: 全パスの塗りつぶしを一括描画
+        drawVectorSubtree(
+            imageVector.root,
+            fillColor,
+            strokeColor,
+            adjustedStrokeWidth,
+            DrawMode.FillOnly
+        )
     }
 }
 
 /**
  * VectorGroupを再帰的に走査して描画する
+ * @param drawMode 描画モード（枠線のみ、または塗りつぶしのみ）
  */
-private fun DrawScope.drawVectorGroup(
+private fun DrawScope.drawVectorSubtree(
     group: VectorGroup,
     fillColor: Color,
     strokeColor: Color,
-    strokeWidth: Float
+    strokeWidth: Float,
+    drawMode: DrawMode
 ) {
     withTransform({
         // VectorGroupのtransformを適用
@@ -144,11 +110,11 @@ private fun DrawScope.drawVectorGroup(
         for (i in 0 until group.size) {
             when (val node = group[i]) {
                 is VectorPath -> {
-                    drawVectorPath(node, fillColor, strokeColor, strokeWidth)
+                    drawVectorPath(node, fillColor, strokeColor, strokeWidth, drawMode)
                 }
 
                 is VectorGroup -> {
-                    drawVectorGroup(node, fillColor, strokeColor, strokeWidth)
+                    drawVectorSubtree(node, fillColor, strokeColor, strokeWidth, drawMode)
                 }
             }
         }
@@ -156,33 +122,41 @@ private fun DrawScope.drawVectorGroup(
 }
 
 /**
- * VectorPathを枠線と塗りつぶしで描画する
+ * VectorPathを描画する
+ * @param drawMode 描画モード（枠線のみ、または塗りつぶしのみ）
  */
 private fun DrawScope.drawVectorPath(
     path: VectorPath,
     fillColor: Color,
     strokeColor: Color,
-    strokeWidth: Float
+    strokeWidth: Float,
+    drawMode: DrawMode
 ) {
     val pathData = path.pathData
-    val androidPath = androidx.compose.ui.graphics.Path()
-    androidx.compose.ui.graphics.vector.PathParser().addPathNodes(pathData).toPath(androidPath)
+    val androidPath = Path()
+    PathParser().addPathNodes(pathData).toPath(androidPath)
 
-    // 枠線を描画（strokeWidthが0より大きい場合のみ）
-    if (strokeWidth > 0f) {
-        drawPath(
-            path = androidPath,
-            color = strokeColor,
-            style = Stroke(width = strokeWidth, join = StrokeJoin.Round)
-        )
+    when (drawMode) {
+        DrawMode.StrokeOnly -> {
+            // 枠線を描画（strokeWidthが0より大きい場合のみ）
+            if (strokeWidth > 0f) {
+                drawPath(
+                    path = androidPath,
+                    color = strokeColor,
+                    style = Stroke(width = strokeWidth, join = StrokeJoin.Round)
+                )
+            }
+        }
+
+        DrawMode.FillOnly -> {
+            // 塗りつぶしを描画
+            drawPath(
+                path = androidPath,
+                color = fillColor,
+                style = Fill
+            )
+        }
     }
-
-    // 塗りつぶしを描画
-    drawPath(
-        path = androidPath,
-        color = fillColor,
-        style = Fill
-    )
 }
 
 internal fun calculateTransformations(
