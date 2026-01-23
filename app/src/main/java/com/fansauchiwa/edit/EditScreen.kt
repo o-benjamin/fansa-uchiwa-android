@@ -967,37 +967,27 @@ private fun StickerItem(
                     with(LocalDensity.current) { intrinsicSize.height.toDp() }
                 )
                 .then(borderModifier)
-                .graphicsLayer {
-                    compositingStrategy = CompositingStrategy.Offscreen
-                }
                 .drawWithCache {
                     onDrawWithContent {
-                        // 枠線付きステッカーを描画（中心を基点にスケーリング）
-                        drawStickerWithStrokeScaled(
-                            imageVector = imageVector,
-                            fillColor = fillColor,
-                            strokeColor = strokeColor,
-                            strokeWidth = strokeWidth,
-                            innerScale = innerScale
-                        )
-
                         // 選択されていない場合はうちわ形状でクリップ
-                        if (!isSelected) {
-                            drawContext.canvas.withSaveLayer(
-                                bounds = size.toRect(),
-                                paint = Paint().apply {
-                                    blendMode = BlendMode.DstIn
-                                }
-                            ) {
-                                // ステッカーの形状をマスクとして使用（同じスケールを適用）
-                                drawStickerMaskScaled(
-                                    imageVector = imageVector,
-                                    innerScale = innerScale
-                                )
+                        drawContext.canvas.withSaveLayer(
+                            bounds = size.toRect(),
+                            paint = Paint().apply {
+                                blendMode =
+                                    if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
                             }
+                        ) {
+                            drawStickerWithStrokeScaled(
+                                imageVector = imageVector,
+                                fillColor = fillColor,
+                                strokeColor = strokeColor,
+                                strokeWidth = strokeWidth,
+                                innerScale = innerScale
+                            )
                         }
                     }
                 }
+
         ) {
             // 描画はdrawWithCache内で行う
         }
