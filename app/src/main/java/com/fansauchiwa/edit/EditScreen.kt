@@ -524,7 +524,7 @@ fun UchiwaPreview(
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         0.5f,
-                                        3f
+                                        6f
                                     )
                                 scaleDiff = targetScale - decoration.scale
                                 rotationDiff = transformation.rotationDiff
