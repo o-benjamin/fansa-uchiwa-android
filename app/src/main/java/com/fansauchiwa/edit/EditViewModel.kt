@@ -204,6 +204,7 @@ class EditViewModel @Inject constructor(
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(secondBorderColor = newColor)
+                is Decoration.Sticker -> decoration.copy(secondStrokeColor = newColor)
                 else -> decoration
             }
         }
@@ -213,6 +214,7 @@ class EditViewModel @Inject constructor(
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(secondBorderWidth = newWidth)
+                is Decoration.Sticker -> decoration.copy(secondStrokeWidth = newWidth)
                 else -> decoration
             }
         }

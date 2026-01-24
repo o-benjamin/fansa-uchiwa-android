@@ -969,16 +969,20 @@ private fun StickerItem(
         val fillColor = decoration.color
         val strokeColor = decoration.strokeColor
         val strokeWidth = decoration.strokeWidth
+        val secondStrokeColor = decoration.secondStrokeColor
+        val secondStrokeWidth = decoration.secondStrokeWidth
 
         // intrinsicSizeを基準に、strokeWidth分を考慮した内部スケールを計算
         val intrinsicSize = painter.intrinsicSize
-        val innerScaleX = if (intrinsicSize.width > strokeWidth * 2) {
-            (intrinsicSize.width - strokeWidth * 10) / intrinsicSize.width
+        // 枠線1と枠線2の合計太さを考慮したスケール計算
+        val totalStrokeWidth = strokeWidth + secondStrokeWidth
+        val innerScaleX = if (intrinsicSize.width > totalStrokeWidth * 2) {
+            (intrinsicSize.width - totalStrokeWidth * 10) / intrinsicSize.width
         } else {
             0.1f // 最小スケール
         }
-        val innerScaleY = if (intrinsicSize.height > strokeWidth * 2) {
-            (intrinsicSize.height - strokeWidth * 10) / intrinsicSize.height
+        val innerScaleY = if (intrinsicSize.height > totalStrokeWidth * 2) {
+            (intrinsicSize.height - totalStrokeWidth * 10) / intrinsicSize.height
         } else {
             0.1f // 最小スケール
         }
@@ -1006,7 +1010,9 @@ private fun StickerItem(
                                 fillColor = fillColor,
                                 strokeColor = strokeColor,
                                 strokeWidth = strokeWidth,
-                                innerScale = innerScale
+                                innerScale = innerScale,
+                                secondStrokeColor = secondStrokeColor,
+                                secondStrokeWidth = secondStrokeWidth
                             )
                         }
                     }
@@ -1220,7 +1226,9 @@ private fun StickerItemPreview() {
                     scale = 1f,
                     color = Color(0xFFFFFFFF),
                     strokeColor = Color(0xFF000000),
-                    strokeWidth = 10f
+                    strokeWidth = 10f,
+                    secondStrokeColor = Color(0xFFFF0000),
+                    secondStrokeWidth = 5f
                 ),
                 isSelected = true,
                 currentOffset = Offset.Zero,

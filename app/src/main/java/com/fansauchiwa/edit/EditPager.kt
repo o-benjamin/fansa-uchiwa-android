@@ -211,6 +211,8 @@ fun EditPager(
                         onColorSelected = onColorSelected,
                         onStrokeColorSelected = onStrokeColorSelected,
                         onStrokeWeightChanged = onStrokeWeightChanged,
+                        onSecondStrokeColorSelected = onSecondBorderColorSelected,
+                        onSecondStrokeWeightChanged = onSecondBorderWeightChanged,
                         selectedDecoration = selectedDecoration
                     )
                 }
@@ -436,8 +438,10 @@ fun StickerPage(
     onColorSelected: (Color) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
-    selectedDecoration: Decoration? = null,
+    onSecondStrokeColorSelected: (Color) -> Unit,
+    onSecondStrokeWeightChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    selectedDecoration: Decoration? = null,
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -466,6 +470,16 @@ fun StickerPage(
                 steps = 8,
                 onColorSelected = onStrokeColorSelected,
                 onWeightChanged = onStrokeWeightChanged
+            )
+
+            ColorAndWeightControl(
+                title = stringResource(R.string.second_stroke_color_and_weight),
+                color = selectedDecoration.secondStrokeColor,
+                width = selectedDecoration.secondStrokeWidth,
+                valueRange = 0f..16f,
+                steps = 8,
+                onColorSelected = onSecondStrokeColorSelected,
+                onWeightChanged = onSecondStrokeWeightChanged
             )
         }
 
@@ -764,6 +778,8 @@ fun StickerPagePreview() {
             onColorSelected = {},
             onStrokeColorSelected = {},
             onStrokeWeightChanged = {},
+            onSecondStrokeColorSelected = {},
+            onSecondStrokeWeightChanged = {},
             selectedDecoration = Decoration.Sticker(
                 id = "preview-id",
                 label = "star",

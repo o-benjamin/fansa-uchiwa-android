@@ -37,16 +37,20 @@ private enum class DrawMode { StrokeOnly, FillOnly }
  *
  * @param imageVector 描画対象のImageVector
  * @param fillColor 塗りつぶし色
- * @param strokeColor 枠線の色
- * @param strokeWidth 枠線の太さ
+ * @param strokeColor 枠線の色（枠線1）
+ * @param strokeWidth 枠線の太さ（枠線1）
  * @param innerScale 内部画像のスケール（0.0〜1.0）
+ * @param secondStrokeColor 二つ目の枠線の色（枠線2）
+ * @param secondStrokeWidth 二つ目の枠線の太さ（枠線2）
  */
 internal fun DrawScope.drawStickerWithStrokeScaled(
     imageVector: ImageVector,
     fillColor: Color,
     strokeColor: Color,
     strokeWidth: Float,
-    innerScale: Float
+    innerScale: Float,
+    secondStrokeColor: Color,
+    secondStrokeWidth: Float
 ) {
     // viewport と canvas サイズの比率を計算
     val scaleX = size.width / imageVector.viewportWidth
@@ -66,8 +70,21 @@ internal fun DrawScope.drawStickerWithStrokeScaled(
     }) {
         // strokeWidthもinnerScaleに合わせて調整（見た目の太さを維持）
         val adjustedStrokeWidth = strokeWidth / innerScale
+        val adjustedSecondStrokeWidth = secondStrokeWidth / innerScale
 
-        // パス1: 全パスの枠線を一括描画（枠線の太さが0より大きい場合のみ）
+        // パス1: 枠線2（最背面）- 二つ目の枠線を描画（secondStrokeWidthが0より大きい場合のみ）
+        if (adjustedSecondStrokeWidth > 0f) {
+            val combinedStrokeWidth = adjustedStrokeWidth + adjustedSecondStrokeWidth
+            drawVectorSubtree(
+                imageVector.root,
+                fillColor,
+                secondStrokeColor,
+                combinedStrokeWidth,
+                DrawMode.StrokeOnly
+            )
+        }
+
+        // パス2: 枠線1（中間）- 一つ目の枠線を描画（strokeWidthが0より大きい場合のみ）
         if (adjustedStrokeWidth > 0f) {
             drawVectorSubtree(
                 imageVector.root,
@@ -78,7 +95,7 @@ internal fun DrawScope.drawStickerWithStrokeScaled(
             )
         }
 
-        // パス2: 全パスの塗りつぶしを一括描画
+        // パス3: 塗りつぶし（最前面）
         drawVectorSubtree(
             imageVector.root,
             fillColor,
