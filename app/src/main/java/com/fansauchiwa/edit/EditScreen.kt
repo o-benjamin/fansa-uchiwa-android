@@ -13,7 +13,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,8 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -42,7 +39,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -64,8 +60,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.toRect
@@ -74,10 +68,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -94,15 +85,9 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -120,6 +105,7 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.captureHighResBitmap
+import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -823,97 +809,16 @@ private fun TextItem(
             .wrapContentSize()
     )
     {
-        val focusRequester = remember { FocusRequester() }
-        val focusManager = LocalFocusManager.current
-        var textFieldValue by remember {
-            mutableStateOf(
-                TextFieldValue(
-                    text = decoration.text,
-                    selection = TextRange(decoration.text.length)
-                )
-            )
-        }
-        val measurer = rememberTextMeasurer()
         val textSize = 24.sp.nonScaledSp
-        val textColor = decoration.color
-        val strokeColor = decoration.strokeColor
-        val secondBorderColor = decoration.secondBorderColor
-        val secondBorderWidth = decoration.secondBorderWidth
-        BasicTextField(
-            value = textFieldValue,
-            onValueChange = {
-                textFieldValue = it
-                onTextChanged(it.text)
-            },
-            textStyle = LocalTextStyle.current.copy(
-                fontSize = textSize,
-                // カスタムの文字描画を上書きするため、元の描画は透明にする
-                color = colorResource(R.color.transparent),
-                textAlign = TextAlign.Start,
-                platformStyle = PlatformTextStyle(includeFontPadding = false)
-            ),
-            readOnly = !isEditing,
-            singleLine = true,
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    focusManager.clearFocus()
-                    onFinishEditing()
-                }
-            ),
-            modifier = Modifier
-                .then(borderModifier)
-                .padding(TEXT_ITEM_PADDING)
-                .focusRequester(focusRequester)
-                .width(IntrinsicSize.Min)
-                .drawWithContent {
-                    // 基本的な文字設定
-                    val layoutResult = measurer.measure(
-                        text = AnnotatedString(decoration.text),
-                        style = TextStyle(
-                            fontFamily = decoration.font.value,
-                            fontWeight = FontWeight(decoration.width),
-                            color = Color.White,
-                            fontSize = textSize
-                        )
-                    )
-                    // 二重枠線（最背面）: secondBorderColor で描画（太さ：borderWidth + secondBorderWidth）
-                    if (secondBorderWidth > 0f) {
-                        drawText(
-                            textLayoutResult = layoutResult,
-                            drawStyle = Stroke(
-                                width = decoration.strokeWidth + secondBorderWidth,
-                                join = StrokeJoin.Round
-                            ),
-                            color = secondBorderColor,
-                            blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
-                        )
-                    }
-                    // 枠線（中間）: strokeColor で描画（太さ：borderWidth）
-                    drawText(
-                        textLayoutResult = layoutResult,
-                        drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
-                        color = strokeColor,
-                        blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
-                    )
-                    // 塗りつぶし（最前面）: color で本体を描画
-                    drawText(
-                        textLayoutResult = layoutResult,
-                        drawStyle = Fill,
-                        color = textColor,
-                        blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
-                    )
-                    // 最後に描画しないと入力カーソルが埋もれて消えてしまうため、明示的に最後に描画
-                    drawContent()
-                }
+        TextItemContent(
+            decoration = decoration,
+            isSelected = isSelected,
+            isEditing = isEditing,
+            textSize = textSize,
+            modifier = borderModifier,
+            onTextChanged = onTextChanged,
+            onFinishEditing = onFinishEditing
         )
-        LaunchedEffect(isEditing) {
-            if (isEditing) {
-                focusRequester.requestFocus()
-            } else {
-                focusManager.clearFocus()
-                onFinishEditing()
-            }
-        }
         if (isSelected) {
             TransformHandleIcon(
                 modifier = Modifier
@@ -1205,7 +1110,7 @@ private fun DeleteIcon(
 }
 
 private val GESTURE_INPUT_HANDLE_SIZE = 24.dp
-private val TEXT_ITEM_PADDING = 8.dp
+internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 
 @Preview

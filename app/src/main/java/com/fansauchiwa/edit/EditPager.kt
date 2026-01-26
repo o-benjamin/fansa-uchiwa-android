@@ -8,7 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -67,22 +66,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -91,6 +84,7 @@ import coil3.compose.AsyncImage
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
+import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.DecorationColors
 import com.fansauchiwa.ui.StickerAsset
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -860,54 +854,11 @@ private fun LayerItemPreview(
     ) {
         when (decoration) {
             is Decoration.Text -> {
-                val textMeasurer = rememberTextMeasurer()
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp)
-                ) {
-                    val text = decoration.text.ifEmpty { "テキスト" }
-                    val baseFontSize = 14.sp
-                    val style = TextStyle(
-                        color = decoration.color,
-                        fontSize = baseFontSize,
-                        fontWeight = FontWeight(decoration.width)
-                    )
-
-                    val textLayoutResult = textMeasurer.measure(
-                        text = text,
-                        style = style
-                    )
-
-                    // プレビュー枠に収まるようにスケール
-                    val scale = minOf(
-                        size.width / textLayoutResult.size.width.toFloat(),
-                        size.height / textLayoutResult.size.height.toFloat()
-                    ).coerceAtMost(1f)
-
-                    val offsetX = (size.width - textLayoutResult.size.width * scale) / 2
-                    val offsetY = (size.height - textLayoutResult.size.height * scale) / 2
-
-                    // 枠線を描画（strokeColorを反映）
-                    if (decoration.strokeWidth > 0f) {
-                        drawText(
-                            textLayoutResult = textLayoutResult,
-                            color = decoration.strokeColor,
-                            topLeft = Offset(offsetX, offsetY),
-                            drawStyle = Stroke(
-                                width = (decoration.strokeWidth / 10f).coerceIn(1f, 3f),
-                                join = StrokeJoin.Round
-                            )
-                        )
-                    }
-
-                    // テキスト本体を描画
-                    drawText(
-                        textLayoutResult = textLayoutResult,
-                        color = decoration.color,
-                        topLeft = Offset(offsetX, offsetY)
-                    )
-                }
+                TextItemContent(
+                    decoration = decoration,
+                    textSize = 14.sp.nonScaledSp,
+                    modifier = Modifier.padding(4.dp)
+                )
             }
 
             is Decoration.Sticker -> {
