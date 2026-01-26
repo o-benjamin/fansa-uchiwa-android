@@ -354,6 +354,10 @@ fun EditScreen(
                 onImageToggleSelection = viewModel::toggleImageSelection,
                 uchiwaColor = uiState.uchiwaColor,
                 backgroundColor = uiState.backgroundColor,
+                decorations = uiState.decorations,
+                selectedDecorationId = uiState.selectedDecorationId,
+                onDecorationClick = viewModel::selectDecoration,
+                onMoveDecoration = viewModel::moveDecoration,
                 modifier = Modifier
             )
         }

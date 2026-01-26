@@ -92,6 +92,31 @@ class EditViewModel @Inject constructor(
         )
     }
 
+    /**
+     * UIリストのインデックスからデコレーションの順序を移動する。
+     * UIでは decorations.reversed() を表示しているため、
+     * fromIndex/toIndex を実際のリストインデックスに変換して更新する。
+     *
+     * @param fromIndex UI上の移動元インデックス（reversed後）
+     * @param toIndex UI上の移動先インデックス（reversed後）
+     */
+    fun moveDecoration(fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val currentState = uiState.value
+        val decorations = currentState.decorations
+        if (decorations.isEmpty()) return
+
+        // UIでは reversed() で表示しているので、実際のインデックスに変換
+        val actualFromIndex = decorations.lastIndex - fromIndex
+        val actualToIndex = decorations.lastIndex - toIndex
+
+        val mutableList = decorations.toMutableList()
+        val item = mutableList.removeAt(actualFromIndex)
+        mutableList.add(actualToIndex, item)
+
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(decorations = mutableList)
+    }
+
     fun selectDecoration(id: String) {
         if (canEdit()) {
             val currentState = uiState.value

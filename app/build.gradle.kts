@@ -139,4 +139,7 @@ dependencies {
 
     // Browser (Chrome Custom Tabs)
     implementation(libs.androidx.browser)
+
+    // Reorderable
+    implementation(libs.reorderable)
 }

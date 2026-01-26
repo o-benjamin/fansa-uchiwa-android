@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,12 +25,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +44,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
@@ -61,14 +67,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -81,6 +95,8 @@ import com.fansauchiwa.ui.DecorationColors
 import com.fansauchiwa.ui.StickerAsset
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.util.UUID
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -98,15 +114,19 @@ fun EditPager(
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
-    onUchiwaColorSelected: (Color) -> Unit = {},
-    onBackgroundColorSelected: (Color) -> Unit = {},
+    onUchiwaColorSelected: (Color) -> Unit,
+    onBackgroundColorSelected: (Color) -> Unit,
     selectedDecoration: Decoration? = null,
     allImages: List<ImageReference> = emptyList(),
     isDeletingImage: Boolean = false,
     selectedDeletingImages: List<String> = emptyList(),
-    onImageToggleSelection: (String) -> Unit = {},
+    onImageToggleSelection: (String) -> Unit,
     uchiwaColor: Color,
     backgroundColor: Color,
+    decorations: List<Decoration> = emptyList(),
+    selectedDecorationId: String? = null,
+    onDecorationClick: (String) -> Unit,
+    onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -223,6 +243,15 @@ fun EditPager(
                         onBackgroundColorSelected = onBackgroundColorSelected,
                         currentUchiwaColor = uchiwaColor,
                         currentBackgroundColor = backgroundColor
+                    )
+                }
+
+                4 -> {
+                    LayerPage(
+                        decorations = decorations,
+                        selectedDecorationId = selectedDecorationId,
+                        onDecorationClick = onDecorationClick,
+                        onMoveDecoration = onMoveDecoration
                     )
                 }
             }
@@ -710,6 +739,210 @@ fun ColorPickerRow(
     }
 }
 
+@Composable
+fun LayerPage(
+    decorations: List<Decoration>,
+    selectedDecorationId: String?,
+    onDecorationClick: (String) -> Unit,
+    onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit,
+    modifier: Modifier = Modifier,
+    allImages: List<ImageReference> = emptyList()
+) {
+    // UIでは reversed() を表示（上が手前）
+    val displayDecorations = remember(decorations) { decorations.reversed() }
+
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        onMoveDecoration(from.index, to.index)
+    }
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        state = lazyListState,
+        contentPadding = PaddingValues(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        items(
+            items = displayDecorations,
+            key = { decoration -> decoration.id }
+        ) { decoration ->
+            val isSelected = decoration.id == selectedDecorationId
+
+            ReorderableItem(reorderableLazyListState, key = decoration.id) { isDragging ->
+                LayerItem(
+                    decoration = decoration,
+                    isSelected = isSelected,
+                    isDragging = isDragging,
+                    onClick = { onDecorationClick(decoration.id) },
+                    modifier = Modifier.draggableHandle(),
+                    allImages = allImages
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LayerItem(
+    decoration: Decoration,
+    isSelected: Boolean,
+    isDragging: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    allImages: List<ImageReference>
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                if (isDragging) {
+                    alpha = 0.9f
+                    shadowElevation = 8f
+                }
+            }
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) {
+                    colorResource(R.color.gray).copy(alpha = 0.3f)
+                } else {
+                    Color.Transparent
+                }
+            )
+            .clickable(onClick = onClick)
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // 選択インジケータ
+        Box(
+            modifier = Modifier
+                .size(4.dp, 48.dp)
+                .background(
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = RoundedCornerShape(2.dp)
+                )
+        )
+
+        // プレビュー
+        LayerItemPreview(
+            decoration = decoration,
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .height(48.dp)
+                .weight(1f),
+            allImages = allImages
+        )
+
+        // ドラッグハンドル
+        Icon(
+            imageVector = Icons.Default.DragHandle,
+            contentDescription = "Reorder",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
+private fun LayerItemPreview(
+    decoration: Decoration,
+    modifier: Modifier = Modifier,
+    allImages: List<ImageReference> = emptyList()
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(colorResource(R.color.gray).copy(alpha = 0.2f)),
+        contentAlignment = Alignment.Center
+    ) {
+        when (decoration) {
+            is Decoration.Text -> {
+                val textMeasurer = rememberTextMeasurer()
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(4.dp)
+                ) {
+                    val text = decoration.text.ifEmpty { "テキスト" }
+                    val baseFontSize = 14.sp
+                    val style = TextStyle(
+                        color = decoration.color,
+                        fontSize = baseFontSize,
+                        fontWeight = FontWeight(decoration.width)
+                    )
+
+                    val textLayoutResult = textMeasurer.measure(
+                        text = text,
+                        style = style
+                    )
+
+                    // プレビュー枠に収まるようにスケール
+                    val scale = minOf(
+                        size.width / textLayoutResult.size.width.toFloat(),
+                        size.height / textLayoutResult.size.height.toFloat()
+                    ).coerceAtMost(1f)
+
+                    val offsetX = (size.width - textLayoutResult.size.width * scale) / 2
+                    val offsetY = (size.height - textLayoutResult.size.height * scale) / 2
+
+                    // 枠線を描画（strokeColorを反映）
+                    if (decoration.strokeWidth > 0f) {
+                        drawText(
+                            textLayoutResult = textLayoutResult,
+                            color = decoration.strokeColor,
+                            topLeft = Offset(offsetX, offsetY),
+                            drawStyle = Stroke(
+                                width = (decoration.strokeWidth / 10f).coerceIn(1f, 3f),
+                                join = StrokeJoin.Round
+                            )
+                        )
+                    }
+
+                    // テキスト本体を描画
+                    drawText(
+                        textLayoutResult = textLayoutResult,
+                        color = decoration.color,
+                        topLeft = Offset(offsetX, offsetY)
+                    )
+                }
+            }
+
+            is Decoration.Sticker -> {
+                // TODO: ScaleItemの表示処理と共通のものを使う
+                if (decoration.resId != 0) {
+                    Image(
+                        painter = painterResource(id = decoration.resId),
+                        contentDescription = decoration.label,
+                        contentScale = ContentScale.Fit,
+                        colorFilter = ColorFilter.tint(decoration.color),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                    )
+                }
+            }
+
+            is Decoration.Image -> {
+                // TODO: ImageItemの表示処理と共通のものを使う
+                val imageReference = allImages.find { it.id == decoration.imageId }
+                if (imageReference != null) {
+                    AsyncImage(
+                        model = imageReference.path,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun TextPagePreview() {
@@ -785,6 +1018,34 @@ fun StickerPagePreview() {
                 label = "star",
                 color = Color(0xFFFF0000)
             )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LayerPagePreview() {
+    FansaUchiwaTheme {
+        LayerPage(
+            decorations = listOf(
+                Decoration.Text(
+                    id = "text-1",
+                    text = "サンプル",
+                    font = FontFamilies.HACHI_MARU_POP
+                ),
+                Decoration.Sticker(
+                    id = "sticker-1",
+                    label = StickerAsset.HEART.type
+                ),
+                Decoration.Text(
+                    id = "text-2",
+                    text = "テスト",
+                    font = FontFamilies.NOTO_SANS_JP
+                )
+            ),
+            selectedDecorationId = "text-1",
+            onDecorationClick = {},
+            onMoveDecoration = { _, _ -> }
         )
     }
 }
