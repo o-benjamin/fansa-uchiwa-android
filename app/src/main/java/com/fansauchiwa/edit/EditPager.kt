@@ -145,8 +145,9 @@ fun EditPager(
         val scope = rememberCoroutineScope()
 
         // selectedDecorationの種類に応じてページを自動的に切り替える
+        val isLayerTabSelected = tabIndex == DecorationTabType.LAYERS.ordinal
         LaunchedEffect(selectedDecoration) {
-            if (selectedDecoration != null) {
+            if (selectedDecoration != null && !isLayerTabSelected) {
                 val targetPage = when (selectedDecoration) {
                     is Decoration.Text -> 0
                     is Decoration.Image -> 1
