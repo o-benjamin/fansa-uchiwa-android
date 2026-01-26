@@ -52,9 +52,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -160,8 +160,9 @@ fun EditPager(
         }
 
         Box {
-            TabRow(
-                selectedTabIndex = tabIndex
+            PrimaryScrollableTabRow(
+                selectedTabIndex = tabIndex,
+                edgePadding = 0.dp
             ) {
                 DecorationTabType.entries.forEachIndexed { index, title ->
                     Tab(
