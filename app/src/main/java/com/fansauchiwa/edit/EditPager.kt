@@ -83,6 +83,7 @@ import coil3.compose.AsyncImage
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
+import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.DecorationColors
@@ -111,7 +112,7 @@ fun EditPager(
     onUchiwaColorSelected: (Color) -> Unit,
     onBackgroundColorSelected: (Color) -> Unit,
     selectedDecoration: Decoration? = null,
-    allImages: List<ImageReference> = emptyList(),
+    allImages: List<ImageReference>,
     isDeletingImage: Boolean = false,
     selectedDeletingImages: List<String> = emptyList(),
     onImageToggleSelection: (String) -> Unit,
@@ -245,7 +246,8 @@ fun EditPager(
                         decorations = decorations,
                         selectedDecorationId = selectedDecorationId,
                         onDecorationClick = onDecorationClick,
-                        onMoveDecoration = onMoveDecoration
+                        onMoveDecoration = onMoveDecoration,
+                        allImages = allImages
                     )
                 }
             }
@@ -740,7 +742,7 @@ fun LayerPage(
     onDecorationClick: (String) -> Unit,
     onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
-    allImages: List<ImageReference> = emptyList()
+    allImages: List<ImageReference>
 ) {
     // UIでは reversed() を表示（上が手前）
     val displayDecorations = remember(decorations) { decorations.reversed() }
@@ -844,7 +846,7 @@ private fun LayerItem(
 private fun LayerItemPreview(
     decoration: Decoration,
     modifier: Modifier = Modifier,
-    allImages: List<ImageReference> = emptyList()
+    allImages: List<ImageReference>
 ) {
     Box(
         modifier = modifier
@@ -872,16 +874,14 @@ private fun LayerItemPreview(
             }
 
             is Decoration.Image -> {
-                // TODO: ImageItemの表示処理と共通のものを使う
                 val imageReference = allImages.find { it.id == decoration.imageId }
                 if (imageReference != null) {
-                    AsyncImage(
-                        model = imageReference.path,
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp)
+                    ImageItemContent(
+                        decoration = decoration,
+                        imagePath = imageReference.path,
+                        size = 36.dp,
+                        modifier = Modifier.padding(4.dp),
+                        isSelected = false
                     )
                 }
             }
@@ -991,7 +991,8 @@ fun LayerPagePreview() {
             ),
             selectedDecorationId = "text-1",
             onDecorationClick = {},
-            onMoveDecoration = { _, _ -> }
+            onMoveDecoration = { _, _ -> },
+            allImages = emptyList()
         )
     }
 }

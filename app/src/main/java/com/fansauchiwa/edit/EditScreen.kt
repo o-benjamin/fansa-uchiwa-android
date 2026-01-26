@@ -60,17 +60,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.toRect
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -91,15 +87,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.request.allowHardware
-import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.captureHighResBitmap
+import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -929,26 +922,12 @@ private fun ImageItem(
             .wrapContentSize()
     )
     {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imagePath)
-                .size(SizeResolver.ORIGINAL)
-                .allowHardware(false)
-                .build(),
-            contentDescription = null,
-            modifier = Modifier
-                .size(IMAGE_SIZE_DEFAULT)
-                .then(borderModifier)
-                .drawWithContent {
-                    drawContext.canvas.withSaveLayer(
-                        bounds = size.toRect(),
-                        paint = Paint().apply {
-                            blendMode = if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
-                        }
-                    ) {
-                        drawContent()
-                    }
-                }
+        ImageItemContent(
+            decoration = decoration,
+            imagePath = imagePath,
+            size = IMAGE_SIZE_DEFAULT,
+            modifier = Modifier.then(borderModifier),
+            isSelected = isSelected
         )
         if (isSelected) {
             TransformHandleIcon(
