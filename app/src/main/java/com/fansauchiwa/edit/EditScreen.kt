@@ -1,7 +1,6 @@
 package com.fansauchiwa.edit
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -58,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -72,8 +70,6 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -84,7 +80,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -105,6 +100,7 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.captureHighResBitmap
+import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
@@ -873,63 +869,11 @@ private fun StickerItem(
             .wrapContentSize()
     )
     {
-        val imageVector = ImageVector.vectorResource(id = decoration.resId)
-        val painter = rememberVectorPainter(image = imageVector)
-        val fillColor = decoration.color
-        val strokeColor = decoration.strokeColor
-        val strokeWidth = decoration.strokeWidth
-        val secondStrokeColor = decoration.secondStrokeColor
-        val secondStrokeWidth = decoration.secondStrokeWidth
-
-        // intrinsicSizeを基準に、strokeWidth分を考慮した内部スケールを計算
-        val intrinsicSize = painter.intrinsicSize
-        // 枠線1と枠線2の合計太さを考慮したスケール計算
-        val totalStrokeWidth = strokeWidth + secondStrokeWidth
-        val innerScaleX = if (intrinsicSize.width > totalStrokeWidth * 2) {
-            (intrinsicSize.width - totalStrokeWidth * 10) / intrinsicSize.width
-        } else {
-            0.1f // 最小スケール
-        }
-        val innerScaleY = if (intrinsicSize.height > totalStrokeWidth * 2) {
-            (intrinsicSize.height - totalStrokeWidth * 10) / intrinsicSize.height
-        } else {
-            0.1f // 最小スケール
-        }
-        val innerScale = minOf(innerScaleX, innerScaleY)
-
-        Canvas(
-            modifier = Modifier
-                .size(
-                    with(LocalDensity.current) { intrinsicSize.width.toDp() },
-                    with(LocalDensity.current) { intrinsicSize.height.toDp() }
-                )
-                .then(borderModifier)
-                .drawWithCache {
-                    onDrawWithContent {
-                        // 選択されていない場合はうちわ形状でクリップ
-                        drawContext.canvas.withSaveLayer(
-                            bounds = size.toRect(),
-                            paint = Paint().apply {
-                                blendMode =
-                                    if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
-                            }
-                        ) {
-                            drawStickerWithStrokeScaled(
-                                imageVector = imageVector,
-                                fillColor = fillColor,
-                                strokeColor = strokeColor,
-                                strokeWidth = strokeWidth,
-                                innerScale = innerScale,
-                                secondStrokeColor = secondStrokeColor,
-                                secondStrokeWidth = secondStrokeWidth
-                            )
-                        }
-                    }
-                }
-
-        ) {
-            // 描画はdrawWithCache内で行う
-        }
+        StickerItemContent(
+            decoration = decoration,
+            modifier = borderModifier,
+            isSelected = isSelected
+        )
         if (isSelected) {
             TransformHandleIcon(
                 modifier = Modifier

@@ -68,7 +68,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -84,6 +83,7 @@ import coil3.compose.AsyncImage
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
+import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.DecorationColors
 import com.fansauchiwa.ui.StickerAsset
@@ -862,18 +862,13 @@ private fun LayerItemPreview(
             }
 
             is Decoration.Sticker -> {
-                // TODO: ScaleItemの表示処理と共通のものを使う
-                if (decoration.resId != 0) {
-                    Image(
-                        painter = painterResource(id = decoration.resId),
-                        contentDescription = decoration.label,
-                        contentScale = ContentScale.Fit,
-                        colorFilter = ColorFilter.tint(decoration.color),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp)
-                    )
-                }
+                StickerItemContent(
+                    decoration = decoration,
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(36.dp),
+                    isSelected = false
+                )
             }
 
             is Decoration.Image -> {
