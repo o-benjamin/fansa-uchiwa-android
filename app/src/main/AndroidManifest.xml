@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--  Google Mobile Ads SDK (AdMob) 自体のマニフェストファイルに含まれているためここには記載不要だが、可読性のために記載しておく  -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".FansaUchiwaApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -15,6 +17,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.FansaUchiwa">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,6 +25,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${ADMOB_APPLICATION_ID}" />
     </application>
 
 </manifest>
