@@ -237,40 +237,53 @@ fun EditScreen(
                 .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.414f)
-                    .drawWithContent {
-                        graphicsLayer.record {
-                            this@drawWithContent.drawContent()
+            Box {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.414f)
+                        .drawWithContent {
+                            graphicsLayer.record {
+                                this@drawWithContent.drawContent()
+                            }
+                            drawLayer(graphicsLayer)
                         }
-                        drawLayer(graphicsLayer)
-                    }
-            ) {
-                UchiwaPreview(
-                    decorations = uiState.decorations,
-                    selectedDecorationId = uiState.selectedDecorationId,
-                    editingTextId = uiState.editingTextId,
-                    onDecorationTap = viewModel::selectDecoration,
-                    onDecorationDoubleTap = { decorationId ->
-                        viewModel.selectDecoration(decorationId)
-                        viewModel.startEditingText(decorationId)
-                    },
-                    onBackgroundTap = {
-                        viewModel.unSelectDecoration()
-                        viewModel.finishEditingText()
-                    },
-                    onDecorationDragEnd = viewModel::updateDecorationGraphic,
-                    onTapDelete = viewModel::deleteDecoration,
-                    onTextChanged = viewModel::updateText,
-                    onDoneTextEdit = viewModel::finishEditingText,
-                    modifier = Modifier.fillMaxSize(),
-                    images = uiState.images,
-                    uchiwaColor = uiState.uchiwaColor,
-                    backgroundColor = uiState.backgroundColor
-                )
+                ) {
+                    UchiwaPreview(
+                        decorations = uiState.decorations,
+                        selectedDecorationId = uiState.selectedDecorationId,
+                        editingTextId = uiState.editingTextId,
+                        onDecorationTap = viewModel::selectDecoration,
+                        onDecorationDoubleTap = { decorationId ->
+                            viewModel.selectDecoration(decorationId)
+                            viewModel.startEditingText(decorationId)
+                        },
+                        onBackgroundTap = {
+                            viewModel.unSelectDecoration()
+                            viewModel.finishEditingText()
+                        },
+                        onDecorationDragEnd = viewModel::updateDecorationGraphic,
+                        onTapDelete = viewModel::deleteDecoration,
+                        onTextChanged = viewModel::updateText,
+                        onDoneTextEdit = viewModel::finishEditingText,
+                        modifier = Modifier.fillMaxSize(),
+                        images = uiState.images,
+                        uchiwaColor = uiState.uchiwaColor,
+                        backgroundColor = uiState.backgroundColor
+                    )
 
+                    if (uiState.isDeletingImage) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(colorResource(R.color.black).copy(alpha = 0.5f))
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { /* タップを無効化 */ }
+                        )
+                    }
+                }
                 UndoRedoRow(
                     canUndo = uiState.canUndo,
                     canRedo = uiState.canRedo,
@@ -278,18 +291,6 @@ fun EditScreen(
                     onRedoClick = viewModel::redo,
                     modifier = Modifier.align(Alignment.BottomStart)
                 )
-
-                if (uiState.isDeletingImage) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(colorResource(R.color.black).copy(alpha = 0.5f))
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { /* タップを無効化 */ }
-                    )
-                }
             }
 
             EditPager(
