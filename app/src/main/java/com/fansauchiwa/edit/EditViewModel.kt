@@ -21,6 +21,7 @@ import javax.inject.Inject
 
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"
+private const val MAX_HISTORY_SIZE = 50
 
 @HiltViewModel
 class EditViewModel @Inject constructor(
@@ -30,6 +31,9 @@ class EditViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
+
+    private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
+    private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
 
     init {
         loadExistingDecorations()
@@ -75,6 +79,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun addDecoration(decoration: Decoration) {
+        saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations + decoration
@@ -86,6 +91,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun deleteDecoration(id: String) {
+        saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations.filter { it.id != id }
@@ -141,6 +147,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateDecorationGraphic(id: String, offset: Offset, scale: Float, rotation: Float) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Sticker -> decoration.copy(
@@ -166,6 +173,7 @@ class EditViewModel @Inject constructor(
 
     fun startEditingText(id: String) {
         if (canEdit()) {
+            saveSnapshot()
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
                 editingTextId = id
@@ -187,6 +195,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateColor(id: String, newColor: Color) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Sticker -> decoration.copy(color = newColor)
@@ -197,6 +206,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateStrokeColor(id: String, newColor: Color) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(strokeColor = newColor)
@@ -207,6 +217,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateWidth(id: String, newWidth: Int) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(width = newWidth)
@@ -216,6 +227,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateStrokeWidth(id: String, newWidth: Float) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(strokeWidth = newWidth)
@@ -226,6 +238,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateSecondBorderColor(id: String, newColor: Color) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(secondBorderColor = newColor)
@@ -236,6 +249,7 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateSecondBorderWidth(id: String, newWidth: Float) {
+        saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> decoration.copy(secondBorderWidth = newWidth)
@@ -246,11 +260,13 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateUchiwaColor(color: Color) {
+        saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColor = color)
     }
 
     fun updateBackgroundColor(color: Color) {
+        saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
     }
@@ -280,6 +296,71 @@ class EditViewModel @Inject constructor(
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(allImages = images)
         }
+    }
+
+    private fun saveSnapshot() {
+        val currentState = uiState.value
+        val snapshot = HistorySnapshot(
+            decorations = currentState.decorations,
+            uchiwaColor = currentState.uchiwaColor,
+            backgroundColor = currentState.backgroundColor
+        )
+        undoStack.addLast(snapshot)
+        if (undoStack.size > MAX_HISTORY_SIZE) {
+            undoStack.removeFirst()
+        }
+        redoStack.clear()
+        updateHistoryAvailability()
+    }
+
+    private fun updateHistoryAvailability() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            canUndo = undoStack.isNotEmpty(),
+            canRedo = redoStack.isNotEmpty()
+        )
+    }
+
+    fun undo() {
+        if (undoStack.isEmpty()) return
+        val currentState = uiState.value
+        val currentSnapshot = HistorySnapshot(
+            decorations = currentState.decorations,
+            uchiwaColor = currentState.uchiwaColor,
+            backgroundColor = currentState.backgroundColor
+        )
+        redoStack.addLast(currentSnapshot)
+
+        val previousSnapshot = undoStack.removeLast()
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = previousSnapshot.decorations,
+            uchiwaColor = previousSnapshot.uchiwaColor,
+            backgroundColor = previousSnapshot.backgroundColor,
+            selectedDecorationId = null,
+            editingTextId = null
+        )
+        updateHistoryAvailability()
+    }
+
+    fun redo() {
+        if (redoStack.isEmpty()) return
+        val currentState = uiState.value
+        val currentSnapshot = HistorySnapshot(
+            decorations = currentState.decorations,
+            uchiwaColor = currentState.uchiwaColor,
+            backgroundColor = currentState.backgroundColor
+        )
+        undoStack.addLast(currentSnapshot)
+
+        val nextSnapshot = redoStack.removeLast()
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = nextSnapshot.decorations,
+            uchiwaColor = nextSnapshot.uchiwaColor,
+            backgroundColor = nextSnapshot.backgroundColor,
+            selectedDecorationId = null,
+            editingTextId = null
+        )
+        updateHistoryAvailability()
     }
 
     fun startImageDeletionMode() {

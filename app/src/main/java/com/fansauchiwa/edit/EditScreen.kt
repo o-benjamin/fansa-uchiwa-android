@@ -30,6 +30,8 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -57,12 +59,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -265,6 +269,14 @@ fun EditScreen(
                     images = uiState.images,
                     uchiwaColor = uiState.uchiwaColor,
                     backgroundColor = uiState.backgroundColor
+                )
+
+                UndoRedoRow(
+                    canUndo = uiState.canUndo,
+                    canRedo = uiState.canRedo,
+                    onUndoClick = viewModel::undo,
+                    onRedoClick = viewModel::redo,
+                    modifier = Modifier.align(Alignment.BottomStart)
                 )
 
                 if (uiState.isDeletingImage) {
@@ -1032,17 +1044,58 @@ private fun DeleteIcon(
     )
 }
 
+@Composable
+private fun UndoRedoRow(
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndoClick: () -> Unit,
+    onRedoClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .padding(start = 4.dp, bottom = 4.dp)
+            .clip(CircleShape)
+            .background(
+                brush = SolidColor(MaterialTheme.colorScheme.surface),
+                alpha = 0.75f
+            ),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        IconButton(
+            onClick = onUndoClick,
+            enabled = canUndo
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Undo,
+                contentDescription = stringResource(R.string.undo),
+                tint = if (canUndo) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                }
+            )
+        }
+        IconButton(
+            onClick = onRedoClick,
+            enabled = canRedo,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Redo,
+                contentDescription = stringResource(R.string.redo),
+                tint = if (canRedo) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                }
+            )
+        }
+    }
+}
+
 private val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
-
-@Preview
-@Composable
-private fun EditScreenPreview() {
-    FansaUchiwaTheme {
-        EditScreen(onBack = {}, onPreview = {})
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
@@ -1096,6 +1149,27 @@ private fun TextItemPreview() {
                 currentRotation = 0f,
                 onTextChanged = {},
                 onFinishEditing = {}
+            )
+        }
+    }
+}
+
+@Preview()
+@Composable
+private fun UndoRedoRowPreview() {
+    MaterialTheme {
+        Column {
+            UndoRedoRow(
+                canUndo = true,
+                canRedo = true,
+                onUndoClick = {},
+                onRedoClick = {}
+            )
+            UndoRedoRow(
+                canUndo = false,
+                canRedo = false,
+                onUndoClick = {},
+                onRedoClick = {}
             )
         }
     }

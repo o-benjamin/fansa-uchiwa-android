@@ -5,6 +5,8 @@
     <string name="album">アルバム</string>
     <string name="add">新規作成</string>
     <string name="back">戻る</string>
+    <string name="undo">元に戻す</string>
+    <string name="redo">やり直す</string>
     <string name="save">保存</string>
     <string name="complete">完成</string>
     <string name="uchiwa_preview">うちわプレビュー</string>
