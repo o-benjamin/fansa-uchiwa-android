@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.google.services)
 }
 
 val localProperties = Properties().apply {
@@ -142,4 +143,7 @@ dependencies {
 
     // Reorderable
     implementation(libs.reorderable)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
 }

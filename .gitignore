@@ -12,4 +12,5 @@ app/release
 .firebase
 .firebaserc
 firebase.json
+google-services.json
 public
