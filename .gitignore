@@ -9,3 +9,7 @@
 .cxx
 local.properties
 app/release
+.firebase
+.firebaserc
+firebase.json
+public
