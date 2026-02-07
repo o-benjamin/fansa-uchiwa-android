@@ -55,15 +55,18 @@ import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.util.TrackScreenViewEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UchiwaPreviewScreen(
-    viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
+    viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
     onBackToHome: () -> Unit = {}
 ) {
+    TrackScreenViewEvent(screenName = "UchiwaPreviewScreen")
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current

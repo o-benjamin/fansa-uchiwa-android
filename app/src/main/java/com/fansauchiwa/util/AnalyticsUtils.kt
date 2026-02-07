@@ -14,7 +14,6 @@ fun TrackScreenViewEvent(screenName: String) {
     LaunchedEffect(screenName) {
         analytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
             param(FirebaseAnalytics.Param.SCREEN_NAME, screenName)
-            param(FirebaseAnalytics.Param.SCREEN_CLASS, screenName)
         }
     }
 }

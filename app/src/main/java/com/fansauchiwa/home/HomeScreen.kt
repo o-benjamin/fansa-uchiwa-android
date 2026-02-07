@@ -67,6 +67,7 @@ import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.util.TrackScreenViewEvent
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
 
@@ -118,6 +119,8 @@ fun HomeScreen(
     onImageClick: (String) -> Unit = {},
     onAddClick: () -> Unit = {}
 ) {
+    TrackScreenViewEvent(screenName = "HomeScreen")
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
