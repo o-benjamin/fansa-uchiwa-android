@@ -55,7 +55,10 @@ play-service-ads = { group = "com.google.android.gms", name = "play-services-ads
 compose-colorpicker = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorPicker" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidxBrowser" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+
+# Firebase
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
