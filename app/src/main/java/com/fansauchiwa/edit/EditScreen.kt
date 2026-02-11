@@ -98,7 +98,6 @@ import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.captureHighResBitmap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
-import com.fansauchiwa.util.TrackScreenViewEvent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
@@ -111,8 +110,6 @@ fun EditScreen(
     onBack: () -> Unit,
     onPreview: (String) -> Unit
 ) {
-    TrackScreenViewEvent(screenName = "EditScreen")
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val graphicsLayer = rememberGraphicsLayer()
@@ -120,6 +117,10 @@ fun EditScreen(
     val showBackDialog = remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
+
+    LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+    }
 
     uiState.userMessage?.let { userMessage ->
         val snackbarText = stringResource(userMessage)

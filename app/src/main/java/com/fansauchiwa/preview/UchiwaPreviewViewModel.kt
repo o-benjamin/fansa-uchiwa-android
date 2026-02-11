@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.repository.AnalyticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,6 +21,7 @@ const val IMAGE_PATH_ARG = "imagePath"
 class UchiwaPreviewViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val adMobRepository: AdMobRepository,
+    private val analyticsRepository: AnalyticsRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -33,6 +36,12 @@ class UchiwaPreviewViewModel @Inject constructor(
 
     val uiState: StateFlow<UchiwaPreviewUiState> =
         savedStateHandle.getStateFlow(UI_STATE_KEY, UchiwaPreviewUiState())
+
+    fun logScreenView() {
+        viewModelScope.launch {
+            analyticsRepository.logScreenView(AnalyticsScreens.PREVIEW_SCREEN)
+        }
+    }
 
     /**
      * リワード広告を表示し、報酬獲得後にギャラリーに保存する

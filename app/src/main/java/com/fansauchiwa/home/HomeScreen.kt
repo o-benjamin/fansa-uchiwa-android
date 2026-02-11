@@ -1,6 +1,5 @@
 package com.fansauchiwa.home
 
-import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -67,7 +65,6 @@ import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
-import com.fansauchiwa.util.TrackScreenViewEvent
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
 
@@ -119,7 +116,6 @@ fun HomeScreen(
     onImageClick: (String) -> Unit = {},
     onAddClick: () -> Unit = {}
 ) {
-    TrackScreenViewEvent(screenName = "HomeScreen")
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -130,8 +126,9 @@ fun HomeScreen(
     }
     val context = LocalContext.current
 
-    // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
     LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+        // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
         viewModel.loadAllMasterpieces()
     }
 

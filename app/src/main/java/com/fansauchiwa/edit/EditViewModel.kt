@@ -13,6 +13,8 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.repository.AnalyticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ class EditViewModel @Inject constructor(
     private val localImageRepository: LocalImageRepository,
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val masterpieceRepository: MasterpieceRepository,
+    private val analyticsRepository: AnalyticsRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
@@ -38,6 +41,12 @@ class EditViewModel @Inject constructor(
     init {
         loadExistingDecorations()
         loadAllImages()
+    }
+
+    fun logScreenView() {
+        viewModelScope.launch {
+            analyticsRepository.logScreenView(AnalyticsScreens.EDIT_SCREEN)
+        }
     }
 
     private fun loadExistingDecorations() {
