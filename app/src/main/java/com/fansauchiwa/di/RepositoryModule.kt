@@ -16,6 +16,8 @@ import com.fansauchiwa.data.MasterpieceDataSource
 import com.fansauchiwa.data.MasterpieceLocalSource
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.MasterpieceRepositoryImpl
+import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
@@ -53,6 +55,12 @@ abstract class RepositoryModule {
     abstract fun bindAdMobRepository(
         adMobRepositoryImpl: AdMobRepositoryImpl
     ): AdMobRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAnalyticsRepository(
+        impl: AnalyticsRepositoryImpl
+    ): AnalyticsRepository
 }
 
 @Module
