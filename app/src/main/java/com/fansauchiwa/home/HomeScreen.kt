@@ -189,7 +189,10 @@ fun HomeScreen(
                 }
             } else {
                 ExtendedFloatingActionButton(
-                    onClick = onAddClick,
+                    onClick = {
+                        viewModel.logNewCreateTap()
+                        onAddClick()
+                    },
                     expanded = isFabExpanded,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -226,6 +229,7 @@ fun HomeScreen(
                     viewModel.togglePathSelection(path)
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
+                    viewModel.logItemEditTap()
                     onImageClick(uchiwaId)
                 }
             },
