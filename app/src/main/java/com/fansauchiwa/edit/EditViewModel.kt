@@ -13,6 +13,8 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,6 +48,12 @@ class EditViewModel @Inject constructor(
     fun logScreenView() {
         viewModelScope.launch {
             analyticsRepository.logScreenView(AnalyticsScreens.EDIT_SCREEN)
+        }
+    }
+
+    fun logEvent(eventName: String, params: Map<String, Any> = emptyMap()) {
+        viewModelScope.launch {
+            analyticsRepository.logEvent(AnalyticsEvent(name = eventName, params = params))
         }
     }
 
@@ -332,6 +340,7 @@ class EditViewModel @Inject constructor(
 
     fun undo() {
         if (undoStack.isEmpty()) return
+        logEvent(AnalyticsActions.TAP_EDIT_UNDO_REDO, mapOf("actions" to "undo"))
         val currentState = uiState.value
         val currentSnapshot = HistorySnapshot(
             decorations = currentState.decorations,
@@ -353,6 +362,7 @@ class EditViewModel @Inject constructor(
 
     fun redo() {
         if (redoStack.isEmpty()) return
+        logEvent(AnalyticsActions.TAP_EDIT_UNDO_REDO, mapOf("actions" to "redo"))
         val currentState = uiState.value
         val currentSnapshot = HistorySnapshot(
             decorations = currentState.decorations,

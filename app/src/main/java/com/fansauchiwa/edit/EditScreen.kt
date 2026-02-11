@@ -95,6 +95,8 @@ import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsBackDialogActions
 import com.fansauchiwa.data.captureHighResBitmap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
@@ -139,6 +141,7 @@ fun EditScreen(
 
     // バックキー押下時にダイアログを表示
     BackHandler {
+        viewModel.logEvent(AnalyticsActions.TAP_EDIT_BACK)
         showBackDialog.value = true
     }
 
@@ -147,7 +150,10 @@ fun EditScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = { showBackDialog.value = true }) {
+                    IconButton(onClick = {
+                        viewModel.logEvent(AnalyticsActions.TAP_EDIT_BACK)
+                        showBackDialog.value = true
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -157,6 +163,7 @@ fun EditScreen(
                 actions = {
                     Button(
                         onClick = {
+                            viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
                             viewModel.saveUchiwa { uchiwaId ->
                                 viewModel.resetEditUiState()
                                 coroutineScope.launch {
@@ -365,6 +372,10 @@ fun EditScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        viewModel.logEvent(
+                            AnalyticsActions.TAP_EDIT_BACK_DIALOG,
+                            mapOf("action" to AnalyticsBackDialogActions.ACTION_SAVE)
+                        )
                         showBackDialog.value = false
                         viewModel.saveUchiwa { uchiwaId ->
                             viewModel.resetEditUiState()
@@ -384,6 +395,10 @@ fun EditScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
+                        viewModel.logEvent(
+                            AnalyticsActions.TAP_EDIT_BACK_DIALOG,
+                            mapOf("action" to AnalyticsBackDialogActions.ACTION_DELETE)
+                        )
                         showBackDialog.value = false
                         onBack()
                     }
