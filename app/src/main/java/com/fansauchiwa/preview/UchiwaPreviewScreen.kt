@@ -1,6 +1,7 @@
 package com.fansauchiwa.preview
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,7 @@ import coil3.request.addLastModifiedToFileCacheKey
 import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +71,13 @@ fun UchiwaPreviewScreen(
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
     }
+
+    // BackHandlerで端末のバックキー押下時にAnalyticsイベントを送信
+    BackHandler {
+        viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_BACK)
+        onBack()
+    }
+
     // 保存失敗時のみSnackbarで通知
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess == false) {
@@ -82,7 +91,10 @@ fun UchiwaPreviewScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_BACK)
+                        onBack()
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -109,7 +121,10 @@ fun UchiwaPreviewScreen(
                     viewModel.showRewardedAdAndSave(activity)
                 }
             },
-            onBackToHomeClick = onBackToHome,
+            onBackToHomeClick = {
+                viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_GO_HOME)
+                onBackToHome()
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)

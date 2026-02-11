@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,11 +44,20 @@ class UchiwaPreviewViewModel @Inject constructor(
         }
     }
 
+    fun logEvent(eventName: String, params: Map<String, Any> = emptyMap()) {
+        viewModelScope.launch {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(eventName, params)
+            )
+        }
+    }
+
     /**
      * リワード広告を表示し、報酬獲得後にギャラリーに保存する
      * 広告のロードに失敗している場合は即座に保存を実行（UX低下を防ぐ）
      */
     fun showRewardedAdAndSave(activity: Activity) {
+        logEvent(com.fansauchiwa.data.analytics.AnalyticsActions.TAP_PREVIEW_EXPORT)
         adMobRepository.showRewardedAd(
             activity = activity,
             onUserEarnedReward = {
