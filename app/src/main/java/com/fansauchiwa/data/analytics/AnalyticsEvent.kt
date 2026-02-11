@@ -37,8 +37,7 @@ object AnalyticsActions {
     const val TAP_EDIT_UNDO_REDO = "tap_edit_undo_redo"
     const val TAP_EDIT_TEXT_COLOR = "tap_edit_text_color"
     const val TAP_EDIT_STICKER_COLOR = "tap_edit_sticker_color"
-
-    const val SELECT_EDIT_GALLERY_IMAGE = "select_edit_gallery_image"
+    
     const val SELECT_EDIT_TEXT = "select_edit_text"
     const val SELECT_EDIT_IMAGE = "select_edit_image"
     const val SELECT_EDIT_STICKER = "select_edit_sticker"

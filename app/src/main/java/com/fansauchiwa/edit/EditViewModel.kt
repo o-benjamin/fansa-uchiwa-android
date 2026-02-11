@@ -16,6 +16,10 @@ import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
+import com.fansauchiwa.data.analytics.BackGroundColorParams
+import com.fansauchiwa.data.analytics.EditStickerTargetParams
+import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -102,8 +106,25 @@ class EditViewModel @Inject constructor(
             decorations = currentState.decorations + decoration
         )
 
-        if (decoration is Decoration.Image) {
-            loadImage(decoration.imageId)
+        when (decoration) {
+            is Decoration.Text -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_TEXT,
+                    mapOf("font_family" to decoration.font.name)
+                )
+            }
+
+            is Decoration.Sticker -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_STICKER,
+                    mapOf("label" to decoration.label)
+                )
+            }
+
+            is Decoration.Image -> {
+                logEvent(AnalyticsActions.SELECT_EDIT_IMAGE)
+                loadImage(decoration.imageId)
+            }
         }
     }
 
@@ -215,8 +236,22 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Sticker -> decoration.copy(color = newColor)
-                is Decoration.Text -> decoration.copy(color = newColor)
+                is Decoration.Sticker -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_STICKER_COLOR,
+                        mapOf("target" to EditStickerTargetParams.STICKER)
+                    )
+                    decoration.copy(color = newColor)
+                }
+
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_COLOR,
+                        mapOf("target" to EditTextTargetParams.TEXT)
+                    )
+                    decoration.copy(color = newColor)
+                }
+
                 is Decoration.Image -> decoration.copy(color = newColor)
             }
         }
@@ -226,8 +261,22 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> decoration.copy(strokeColor = newColor)
-                is Decoration.Sticker -> decoration.copy(strokeColor = newColor)
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_COLOR,
+                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_1)
+                    )
+                    decoration.copy(strokeColor = newColor)
+                }
+
+                is Decoration.Sticker -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_STICKER_COLOR,
+                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_1)
+                    )
+                    decoration.copy(strokeColor = newColor)
+                }
+
                 is Decoration.Image -> decoration.copy(strokeColor = newColor)
             }
         }
@@ -237,7 +286,14 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> decoration.copy(width = newWidth)
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                        mapOf("target" to EditTextTargetParams.TEXT)
+                    )
+                    decoration.copy(width = newWidth)
+                }
+
                 else -> decoration
             }
         }
@@ -247,8 +303,22 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> decoration.copy(strokeWidth = newWidth)
-                is Decoration.Sticker -> decoration.copy(strokeWidth = newWidth)
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_1)
+                    )
+                    decoration.copy(strokeWidth = newWidth)
+                }
+
+                is Decoration.Sticker -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
+                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_1)
+                    )
+                    decoration.copy(strokeWidth = newWidth)
+                }
+
                 is Decoration.Image -> decoration.copy(strokeWidth = newWidth)
             }
         }
@@ -258,8 +328,22 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> decoration.copy(secondBorderColor = newColor)
-                is Decoration.Sticker -> decoration.copy(secondStrokeColor = newColor)
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_COLOR,
+                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_2)
+                    )
+                    decoration.copy(secondBorderColor = newColor)
+                }
+
+                is Decoration.Sticker -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_STICKER_COLOR,
+                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_2)
+                    )
+                    decoration.copy(secondStrokeColor = newColor)
+                }
+
                 else -> decoration
             }
         }
@@ -269,8 +353,22 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> decoration.copy(secondBorderWidth = newWidth)
-                is Decoration.Sticker -> decoration.copy(secondStrokeWidth = newWidth)
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_2)
+                    )
+                    decoration.copy(secondBorderWidth = newWidth)
+                }
+
+                is Decoration.Sticker -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
+                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_2)
+                    )
+                    decoration.copy(secondStrokeWidth = newWidth)
+                }
+
                 else -> decoration
             }
         }
@@ -278,12 +376,20 @@ class EditViewModel @Inject constructor(
 
     fun updateUchiwaColor(color: Color) {
         saveSnapshot()
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_BACKGROUND_COLOR,
+            mapOf("target" to BackGroundColorParams.PARAM_UCHIWA)
+        )
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColor = color)
     }
 
     fun updateBackgroundColor(color: Color) {
         saveSnapshot()
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_BACKGROUND_COLOR,
+            mapOf("target" to BackGroundColorParams.PARAM_BACKGROUND)
+        )
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
     }
@@ -340,7 +446,10 @@ class EditViewModel @Inject constructor(
 
     fun undo() {
         if (undoStack.isEmpty()) return
-        logEvent(AnalyticsActions.TAP_EDIT_UNDO_REDO, mapOf("actions" to "undo"))
+        logEvent(
+            AnalyticsActions.TAP_EDIT_UNDO_REDO,
+            mapOf("actions" to AnalyticsUndoRedoActions.ACTION_UNDO)
+        )
         val currentState = uiState.value
         val currentSnapshot = HistorySnapshot(
             decorations = currentState.decorations,
@@ -362,7 +471,10 @@ class EditViewModel @Inject constructor(
 
     fun redo() {
         if (redoStack.isEmpty()) return
-        logEvent(AnalyticsActions.TAP_EDIT_UNDO_REDO, mapOf("actions" to "redo"))
+        logEvent(
+            AnalyticsActions.TAP_EDIT_UNDO_REDO,
+            mapOf("actions" to AnalyticsUndoRedoActions.ACTION_REDO)
+        )
         val currentState = uiState.value
         val currentSnapshot = HistorySnapshot(
             decorations = currentState.decorations,
