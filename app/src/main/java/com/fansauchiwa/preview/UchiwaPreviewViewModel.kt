@@ -60,6 +60,7 @@ class UchiwaPreviewViewModel @Inject constructor(
         logEvent(com.fansauchiwa.data.analytics.AnalyticsActions.TAP_PREVIEW_EXPORT)
         adMobRepository.showRewardedAd(
             activity = activity,
+            placement = AnalyticsScreens.PREVIEW_SCREEN,
             onUserEarnedReward = {
                 // 報酬獲得（広告を最後まで視聴）したら保存を実行
                 saveToGallery()
