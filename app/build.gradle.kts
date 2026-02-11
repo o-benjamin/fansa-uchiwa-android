@@ -136,6 +136,9 @@ dependencies {
     // Ads
     implementation(libs.play.service.ads)
 
+    // ML Kit Subject Segmentation
+    implementation(libs.play.services.mlkit.subject.segmentation)
+
     // ColorPicker
     implementation(libs.compose.colorpicker)
 
