@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.analytics.AnalyticsEvent
@@ -16,7 +17,6 @@ import java.net.URLDecoder
 import javax.inject.Inject
 
 private const val UI_STATE_KEY = "ui_state"
-const val IMAGE_PATH_ARG = "imagePath"
 
 @HiltViewModel
 class UchiwaPreviewViewModel @Inject constructor(

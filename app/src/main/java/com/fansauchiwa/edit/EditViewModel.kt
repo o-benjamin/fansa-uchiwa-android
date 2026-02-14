@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,6 +22,7 @@ import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -418,6 +420,20 @@ class EditViewModel @Inject constructor(
             val images = localImageRepository.getAllImages()
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(allImages = images)
+        }
+    }
+
+    fun handleImageResult(resultUri: String) {
+        viewModelScope.launch {
+            val imageId = UUID.randomUUID().toString()
+            val image = Decoration.Image(
+                id = UUID.randomUUID().toString(),
+                imageId = imageId
+            )
+            saveImage(resultUri.toUri(), imageId) {
+                footprint("addDecoration: ${image.id}")
+                addDecoration(image)
+            }
         }
     }
 

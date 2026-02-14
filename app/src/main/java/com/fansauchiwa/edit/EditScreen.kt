@@ -110,7 +110,8 @@ import java.net.URLEncoder
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel(),
     onBack: () -> Unit,
-    onPreview: (String) -> Unit
+    onPreview: (String) -> Unit,
+    onNavigateToImagePreview: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -337,10 +338,9 @@ fun EditScreen(
                         viewModel.updateSecondBorderWidth(decorationId, weight)
                     }
                 },
-                onAddImage = { image, uri ->
-                    viewModel.saveImage(uri, image.imageId) {
-                        viewModel.addDecoration(image)
-                    }
+                onImagePicked = { uri ->
+                    val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
+                    onNavigateToImagePreview(encodedUri)
                 },
                 onImageClick = viewModel::addDecoration,
                 onImageLongPress = viewModel::startImageDeletionMode,

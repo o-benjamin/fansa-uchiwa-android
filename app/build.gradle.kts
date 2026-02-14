@@ -27,8 +27,8 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.2.0"
+        versionCode = 10
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +47,12 @@ android {
                 "String",
                 "BANNER_AD_UNIT_ID",
                 "\"ca-app-pub-3940256099942544/9214589741\""
+            )
+
+            buildConfigField(
+                "String",
+                "INTERSTITIAL_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/1033173712\""
             )
         }
 
@@ -77,6 +83,13 @@ android {
                             "Please add it to continue building the release version."
                 )
             buildConfigField("String", "BANNER_AD_UNIT_ID", "\"$bannerAdId\"")
+
+            val interstitialAdId = localProperties.getProperty("ADMOB_INTERSTITIAL_ID_RELEASE")
+                ?: throw GradleException(
+                    "ADMOB_INTERSTITIAL_ID_RELEASE not found in local.properties. " +
+                            "Please add it to continue building the release version."
+                )
+            buildConfigField("String", "INTERSTITIAL_AD_UNIT_ID", "\"$interstitialAdId\"")
         }
     }
     compileOptions {
@@ -135,6 +148,9 @@ dependencies {
 
     // Ads
     implementation(libs.play.service.ads)
+
+    // ML Kit Subject Segmentation
+    implementation(libs.play.services.mlkit.subject.segmentation)
 
     // ColorPicker
     implementation(libs.compose.colorpicker)

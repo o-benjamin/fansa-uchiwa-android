@@ -106,9 +106,9 @@ fun EditPager(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
-    onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
+    onImagePicked: (Uri) -> Unit,
     onUchiwaColorSelected: (Color) -> Unit,
     onBackgroundColorSelected: (Color) -> Unit,
     selectedDecoration: Decoration? = null,
@@ -126,12 +126,8 @@ fun EditPager(
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
-                val imageId = UUID.randomUUID().toString()
-                val image = Decoration.Image(
-                    id = UUID.randomUUID().toString(),
-                    imageId = imageId
-                )
-                onAddImage(image, uri)
+                // 保存せず、プレビュー画面へ遷移
+                onImagePicked(uri)
             } else {
                 Log.d("PhotoPicker", "No media selected")
             }
@@ -563,8 +559,8 @@ fun TextDecorationControls(
         title = stringResource(R.string.text_color_and_weight),
         color = textColor,
         width = textWidth.toFloat(),
-        valueRange = 0f..900f,
-        steps = 10,
+        valueRange = 100f..900f,
+        steps = 9,
         onColorSelected = onColorSelected,
         onWeightChanged = { newValue ->
             onTextWeightChanged(newValue.toInt())

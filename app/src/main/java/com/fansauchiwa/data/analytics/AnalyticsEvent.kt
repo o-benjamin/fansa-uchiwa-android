@@ -19,6 +19,7 @@ object AnalyticsScreens {
     const val HOME_SCREEN = "home_screen"
     const val EDIT_SCREEN = "edit_screen"
     const val PREVIEW_SCREEN = "preview_screen"
+    const val IMAGE_PREVIEW_SCREEN = "image_preview_screen"
 }
 
 /**
@@ -48,6 +49,8 @@ object AnalyticsActions {
     const val SELECT_EDIT_BACKGROUND_COLOR = "select_edit_background_color"
     const val SELECT_EDIT_LAYER = "select_edit_layer"
 
+    const val TAP_IMAGE_PREVIEW_CONFIRM = "tap_image_preview_confirm"
+
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
@@ -55,6 +58,9 @@ object AnalyticsActions {
     const val AD_REWARD_SHOW = "ad_reward_show"
     const val AD_REWARD_COMPLETE = "ad_reward_complete"
     const val AD_REWARD_DISMISSED = "ad_reward_dismissed"
+
+    const val AD_INTERSTITIAL_SHOW = "ad_interstitial_show"
+    const val AD_INTERSTITIAL_DISMISSED = "ad_interstitial_dismissed"
 }
 
 /**
