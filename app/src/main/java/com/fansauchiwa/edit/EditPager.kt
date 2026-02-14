@@ -109,6 +109,7 @@ fun EditPager(
     onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
+    onImagePicked: (Uri) -> Unit,
     onUchiwaColorSelected: (Color) -> Unit,
     onBackgroundColorSelected: (Color) -> Unit,
     selectedDecoration: Decoration? = null,
@@ -126,12 +127,8 @@ fun EditPager(
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
-                val imageId = UUID.randomUUID().toString()
-                val image = Decoration.Image(
-                    id = UUID.randomUUID().toString(),
-                    imageId = imageId
-                )
-                onAddImage(image, uri)
+                // 保存せず、プレビュー画面へ遷移
+                onImagePicked(uri)
             } else {
                 Log.d("PhotoPicker", "No media selected")
             }

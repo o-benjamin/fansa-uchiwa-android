@@ -43,4 +43,9 @@
     <string name="layer_text">テキスト</string>
     <string name="layer_sticker">ステッカー</string>
     <string name="layer_image">画像</string>
+    <string name="image_preview_title">画像プレビュー</string>
+    <string name="image_preview_error">背景透過処理に失敗しました</string>
+    <string name="image_preview_load_failed">画像の取得に失敗しました</string>
+    <string name="image_preview_original">オリジナル</string>
+    <string name="image_preview_transparent">背景透過</string>
 </resources>

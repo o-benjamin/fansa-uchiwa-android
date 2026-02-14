@@ -1,6 +1,9 @@
 package com.fansauchiwa
 
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,8 +13,9 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.fansauchiwa.edit.EditScreen
 import com.fansauchiwa.edit.EditViewModel
+import com.fansauchiwa.edit.imagepreview.ImagePreviewScreen
+import com.fansauchiwa.edit.imagepreview.ImagePreviewViewModel
 import com.fansauchiwa.home.HomeScreen
-import com.fansauchiwa.preview.IMAGE_PATH_ARG
 import com.fansauchiwa.preview.UchiwaPreviewScreen
 import com.fansauchiwa.preview.UchiwaPreviewViewModel
 
@@ -49,12 +53,15 @@ fun FansaUchiwaNavGraph(
                 viewModel = viewModel,
                 onBack = { navController.navigateUp() },
                 onPreview = { path ->
-                    navController.navigate("${FansaUchiwaDestinations.PREVIEW}/$path")
+                    navController.navigate("${FansaUchiwaScreens.PREVIEW_SCREEN}/$path")
+                },
+                onNavigateToImagePreview = { uri ->
+                    navController.navigate("${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/$uri")
                 }
             )
         }
         composable(
-            route = "${FansaUchiwaDestinations.PREVIEW}/{$IMAGE_PATH_ARG}",
+            route = FansaUchiwaDestinations.PREVIEW,
             arguments = listOf(
                 navArgument(IMAGE_PATH_ARG) { type = NavType.StringType }
             )
@@ -69,6 +76,36 @@ fun FansaUchiwaNavGraph(
                         inclusive = false
                     )
                 }
+            )
+        }
+        composable(
+            route = FansaUchiwaDestinations.IMAGE_PREVIEW,
+            arguments = listOf(
+                navArgument(IMAGE_URI_ARG) { type = NavType.StringType }
+            ),
+            enterTransition = {
+                slideInVertically(initialOffsetY = { it })
+            },
+            exitTransition = {
+                slideOutVertically(targetOffsetY = { it })
+            }
+        ) { backStackEntry ->
+            val viewModel: ImagePreviewViewModel = hiltViewModel()
+            // EditScreenのバックスタックエントリからEditViewModelを取得
+            // TODO: もっといいやり方があれば…
+            val editBackStackEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(FansaUchiwaDestinations.EDIT)
+            }
+            val editViewModel: EditViewModel = hiltViewModel(editBackStackEntry)
+
+            ImagePreviewScreen(
+                onConfirm = { resultUri ->
+                    // EditViewModelのメソッドを直接呼び出す
+                    editViewModel.handleImageResult(resultUri)
+                    navController.popBackStack()
+                },
+                onBack = { navController.navigateUp() },
+                viewModel = viewModel
             )
         }
     }
