@@ -48,6 +48,12 @@ android {
                 "BANNER_AD_UNIT_ID",
                 "\"ca-app-pub-3940256099942544/9214589741\""
             )
+
+            buildConfigField(
+                "String",
+                "INTERSTITIAL_AD_UNIT_ID",
+                "\"ca-app-pub-3940256099942544/1033173712\""
+            )
         }
 
         release {
@@ -77,6 +83,13 @@ android {
                             "Please add it to continue building the release version."
                 )
             buildConfigField("String", "BANNER_AD_UNIT_ID", "\"$bannerAdId\"")
+
+            val interstitialAdId = localProperties.getProperty("ADMOB_INTERSTITIAL_ID_RELEASE")
+                ?: throw GradleException(
+                    "ADMOB_INTERSTITIAL_ID_RELEASE not found in local.properties. " +
+                            "Please add it to continue building the release version."
+                )
+            buildConfigField("String", "INTERSTITIAL_AD_UNIT_ID", "\"$interstitialAdId\"")
         }
     }
     compileOptions {

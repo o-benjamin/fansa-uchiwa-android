@@ -1,13 +1,17 @@
 package com.fansauchiwa.edit.imagepreview
 
+import android.app.Activity
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -41,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.fansauchiwa.R
+import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,8 +57,12 @@ fun ImagePreviewScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
-    // エラーイベントをSharedFlowで購読してSnackbarを表示
+    LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+    }
+
     LaunchedEffect(Unit) {
         viewModel.errorEvent.collect {
             snackbarHostState.showSnackbar(
@@ -62,12 +71,23 @@ fun ImagePreviewScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.confirmEvent.collect { imageUri ->
+            onConfirm(imageUri)
+        }
+    }
+
     ImagePreviewScreenContent(
         uiState = uiState,
-        onConfirm = onConfirm,
         onBack = onBack,
         onShowOriginal = { viewModel.showOriginal() },
         onShowTransparent = { viewModel.showTransparent() },
+        onConfirmTapped = { imageUri, isOriginalSelected ->
+            val activity = context as? Activity
+            if (activity != null) {
+                viewModel.onConfirmTapped(activity, imageUri, isOriginalSelected)
+            }
+        },
         snackbarHostState = snackbarHostState,
         isPreview = false
     )
@@ -77,10 +97,10 @@ fun ImagePreviewScreen(
 @Composable
 private fun ImagePreviewScreenContent(
     uiState: ImagePreviewUiState,
-    onConfirm: (String) -> Unit,
     onBack: () -> Unit,
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
+    onConfirmTapped: (String, Boolean) -> Unit,
     snackbarHostState: SnackbarHostState,
     isPreview: Boolean = false
 ) {
@@ -100,6 +120,12 @@ private fun ImagePreviewScreenContent(
                 }
             )
         },
+        bottomBar = {
+            BannerAd(
+                LocalContext.current,
+                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
@@ -117,7 +143,7 @@ private fun ImagePreviewScreenContent(
                 )
                 ControlArea(
                     uiState = uiState,
-                    onConfirm = onConfirm,
+                    onConfirmTapped = onConfirmTapped,
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent,
                     onBack = onBack,
@@ -198,7 +224,7 @@ private fun ImageDisplayArea(
 @Composable
 private fun ControlArea(
     uiState: ImagePreviewUiState,
-    onConfirm: (String) -> Unit,
+    onConfirmTapped: (String, Boolean) -> Unit,
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
     onBack: () -> Unit,
@@ -213,7 +239,7 @@ private fun ControlArea(
                 Controls(
                     isOriginalSelected = true,
                     confirmUri = uiState.originalUri,
-                    onConfirm = onConfirm,
+                    onConfirmTapped = onConfirmTapped,
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent
                 )
@@ -223,7 +249,7 @@ private fun ControlArea(
                 Controls(
                     isOriginalSelected = false,
                     confirmUri = uiState.originalUri,
-                    onConfirm = onConfirm,
+                    onConfirmTapped = onConfirmTapped,
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent
                 )
@@ -233,7 +259,7 @@ private fun ControlArea(
                 Controls(
                     isOriginalSelected = false,
                     confirmUri = uiState.transparentUri,
-                    onConfirm = onConfirm,
+                    onConfirmTapped = onConfirmTapped,
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent
                 )
@@ -259,7 +285,7 @@ private fun ControlArea(
 private fun Controls(
     isOriginalSelected: Boolean,
     confirmUri: Uri,
-    onConfirm: (String) -> Unit,
+    onConfirmTapped: (String, Boolean) -> Unit,
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit
 ) {
@@ -269,7 +295,7 @@ private fun Controls(
         onShowTransparent = onShowTransparent
     )
     Button(
-        onClick = { onConfirm(confirmUri.toString()) },
+        onClick = { onConfirmTapped(confirmUri.toString(), isOriginalSelected) },
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(text = stringResource(R.string.ok))
@@ -315,7 +341,7 @@ private fun ImagePreviewScreenLoadingPreview() {
     FansaUchiwaTheme {
         ImagePreviewScreenContent(
             uiState = ImagePreviewUiState.Loading,
-            onConfirm = {},
+            onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
@@ -331,7 +357,7 @@ private fun ImagePreviewScreenLoadErrorPreview() {
     FansaUchiwaTheme {
         ImagePreviewScreenContent(
             uiState = ImagePreviewUiState.LoadError(Exception("Failed to load image")),
-            onConfirm = {},
+            onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
@@ -349,7 +375,7 @@ private fun ImagePreviewScreenShowingOriginalPreview() {
             uiState = ImagePreviewUiState.Ready.ShowingOriginal(
                 originalUri = "content://example/image.jpg".toUri()
             ),
-            onConfirm = {},
+            onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
@@ -367,7 +393,7 @@ private fun ImagePreviewScreenShowingTransparentLoadingPreview() {
             uiState = ImagePreviewUiState.Ready.ShowingTransparent.Loading(
                 originalUri = "content://example/image.jpg".toUri()
             ),
-            onConfirm = {},
+            onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
@@ -386,7 +412,7 @@ private fun ImagePreviewScreenShowingTransparentSuccessPreview() {
                 originalUri = "content://example/image.jpg".toUri(),
                 transparentUri = "content://example/transparent.jpg".toUri()
             ),
-            onConfirm = {},
+            onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},

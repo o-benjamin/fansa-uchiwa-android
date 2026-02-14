@@ -10,6 +10,8 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,7 +23,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * AdMobのリワード広告を管理するRepository
+ * AdMobのリワード広告とインタースティシャル広告を管理するRepository
  * Google AdMob Best Practicesに従い、広告のロードと表示ロジックをカプセル化
  */
 interface AdMobRepository {
@@ -43,6 +45,21 @@ interface AdMobRepository {
         onUserEarnedReward: () -> Unit,
         onAdFailedOrSkipped: () -> Unit
     )
+
+    /**
+     * インタースティシャル広告を事前にロードする（非同期）
+     */
+    fun loadInterstitialAd()
+
+    /**
+     * インタースティシャル広告を表示する
+     * @param activity 広告を表示するActivity
+     * @param onAdClosed 広告が閉じられた際のコールバック
+     */
+    fun showInterstitialAd(
+        activity: Activity,
+        onAdClosed: () -> Unit
+    )
 }
 
 @Singleton
@@ -53,6 +70,10 @@ class AdMobRepositoryImpl @Inject constructor(
     private val adUnitId = BuildConfig.REWARDED_AD_UNIT_ID
     private var rewardedAd: RewardedAd? = null
     private var isLoadingAd = false
+
+    private val interstitialAdUnitId = BuildConfig.INTERSTITIAL_AD_UNIT_ID
+    private var interstitialAd: InterstitialAd? = null
+    private var isLoadingInterstitialAd = false
 
     // Analytics計測用のCoroutineScope（コールバック内で使用）
     private val analyticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -148,6 +169,84 @@ class AdMobRepositoryImpl @Inject constructor(
             }
             onUserEarnedReward()
         }
+    }
+
+    override fun loadInterstitialAd() {
+        // 既にロード中または既にロード済みの場合はスキップ
+        if (isLoadingInterstitialAd || interstitialAd != null) {
+            return
+        }
+
+        isLoadingInterstitialAd = true
+        val adRequest = AdRequest.Builder().build()
+
+        InterstitialAd.load(
+            context,
+            interstitialAdUnitId,
+            adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    isLoadingInterstitialAd = false
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    interstitialAd = null
+                    isLoadingInterstitialAd = false
+                }
+            }
+        )
+    }
+
+    override fun showInterstitialAd(
+        activity: Activity,
+        onAdClosed: () -> Unit
+    ) {
+        val ad = interstitialAd
+
+        // 広告がロードされていない場合は、即座に処理をスキップ（UX低下を防ぐため）
+        if (ad == null) {
+            loadInterstitialAd()
+            onAdClosed()
+            return
+        }
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                // 広告表示開始時のAnalytics計測
+                analyticsScope.launch {
+                    analyticsDataSource.logEvent(
+                        AnalyticsEvent(
+                            name = AnalyticsActions.AD_INTERSTITIAL_SHOW
+                        )
+                    )
+                }
+            }
+
+            override fun onAdDismissedFullScreenContent() {
+                // 広告を閉じた時のAnalytics計測
+                analyticsScope.launch {
+                    analyticsDataSource.logEvent(
+                        AnalyticsEvent(
+                            name = AnalyticsActions.AD_INTERSTITIAL_DISMISSED
+                        )
+                    )
+                }
+                // 広告を閉じた後、次回のために新しい広告をロード
+                interstitialAd = null
+                loadInterstitialAd()
+                onAdClosed()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                // 広告表示に失敗した場合もスキップして処理を継続
+                interstitialAd = null
+                loadInterstitialAd()
+                onAdClosed()
+            }
+        }
+
+        ad.show(activity)
     }
 }
 
