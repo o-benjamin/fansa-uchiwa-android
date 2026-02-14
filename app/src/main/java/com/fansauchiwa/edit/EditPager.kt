@@ -560,8 +560,8 @@ fun TextDecorationControls(
         title = stringResource(R.string.text_color_and_weight),
         color = textColor,
         width = textWidth.toFloat(),
-        valueRange = 0f..900f,
-        steps = 10,
+        valueRange = 100f..900f,
+        steps = 9,
         onColorSelected = onColorSelected,
         onWeightChanged = { newValue ->
             onTextWeightChanged(newValue.toInt())
