@@ -338,11 +338,6 @@ fun EditScreen(
                         viewModel.updateSecondBorderWidth(decorationId, weight)
                     }
                 },
-                onAddImage = { image, uri ->
-                    viewModel.saveImage(uri, image.imageId) {
-                        viewModel.addDecoration(image)
-                    }
-                },
                 onImagePicked = { uri ->
                     val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
                     onNavigateToImagePreview(encodedUri)

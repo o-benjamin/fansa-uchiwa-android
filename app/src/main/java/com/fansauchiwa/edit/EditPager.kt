@@ -106,7 +106,6 @@ fun EditPager(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
-    onAddImage: (Decoration.Image, Uri) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
     onImagePicked: (Uri) -> Unit,
