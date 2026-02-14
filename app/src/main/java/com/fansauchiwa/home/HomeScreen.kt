@@ -1,6 +1,5 @@
 package com.fansauchiwa.home
 
-import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -118,6 +116,7 @@ fun HomeScreen(
     onImageClick: (String) -> Unit = {},
     onAddClick: () -> Unit = {}
 ) {
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -127,8 +126,9 @@ fun HomeScreen(
     }
     val context = LocalContext.current
 
-    // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
     LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+        // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
         viewModel.loadAllMasterpieces()
     }
 
@@ -189,7 +189,10 @@ fun HomeScreen(
                 }
             } else {
                 ExtendedFloatingActionButton(
-                    onClick = onAddClick,
+                    onClick = {
+                        viewModel.logNewCreateTap()
+                        onAddClick()
+                    },
                     expanded = isFabExpanded,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -226,6 +229,7 @@ fun HomeScreen(
                     viewModel.togglePathSelection(path)
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
+                    viewModel.logItemEditTap()
                     onImageClick(uchiwaId)
                 }
             },

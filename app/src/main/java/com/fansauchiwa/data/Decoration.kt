@@ -14,6 +14,8 @@ import kotlinx.parcelize.TypeParceler
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 
+const val DEFAULT_DECORATION_TEXT = "テキストを入力"
+
 @Polymorphic
 @Serializable
 sealed interface Decoration : Parcelable {
@@ -36,7 +38,7 @@ sealed interface Decoration : Parcelable {
     @TypeParceler<Color, ColorParceler>
     @TypeParceler<FontFamilies, FontFamiliesParceler>
     data class Text(
-        val text: String = "テキストを入力",
+        val text: String = DEFAULT_DECORATION_TEXT,
         override val id: String,
         @Serializable(with = OffsetSerializer::class)
         override val offset: Offset = Offset.Zero,

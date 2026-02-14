@@ -33,6 +33,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import com.fansauchiwa.R
+import com.fansauchiwa.data.DEFAULT_DECORATION_TEXT
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.TEXT_ITEM_PADDING
 
@@ -132,6 +133,12 @@ fun TextItemContent(
     LaunchedEffect(isEditing) {
         if (isEditing) {
             focusRequester.requestFocus()
+            // デフォルトテキストの場合のみ、全テキストを選択する
+            if (textFieldValue.text == DEFAULT_DECORATION_TEXT) {
+                textFieldValue = textFieldValue.copy(
+                    selection = TextRange(0, textFieldValue.text.length)
+                )
+            }
         } else {
             focusManager.clearFocus()
             onFinishEditing()

@@ -1,18 +1,17 @@
 package com.fansauchiwa.preview
 
 import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -54,19 +53,30 @@ import coil3.request.addLastModifiedToFileCacheKey
 import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UchiwaPreviewScreen(
-    viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
+    viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
     onBackToHome: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+    }
+
+    // BackHandlerで端末のバックキー押下時にAnalyticsイベントを送信
+    BackHandler {
+        viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_BACK)
+        onBack()
+    }
 
     // 保存失敗時のみSnackbarで通知
     LaunchedEffect(uiState.saveSuccess) {
@@ -81,7 +91,10 @@ fun UchiwaPreviewScreen(
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_BACK)
+                        onBack()
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -108,7 +121,10 @@ fun UchiwaPreviewScreen(
                     viewModel.showRewardedAdAndSave(activity)
                 }
             },
-            onBackToHomeClick = onBackToHome,
+            onBackToHomeClick = {
+                viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_GO_HOME)
+                onBackToHome()
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
