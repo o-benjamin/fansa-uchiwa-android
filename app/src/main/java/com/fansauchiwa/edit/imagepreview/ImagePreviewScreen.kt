@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,9 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -80,14 +85,18 @@ fun ImagePreviewScreen(
     ImagePreviewScreenContent(
         uiState = uiState,
         onBack = onBack,
-        onShowOriginal = { viewModel.showOriginal() },
-        onShowTransparent = { viewModel.showTransparent() },
+        onShowOriginal = viewModel::showOriginal,
+        onShowTransparent = viewModel::showTransparent,
         onConfirmTapped = { imageUri, isOriginalSelected ->
             val activity = context as? Activity
             if (activity != null) {
                 viewModel.onConfirmTapped(activity, imageUri, isOriginalSelected)
             }
         },
+        onStartManualCorrection = viewModel::startManualCorrection,
+        onCompleteManualCorrection = viewModel::completeManualCorrection,
+        onUndoCorrection = viewModel::undoCorrection,
+        onRedoCorrection = viewModel::redoCorrection,
         snackbarHostState = snackbarHostState,
         isPreview = false
     )
@@ -101,9 +110,22 @@ private fun ImagePreviewScreenContent(
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
     onConfirmTapped: (String, Boolean) -> Unit,
+    onStartManualCorrection: () -> Unit,
+    onCompleteManualCorrection: () -> Unit,
+    onUndoCorrection: () -> Unit,
+    onRedoCorrection: () -> Unit,
     snackbarHostState: SnackbarHostState,
     isPreview: Boolean = false
 ) {
+    val isOriginalSelected = when (uiState) {
+        is ImagePreviewUiState.Ready.ShowingOriginal -> true
+        is ImagePreviewUiState.Ready.ShowingTransparent -> false
+        else -> true
+    }
+
+    val isManualCorrectionMode =
+        uiState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -121,10 +143,42 @@ private fun ImagePreviewScreenContent(
             )
         },
         bottomBar = {
-            BannerAd(
-                LocalContext.current,
-                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
-            )
+            Column {
+                ControlArea(
+                    uiState = uiState,
+                    onConfirmTapped = onConfirmTapped,
+                    onShowOriginal = onShowOriginal,
+                    onShowTransparent = onShowTransparent,
+                    onBack = onBack,
+                    onCompleteManualCorrection = onCompleteManualCorrection,
+                    onUndoCorrection = onUndoCorrection,
+                    onRedoCorrection = onRedoCorrection,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(16.dp)
+                )
+                BannerAd(
+                    LocalContext.current,
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                )
+            }
+        },
+        floatingActionButton = {
+            if (!isOriginalSelected && uiState is ImagePreviewUiState.Ready.ShowingTransparent.Success) {
+                ExtendedFloatingActionButton(
+                    onClick = onStartManualCorrection,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null
+                        )
+                    },
+                    text = {
+                        Text(text = stringResource(R.string.image_preview_manual_edit))
+                    }
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -133,23 +187,11 @@ private fun ImagePreviewScreenContent(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Column(
+            ImageDisplayArea(
+                uiState = uiState,
+                isPreview = isPreview,
                 modifier = Modifier.fillMaxSize()
-            ) {
-                ImageDisplayArea(
-                    uiState = uiState,
-                    isPreview = isPreview,
-                    modifier = Modifier.weight(1f)
-                )
-                ControlArea(
-                    uiState = uiState,
-                    onConfirmTapped = onConfirmTapped,
-                    onShowOriginal = onShowOriginal,
-                    onShowTransparent = onShowTransparent,
-                    onBack = onBack,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+            )
             if (uiState is ImagePreviewUiState.Loading || uiState is ImagePreviewUiState.Ready.ShowingTransparent.Loading) {
                 LoadingOverlay()
             }
@@ -194,6 +236,7 @@ private fun ImageDisplayArea(
             is ImagePreviewUiState.Ready.ShowingOriginal -> uiState.originalUri
             is ImagePreviewUiState.Ready.ShowingTransparent.Loading -> uiState.originalUri
             is ImagePreviewUiState.Ready.ShowingTransparent.Success -> uiState.transparentUri
+            is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection -> uiState.transparentUri
             else -> null
         }
 
@@ -228,6 +271,9 @@ private fun ControlArea(
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
     onBack: () -> Unit,
+    onCompleteManualCorrection: () -> Unit,
+    onUndoCorrection: () -> Unit,
+    onRedoCorrection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -262,6 +308,14 @@ private fun ControlArea(
                     onConfirmTapped = onConfirmTapped,
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent
+                )
+            }
+
+            is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection -> {
+                ManualCorrectionControls(
+                    onCompleteManualCorrection = onCompleteManualCorrection,
+                    onUndoCorrection = onUndoCorrection,
+                    onRedoCorrection = onRedoCorrection
                 )
             }
 
@@ -334,6 +388,47 @@ private fun ImageTypeSelector(
     }
 }
 
+@Composable
+private fun ManualCorrectionControls(
+    onCompleteManualCorrection: () -> Unit,
+    onUndoCorrection: () -> Unit,
+    onRedoCorrection: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = onUndoCorrection,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
+                    contentDescription = stringResource(R.string.undo)
+                )
+            }
+            IconButton(
+                onClick = onRedoCorrection,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Redo,
+                    contentDescription = stringResource(R.string.redo)
+                )
+            }
+        }
+        Button(
+            onClick = onCompleteManualCorrection,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = stringResource(R.string.done))
+        }
+    }
+}
+
 // Preview関数：すべての UiState を網羅
 @Preview(showBackground = true)
 @Composable
@@ -345,6 +440,10 @@ private fun ImagePreviewScreenLoadingPreview() {
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = {},
+            onUndoCorrection = {},
+            onRedoCorrection = {},
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -361,6 +460,10 @@ private fun ImagePreviewScreenLoadErrorPreview() {
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = {},
+            onUndoCorrection = {},
+            onRedoCorrection = {},
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -379,6 +482,10 @@ private fun ImagePreviewScreenShowingOriginalPreview() {
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = {},
+            onUndoCorrection = {},
+            onRedoCorrection = {},
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -397,6 +504,10 @@ private fun ImagePreviewScreenShowingTransparentLoadingPreview() {
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = {},
+            onUndoCorrection = {},
+            onRedoCorrection = {},
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -416,11 +527,40 @@ private fun ImagePreviewScreenShowingTransparentSuccessPreview() {
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = {},
+            onUndoCorrection = {},
+            onRedoCorrection = {},
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+private fun ImagePreviewScreenManualCorrectionPreview() {
+    FansaUchiwaTheme {
+        ImagePreviewScreenContent(
+            uiState = ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection(
+                originalUri = "content://example/image.jpg".toUri(),
+                transparentUri = "content://example/transparent.jpg".toUri()
+            ),
+            onConfirmTapped = { _, _ -> },
+            onBack = {},
+            onShowOriginal = {},
+            onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = {},
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            snackbarHostState = SnackbarHostState(),
+            isPreview = true
+        )
+    }
+}
+
+
 
 
 

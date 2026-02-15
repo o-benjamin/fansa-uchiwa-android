@@ -145,4 +145,50 @@ class ImagePreviewViewModel @Inject constructor(
             }
         )
     }
+
+    /**
+     * 手動修正モードを開始する
+     */
+    fun startManualCorrection() {
+        val currentState = _uiState.value
+        if (currentState is ImagePreviewUiState.Ready.ShowingTransparent.Success) {
+            _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection(
+                originalUri = currentState.originalUri,
+                transparentUri = currentState.transparentUri
+            )
+        }
+    }
+
+    /**
+     * 手動修正を完了し、Success 状態に戻す
+     */
+    fun completeManualCorrection() {
+        val currentState = _uiState.value
+        if (currentState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection) {
+            _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
+                originalUri = currentState.originalUri,
+                transparentUri = currentState.transparentUri
+            )
+        }
+    }
+
+    /**
+     * 修正を元に戻す（将来の履歴操作用）
+     */
+    fun undoCorrection() {
+        // TODO: 履歴スタックからの復元処理を実装
+        viewModelScope.launch {
+            println("Undo correction")
+        }
+    }
+
+    /**
+     * 修正をやり直す（将来の履歴操作用）
+     */
+    fun redoCorrection() {
+        // TODO: 履歴スタックからの復元処理を実装
+        viewModelScope.launch {
+            println("Redo correction")
+        }
+    }
 }
