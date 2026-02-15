@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_URI_ARG
 import com.fansauchiwa.data.AdMobRepository
+import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -47,11 +48,11 @@ class ImagePreviewViewModel @Inject constructor(
     private var transparentUri: Uri? = null
 
     // 手動修正用のパスリスト
-    private val _paths = mutableStateListOf<Path>()
-    val paths: List<Path> get() = _paths
+    private val _paths = mutableStateListOf<EraserPath>()
+    val paths: List<EraserPath> get() = _paths
 
     // Redo用の履歴スタック
-    private val _redoStack = mutableStateListOf<Path>()
+    private val _redoStack = mutableStateListOf<EraserPath>()
 
     init {
         loadImageUri()
@@ -169,24 +170,72 @@ class ImagePreviewViewModel @Inject constructor(
     }
 
     /**
-     * 手動修正を完了し、Success 状態に戻す
+     * 手動修正を完了し、パスを画像に適用する
+     * @param containerWidth 画像表示コンテナの幅（ピクセル）
+     * @param containerHeight 画像表示コンテナの高さ（ピクセル）
      */
-    fun completeManualCorrection() {
+    fun completeManualCorrection(containerWidth: Int, containerHeight: Int) {
         val currentState = _uiState.value
-        if (currentState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection) {
+        if (currentState !is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection) return
+
+        // パスがない場合は直接 Success に戻る
+        if (_paths.isEmpty()) {
             _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
                 originalUri = currentState.originalUri,
                 transparentUri = currentState.transparentUri
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            // ローディング状態に遷移
+            _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Loading(
+                originalUri = currentState.originalUri
+            )
+
+            val result = imageProcessingRepository.applyManualCorrection(
+                imageUri = currentState.transparentUri,
+                paths = _paths.toList(),
+                previewWidth = containerWidth,
+                previewHeight = containerHeight
+            )
+
+            result.fold(
+                onSuccess = { uri ->
+                    // キャッシュを更新
+                    transparentUri = uri
+                    // パスをクリア
+                    _paths.clear()
+                    _redoStack.clear()
+                    // Success 状態に遷移
+                    _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
+                        originalUri = currentState.originalUri,
+                        transparentUri = uri
+                    )
+                },
+                onFailure = {
+                    _errorEvent.emit(Unit)
+                    // 元の ManualCorrection 状態に戻す
+                    _uiState.value = currentState
+                }
             )
         }
     }
 
     /**
      * 新しいパスを追加する
+     * @param path ユーザーが描画したパス（画像ローカル座標系）
+     * @param scale 描画時のズーム倍率
      */
-    fun addPath(path: Path) {
-        _paths.add(path)
+    fun addPath(path: Path, scale: Float) {
+        val strokeWidth = BASE_STROKE_WIDTH / scale
+        _paths.add(EraserPath(path, strokeWidth))
         _redoStack.clear()
+    }
+
+    companion object {
+        /** 消しゴムの基準線幅（ズーム倍率1.0時の太さ） */
+        private const val BASE_STROKE_WIDTH = 40f
     }
 
     /**

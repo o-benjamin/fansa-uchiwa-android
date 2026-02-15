@@ -17,19 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
@@ -53,14 +40,30 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +71,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,7 +116,9 @@ fun ImagePreviewScreen(
             }
         },
         onStartManualCorrection = viewModel::startManualCorrection,
-        onCompleteManualCorrection = viewModel::completeManualCorrection,
+        onCompleteManualCorrection = { containerWidth, containerHeight ->
+            viewModel.completeManualCorrection(containerWidth, containerHeight)
+        },
         onUndoCorrection = viewModel::undoCorrection,
         onRedoCorrection = viewModel::redoCorrection,
         onAddPath = viewModel::addPath,
@@ -125,16 +131,16 @@ fun ImagePreviewScreen(
 @Composable
 private fun ImagePreviewScreenContent(
     uiState: ImagePreviewUiState,
-    paths: List<Path>,
+    paths: List<EraserPath>,
     onBack: () -> Unit,
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
     onConfirmTapped: (String, Boolean) -> Unit,
     onStartManualCorrection: () -> Unit,
-    onCompleteManualCorrection: () -> Unit,
+    onCompleteManualCorrection: (Int, Int) -> Unit,
     onUndoCorrection: () -> Unit,
     onRedoCorrection: () -> Unit,
-    onAddPath: (Path) -> Unit,
+    onAddPath: (Path, Float) -> Unit,
     snackbarHostState: SnackbarHostState,
     isPreview: Boolean = false
 ) {
@@ -146,6 +152,8 @@ private fun ImagePreviewScreenContent(
 
     val isManualCorrectionMode =
         uiState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
+
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
 
     Scaffold(
         topBar = {
@@ -171,7 +179,12 @@ private fun ImagePreviewScreenContent(
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent,
                     onBack = onBack,
-                    onCompleteManualCorrection = onCompleteManualCorrection,
+                    onCompleteManualCorrection = {
+                        onCompleteManualCorrection(
+                            containerSize.width,
+                            containerSize.height
+                        )
+                    },
                     onUndoCorrection = onUndoCorrection,
                     onRedoCorrection = onRedoCorrection,
                     modifier = Modifier
@@ -213,6 +226,7 @@ private fun ImagePreviewScreenContent(
                 paths = paths,
                 isManualCorrectionMode = isManualCorrectionMode,
                 onAddPath = onAddPath,
+                onContainerSizeChanged = { containerSize = it },
                 isPreview = isPreview,
                 modifier = Modifier.fillMaxSize()
             )
@@ -241,9 +255,10 @@ private fun LoadingOverlay() {
 @Composable
 private fun ImageDisplayArea(
     uiState: ImagePreviewUiState,
-    paths: List<Path>,
+    paths: List<EraserPath>,
     isManualCorrectionMode: Boolean,
-    onAddPath: (Path) -> Unit,
+    onAddPath: (Path, Float) -> Unit,
+    onContainerSizeChanged: (IntSize) -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -255,6 +270,7 @@ private fun ImageDisplayArea(
         modifier = modifier
             .fillMaxWidth()
             .clipToBounds()
+            .onSizeChanged { onContainerSizeChanged(it) }
             .background(
                 Brush.linearGradient(
                     listOf(
@@ -335,7 +351,7 @@ private fun ImageDisplayArea(
                     // タッチ終了時にパスを確定
                     currentPath.value?.let { path ->
                         if (!path.isEmpty) {
-                            onAddPath(path)
+                            onAddPath(path, scale.floatValue)
                         }
                         currentPath.value = null
                     }
@@ -378,22 +394,22 @@ private fun ImageDisplayArea(
                         if (uiState is ImagePreviewUiState.Ready.ShowingTransparent.Success ||
                             uiState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
                         ) {
-                            val strokeWidth = 40f / scale.floatValue
-                            // 確定済みパスを描画
-                            paths.forEach { path ->
+                            // 確定済みパスを描画（各パスに保存された strokeWidth を使用）
+                            paths.forEach { eraserPath ->
                                 drawPath(
-                                    path = path,
+                                    path = eraserPath.path,
                                     color = Color.Transparent,
-                                    style = Stroke(width = strokeWidth),
+                                    style = Stroke(width = eraserPath.strokeWidth),
                                     blendMode = BlendMode.Clear
                                 )
                             }
-                            // 描画中のパスを描画
+                            // 描画中のパスを描画（現在の scale に基づいた太さ）
+                            val currentStrokeWidth = 40f / scale.floatValue
                             currentPath.value?.let { path ->
                                 drawPath(
                                     path = path,
                                     color = Color.Transparent,
-                                    style = Stroke(width = strokeWidth),
+                                    style = Stroke(width = currentStrokeWidth),
                                     blendMode = BlendMode.Clear
                                 )
                             }
@@ -611,10 +627,10 @@ private fun ImagePreviewScreenLoadingPreview() {
             onShowOriginal = {},
             onShowTransparent = {},
             onStartManualCorrection = {},
-            onCompleteManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
             onUndoCorrection = {},
             onRedoCorrection = {},
-            onAddPath = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -633,10 +649,10 @@ private fun ImagePreviewScreenLoadErrorPreview() {
             onShowOriginal = {},
             onShowTransparent = {},
             onStartManualCorrection = {},
-            onCompleteManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
             onUndoCorrection = {},
             onRedoCorrection = {},
-            onAddPath = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -657,10 +673,10 @@ private fun ImagePreviewScreenShowingOriginalPreview() {
             onShowOriginal = {},
             onShowTransparent = {},
             onStartManualCorrection = {},
-            onCompleteManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
             onUndoCorrection = {},
             onRedoCorrection = {},
-            onAddPath = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -681,10 +697,10 @@ private fun ImagePreviewScreenShowingTransparentLoadingPreview() {
             onShowOriginal = {},
             onShowTransparent = {},
             onStartManualCorrection = {},
-            onCompleteManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
             onUndoCorrection = {},
             onRedoCorrection = {},
-            onAddPath = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -706,10 +722,10 @@ private fun ImagePreviewScreenShowingTransparentSuccessPreview() {
             onShowOriginal = {},
             onShowTransparent = {},
             onStartManualCorrection = {},
-            onCompleteManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
             onUndoCorrection = {},
             onRedoCorrection = {},
-            onAddPath = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -731,17 +747,13 @@ private fun ImagePreviewScreenManualCorrectionPreview() {
             onShowOriginal = {},
             onShowTransparent = {},
             onStartManualCorrection = {},
-            onCompleteManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
             onUndoCorrection = {},
             onRedoCorrection = {},
-            onAddPath = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
     }
 }
-
-
-
-
 
