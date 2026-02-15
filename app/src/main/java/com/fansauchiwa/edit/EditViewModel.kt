@@ -22,7 +22,6 @@ import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
-import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -431,7 +430,6 @@ class EditViewModel @Inject constructor(
                 imageId = imageId
             )
             saveImage(resultUri.toUri(), imageId) {
-                footprint("addDecoration: ${image.id}")
                 addDecoration(image)
             }
         }
