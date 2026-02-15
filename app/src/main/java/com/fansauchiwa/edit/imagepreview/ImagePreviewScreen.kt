@@ -3,6 +3,7 @@ package com.fansauchiwa.edit.imagepreview
 import android.app.Activity
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
@@ -220,9 +227,13 @@ private fun ImageDisplayArea(
     isPreview: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val scale = remember { mutableFloatStateOf(1f) }
+    val offset = remember { mutableStateOf(Offset.Zero) }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .clipToBounds()
             .background(
                 Brush.linearGradient(
                     listOf(
@@ -231,6 +242,29 @@ private fun ImageDisplayArea(
                     )
                 )
             )
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    val newScale = (scale.floatValue * zoom).coerceIn(1f, 5f)
+                    scale.floatValue = newScale
+
+                    if (scale.floatValue > 1f) {
+                        val newOffset = offset.value + pan
+
+                        // 画像がズームされたときの移動可能範囲を計算
+                        val maxX = (size.width * (scale.floatValue - 1f)) / 2f
+                        val maxY = (size.height * (scale.floatValue - 1f)) / 2f
+
+                        // offsetを範囲内に制限
+                        offset.value = Offset(
+                            x = newOffset.x.coerceIn(-maxX, maxX),
+                            y = newOffset.y.coerceIn(-maxY, maxY)
+                        )
+                    } else {
+                        // scale が 1f の場合は offset をリセット
+                        offset.value = Offset.Zero
+                    }
+                }
+            }
     ) {
         val displayUri = when (uiState) {
             is ImagePreviewUiState.Ready.ShowingOriginal -> uiState.originalUri
@@ -252,14 +286,25 @@ private fun ImageDisplayArea(
                 )
             }
         } else {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(displayUri)
-                    .build(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                onError = {}
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = scale.floatValue,
+                        scaleY = scale.floatValue,
+                        translationX = offset.value.x,
+                        translationY = offset.value.y
+                    )
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(displayUri)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    onError = {}
+                )
+            }
         }
     }
 }
