@@ -50,7 +50,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
@@ -60,7 +59,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
@@ -72,6 +70,7 @@ import coil3.request.ImageRequest
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.EraserPath
+import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -291,14 +290,7 @@ private fun ImageDisplayArea(
                 containerSize = it
                 onContainerSizeChanged(it)
             }
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        colorResource(R.color.gray),
-                        colorResource(R.color.gray).copy(alpha = 0.1f)
-                    )
-                )
-            )
+            .background(rememberTransparencyGridBrush())
             .pointerInput(isManualCorrectionMode) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
