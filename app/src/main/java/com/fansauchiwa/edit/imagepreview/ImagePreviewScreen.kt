@@ -374,12 +374,13 @@ private fun ImageDisplayArea(
                     )
                     .drawWithContent {
                         drawContent()
+                        val strokeWidth = 40f / scale.floatValue
                         // 確定済みパスを描画
                         paths.forEach { path ->
                             drawPath(
                                 path = path,
                                 color = Color.Transparent,
-                                style = Stroke(width = 40f),
+                                style = Stroke(width = strokeWidth),
                                 blendMode = BlendMode.Clear
                             )
                         }
@@ -388,7 +389,7 @@ private fun ImageDisplayArea(
                             drawPath(
                                 path = path,
                                 color = Color.Transparent,
-                                style = Stroke(width = 40f),
+                                style = Stroke(width = strokeWidth),
                                 blendMode = BlendMode.Clear
                             )
                         }
