@@ -374,24 +374,29 @@ private fun ImageDisplayArea(
                     )
                     .drawWithContent {
                         drawContent()
-                        val strokeWidth = 40f / scale.floatValue
-                        // 確定済みパスを描画
-                        paths.forEach { path ->
-                            drawPath(
-                                path = path,
-                                color = Color.Transparent,
-                                style = Stroke(width = strokeWidth),
-                                blendMode = BlendMode.Clear
-                            )
-                        }
-                        // 描画中のパスを描画
-                        currentPath.value?.let { path ->
-                            drawPath(
-                                path = path,
-                                color = Color.Transparent,
-                                style = Stroke(width = strokeWidth),
-                                blendMode = BlendMode.Clear
-                            )
+                        // SuccessまたはManualCorrection状態のときのみパスを描画
+                        if (uiState is ImagePreviewUiState.Ready.ShowingTransparent.Success ||
+                            uiState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
+                        ) {
+                            val strokeWidth = 40f / scale.floatValue
+                            // 確定済みパスを描画
+                            paths.forEach { path ->
+                                drawPath(
+                                    path = path,
+                                    color = Color.Transparent,
+                                    style = Stroke(width = strokeWidth),
+                                    blendMode = BlendMode.Clear
+                                )
+                            }
+                            // 描画中のパスを描画
+                            currentPath.value?.let { path ->
+                                drawPath(
+                                    path = path,
+                                    color = Color.Transparent,
+                                    style = Stroke(width = strokeWidth),
+                                    blendMode = BlendMode.Clear
+                                )
+                            }
                         }
                     }
             ) {
