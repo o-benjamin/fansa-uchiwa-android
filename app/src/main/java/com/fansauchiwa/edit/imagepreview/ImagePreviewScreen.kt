@@ -265,12 +265,32 @@ private fun ImageDisplayArea(
     val scale = remember { mutableFloatStateOf(1f) }
     val offset = remember { mutableStateOf(Offset.Zero) }
     val currentPath = remember { mutableStateOf<Path?>(null) }
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    val currentTouchPosition = remember { mutableStateOf<Offset?>(null) }
+
+    // ManualCorrectionモード開始時にカーソルを画面中心に初期化
+    LaunchedEffect(isManualCorrectionMode) {
+        if (isManualCorrectionMode && containerSize != IntSize.Zero) {
+            currentTouchPosition.value = Offset(
+                x = containerSize.width / 2f,
+                y = containerSize.height / 2f
+            )
+        } else if (!isManualCorrectionMode) {
+            currentTouchPosition.value = null
+        }
+    }
+
+    // カーソルのY軸オフセット（指の上に表示するための値）
+    val cursorOffsetY = -150f
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clipToBounds()
-            .onSizeChanged { onContainerSizeChanged(it) }
+            .onSizeChanged {
+                containerSize = it
+                onContainerSizeChanged(it)
+            }
             .background(
                 Brush.linearGradient(
                     listOf(
@@ -286,10 +306,13 @@ private fun ImageDisplayArea(
 
                     // 手動修正モードで1本指の場合、消しゴム機能を開始
                     if (isManualCorrectionMode) {
+                        currentTouchPosition.value = down.position
                         val newPath = Path()
+                        // オフセットを適用した座標を使用
+                        val offsetPosition = down.position + Offset(0f, cursorOffsetY)
                         // スクリーン座標から画像ローカル座標に変換
                         val localPosition = screenToLocalCoordinate(
-                            screenPosition = down.position,
+                            screenPosition = offsetPosition,
                             scale = scale.floatValue,
                             offset = offset.value,
                             containerSize = size
@@ -329,8 +352,12 @@ private fun ImageDisplayArea(
                         } else if (pointerCount == 1 && isManualCorrectionMode) {
                             // 1本指かつ手動修正モード：消しゴム
                             val change = activePointers.first()
+                            currentTouchPosition.value = change.position
+
+                            // オフセットを適用した座標を使用
+                            val offsetPosition = change.position + Offset(0f, cursorOffsetY)
                             val localPosition = screenToLocalCoordinate(
-                                screenPosition = change.position,
+                                screenPosition = offsetPosition,
                                 scale = scale.floatValue,
                                 offset = offset.value,
                                 containerSize = size
@@ -378,6 +405,7 @@ private fun ImageDisplayArea(
                 )
             }
         } else {
+            val cursorColor = MaterialTheme.colorScheme.primary
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -412,6 +440,52 @@ private fun ImageDisplayArea(
                                     style = Stroke(width = currentStrokeWidth),
                                     blendMode = BlendMode.Clear
                                 )
+                            }
+
+                            // カーソルの描画（手動修正モード時のみ）
+                            if (isManualCorrectionMode) {
+                                currentTouchPosition.value?.let { touchPos ->
+                                    val cursorRadius = (40f / scale.floatValue) / 2f
+
+                                    // スクリーン座標をローカル座標に変換
+                                    val centerX = size.width / 2f
+                                    val centerY = size.height / 2f
+
+                                    // タッチ位置をローカル座標に変換
+                                    val localTouchPos = Offset(
+                                        x = (touchPos.x - centerX - offset.value.x) / scale.floatValue + centerX,
+                                        y = (touchPos.y - centerY - offset.value.y) / scale.floatValue + centerY
+                                    )
+
+                                    // カーソル1: タッチ位置（赤い塗りつぶし円）
+                                    drawCircle(
+                                        color = Color.Red,
+                                        radius = 8f / scale.floatValue,
+                                        center = localTouchPos
+                                    )
+
+                                    // カーソル2: 適用位置（透明な枠線円）
+                                    val appliedScreenPos = touchPos + Offset(0f, cursorOffsetY)
+                                    val localAppliedPos = Offset(
+                                        x = (appliedScreenPos.x - centerX - offset.value.x) / scale.floatValue + centerX,
+                                        y = (appliedScreenPos.y - centerY - offset.value.y) / scale.floatValue + centerY
+                                    )
+
+                                    // 枠線の中を透明にするため、円をくり抜く
+                                    drawCircle(
+                                        color = Color.Transparent,
+                                        radius = cursorRadius,
+                                        center = localAppliedPos
+                                    )
+
+                                    // 赤色の枠線を描画
+                                    drawCircle(
+                                        color = cursorColor,
+                                        radius = cursorRadius,
+                                        center = localAppliedPos,
+                                        style = Stroke(width = 2f / scale.floatValue)
+                                    )
+                                }
                             }
                         }
                     }
