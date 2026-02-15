@@ -44,12 +44,14 @@ class ImageProcessingLocalSource @Inject constructor(
             val timestamp = System.currentTimeMillis()
             val tempFile = File(context.cacheDir, "processed_image_$timestamp.png")
 
-            FileOutputStream(tempFile).use { outputStream ->
-                foregroundBitmap.compress(
-                    Bitmap.CompressFormat.PNG,
-                    100,
-                    outputStream
-                )
+            withContext(Dispatchers.IO) {
+                FileOutputStream(tempFile).use { outputStream ->
+                    foregroundBitmap.compress(
+                        Bitmap.CompressFormat.PNG,
+                        100,
+                        outputStream
+                    )
+                }
             }
 
             Uri.fromFile(tempFile)
