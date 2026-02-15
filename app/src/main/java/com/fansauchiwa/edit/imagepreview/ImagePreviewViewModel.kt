@@ -2,6 +2,8 @@ package com.fansauchiwa.edit.imagepreview
 
 import android.app.Activity
 import android.net.Uri
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.Path
 import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -43,6 +45,13 @@ class ImagePreviewViewModel @Inject constructor(
 
     // 背景透過処理の結果をキャッシュ
     private var transparentUri: Uri? = null
+
+    // 手動修正用のパスリスト
+    private val _paths = mutableStateListOf<Path>()
+    val paths: List<Path> get() = _paths
+
+    // Redo用の履歴スタック
+    private val _redoStack = mutableStateListOf<Path>()
 
     init {
         loadImageUri()
@@ -173,22 +182,30 @@ class ImagePreviewViewModel @Inject constructor(
     }
 
     /**
-     * 修正を元に戻す（将来の履歴操作用）
+     * 新しいパスを追加する
+     */
+    fun addPath(path: Path) {
+        _paths.add(path)
+        _redoStack.clear()
+    }
+
+    /**
+     * 修正を元に戻す
      */
     fun undoCorrection() {
-        // TODO: 履歴スタックからの復元処理を実装
-        viewModelScope.launch {
-            println("Undo correction")
+        if (_paths.isNotEmpty()) {
+            val lastPath = _paths.removeAt(_paths.lastIndex)
+            _redoStack.add(lastPath)
         }
     }
 
     /**
-     * 修正をやり直す（将来の履歴操作用）
+     * 修正をやり直す
      */
     fun redoCorrection() {
-        // TODO: 履歴スタックからの復元処理を実装
-        viewModelScope.launch {
-            println("Redo correction")
+        if (_redoStack.isNotEmpty()) {
+            val path = _redoStack.removeAt(_redoStack.lastIndex)
+            _paths.add(path)
         }
     }
 }
