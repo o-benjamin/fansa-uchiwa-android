@@ -29,11 +29,6 @@ class MainActivity : ComponentActivity() {
             )
         )
 
-        // 確実に広告を表示するため、アプリ起動時に広告を事前ロード
-        adMobRepository.loadRewardedAd()
-        adMobRepository.loadInterstitialAd()
-
-
         setContent {
             FansaUchiwaTheme {
                 FansaUchiwaNavGraph()

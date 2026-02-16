@@ -3,6 +3,8 @@ package com.fansauchiwa.preview
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,9 +21,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -114,7 +119,6 @@ fun UchiwaPreviewScreen(
     ) { paddingValues ->
         UchiwaPreviewContent(
             imagePath = uiState.imagePath,
-            isSaving = uiState.isSaving,
             onSaveClick = {
                 val activity = context as? Activity
                 if (activity != null) {
@@ -129,6 +133,26 @@ fun UchiwaPreviewScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         )
+    }
+
+    if (uiState.isLoadingAd && uiState.isSaveButtonPressed) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorResource(id = R.color.black).copy(alpha = 0.5f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                strokeWidth = 4.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
     }
 
     if (uiState.saveSuccess == true) {
@@ -157,7 +181,6 @@ fun UchiwaPreviewScreen(
 @Composable
 fun UchiwaPreviewContent(
     imagePath: String?,
-    isSaving: Boolean,
     onSaveClick: () -> Unit,
     onBackToHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -228,7 +251,7 @@ fun UchiwaPreviewContent(
         }
         Button(
             onClick = onSaveClick,
-            enabled = imagePath != null && !isSaving
+            enabled = imagePath != null
         ) {
             Icon(
                 imageVector = Icons.Default.Save,
@@ -243,7 +266,7 @@ fun UchiwaPreviewContent(
         }
         TextButton(
             onClick = onBackToHomeClick,
-            enabled = imagePath != null && !isSaving
+            enabled = imagePath != null
         ) {
             Text(
                 text = stringResource(R.string.back_to_home),
@@ -255,11 +278,10 @@ fun UchiwaPreviewContent(
 
 @Preview(showBackground = true)
 @Composable
-private fun UchiwaPreviewContentPreview() {
+private fun UchiwaPreviewContentLoadingAdPreview() {
     FansaUchiwaTheme {
         UchiwaPreviewContent(
             imagePath = "/sample/path/uchiwa.png",
-            isSaving = false,
             onSaveClick = {},
             onBackToHomeClick = {},
             modifier = Modifier

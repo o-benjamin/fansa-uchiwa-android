@@ -6,7 +6,8 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class UchiwaPreviewUiState(
     val imagePath: String? = null,
-    val isSaving: Boolean = false,
-    val saveSuccess: Boolean? = null
+    val saveSuccess: Boolean? = null,
+    val isLoadingAd: Boolean = false,
+    val isSaveButtonPressed: Boolean = false
 ) : Parcelable
 

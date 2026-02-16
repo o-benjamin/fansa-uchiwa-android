@@ -26,17 +26,26 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    val uiState: StateFlow<UchiwaPreviewUiState> =
+        savedStateHandle.getStateFlow(UI_STATE_KEY, UchiwaPreviewUiState())
+
     init {
+        adMobRepository.loadRewardedAd()
+        // 広告のロード状態を監視
+        viewModelScope.launch {
+            adMobRepository.isLoadingRewardedAd.collect { isLoading ->
+                val currentState = uiState.value
+                savedStateHandle[UI_STATE_KEY] = currentState.copy(isLoadingAd = isLoading)
+            }
+        }
         // Navigation引数からimagePathを取得してUI Stateに設定
         val encodedImagePath = savedStateHandle.get<String>(IMAGE_PATH_ARG)
         if (encodedImagePath != null) {
             val decodedImagePath = URLDecoder.decode(encodedImagePath, "UTF-8")
-            savedStateHandle[UI_STATE_KEY] = UchiwaPreviewUiState(imagePath = decodedImagePath)
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(imagePath = decodedImagePath)
         }
     }
-
-    val uiState: StateFlow<UchiwaPreviewUiState> =
-        savedStateHandle.getStateFlow(UI_STATE_KEY, UchiwaPreviewUiState())
 
     fun logScreenView() {
         viewModelScope.launch {
@@ -58,9 +67,14 @@ class UchiwaPreviewViewModel @Inject constructor(
      */
     fun showRewardedAdAndSave(activity: Activity) {
         logEvent(com.fansauchiwa.data.analytics.AnalyticsActions.TAP_PREVIEW_EXPORT)
+
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
+
         adMobRepository.showRewardedAd(
             activity = activity,
             placement = AnalyticsScreens.PREVIEW_SCREEN,
+            waitForLoad = true,
             onUserEarnedReward = {
                 // 報酬獲得（広告を最後まで視聴）したら保存を実行
                 saveToGallery()
@@ -79,8 +93,8 @@ class UchiwaPreviewViewModel @Inject constructor(
                 val success = masterpieceRepository.saveMasterpieceToGallery(imagePath)
                 val currentState = uiState.value
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                    isSaving = false,
-                    saveSuccess = success
+                    saveSuccess = success,
+                    isSaveButtonPressed = false
                 )
             }
         }
