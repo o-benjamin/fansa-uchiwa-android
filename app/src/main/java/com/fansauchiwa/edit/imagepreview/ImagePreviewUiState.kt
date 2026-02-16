@@ -40,6 +40,14 @@ sealed interface ImagePreviewUiState {
                 override val originalUri: Uri,
                 val transparentUri: Uri
             ) : ShowingTransparent
+
+            /**
+             * 手動修正モード
+             */
+            data class ManualCorrection(
+                override val originalUri: Uri,
+                val transparentUri: Uri
+            ) : ShowingTransparent
         }
     }
 }

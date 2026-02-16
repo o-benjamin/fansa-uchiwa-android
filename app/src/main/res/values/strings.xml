@@ -9,6 +9,7 @@
     <string name="redo">やり直す</string>
     <string name="save">保存</string>
     <string name="complete">完成</string>
+    <string name="done">完了</string>
     <string name="uchiwa_preview">うちわプレビュー</string>
     <string name="back_to_home">ホームに戻る</string>
     <string name="text_color_and_weight">文字色・太さ</string>
@@ -48,4 +49,5 @@
     <string name="image_preview_load_failed">画像の取得に失敗しました</string>
     <string name="image_preview_original">オリジナル</string>
     <string name="image_preview_transparent">背景透過</string>
+    <string name="image_preview_manual_edit">修正</string>
 </resources>

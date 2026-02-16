@@ -3,9 +3,14 @@ package com.fansauchiwa.edit.imagepreview
 import android.app.Activity
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,9 +19,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,14 +40,28 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +69,8 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.EraserPath
+import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,15 +104,23 @@ fun ImagePreviewScreen(
 
     ImagePreviewScreenContent(
         uiState = uiState,
+        paths = viewModel.paths,
         onBack = onBack,
-        onShowOriginal = { viewModel.showOriginal() },
-        onShowTransparent = { viewModel.showTransparent() },
+        onShowOriginal = viewModel::showOriginal,
+        onShowTransparent = viewModel::showTransparent,
         onConfirmTapped = { imageUri, isOriginalSelected ->
             val activity = context as? Activity
             if (activity != null) {
                 viewModel.onConfirmTapped(activity, imageUri, isOriginalSelected)
             }
         },
+        onStartManualCorrection = viewModel::startManualCorrection,
+        onCompleteManualCorrection = { containerWidth, containerHeight ->
+            viewModel.completeManualCorrection(containerWidth, containerHeight)
+        },
+        onUndoCorrection = viewModel::undoCorrection,
+        onRedoCorrection = viewModel::redoCorrection,
+        onAddPath = viewModel::addPath,
         snackbarHostState = snackbarHostState,
         isPreview = false
     )
@@ -97,13 +130,30 @@ fun ImagePreviewScreen(
 @Composable
 private fun ImagePreviewScreenContent(
     uiState: ImagePreviewUiState,
+    paths: List<EraserPath>,
     onBack: () -> Unit,
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
     onConfirmTapped: (String, Boolean) -> Unit,
+    onStartManualCorrection: () -> Unit,
+    onCompleteManualCorrection: (Int, Int) -> Unit,
+    onUndoCorrection: () -> Unit,
+    onRedoCorrection: () -> Unit,
+    onAddPath: (Path, Float) -> Unit,
     snackbarHostState: SnackbarHostState,
     isPreview: Boolean = false
 ) {
+    val isOriginalSelected = when (uiState) {
+        is ImagePreviewUiState.Ready.ShowingOriginal -> true
+        is ImagePreviewUiState.Ready.ShowingTransparent -> false
+        else -> true
+    }
+
+    val isManualCorrectionMode =
+        uiState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
+
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -121,10 +171,47 @@ private fun ImagePreviewScreenContent(
             )
         },
         bottomBar = {
-            BannerAd(
-                LocalContext.current,
-                modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
-            )
+            Column {
+                ControlArea(
+                    uiState = uiState,
+                    onConfirmTapped = onConfirmTapped,
+                    onShowOriginal = onShowOriginal,
+                    onShowTransparent = onShowTransparent,
+                    onBack = onBack,
+                    onCompleteManualCorrection = {
+                        onCompleteManualCorrection(
+                            containerSize.width,
+                            containerSize.height
+                        )
+                    },
+                    onUndoCorrection = onUndoCorrection,
+                    onRedoCorrection = onRedoCorrection,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(16.dp)
+                )
+                BannerAd(
+                    LocalContext.current,
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                )
+            }
+        },
+        floatingActionButton = {
+            if (!isOriginalSelected && uiState is ImagePreviewUiState.Ready.ShowingTransparent.Success) {
+                ExtendedFloatingActionButton(
+                    onClick = onStartManualCorrection,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null
+                        )
+                    },
+                    text = {
+                        Text(text = stringResource(R.string.image_preview_manual_edit))
+                    }
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -133,23 +220,15 @@ private fun ImagePreviewScreenContent(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Column(
+            ImageDisplayArea(
+                uiState = uiState,
+                paths = paths,
+                isManualCorrectionMode = isManualCorrectionMode,
+                onAddPath = onAddPath,
+                onContainerSizeChanged = { containerSize = it },
+                isPreview = isPreview,
                 modifier = Modifier.fillMaxSize()
-            ) {
-                ImageDisplayArea(
-                    uiState = uiState,
-                    isPreview = isPreview,
-                    modifier = Modifier.weight(1f)
-                )
-                ControlArea(
-                    uiState = uiState,
-                    onConfirmTapped = onConfirmTapped,
-                    onShowOriginal = onShowOriginal,
-                    onShowTransparent = onShowTransparent,
-                    onBack = onBack,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
+            )
             if (uiState is ImagePreviewUiState.Loading || uiState is ImagePreviewUiState.Ready.ShowingTransparent.Loading) {
                 LoadingOverlay()
             }
@@ -175,25 +254,134 @@ private fun LoadingOverlay() {
 @Composable
 private fun ImageDisplayArea(
     uiState: ImagePreviewUiState,
+    paths: List<EraserPath>,
+    isManualCorrectionMode: Boolean,
+    onAddPath: (Path, Float) -> Unit,
+    onContainerSizeChanged: (IntSize) -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val scale = remember { mutableFloatStateOf(1f) }
+    val offset = remember { mutableStateOf(Offset.Zero) }
+    val currentPath = remember { mutableStateOf<Path?>(null) }
+    var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    val currentTouchPosition = remember { mutableStateOf<Offset?>(null) }
+
+    // ManualCorrectionモード開始時にカーソルを画面中心に初期化
+    LaunchedEffect(isManualCorrectionMode) {
+        if (isManualCorrectionMode && containerSize != IntSize.Zero) {
+            currentTouchPosition.value = Offset(
+                x = containerSize.width / 2f,
+                y = containerSize.height / 2f
+            )
+        } else if (!isManualCorrectionMode) {
+            currentTouchPosition.value = null
+        }
+    }
+
+    // カーソルのY軸オフセット（指の上に表示するための値）
+    val cursorOffsetY = -150f
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        colorResource(R.color.gray),
-                        colorResource(R.color.gray).copy(alpha = 0.1f)
-                    )
-                )
-            )
+            .clipToBounds()
+            .onSizeChanged {
+                containerSize = it
+                onContainerSizeChanged(it)
+            }
+            .background(rememberTransparencyGridBrush())
+            .pointerInput(isManualCorrectionMode) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var pointerCount = 1
+
+                    // 手動修正モードで1本指の場合、消しゴム機能を開始
+                    if (isManualCorrectionMode) {
+                        currentTouchPosition.value = down.position
+                        val newPath = Path()
+                        // オフセットを適用した座標を使用
+                        val offsetPosition = down.position + Offset(0f, cursorOffsetY)
+                        // スクリーン座標から画像ローカル座標に変換
+                        val localPosition = screenToLocalCoordinate(
+                            screenPosition = offsetPosition,
+                            scale = scale.floatValue,
+                            offset = offset.value,
+                            containerSize = size
+                        )
+                        newPath.moveTo(localPosition.x, localPosition.y)
+                        currentPath.value = newPath
+                    }
+
+                    do {
+                        val event = awaitPointerEvent()
+                        val activePointers = event.changes.filter { it.pressed }
+                        pointerCount = activePointers.size
+
+                        if (pointerCount >= 2) {
+                            // 2本指以上：パン&ズーム
+                            currentPath.value = null // 消しゴム操作をキャンセル
+
+                            val zoom = event.calculateZoom()
+                            val pan = event.calculatePan()
+
+                            val newScale = (scale.floatValue * zoom).coerceIn(1f, 5f)
+                            scale.floatValue = newScale
+
+                            if (scale.floatValue > 1f) {
+                                val newOffset = offset.value + pan
+                                val maxX = (size.width * (scale.floatValue - 1f)) / 2f
+                                val maxY = (size.height * (scale.floatValue - 1f)) / 2f
+                                offset.value = Offset(
+                                    x = newOffset.x.coerceIn(-maxX, maxX),
+                                    y = newOffset.y.coerceIn(-maxY, maxY)
+                                )
+                            } else {
+                                offset.value = Offset.Zero
+                            }
+
+                            event.changes.forEach { it.consume() }
+                        } else if (pointerCount == 1 && isManualCorrectionMode) {
+                            // 1本指かつ手動修正モード：消しゴム
+                            val change = activePointers.first()
+                            currentTouchPosition.value = change.position
+
+                            // オフセットを適用した座標を使用
+                            val offsetPosition = change.position + Offset(0f, cursorOffsetY)
+                            val localPosition = screenToLocalCoordinate(
+                                screenPosition = offsetPosition,
+                                scale = scale.floatValue,
+                                offset = offset.value,
+                                containerSize = size
+                            )
+
+                            currentPath.value?.let { path ->
+                                path.lineTo(localPosition.x, localPosition.y)
+                                // パスの変更を反映させるため、新しいパスとして設定
+                                currentPath.value = Path().apply { addPath(path) }
+                            }
+
+                            if (change.positionChange() != Offset.Zero) {
+                                change.consume()
+                            }
+                        }
+                    } while (activePointers.isNotEmpty())
+
+                    // タッチ終了時にパスを確定
+                    currentPath.value?.let { path ->
+                        if (!path.isEmpty) {
+                            onAddPath(path, scale.floatValue)
+                        }
+                        currentPath.value = null
+                    }
+                }
+            }
     ) {
         val displayUri = when (uiState) {
             is ImagePreviewUiState.Ready.ShowingOriginal -> uiState.originalUri
             is ImagePreviewUiState.Ready.ShowingTransparent.Loading -> uiState.originalUri
             is ImagePreviewUiState.Ready.ShowingTransparent.Success -> uiState.transparentUri
+            is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection -> uiState.transparentUri
             else -> null
         }
 
@@ -209,16 +397,122 @@ private fun ImageDisplayArea(
                 )
             }
         } else {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(displayUri)
-                    .build(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                onError = {}
-            )
+            val cursorColor = MaterialTheme.colorScheme.primary
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = scale.floatValue,
+                        scaleY = scale.floatValue,
+                        translationX = offset.value.x,
+                        translationY = offset.value.y,
+                        compositingStrategy = CompositingStrategy.Offscreen
+                    )
+                    .drawWithContent {
+                        drawContent()
+                        // SuccessまたはManualCorrection状態のときのみパスを描画
+                        if (uiState is ImagePreviewUiState.Ready.ShowingTransparent.Success ||
+                            uiState is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
+                        ) {
+                            // 確定済みパスを描画（各パスに保存された strokeWidth を使用）
+                            paths.forEach { eraserPath ->
+                                drawPath(
+                                    path = eraserPath.path,
+                                    color = Color.Transparent,
+                                    style = Stroke(width = eraserPath.strokeWidth),
+                                    blendMode = BlendMode.Clear
+                                )
+                            }
+                            // 描画中のパスを描画（現在の scale に基づいた太さ）
+                            val currentStrokeWidth = 40f / scale.floatValue
+                            currentPath.value?.let { path ->
+                                drawPath(
+                                    path = path,
+                                    color = Color.Transparent,
+                                    style = Stroke(width = currentStrokeWidth),
+                                    blendMode = BlendMode.Clear
+                                )
+                            }
+
+                            // カーソルの描画（手動修正モード時のみ）
+                            if (isManualCorrectionMode) {
+                                currentTouchPosition.value?.let { touchPos ->
+                                    val cursorRadius = (40f / scale.floatValue) / 2f
+
+                                    // スクリーン座標をローカル座標に変換
+                                    val centerX = size.width / 2f
+                                    val centerY = size.height / 2f
+
+                                    // タッチ位置をローカル座標に変換
+                                    val localTouchPos = Offset(
+                                        x = (touchPos.x - centerX - offset.value.x) / scale.floatValue + centerX,
+                                        y = (touchPos.y - centerY - offset.value.y) / scale.floatValue + centerY
+                                    )
+
+                                    // カーソル1: タッチ位置（赤い塗りつぶし円）
+                                    drawCircle(
+                                        color = Color.Red,
+                                        radius = 8f / scale.floatValue,
+                                        center = localTouchPos
+                                    )
+
+                                    // カーソル2: 適用位置（透明な枠線円）
+                                    val appliedScreenPos = touchPos + Offset(0f, cursorOffsetY)
+                                    val localAppliedPos = Offset(
+                                        x = (appliedScreenPos.x - centerX - offset.value.x) / scale.floatValue + centerX,
+                                        y = (appliedScreenPos.y - centerY - offset.value.y) / scale.floatValue + centerY
+                                    )
+
+                                    // 枠線の中を透明にするため、円をくり抜く
+                                    drawCircle(
+                                        color = Color.Transparent,
+                                        radius = cursorRadius,
+                                        center = localAppliedPos
+                                    )
+
+                                    // 赤色の枠線を描画
+                                    drawCircle(
+                                        color = cursorColor,
+                                        radius = cursorRadius,
+                                        center = localAppliedPos,
+                                        style = Stroke(width = 2f / scale.floatValue)
+                                    )
+                                }
+                            }
+                        }
+                    }
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(displayUri)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    onError = {}
+                )
+            }
         }
     }
+}
+
+/**
+ * スクリーン座標を画像のローカル座標に変換する
+ */
+private fun screenToLocalCoordinate(
+    screenPosition: Offset,
+    scale: Float,
+    offset: Offset,
+    containerSize: androidx.compose.ui.unit.IntSize
+): Offset {
+    // コンテナの中心を基準に計算
+    val centerX = containerSize.width / 2f
+    val centerY = containerSize.height / 2f
+
+    // スクリーン座標から中心を引き、スケールと移動分を逆変換
+    val localX = (screenPosition.x - centerX - offset.x) / scale + centerX
+    val localY = (screenPosition.y - centerY - offset.y) / scale + centerY
+
+    return Offset(localX, localY)
 }
 
 @Composable
@@ -228,6 +522,9 @@ private fun ControlArea(
     onShowOriginal: () -> Unit,
     onShowTransparent: () -> Unit,
     onBack: () -> Unit,
+    onCompleteManualCorrection: () -> Unit,
+    onUndoCorrection: () -> Unit,
+    onRedoCorrection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -262,6 +559,14 @@ private fun ControlArea(
                     onConfirmTapped = onConfirmTapped,
                     onShowOriginal = onShowOriginal,
                     onShowTransparent = onShowTransparent
+                )
+            }
+
+            is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection -> {
+                ManualCorrectionControls(
+                    onCompleteManualCorrection = onCompleteManualCorrection,
+                    onUndoCorrection = onUndoCorrection,
+                    onRedoCorrection = onRedoCorrection
                 )
             }
 
@@ -334,6 +639,47 @@ private fun ImageTypeSelector(
     }
 }
 
+@Composable
+private fun ManualCorrectionControls(
+    onCompleteManualCorrection: () -> Unit,
+    onUndoCorrection: () -> Unit,
+    onRedoCorrection: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = onUndoCorrection,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
+                    contentDescription = stringResource(R.string.undo)
+                )
+            }
+            IconButton(
+                onClick = onRedoCorrection,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Redo,
+                    contentDescription = stringResource(R.string.redo)
+                )
+            }
+        }
+        Button(
+            onClick = onCompleteManualCorrection,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = stringResource(R.string.done))
+        }
+    }
+}
+
 // Preview関数：すべての UiState を網羅
 @Preview(showBackground = true)
 @Composable
@@ -341,10 +687,16 @@ private fun ImagePreviewScreenLoadingPreview() {
     FansaUchiwaTheme {
         ImagePreviewScreenContent(
             uiState = ImagePreviewUiState.Loading,
+            paths = emptyList(),
             onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -357,10 +709,16 @@ private fun ImagePreviewScreenLoadErrorPreview() {
     FansaUchiwaTheme {
         ImagePreviewScreenContent(
             uiState = ImagePreviewUiState.LoadError(Exception("Failed to load image")),
+            paths = emptyList(),
             onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -375,10 +733,16 @@ private fun ImagePreviewScreenShowingOriginalPreview() {
             uiState = ImagePreviewUiState.Ready.ShowingOriginal(
                 originalUri = "content://example/image.jpg".toUri()
             ),
+            paths = emptyList(),
             onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -393,10 +757,16 @@ private fun ImagePreviewScreenShowingTransparentLoadingPreview() {
             uiState = ImagePreviewUiState.Ready.ShowingTransparent.Loading(
                 originalUri = "content://example/image.jpg".toUri()
             ),
+            paths = emptyList(),
             onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
@@ -412,15 +782,44 @@ private fun ImagePreviewScreenShowingTransparentSuccessPreview() {
                 originalUri = "content://example/image.jpg".toUri(),
                 transparentUri = "content://example/transparent.jpg".toUri()
             ),
+            paths = emptyList(),
             onConfirmTapped = { _, _ -> },
             onBack = {},
             onShowOriginal = {},
             onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            onAddPath = { _, _ -> },
             snackbarHostState = SnackbarHostState(),
             isPreview = true
         )
     }
 }
 
-
+@Preview(showBackground = true)
+@Composable
+private fun ImagePreviewScreenManualCorrectionPreview() {
+    FansaUchiwaTheme {
+        ImagePreviewScreenContent(
+            uiState = ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection(
+                originalUri = "content://example/image.jpg".toUri(),
+                transparentUri = "content://example/transparent.jpg".toUri()
+            ),
+            paths = emptyList(),
+            onConfirmTapped = { _, _ -> },
+            onBack = {},
+            onShowOriginal = {},
+            onShowTransparent = {},
+            onStartManualCorrection = {},
+            onCompleteManualCorrection = { _, _ -> },
+            onUndoCorrection = {},
+            onRedoCorrection = {},
+            onAddPath = { _, _ -> },
+            snackbarHostState = SnackbarHostState(),
+            isPreview = true
+        )
+    }
+}
 
