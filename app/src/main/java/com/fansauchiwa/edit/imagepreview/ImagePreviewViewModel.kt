@@ -87,6 +87,7 @@ class ImagePreviewViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { uri ->
+                    adMobRepository.loadInterstitialAd()
                     transparentUri = uri
                     _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
                         originalUri = currentState.originalUri,
