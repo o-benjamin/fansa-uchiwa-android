@@ -528,11 +528,43 @@ class EditViewModel @Inject constructor(
         viewModelScope.launch {
             val selectedIds = uiState.value.selectedDeletingImages
             if (selectedIds.isNotEmpty()) {
-                localImageRepository.deleteImages(selectedIds)
-                loadAllImages()
-                cancelImageDeletionMode()
+                val isUsedInOther = selectedIds.any { imageId ->
+                    localDatabaseRepository.isImageUsedInAnyUchiwa(imageId)
+                }
+                if (isUsedInOther) {
+                    val currentState = uiState.value
+                    savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                        showImageDeleteWarningDialog = true
+                    )
+                } else {
+                    executeImageDeletion(selectedIds)
+                }
             }
         }
+    }
+
+    fun proceedImageDeletion() {
+        viewModelScope.launch {
+            val selectedIds = uiState.value.selectedDeletingImages
+            executeImageDeletion(selectedIds)
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                showImageDeleteWarningDialog = false
+            )
+        }
+    }
+
+    fun dismissImageDeleteWarningDialog() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            showImageDeleteWarningDialog = false
+        )
+    }
+
+    private fun executeImageDeletion(imageIds: List<String>) {
+        localImageRepository.deleteImages(imageIds)
+        loadAllImages()
+        cancelImageDeletionMode()
     }
 
     fun cancelImageDeletionMode() {

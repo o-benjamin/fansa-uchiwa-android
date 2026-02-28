@@ -409,6 +409,33 @@ fun EditScreen(
             }
         )
     }
+
+    // 画像削除警告ダイアログ
+    if (uiState.showImageDeleteWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissImageDeleteWarningDialog() },
+            title = {
+                Text(text = stringResource(R.string.delete_image_warning_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.delete_image_warning_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.proceedImageDeletion() }
+                ) {
+                    Text(text = stringResource(R.string.delete_image_warning_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.dismissImageDeleteWarningDialog() }
+                ) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable

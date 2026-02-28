@@ -19,7 +19,7 @@ interface LocalDatabaseRepository {
     suspend fun getUchiwa(id: String): SavedUchiwa?
     suspend fun deleteUchiwa(id: String)
     fun getAllUchiwasStream(): Flow<List<FansaUchiwaEntity>>
-    suspend fun isImageUsedInOtherUchiwas(imageId: String, excludeUchiwaId: String): Boolean
+    suspend fun isImageUsedInAnyUchiwa(imageId: String): Boolean
 }
 
 class LocalDatabaseRepositoryImpl @Inject constructor(
@@ -60,18 +60,13 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
         return fansaUchiwaDao.getAllUchiwasStream()
     }
 
-    override suspend fun isImageUsedInOtherUchiwas(
-        imageId: String,
-        excludeUchiwaId: String
-    ): Boolean {
+    override suspend fun isImageUsedInAnyUchiwa(imageId: String): Boolean {
         val allUchiwas = fansaUchiwaDao.getAllUchiwasStream().first()
-        return allUchiwas
-            .filter { it.id != excludeUchiwaId }
-            .any { uchiwa ->
-                uchiwa.decorations.any { decoration ->
-                    decoration is Decoration.Image && decoration.imageId == imageId
-                }
+        return allUchiwas.any { uchiwa ->
+            uchiwa.decorations.any { decoration ->
+                decoration is Decoration.Image && decoration.imageId == imageId
             }
+        }
     }
 }
 
