@@ -1,10 +1,13 @@
 package com.fansauchiwa.data
 
+import app.cash.turbine.test
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.runBlocking
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -12,138 +15,173 @@ import org.junit.Test
 
 class LocalDatabaseRepositoryImplTest {
 
-    private lateinit var fakeDao: FakeFansaUchiwaDao
+    private lateinit var mockDao: FansaUchiwaDao
     private lateinit var repository: LocalDatabaseRepositoryImpl
 
     @Before
     fun setUp() {
-        fakeDao = FakeFansaUchiwaDao()
-        repository = LocalDatabaseRepositoryImpl(fakeDao)
+        mockDao = mockk<FansaUchiwaDao>()
+        repository = LocalDatabaseRepositoryImpl(mockDao)
     }
 
+    // region isImageUsedInAnyUchiwa
+
     @Test
-    fun isImageUsedInOtherUchiwas_imageUsedInOtherUchiwa_returnsTrue() = runBlocking {
+    fun isImageUsedInAnyUchiwa_imageUsedInUchiwa_returnsTrue() = runTest {
         val targetImageId = "image-001"
-        val currentUchiwaId = "uchiwa-A"
 
-        fakeDao.upsertUchiwaData(
-            FansaUchiwaEntity(
-                id = currentUchiwaId,
-                decorations = listOf(
-                    Decoration.Image(id = "dec-1", imageId = targetImageId)
-                ),
-                uchiwaColorValue = 0L,
-                backgroundColorValue = 0L
-            )
-        )
-        fakeDao.upsertUchiwaData(
-            FansaUchiwaEntity(
-                id = "uchiwa-B",
-                decorations = listOf(
-                    Decoration.Image(id = "dec-2", imageId = targetImageId)
-                ),
-                uchiwaColorValue = 0L,
-                backgroundColorValue = 0L
+        every { mockDao.getAllUchiwasStream() } returns flowOf(
+            listOf(
+                FansaUchiwaEntity(
+                    id = "uchiwa-A",
+                    decorations = listOf(
+                        Decoration.Image(id = "dec-1", imageId = targetImageId)
+                    ),
+                    uchiwaColorValue = 0L,
+                    backgroundColorValue = 0L
+                )
             )
         )
 
-        val result = repository.isImageUsedInOtherUchiwas(targetImageId, currentUchiwaId)
+        val result = repository.isImageUsedInAnyUchiwa(targetImageId)
 
         assertTrue(result)
     }
 
     @Test
-    fun isImageUsedInOtherUchiwas_imageOnlyInCurrentUchiwa_returnsFalse() = runBlocking {
+    fun isImageUsedInAnyUchiwa_imageNotUsed_returnsFalse() = runTest {
         val targetImageId = "image-001"
-        val currentUchiwaId = "uchiwa-A"
 
-        fakeDao.upsertUchiwaData(
+        every { mockDao.getAllUchiwasStream() } returns flowOf(
+            listOf(
+                FansaUchiwaEntity(
+                    id = "uchiwa-A",
+                    decorations = listOf(
+                        Decoration.Image(id = "dec-1", imageId = "image-999")
+                    ),
+                    uchiwaColorValue = 0L,
+                    backgroundColorValue = 0L
+                )
+            )
+        )
+
+        val result = repository.isImageUsedInAnyUchiwa(targetImageId)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun isImageUsedInAnyUchiwa_multipleUchiwas_imageUsedInSecond_returnsTrue() = runTest {
+        val targetImageId = "image-001"
+
+        every { mockDao.getAllUchiwasStream() } returns flowOf(
+            listOf(
+                FansaUchiwaEntity(
+                    id = "uchiwa-A",
+                    decorations = listOf(
+                        Decoration.Image(id = "dec-1", imageId = "image-other")
+                    ),
+                    uchiwaColorValue = 0L,
+                    backgroundColorValue = 0L
+                ),
+                FansaUchiwaEntity(
+                    id = "uchiwa-B",
+                    decorations = listOf(
+                        Decoration.Image(id = "dec-2", imageId = targetImageId)
+                    ),
+                    uchiwaColorValue = 0L,
+                    backgroundColorValue = 0L
+                )
+            )
+        )
+
+        val result = repository.isImageUsedInAnyUchiwa(targetImageId)
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun isImageUsedInAnyUchiwa_noUchiwasExist_returnsFalse() = runTest {
+        every { mockDao.getAllUchiwasStream() } returns flowOf(emptyList())
+
+        val result = repository.isImageUsedInAnyUchiwa("image-001")
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun isImageUsedInAnyUchiwa_onlyNonImageDecorations_returnsFalse() = runTest {
+        val targetImageId = "image-001"
+
+        every { mockDao.getAllUchiwasStream() } returns flowOf(
+            listOf(
+                FansaUchiwaEntity(
+                    id = "uchiwa-B",
+                    decorations = listOf(
+                        Decoration.Sticker(id = "dec-sticker", label = "star")
+                    ),
+                    uchiwaColorValue = 0L,
+                    backgroundColorValue = 0L
+                )
+            )
+        )
+
+        val result = repository.isImageUsedInAnyUchiwa(targetImageId)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun isImageUsedInAnyUchiwa_emptyDecorationsList_returnsFalse() = runTest {
+        every { mockDao.getAllUchiwasStream() } returns flowOf(
+            listOf(
+                FansaUchiwaEntity(
+                    id = "uchiwa-C",
+                    decorations = emptyList(),
+                    uchiwaColorValue = 0L,
+                    backgroundColorValue = 0L
+                )
+            )
+        )
+
+        val result = repository.isImageUsedInAnyUchiwa("image-001")
+
+        assertFalse(result)
+    }
+
+    // endregion
+
+    // region getAllUchiwasStream
+
+    @Test
+    fun getAllUchiwasStream_emitsEntitiesFromDao() = runTest {
+        val entities = listOf(
             FansaUchiwaEntity(
-                id = currentUchiwaId,
+                id = "uchiwa-1",
+                decorations = emptyList(),
+                uchiwaColorValue = 0L,
+                backgroundColorValue = 0L
+            ),
+            FansaUchiwaEntity(
+                id = "uchiwa-2",
                 decorations = listOf(
-                    Decoration.Image(id = "dec-1", imageId = targetImageId)
+                    Decoration.Sticker(id = "sticker-1", label = "heart")
                 ),
                 uchiwaColorValue = 0L,
                 backgroundColorValue = 0L
             )
         )
 
-        val result = repository.isImageUsedInOtherUchiwas(targetImageId, currentUchiwaId)
+        every { mockDao.getAllUchiwasStream() } returns flowOf(entities)
 
-        assertFalse(result)
+        repository.getAllUchiwasStream().test {
+            val emitted = awaitItem()
+            assertEquals(2, emitted.size)
+            assertEquals("uchiwa-1", emitted[0].id)
+            assertEquals("uchiwa-2", emitted[1].id)
+            awaitComplete()
+        }
     }
 
-    @Test
-    fun isImageUsedInOtherUchiwas_imageNotUsedAnywhere_returnsFalse() = runBlocking {
-        val targetImageId = "image-001"
-        val currentUchiwaId = "uchiwa-A"
-
-        fakeDao.upsertUchiwaData(
-            FansaUchiwaEntity(
-                id = "uchiwa-B",
-                decorations = listOf(
-                    Decoration.Image(id = "dec-2", imageId = "image-999")
-                ),
-                uchiwaColorValue = 0L,
-                backgroundColorValue = 0L
-            )
-        )
-
-        val result = repository.isImageUsedInOtherUchiwas(targetImageId, currentUchiwaId)
-
-        assertFalse(result)
-    }
-
-    @Test
-    fun isImageUsedInOtherUchiwas_noUchiwasExist_returnsFalse() = runBlocking {
-        val result = repository.isImageUsedInOtherUchiwas("image-001", "uchiwa-A")
-
-        assertFalse(result)
-    }
-
-    @Test
-    fun isImageUsedInOtherUchiwas_otherUchiwaHasNonImageDecorations_returnsFalse() = runBlocking {
-        val targetImageId = "image-001"
-        val currentUchiwaId = "uchiwa-A"
-
-        fakeDao.upsertUchiwaData(
-            FansaUchiwaEntity(
-                id = "uchiwa-B",
-                decorations = listOf(
-                    Decoration.Sticker(id = "dec-sticker", label = "star")
-                ),
-                uchiwaColorValue = 0L,
-                backgroundColorValue = 0L
-            )
-        )
-
-        val result = repository.isImageUsedInOtherUchiwas(targetImageId, currentUchiwaId)
-
-        assertFalse(result)
-    }
+    // endregion
 }
-
-private class FakeFansaUchiwaDao : FansaUchiwaDao {
-
-    private val uchiwas = mutableMapOf<String, FansaUchiwaEntity>()
-    private val flow = MutableStateFlow<List<FansaUchiwaEntity>>(emptyList())
-
-    override suspend fun upsertUchiwaData(uchiwaData: FansaUchiwaEntity) {
-        uchiwas[uchiwaData.id] = uchiwaData
-        flow.value = uchiwas.values.toList()
-    }
-
-    override suspend fun getUchiwaById(id: String): FansaUchiwaEntity? {
-        return uchiwas[id]
-    }
-
-    override suspend fun deleteUchiwaById(id: String) {
-        uchiwas.remove(id)
-        flow.value = uchiwas.values.toList()
-    }
-
-    override fun getAllUchiwasStream(): Flow<List<FansaUchiwaEntity>> {
-        return flow
-    }
-}
-
