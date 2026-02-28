@@ -9,7 +9,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,7 +77,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -285,17 +283,7 @@ fun EditScreen(
                         backgroundColor = uiState.backgroundColor
                     )
 
-                    if (uiState.isDeletingImage) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(colorResource(R.color.black).copy(alpha = 0.5f))
-                                .clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() }
-                                ) { /* タップを無効化 */ }
-                        )
-                    }
+
                 }
                 UndoRedoRow(
                     canUndo = uiState.canUndo,

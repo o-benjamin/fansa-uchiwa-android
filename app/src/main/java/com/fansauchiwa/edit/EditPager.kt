@@ -10,7 +10,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -157,23 +156,10 @@ fun EditPager(
                     )
                 }
             }
-
-            if (isDeletingImage) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(colorResource(R.color.black).copy(alpha = 0.5f))
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { /* タップを無効化 */ }
-                )
-            }
         }
 
         HorizontalPager(
-            state = pagerState,
-            userScrollEnabled = !isDeletingImage
+            state = pagerState
         ) { page ->
             when (page) {
                 0 -> {
