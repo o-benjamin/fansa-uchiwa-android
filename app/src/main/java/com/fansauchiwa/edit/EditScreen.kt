@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -8,7 +9,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,7 +77,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -284,17 +283,7 @@ fun EditScreen(
                         backgroundColor = uiState.backgroundColor
                     )
 
-                    if (uiState.isDeletingImage) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(colorResource(R.color.black).copy(alpha = 0.5f))
-                                .clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() }
-                                ) { /* タップを無効化 */ }
-                        )
-                    }
+
                 }
                 UndoRedoRow(
                     canUndo = uiState.canUndo,
@@ -408,6 +397,33 @@ fun EditScreen(
             }
         )
     }
+
+    // 画像削除警告ダイアログ
+    if (uiState.showImageDeleteWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissImageDeleteWarningDialog() },
+            title = {
+                Text(text = stringResource(R.string.delete_image_warning_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.delete_image_warning_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.proceedImageDeletion() }
+                ) {
+                    Text(text = stringResource(R.string.delete_image_warning_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.dismissImageDeleteWarningDialog() }
+                ) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -429,6 +445,9 @@ fun UchiwaPreview(
 ) {
     val focusManager = LocalFocusManager.current
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
+    var snappedX by remember { mutableStateOf(false) }
+    var snappedY by remember { mutableStateOf(false) }
+    val snapThreshold = with(LocalDensity.current) { 4.dp.toPx() }
 
     Box(
         modifier = modifier
@@ -461,6 +480,7 @@ fun UchiwaPreview(
             )
         decorations.forEach { decoration ->
             key(decoration.id) {
+                var rawOffsetDiff by remember { mutableStateOf(Offset.Zero) }
                 var offsetDiff by remember { mutableStateOf(Offset.Zero) }
                 var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
                 var scaleDiff by remember { mutableFloatStateOf(0f) }
@@ -505,12 +525,20 @@ fun UchiwaPreview(
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDecorationDoubleTap = { onDecorationDoubleTap(decoration.id) },
                             onDrag = { dragAmount ->
-                                offsetDiff = calculateClampedOffset(
+                                rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = offsetDiff,
+                                    cumulativeOffset = rawOffsetDiff,
                                     dragAmount = dragAmount,
                                     boundarySize = uchiwaSize
                                 )
+                                val snapResult = applySnapToCenter(
+                                    decorationOffset = decoration.offset,
+                                    offsetDiff = rawOffsetDiff,
+                                    snapThreshold = snapThreshold
+                                )
+                                offsetDiff = snapResult.offsetDiff
+                                snappedX = snapResult.snappedX
+                                snappedY = snapResult.snappedY
                             },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -519,9 +547,12 @@ fun UchiwaPreview(
                                     scaleDiff,
                                     rotationDiff
                                 )
+                                rawOffsetDiff = Offset.Zero
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                             },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
@@ -576,12 +607,20 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDrag = { dragAmount ->
-                                offsetDiff = calculateClampedOffset(
+                                rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = offsetDiff,
+                                    cumulativeOffset = rawOffsetDiff,
                                     dragAmount = dragAmount,
                                     boundarySize = uchiwaSize
                                 )
+                                val snapResult = applySnapToCenter(
+                                    decorationOffset = decoration.offset,
+                                    offsetDiff = rawOffsetDiff,
+                                    snapThreshold = snapThreshold
+                                )
+                                offsetDiff = snapResult.offsetDiff
+                                snappedX = snapResult.snappedX
+                                snappedY = snapResult.snappedY
                             },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -590,9 +629,12 @@ fun UchiwaPreview(
                                     scaleDiff,
                                     rotationDiff
                                 )
+                                rawOffsetDiff = Offset.Zero
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                             },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
@@ -657,12 +699,20 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDrag = { dragAmount ->
-                                offsetDiff = calculateClampedOffset(
+                                rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = offsetDiff,
+                                    cumulativeOffset = rawOffsetDiff,
                                     dragAmount = dragAmount,
                                     boundarySize = uchiwaSize
                                 )
+                                val snapResult = applySnapToCenter(
+                                    decorationOffset = decoration.offset,
+                                    offsetDiff = rawOffsetDiff,
+                                    snapThreshold = snapThreshold
+                                )
+                                offsetDiff = snapResult.offsetDiff
+                                snappedX = snapResult.snappedX
+                                snappedY = snapResult.snappedY
                             },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -671,9 +721,12 @@ fun UchiwaPreview(
                                     scaleDiff,
                                     rotationDiff
                                 )
+                                rawOffsetDiff = Offset.Zero
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                             },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
@@ -714,6 +767,28 @@ fun UchiwaPreview(
                             imagePath = images.find { it.id == decoration.imageId }?.path
                         )
                     }
+                }
+            }
+        }
+        if (snappedX || snappedY) {
+            val guideLineColor = MaterialTheme.colorScheme.tertiary
+            val guideLineWidth = with(LocalDensity.current) { 1.dp.toPx() }
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                if (snappedX) {
+                    drawLine(
+                        color = guideLineColor,
+                        start = Offset(size.width / 2f, 0f),
+                        end = Offset(size.width / 2f, size.height),
+                        strokeWidth = guideLineWidth
+                    )
+                }
+                if (snappedY) {
+                    drawLine(
+                        color = guideLineColor,
+                        start = Offset(0f, size.height / 2f),
+                        end = Offset(size.width, size.height / 2f),
+                        strokeWidth = guideLineWidth
+                    )
                 }
             }
         }

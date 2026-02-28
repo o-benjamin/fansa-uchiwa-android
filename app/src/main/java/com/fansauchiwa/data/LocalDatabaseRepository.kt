@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toColorLong
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 interface LocalDatabaseRepository {
@@ -16,6 +18,8 @@ interface LocalDatabaseRepository {
 
     suspend fun getUchiwa(id: String): SavedUchiwa?
     suspend fun deleteUchiwa(id: String)
+    fun getAllUchiwasStream(): Flow<List<FansaUchiwaEntity>>
+    suspend fun isImageUsedInAnyUchiwa(imageId: String): Boolean
 }
 
 class LocalDatabaseRepositoryImpl @Inject constructor(
@@ -50,6 +54,19 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
 
     override suspend fun deleteUchiwa(id: String) {
         fansaUchiwaDao.deleteUchiwaById(id)
+    }
+
+    override fun getAllUchiwasStream(): Flow<List<FansaUchiwaEntity>> {
+        return fansaUchiwaDao.getAllUchiwasStream()
+    }
+
+    override suspend fun isImageUsedInAnyUchiwa(imageId: String): Boolean {
+        val allUchiwas = fansaUchiwaDao.getAllUchiwasStream().first()
+        return allUchiwas.any { uchiwa ->
+            uchiwa.decorations.any { decoration ->
+                decoration is Decoration.Image && decoration.imageId == imageId
+            }
+        }
     }
 }
 

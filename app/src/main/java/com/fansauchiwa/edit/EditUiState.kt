@@ -24,5 +24,6 @@ data class EditUiState(
     val uchiwaColor: Color = Color(0xFF000000),
     val backgroundColor: Color = Color(0x11000000),
     val canUndo: Boolean = false,
-    val canRedo: Boolean = false
+    val canRedo: Boolean = false,
+    val showImageDeleteWarningDialog: Boolean = false
 ) : Parcelable

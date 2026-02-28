@@ -1,4 +1,4 @@
-package com.fansauchiwa
+package com.example.fansauchiwa
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

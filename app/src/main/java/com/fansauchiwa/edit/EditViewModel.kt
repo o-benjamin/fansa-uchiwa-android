@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.R
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
@@ -69,18 +70,47 @@ class EditViewModel @Inject constructor(
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
                 val savedUchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
                 if (savedUchiwa != null) {
+                    val imageDecorations =
+                        savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
+                    val validImages = mutableListOf<ImageReference>()
+                    val missingImageIds = mutableListOf<String>()
+
+                    for (decoration in imageDecorations) {
+                        val imageData = localImageRepository.loadImage(decoration.imageId)
+                        if (imageData != null) {
+                            validImages.add(imageData)
+                        } else {
+                            missingImageIds.add(decoration.imageId)
+                        }
+                    }
+
+                    val finalDecorations = if (missingImageIds.isNotEmpty()) {
+                        savedUchiwa.decorations.filterNot {
+                            it is Decoration.Image && missingImageIds.contains(it.imageId)
+                        }
+                    } else {
+                        savedUchiwa.decorations
+                    }
+
+                    if (missingImageIds.isNotEmpty()) {
+                        localDatabaseRepository.saveUchiwa(
+                            id = uchiwaId,
+                            decorations = finalDecorations,
+                            uchiwaColor = savedUchiwa.uchiwaColor,
+                            backgroundColor = savedUchiwa.backgroundColor
+                        )
+                    }
+
                     val currentState = uiState.value
                     savedStateHandle[UI_STATE_KEY] = currentState.copy(
                         uchiwaId = uchiwaId,
-                        decorations = savedUchiwa.decorations,
+                        decorations = finalDecorations,
                         uchiwaColor = savedUchiwa.uchiwaColor,
                         backgroundColor = savedUchiwa.backgroundColor,
+                        images = currentState.images.filterNot { existing ->
+                            validImages.any { it.id == existing.id }
+                        } + validImages
                     )
-                    // 画像デコレーションがある場合、それらの画像をロード
-                    savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
-                        .forEach { decoration ->
-                            loadImage(decoration.imageId)
-                        }
                 }
             } else {
                 val newUchiwaId = UUID.randomUUID().toString()
@@ -528,11 +558,44 @@ class EditViewModel @Inject constructor(
         viewModelScope.launch {
             val selectedIds = uiState.value.selectedDeletingImages
             if (selectedIds.isNotEmpty()) {
-                localImageRepository.deleteImages(selectedIds)
-                loadAllImages()
-                cancelImageDeletionMode()
+                val isUsedInOther = selectedIds.any { imageId ->
+                    localDatabaseRepository.isImageUsedInAnyUchiwa(imageId)
+                }
+                if (isUsedInOther) {
+                    val currentState = uiState.value
+                    savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                        showImageDeleteWarningDialog = true
+                    )
+                } else {
+                    executeImageDeletion(selectedIds)
+                }
             }
         }
+    }
+
+    fun proceedImageDeletion() {
+        viewModelScope.launch {
+            val selectedIds = uiState.value.selectedDeletingImages
+            executeImageDeletion(selectedIds)
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                showImageDeleteWarningDialog = false
+            )
+        }
+    }
+
+    fun dismissImageDeleteWarningDialog() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            showImageDeleteWarningDialog = false
+        )
+    }
+
+    private fun executeImageDeletion(imageIds: List<String>) {
+        localImageRepository.deleteImages(imageIds)
+        loadAllImages()
+        loadExistingDecorations()
+        cancelImageDeletionMode()
     }
 
     fun cancelImageDeletionMode() {

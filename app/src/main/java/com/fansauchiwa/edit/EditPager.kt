@@ -5,16 +5,11 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,38 +39,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,23 +156,10 @@ fun EditPager(
                     )
                 }
             }
-
-            if (isDeletingImage) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .background(colorResource(R.color.black).copy(alpha = 0.5f))
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { /* タップを無効化 */ }
-                )
-            }
         }
 
         HorizontalPager(
-            state = pagerState,
-            userScrollEnabled = !isDeletingImage
+            state = pagerState
         ) { page ->
             when (page) {
                 0 -> {
@@ -253,84 +224,6 @@ fun EditPager(
     }
 }
 
-@Composable
-fun TextPage(
-    onTextClick: (Decoration.Text) -> Unit,
-    onColorSelected: (Color) -> Unit,
-    onTextWeightChanged: (Int) -> Unit,
-    onStrokeColorSelected: (Color) -> Unit,
-    onStrokeWeightChanged: (Float) -> Unit,
-    onSecondBorderColorSelected: (Color) -> Unit,
-    onSecondBorderWeightChanged: (Float) -> Unit,
-    selectedDecoration: Decoration? = null
-) {
-    val scrollState = rememberScrollState()
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        if (selectedDecoration is Decoration.Text) {
-            TextDecorationControls(
-                onColorSelected = onColorSelected,
-                onTextWeightChanged = onTextWeightChanged,
-                onStrokeColorSelected = onStrokeColorSelected,
-                onStrokeWeightChanged = onStrokeWeightChanged,
-                onSecondBorderColorSelected = onSecondBorderColorSelected,
-                onSecondBorderWeightChanged = onSecondBorderWeightChanged,
-                textColor = selectedDecoration.color,
-                strokeColor = selectedDecoration.strokeColor,
-                textWidth = selectedDecoration.width,
-                strokeWidth = selectedDecoration.strokeWidth,
-                secondBorderColor = selectedDecoration.secondBorderColor,
-                secondBorderWidth = selectedDecoration.secondBorderWidth
-            )
-        }
-
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .wrapContentWidth()
-                .padding(vertical = 16.dp)
-        ) {
-            FontFamilies.entries.forEach { fontFamily ->
-                Button(
-                    onClick = {
-                        onTextClick(
-                            Decoration.Text(
-                                id = UUID.randomUUID().toString(),
-                                font = fontFamily
-                            )
-                        )
-                    },
-                    colors = ButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                            alpha = 0.38f
-                        ),
-                        disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                            alpha = 0.38f
-                        )
-                    ),
-                    modifier = Modifier
-                        .size(108.dp, 54.dp)
-                ) {
-                    val density = LocalDensity.current
-                    Text(
-                        text = "あA!",
-                        fontSize = (20.dp.value / density.fontScale).sp,
-                        fontFamily = fontFamily.value
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun ImagePage(
@@ -540,198 +433,6 @@ fun StickerPage(
     }
 }
 
-@Composable
-fun TextDecorationControls(
-    onColorSelected: (Color) -> Unit,
-    onTextWeightChanged: (Int) -> Unit,
-    onStrokeColorSelected: (Color) -> Unit,
-    onStrokeWeightChanged: (Float) -> Unit,
-    onSecondBorderColorSelected: (Color) -> Unit,
-    onSecondBorderWeightChanged: (Float) -> Unit,
-    textColor: Color,
-    textWidth: Int,
-    strokeColor: Color,
-    strokeWidth: Float,
-    secondBorderColor: Color,
-    secondBorderWidth: Float
-) {
-    ColorAndWeightControl(
-        title = stringResource(R.string.text_color_and_weight),
-        color = textColor,
-        width = textWidth.toFloat(),
-        valueRange = 100f..900f,
-        steps = 9,
-        onColorSelected = onColorSelected,
-        onWeightChanged = { newValue ->
-            onTextWeightChanged(newValue.toInt())
-        }
-    )
-
-    ColorAndWeightControl(
-        title = stringResource(R.string.stroke_color_and_weight),
-        color = strokeColor,
-        width = strokeWidth,
-        valueRange = 0f..90f,
-        steps = 10,
-        onColorSelected = onStrokeColorSelected,
-        onWeightChanged = onStrokeWeightChanged
-    )
-
-    ColorAndWeightControl(
-        title = stringResource(R.string.second_stroke_color_and_weight),
-        color = secondBorderColor,
-        width = secondBorderWidth,
-        valueRange = 0f..90f,
-        steps = 10,
-        onColorSelected = onSecondBorderColorSelected,
-        onWeightChanged = onSecondBorderWeightChanged
-    )
-}
-
-@Composable
-fun ColorAndWeightControl(
-    title: String,
-    color: Color,
-    width: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    onColorSelected: (Color) -> Unit = {},
-    onWeightChanged: (Float) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    val isColorPickerOpen = remember { mutableStateOf(false) }
-
-    Column(modifier = modifier.padding(top = 16.dp)) {
-        HeaderTitle(title)
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                IconButton(
-                    onClick = {
-                        isColorPickerOpen.value = false
-                    },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ExpandLess,
-                        contentDescription = "Color picker toggle"
-                    )
-                }
-                this@Column.AnimatedVisibility(
-                    visible = !isColorPickerOpen.value,
-                    enter = fadeIn(),
-                    exit = fadeOut()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .border(1.dp, colorResource(R.color.gray), CircleShape)
-                            .background(color = color)
-                            .clickable {
-                                isColorPickerOpen.value = true
-                            }
-                    )
-                }
-            }
-            Slider(
-                value = width,
-                onValueChange = { newValue ->
-                    onWeightChanged(newValue)
-                    isColorPickerOpen.value = false
-                },
-                valueRange = valueRange,
-                steps = steps,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        AnimatedVisibility(isColorPickerOpen.value) {
-            ColorPickerRow(
-                onColorSelected = onColorSelected,
-                modifier = Modifier.padding(top = 8.dp),
-                currentColor = color
-            )
-        }
-    }
-
-}
-
-@Composable
-private fun HeaderTitle(title: String, modifier: Modifier = Modifier) {
-    Text(
-        text = title,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Start,
-        modifier = modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-fun ColorPickerRow(
-    onColorSelected: (Color) -> Unit,
-    modifier: Modifier = Modifier,
-    currentColor: Color
-) {
-    var showColorPickerDialog by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .border(1.dp, colorResource(R.color.gray), CircleShape)
-                .background(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            Color.Red,
-                            Color.Yellow,
-                            Color.Green,
-                            Color.Cyan,
-                            Color.Blue,
-                            Color.Magenta,
-                            Color.Red
-                        )
-                    )
-                )
-                .clickable {
-                    showColorPickerDialog = true
-                }
-        )
-        DecorationColors.entries.forEach { decorationColor ->
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, colorResource(R.color.gray), CircleShape)
-                    .background(color = decorationColor.value)
-                    .clickable {
-                        onColorSelected(decorationColor.value)
-                    }
-            )
-        }
-    }
-
-    if (showColorPickerDialog) {
-        ColorPickerDialog(
-            initialColor = currentColor,
-            onDismiss = { showColorPickerDialog = false },
-            onColorSelected = onColorSelected
-        )
-    }
-}
 
 @Composable
 fun LayerPage(
@@ -887,30 +588,6 @@ private fun LayerItemPreview(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun TextPagePreview() {
-    FansaUchiwaTheme {
-        TextPage(
-            onTextClick = {},
-            onColorSelected = {},
-            onTextWeightChanged = {},
-            onStrokeColorSelected = {},
-            onStrokeWeightChanged = {},
-            onSecondBorderColorSelected = {},
-            onSecondBorderWeightChanged = {},
-            selectedDecoration = Decoration.Text(
-                id = "preview-id",
-                font = FontFamilies.HACHI_MARU_POP,
-                text = "プレビュー",
-                color = Color(0xFF000000),
-                strokeColor = Color(0xFFFFFFFF),
-                width = 700,
-                strokeWidth = 2.5f
-            )
-        )
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
