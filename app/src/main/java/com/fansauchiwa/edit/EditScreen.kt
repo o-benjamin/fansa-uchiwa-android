@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -429,6 +430,9 @@ fun UchiwaPreview(
 ) {
     val focusManager = LocalFocusManager.current
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
+    var snappedX by remember { mutableStateOf(false) }
+    var snappedY by remember { mutableStateOf(false) }
+    val snapThreshold = with(LocalDensity.current) { 4.dp.toPx() }
 
     Box(
         modifier = modifier
@@ -461,6 +465,7 @@ fun UchiwaPreview(
             )
         decorations.forEach { decoration ->
             key(decoration.id) {
+                var rawOffsetDiff by remember { mutableStateOf(Offset.Zero) }
                 var offsetDiff by remember { mutableStateOf(Offset.Zero) }
                 var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
                 var scaleDiff by remember { mutableFloatStateOf(0f) }
@@ -505,12 +510,20 @@ fun UchiwaPreview(
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDecorationDoubleTap = { onDecorationDoubleTap(decoration.id) },
                             onDrag = { dragAmount ->
-                                offsetDiff = calculateClampedOffset(
+                                rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = offsetDiff,
+                                    cumulativeOffset = rawOffsetDiff,
                                     dragAmount = dragAmount,
                                     boundarySize = uchiwaSize
                                 )
+                                val snapResult = applySnapToCenter(
+                                    decorationOffset = decoration.offset,
+                                    offsetDiff = rawOffsetDiff,
+                                    snapThreshold = snapThreshold
+                                )
+                                offsetDiff = snapResult.offsetDiff
+                                snappedX = snapResult.snappedX
+                                snappedY = snapResult.snappedY
                             },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -519,9 +532,12 @@ fun UchiwaPreview(
                                     scaleDiff,
                                     rotationDiff
                                 )
+                                rawOffsetDiff = Offset.Zero
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                             },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
@@ -576,12 +592,20 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDrag = { dragAmount ->
-                                offsetDiff = calculateClampedOffset(
+                                rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = offsetDiff,
+                                    cumulativeOffset = rawOffsetDiff,
                                     dragAmount = dragAmount,
                                     boundarySize = uchiwaSize
                                 )
+                                val snapResult = applySnapToCenter(
+                                    decorationOffset = decoration.offset,
+                                    offsetDiff = rawOffsetDiff,
+                                    snapThreshold = snapThreshold
+                                )
+                                offsetDiff = snapResult.offsetDiff
+                                snappedX = snapResult.snappedX
+                                snappedY = snapResult.snappedY
                             },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -590,9 +614,12 @@ fun UchiwaPreview(
                                     scaleDiff,
                                     rotationDiff
                                 )
+                                rawOffsetDiff = Offset.Zero
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                             },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
@@ -657,12 +684,20 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDrag = { dragAmount ->
-                                offsetDiff = calculateClampedOffset(
+                                rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = offsetDiff,
+                                    cumulativeOffset = rawOffsetDiff,
                                     dragAmount = dragAmount,
                                     boundarySize = uchiwaSize
                                 )
+                                val snapResult = applySnapToCenter(
+                                    decorationOffset = decoration.offset,
+                                    offsetDiff = rawOffsetDiff,
+                                    snapThreshold = snapThreshold
+                                )
+                                offsetDiff = snapResult.offsetDiff
+                                snappedX = snapResult.snappedX
+                                snappedY = snapResult.snappedY
                             },
                             onDragEnd = {
                                 onDecorationDragEnd(
@@ -671,9 +706,12 @@ fun UchiwaPreview(
                                     scaleDiff,
                                     rotationDiff
                                 )
+                                rawOffsetDiff = Offset.Zero
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                             },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
@@ -714,6 +752,28 @@ fun UchiwaPreview(
                             imagePath = images.find { it.id == decoration.imageId }?.path
                         )
                     }
+                }
+            }
+        }
+        if (snappedX || snappedY) {
+            val guideLineColor = MaterialTheme.colorScheme.tertiary
+            val guideLineWidth = with(LocalDensity.current) { 1.dp.toPx() }
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                if (snappedX) {
+                    drawLine(
+                        color = guideLineColor,
+                        start = Offset(size.width / 2f, 0f),
+                        end = Offset(size.width / 2f, size.height),
+                        strokeWidth = guideLineWidth
+                    )
+                }
+                if (snappedY) {
+                    drawLine(
+                        color = guideLineColor,
+                        start = Offset(0f, size.height / 2f),
+                        end = Offset(size.width, size.height / 2f),
+                        strokeWidth = guideLineWidth
+                    )
                 }
             }
         }

@@ -9,9 +9,41 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.fansauchiwa.data.Transformation
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
+
+/**
+ * デコレーションの移動量に対してキャンバス中央（X=0, Y=0）へのスナップ判定・補正を行う
+ *
+ * @param decorationOffset デコレーションの確定済み座標
+ * @param offsetDiff 現在の移動量（calculateClampedOffset適用後）
+ * @param snapThreshold スナップ判定の閾値（px）
+ * @return スナップ補正後の結果
+ */
+internal fun applySnapToCenter(
+    decorationOffset: Offset,
+    offsetDiff: Offset,
+    snapThreshold: Float
+): SnapResult {
+    val newX = decorationOffset.x + offsetDiff.x
+    val newY = decorationOffset.y + offsetDiff.y
+
+    val snappedX = abs(newX) <= snapThreshold
+    val snappedY = abs(newY) <= snapThreshold
+
+    val snappedOffsetDiff = Offset(
+        x = if (snappedX) -decorationOffset.x else offsetDiff.x,
+        y = if (snappedY) -decorationOffset.y else offsetDiff.y
+    )
+
+    return SnapResult(
+        offsetDiff = snappedOffsetDiff,
+        snappedX = snappedX,
+        snappedY = snappedY
+    )
+}
 
 internal fun calculateTransformations(
     cumulativeOffset: Offset,
