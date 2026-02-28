@@ -535,7 +535,6 @@ private fun LayerItem(
         Icon(
             imageVector = Icons.Default.DragHandle,
             contentDescription = "Reorder",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = modifier.size(24.dp)
         )
     }

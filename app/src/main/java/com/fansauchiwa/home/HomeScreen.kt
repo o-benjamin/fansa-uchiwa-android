@@ -194,8 +194,6 @@ fun HomeScreen(
                         onAddClick()
                     },
                     expanded = isFabExpanded,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Add,

@@ -1163,12 +1163,7 @@ private fun UndoRedoRow(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Undo,
-                contentDescription = stringResource(R.string.undo),
-                tint = if (canUndo) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                }
+                contentDescription = stringResource(R.string.undo)
             )
         }
         IconButton(
@@ -1177,12 +1172,7 @@ private fun UndoRedoRow(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Redo,
-                contentDescription = stringResource(R.string.redo),
-                tint = if (canRedo) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                }
+                contentDescription = stringResource(R.string.redo)
             )
         }
     }

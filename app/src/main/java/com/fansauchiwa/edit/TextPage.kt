@@ -7,15 +7,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -151,7 +148,7 @@ fun FontFamilySelectionGrid(
         }
 
         items(FontFamilies.entries.toList()) { fontFamily ->
-            Button(
+            FilledTonalButton(
                 onClick = {
                     onTextClick(
                         Decoration.Text(
@@ -160,16 +157,6 @@ fun FontFamilySelectionGrid(
                         )
                     )
                 },
-                colors = ButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    disabledContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                        alpha = 0.38f
-                    ),
-                    disabledContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(
-                        alpha = 0.38f
-                    )
-                ),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.height(buttonHeight)
             ) {

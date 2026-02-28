@@ -245,9 +245,7 @@ private fun LoadingOverlay() {
             .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f)),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.primary
-        )
+        CircularProgressIndicator()
     }
 }
 
