@@ -100,6 +100,7 @@ import com.fansauchiwa.data.captureHighResBitmap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.net.URLEncoder

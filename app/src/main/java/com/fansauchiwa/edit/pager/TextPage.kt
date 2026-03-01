@@ -1,4 +1,4 @@
-package com.fansauchiwa.edit
+package com.fansauchiwa.edit.pager
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.edit.ColorAndWeightControl
+import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.util.UUID
 

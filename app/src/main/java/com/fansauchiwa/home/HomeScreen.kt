@@ -2,7 +2,6 @@ package com.fansauchiwa.home
 
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,12 +17,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +60,7 @@ import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import kotlinx.coroutines.launch
 import androidx.core.net.toUri
 
@@ -327,29 +323,9 @@ private fun MasterpieceItem(
             )
 
             if (isDeletingMode) {
-                Icon(
-                    imageVector = if (isSelected) {
-                        Icons.Filled.CheckCircle
-                    } else {
-                        Icons.Outlined.Circle
-                    },
-                    contentDescription = if (isSelected) "Selected" else "Not selected",
-                    tint = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        colorResource(R.color.white)
-                    },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .then(
-                            if (isSelected) {
-                                Modifier
-                                    .background(colorResource(R.color.white), CircleShape)
-                            } else {
-                                Modifier
-                            }
-                        )
+                SelectionCircleIcon(
+                    isSelected = isSelected,
+                    modifier = Modifier.align(Alignment.TopEnd)
                 )
             }
         }

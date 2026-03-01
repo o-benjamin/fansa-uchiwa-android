@@ -1,4 +1,4 @@
-package com.fansauchiwa.edit
+package com.fansauchiwa.edit.pager
 
 import android.net.Uri
 import android.util.Log
@@ -9,14 +9,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,25 +22,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
@@ -56,17 +45,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
+import com.fansauchiwa.edit.ColorAndWeightControl
+import com.fansauchiwa.edit.DecorationTabType
+import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.HeaderTitle
+import com.fansauchiwa.edit.ColorPickerRow
+import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
@@ -217,130 +210,6 @@ fun EditPager(
                         onDecorationClick = onDecorationClick,
                         onMoveDecoration = onMoveDecoration,
                         allImages = allImages
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun ImagePage(
-    onClick: () -> Unit,
-    images: List<ImageReference>,
-    onImageClick: (Decoration.Image) -> Unit,
-    onImageLongPress: () -> Unit,
-    isDeletingImage: Boolean = false,
-    selectedImages: List<String> = emptyList(),
-    onImageToggleSelection: (String) -> Unit = {},
-    isPreview: Boolean = false,
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 56.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(16.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        item {
-            IconButton(
-                onClick = onClick,
-                shape = RoundedCornerShape(8.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(),
-                modifier = Modifier
-                    .aspectRatio(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                )
-            }
-        }
-        items(images) { image ->
-            val isSelected = selectedImages.contains(image.id)
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-            ) {
-                if (isPreview) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(colorResource(R.color.gray))
-                            .combinedClickable(
-                                onClick = {
-                                    if (isDeletingImage) {
-                                        onImageToggleSelection(image.id)
-                                    } else {
-                                        onImageClick(
-                                            Decoration.Image(
-                                                id = UUID.randomUUID().toString(),
-                                                imageId = image.id
-                                            )
-                                        )
-                                    }
-                                },
-                                onLongClick = { onImageLongPress() }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Image",
-                            color = colorResource(R.color.black),
-                            fontSize = 12.sp
-                        )
-                    }
-                } else {
-                    AsyncImage(
-                        model = image.path,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(4.dp))
-                            .combinedClickable(
-                                onClick = {
-                                    if (isDeletingImage) {
-                                        onImageToggleSelection(image.id)
-                                    } else {
-                                        onImageClick(
-                                            Decoration.Image(
-                                                id = UUID.randomUUID().toString(),
-                                                imageId = image.id
-                                            )
-                                        )
-                                    }
-                                },
-                                onLongClick = { onImageLongPress() }
-                            )
-                    )
-                }
-                if (isDeletingImage) {
-                    Icon(
-                        imageVector = if (isSelected) {
-                            Icons.Filled.CheckCircle
-                        } else {
-                            Icons.Outlined.Circle
-                        },
-                        contentDescription = if (isSelected) "Selected" else "Not selected",
-                        tint = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            colorResource(R.color.white)
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .then(
-                                if (isSelected) {
-                                    Modifier
-                                        .background(colorResource(R.color.white), CircleShape)
-                                } else {
-                                    Modifier
-                                }
-                            )
                     )
                 }
             }
@@ -587,40 +456,6 @@ private fun LayerItemPreview(
     }
 }
 
-
-@Preview(showBackground = true)
-@Composable
-fun ImagePagePreview() {
-    FansaUchiwaTheme {
-        ImagePage(
-            onClick = {},
-            images = listOf(
-                ImageReference(
-                    id = "image-1",
-                    path = "path/to/image1.jpg"
-                ),
-                ImageReference(
-                    id = "image-2",
-                    path = "path/to/image2.jpg"
-                ),
-                ImageReference(
-                    id = "image-3",
-                    path = "path/to/image3.jpg"
-                ),
-                ImageReference(
-                    id = "image-4",
-                    path = "path/to/image4.jpg"
-                ),
-            ),
-            onImageClick = {},
-            onImageLongPress = {},
-            isDeletingImage = false,
-            selectedImages = emptyList(),
-            onImageToggleSelection = {},
-            isPreview = true
-        )
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
