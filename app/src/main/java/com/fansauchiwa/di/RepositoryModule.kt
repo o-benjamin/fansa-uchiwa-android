@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.AdMobRepositoryImpl
+import com.fansauchiwa.data.DefaultTemplateRepository
 import com.fansauchiwa.data.GalleryImageDataSource
 import com.fansauchiwa.data.GalleryImageLocalSource
 import com.fansauchiwa.data.ImageDataSource
@@ -16,6 +17,7 @@ import com.fansauchiwa.data.MasterpieceDataSource
 import com.fansauchiwa.data.MasterpieceLocalSource
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.MasterpieceRepositoryImpl
+import com.fansauchiwa.data.TemplateRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.source.FansaUchiwaDao
@@ -61,6 +63,12 @@ abstract class RepositoryModule {
     abstract fun bindAnalyticsRepository(
         impl: AnalyticsRepositoryImpl
     ): AnalyticsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTemplateRepository(
+        impl: DefaultTemplateRepository
+    ): TemplateRepository
 }
 
 @Module

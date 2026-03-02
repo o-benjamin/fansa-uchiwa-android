@@ -30,8 +30,14 @@ fun FansaUchiwaNavGraph(
     ) {
         composable(FansaUchiwaDestinations.HOME) {
             HomeScreen(
-                onImageClick = { id ->
-                    navController.navigate("${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG=$id")
+                onImageClick = { id, templateId ->
+                    val route = buildString {
+                        append("${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG=$id")
+                        if (templateId != null) {
+                            append("&$TEMPLATE_ID_ARG=$templateId")
+                        }
+                    }
+                    navController.navigate(route)
                 },
                 onAddClick = {
                     navController.navigate(FansaUchiwaScreens.EDIT_SCREEN)
@@ -42,6 +48,11 @@ fun FansaUchiwaNavGraph(
             route = FansaUchiwaDestinations.EDIT,
             arguments = listOf(
                 navArgument(UCHIWA_ID_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(TEMPLATE_ID_ARG) {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null

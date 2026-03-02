@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.TemplateRepository
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -20,7 +21,8 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val localDatabaseRepository: LocalDatabaseRepository,
-    private val analyticsRepository: AnalyticsRepository
+    private val analyticsRepository: AnalyticsRepository,
+    private val templateRepository: TemplateRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -50,6 +52,13 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val pathList = masterpieceRepository.loadAllMasterpieces()
             _uiState.update { it.copy(masterpiecePathList = pathList) }
+        }
+    }
+
+    fun loadTemplates() {
+        viewModelScope.launch {
+            val templates = templateRepository.getTemplates()
+            _uiState.update { it.copy(templates = templates) }
         }
     }
 
