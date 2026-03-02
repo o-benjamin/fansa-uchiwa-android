@@ -9,12 +9,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.R
+import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.TemplateRepository
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -39,6 +42,7 @@ class EditViewModel @Inject constructor(
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val masterpieceRepository: MasterpieceRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
@@ -70,55 +74,79 @@ class EditViewModel @Inject constructor(
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
                 val savedUchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
                 if (savedUchiwa != null) {
-                    val imageDecorations =
-                        savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
-                    val validImages = mutableListOf<ImageReference>()
-                    val missingImageIds = mutableListOf<String>()
-
-                    for (decoration in imageDecorations) {
-                        val imageData = localImageRepository.loadImage(decoration.imageId)
-                        if (imageData != null) {
-                            validImages.add(imageData)
-                        } else {
-                            missingImageIds.add(decoration.imageId)
-                        }
-                    }
-
-                    val finalDecorations = if (missingImageIds.isNotEmpty()) {
-                        savedUchiwa.decorations.filterNot {
-                            it is Decoration.Image && missingImageIds.contains(it.imageId)
-                        }
-                    } else {
-                        savedUchiwa.decorations
-                    }
-
-                    if (missingImageIds.isNotEmpty()) {
-                        localDatabaseRepository.saveUchiwa(
-                            id = uchiwaId,
-                            decorations = finalDecorations,
-                            uchiwaColor = savedUchiwa.uchiwaColor,
-                            backgroundColor = savedUchiwa.backgroundColor
-                        )
-                    }
-
-                    val currentState = uiState.value
-                    savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                        uchiwaId = uchiwaId,
-                        decorations = finalDecorations,
-                        uchiwaColor = savedUchiwa.uchiwaColor,
-                        backgroundColor = savedUchiwa.backgroundColor,
-                        images = currentState.images.filterNot { existing ->
-                            validImages.any { it.id == existing.id }
-                        } + validImages
-                    )
+                    restoreExistingUchiwa(uchiwaId, savedUchiwa)
+                } else {
+                    applyNewUchiwaState(uchiwaId)
                 }
             } else {
                 val newUchiwaId = UUID.randomUUID().toString()
                 savedStateHandle[UCHIWA_ID_KEY] = newUchiwaId
-                val currentState = uiState.value
-                savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = newUchiwaId)
+                applyNewUchiwaState(newUchiwaId)
             }
         }
+    }
+
+    private suspend fun restoreExistingUchiwa(uchiwaId: String, savedUchiwa: SavedUchiwa) {
+        val imageDecorations =
+            savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
+        val validImages = mutableListOf<ImageReference>()
+        val missingImageIds = mutableListOf<String>()
+
+        for (decoration in imageDecorations) {
+            val imageData = localImageRepository.loadImage(decoration.imageId)
+            if (imageData != null) {
+                validImages.add(imageData)
+            } else {
+                missingImageIds.add(decoration.imageId)
+            }
+        }
+
+        val finalDecorations = if (missingImageIds.isNotEmpty()) {
+            savedUchiwa.decorations.filterNot {
+                it is Decoration.Image && missingImageIds.contains(it.imageId)
+            }
+        } else {
+            savedUchiwa.decorations
+        }
+
+        if (missingImageIds.isNotEmpty()) {
+            localDatabaseRepository.saveUchiwa(
+                id = uchiwaId,
+                decorations = finalDecorations,
+                uchiwaColor = savedUchiwa.uchiwaColor,
+                backgroundColor = savedUchiwa.backgroundColor
+            )
+        }
+
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            uchiwaId = uchiwaId,
+            decorations = finalDecorations,
+            uchiwaColor = savedUchiwa.uchiwaColor,
+            backgroundColor = savedUchiwa.backgroundColor,
+            images = currentState.images.filterNot { existing ->
+                validImages.any { it.id == existing.id }
+            } + validImages
+        )
+    }
+
+    private suspend fun applyNewUchiwaState(uchiwaId: String) {
+        val templateId: String? = savedStateHandle[TEMPLATE_ID_ARG]
+        val currentState = uiState.value
+        if (templateId != null) {
+            val template = templateRepository.getTemplateById(templateId)
+            if (template != null) {
+                val savedUchiwa = template.savedUchiwa
+                savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                    uchiwaId = uchiwaId,
+                    decorations = savedUchiwa.decorations,
+                    uchiwaColor = savedUchiwa.uchiwaColor,
+                    backgroundColor = savedUchiwa.backgroundColor
+                )
+                return
+            }
+        }
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
