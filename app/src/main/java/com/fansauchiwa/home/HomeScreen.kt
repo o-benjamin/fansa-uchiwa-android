@@ -260,7 +260,7 @@ fun HomeScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HomeScreenContent(
+internal fun HomeScreenContent(
     modifier: Modifier = Modifier,
     masterpiecePathList: List<String>,
     templates: List<Template>,
