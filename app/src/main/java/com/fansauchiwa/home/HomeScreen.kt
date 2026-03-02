@@ -380,7 +380,7 @@ private fun TemplateItem(
     Card(
         modifier = modifier
             .width(HomeItemMinWidth)
-            .aspectRatio(1f),
+            .aspectRatio(1.2f),
         onClick = onClick
     ) {
         if (isPreview) {
@@ -399,7 +399,7 @@ private fun TemplateItem(
                 painter = painterResource(template.previewImageResId),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.FillHeight
             )
         }
     }
