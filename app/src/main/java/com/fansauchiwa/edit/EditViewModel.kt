@@ -2,6 +2,7 @@ package com.fansauchiwa.edit
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
@@ -17,7 +18,6 @@ import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
-import com.fansauchiwa.data.TemplateRepository
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -26,6 +26,7 @@ import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.TemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -645,6 +646,27 @@ class EditViewModel @Inject constructor(
             }
         }
         return true
+    }
+
+    fun exportTemplateCode(onDecorationSave: (String) -> Unit) {
+        viewModelScope.launch {
+            val state = uiState.value
+            val savedUchiwa = SavedUchiwa(
+                decorations = state.decorations,
+                uchiwaColor = state.uchiwaColor,
+                backgroundColor = state.backgroundColor
+            )
+            val code = TemplateExportUtil.exportToKotlinCode(savedUchiwa)
+            Log.d("TemplateExport", code)
+
+            localDatabaseRepository.saveUchiwa(
+                id = state.uchiwaId,
+                decorations = state.decorations,
+                uchiwaColor = state.uchiwaColor,
+                backgroundColor = state.backgroundColor
+            )
+            onDecorationSave(state.uchiwaId)
+        }
     }
 
     fun saveUchiwa(onDecorationSave: (String) -> Unit) {

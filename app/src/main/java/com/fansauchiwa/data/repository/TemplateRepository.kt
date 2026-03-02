@@ -1,8 +1,11 @@
-package com.fansauchiwa.data
+package com.fansauchiwa.data.repository
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.R
+import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Template
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.ui.DecorationColors
 import javax.inject.Inject
@@ -17,30 +20,39 @@ class DefaultTemplateRepository @Inject constructor() : TemplateRepository {
     private val templates: List<Template> = listOf(
         Template(
             id = "template_1",
-            previewImageResId = R.drawable.uchiwa_shape,
+            previewImageResId = R.drawable.template_1,
             savedUchiwa = SavedUchiwa(
                 decorations = listOf(
                     Decoration.Text(
-                        text = "推し",
-                        id = "template_1_text_1",
-                        offset = Offset(0.3f, 0.4f),
-                        scale = 1.5f,
+                        text = "大好き",
+                        id = "template_2_text_1",
+                        offset = Offset(-124.754555f, -139.34021f),
+                        rotation = -19.011398f,
+                        scale = 1.9864473f,
+                        color = DecorationColors.YELLOW.value,
+                        strokeColor = DecorationColors.BLUE.value,
+                        strokeWidth = 25.0f,
+                        secondBorderColor = DecorationColors.WHITE.value,
+                        secondBorderWidth = 0.0f,
+                        width = 900,
+                        font = FontFamilies.MOCHIY_POP_ONE
+                    ),
+                    Decoration.Text(
+                        text = "あいしてる",
+                        id = "3a6bd08c-b334-4d72-9db0-d59a3bfde73e",
+                        offset = Offset(41.6437f, 128.98508f),
+                        rotation = 15.709348f,
+                        scale = 1.5701048f,
                         color = DecorationColors.WHITE.value,
                         strokeColor = DecorationColors.MAGENTA.value,
-                        strokeWidth = 30f,
-                        font = FontFamilies.DELA_GOTHIC_ONE
-                    ),
-                    Decoration.Sticker(
-                        label = "heart",
-                        id = "template_1_sticker_1",
-                        offset = Offset(0.6f, 0.2f),
-                        scale = 1.2f,
-                        color = DecorationColors.RED.value,
-                        strokeColor = DecorationColors.WHITE.value,
-                        strokeWidth = 3f
+                        strokeWidth = 30.0f,
+                        secondBorderColor = DecorationColors.WHITE.value,
+                        secondBorderWidth = 0.0f,
+                        width = 900,
+                        font = FontFamilies.M_PLUS_1P
                     )
                 ),
-                uchiwaColor = Color(0xFFFF69B4),
+                uchiwaColor = Color(0xFF1E90FF),
                 backgroundColor = Color(0xFFFFFFFF)
             )
         ),

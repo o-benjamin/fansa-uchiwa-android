@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -162,6 +163,33 @@ fun EditScreen(
                     }
                 },
                 actions = {
+                    val context = LocalContext.current
+                    val isDebuggable = remember {
+                        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                    }
+                    if (isDebuggable) {
+                        IconButton(
+                            onClick = {
+                                viewModel.exportTemplateCode { uchiwaId ->
+                                    viewModel.resetEditUiState()
+                                    coroutineScope.launch {
+                                        withFrameMillis { }
+                                        val highResBitmap = captureHighResBitmap(
+                                            graphicsLayer,
+                                            density,
+                                            layoutDirection
+                                        ).asAndroidBitmap()
+                                        viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.BugReport,
+                                contentDescription = stringResource(R.string.export_template)
+                            )
+                        }
+                    }
                     Button(
                         onClick = {
                             viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)

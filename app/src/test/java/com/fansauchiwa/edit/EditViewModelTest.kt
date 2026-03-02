@@ -11,8 +11,8 @@ import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
-import com.fansauchiwa.data.TemplateRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

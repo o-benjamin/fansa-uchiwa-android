@@ -55,4 +55,5 @@
     <string name="delete_image_warning_confirm">削除する</string>
     <string name="template_section_title">テンプレートから作成</string>
     <string name="my_design_section_title">マイデザイン</string>
+    <string name="export_template">テンプレートエクスポート</string>
 </resources>
