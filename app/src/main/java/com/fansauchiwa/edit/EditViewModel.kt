@@ -222,15 +222,15 @@ class EditViewModel @Inject constructor(
     }
 
     fun selectDecoration(id: String) {
-        if (canEdit()) {
-            val currentState = uiState.value
-            savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                selectedDecorationId = id
-            )
-        }
+        if (!canFinishEditing()) return
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            selectedDecorationId = id
+        )
     }
 
     fun unSelectDecoration() {
+        if (!canFinishEditing()) return
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             selectedDecorationId = null
@@ -270,19 +270,30 @@ class EditViewModel @Inject constructor(
     }
 
     fun startEditingText(id: String) {
-        if (canEdit()) {
-            saveSnapshot()
-            val currentState = uiState.value
-            savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                editingTextId = id
-            )
-        }
+        if (!canFinishEditing()) return
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            editingTextId = id
+        )
     }
 
     fun finishEditingText() {
+        if (!canFinishEditing()) return
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             editingTextId = null
+        )
+    }
+
+    /**
+     * テキスト編集中にキーボードを閉じる操作が空文字によりブロックされたことをUIから通知する。
+     * スナックバーを表示するためのuserMessageを設定する。
+     */
+    fun notifyDismissBlocked() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            userMessage = R.string.snackbar_input_too_short
         )
     }
 
@@ -635,15 +646,21 @@ class EditViewModel @Inject constructor(
         )
     }
 
-    private fun canEdit(): Boolean {
-        (uiState.value.decorations.find { it.id == uiState.value.selectedDecorationId } as? Decoration.Text)?.let {
-            if (it.text.isEmpty()) {
-                val currentState = uiState.value
-                savedStateHandle[UI_STATE_KEY] = currentState.copy(
-                    userMessage = R.string.snackbar_input_too_short
-                )
-                return false
-            }
+    /**
+     * テキスト編集中（editingTextId != null）のとき、テキストが空文字であれば
+     * スナックバーで警告を表示し、編集完了やselect状態の変更を禁止する。
+     * 編集中でなければ常に true を返す。
+     */
+    private fun canFinishEditing(): Boolean {
+        val currentState = uiState.value
+        val editingTextId = currentState.editingTextId ?: return true
+        val editingText =
+            (currentState.decorations.find { it.id == editingTextId } as? Decoration.Text)
+        if (editingText != null && editingText.text.isEmpty()) {
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                userMessage = R.string.snackbar_input_too_short
+            )
+            return false
         }
         return true
     }

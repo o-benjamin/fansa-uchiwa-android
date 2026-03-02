@@ -1,8 +1,6 @@
 package com.fansauchiwa.edit
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,12 +9,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,7 +23,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -53,6 +46,7 @@ fun TextInputBar(
     initialText: String,
     onTextChanged: (String) -> Unit,
     onDone: () -> Unit,
+    onDismissBlocked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -106,8 +100,12 @@ fun TextInputBar(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
                 onDone = {
-                    focusManager.clearFocus()
-                    onDone()
+                    if (textFieldValue.text.isEmpty()) {
+                        onDismissBlocked()
+                    } else {
+                        focusManager.clearFocus()
+                        onDone()
+                    }
                 }
             ),
             modifier = Modifier
@@ -125,8 +123,12 @@ fun TextInputBar(
         Button(
             shape = RoundedCornerShape(TextInputBarCornerRadius),
             onClick = {
-                focusManager.clearFocus()
-                onDone()
+                if (textFieldValue.text.isEmpty()) {
+                    onDismissBlocked()
+                } else {
+                    focusManager.clearFocus()
+                    onDone()
+                }
             },
             modifier = Modifier.padding(start = TextInputBarDoneButtonPadding)
         ) {
@@ -142,7 +144,8 @@ private fun TextInputBarPreview() {
         TextInputBar(
             initialText = "サンプルテキスト",
             onTextChanged = {},
-            onDone = {}
+            onDone = {},
+            onDismissBlocked = {}
         )
     }
 }
@@ -154,7 +157,8 @@ private fun TextInputBarEmptyPreview() {
         TextInputBar(
             initialText = "",
             onTextChanged = {},
-            onDone = {}
+            onDone = {},
+            onDismissBlocked = {}
         )
     }
 }

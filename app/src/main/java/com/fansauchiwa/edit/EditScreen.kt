@@ -233,7 +233,9 @@ fun EditScreen(
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier.imePadding()
+                modifier = Modifier
+                    .imePadding()
+                    .padding(bottom = 48.dp)
             )
         },
         floatingActionButton = {
@@ -393,7 +395,8 @@ fun EditScreen(
                         onTextChanged = { newText ->
                             viewModel.updateText(editingTextId, newText)
                         },
-                        onDone = { viewModel.finishEditingText() }
+                        onDone = { viewModel.finishEditingText() },
+                        onDismissBlocked = { viewModel.notifyDismissBlocked() }
                     )
                 }
 
