@@ -76,7 +76,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -271,112 +270,134 @@ fun EditScreen(
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.414f)
-                        .drawWithContent {
-                            graphicsLayer.record {
-                                this@drawWithContent.drawContent()
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1.414f)
+                            .drawWithContent {
+                                graphicsLayer.record {
+                                    this@drawWithContent.drawContent()
+                                }
+                                drawLayer(graphicsLayer)
                             }
-                            drawLayer(graphicsLayer)
-                        }
-                ) {
-                    UchiwaPreview(
-                        decorations = uiState.decorations,
-                        selectedDecorationId = uiState.selectedDecorationId,
-                        editingTextId = uiState.editingTextId,
-                        onDecorationTap = viewModel::selectDecoration,
-                        onDecorationDoubleTap = { decorationId ->
-                            viewModel.selectDecoration(decorationId)
-                            viewModel.startEditingText(decorationId)
-                        },
-                        onBackgroundTap = {
-                            viewModel.unSelectDecoration()
-                            viewModel.finishEditingText()
-                        },
-                        onDecorationDragEnd = viewModel::updateDecorationGraphic,
-                        onTapDelete = viewModel::deleteDecoration,
-                        onTextChanged = viewModel::updateText,
-                        onDoneTextEdit = viewModel::finishEditingText,
-                        modifier = Modifier.fillMaxSize(),
-                        images = uiState.images,
-                        uchiwaColor = uiState.uchiwaColor,
-                        backgroundColor = uiState.backgroundColor
+                    ) {
+                        UchiwaPreview(
+                            decorations = uiState.decorations,
+                            selectedDecorationId = uiState.selectedDecorationId,
+                            onDecorationTap = viewModel::selectDecoration,
+                            onDecorationDoubleTap = { decorationId ->
+                                viewModel.selectDecoration(decorationId)
+                                viewModel.startEditingText(decorationId)
+                            },
+                            onBackgroundTap = {
+                                viewModel.unSelectDecoration()
+                                viewModel.finishEditingText()
+                            },
+                            onDecorationDragEnd = viewModel::updateDecorationGraphic,
+                            onTapDelete = viewModel::deleteDecoration,
+                            modifier = Modifier.fillMaxSize(),
+                            images = uiState.images,
+                            uchiwaColor = uiState.uchiwaColor,
+                            backgroundColor = uiState.backgroundColor
+                        )
+
+
+                    }
+                    UndoRedoRow(
+                        canUndo = uiState.canUndo,
+                        canRedo = uiState.canRedo,
+                        onUndoClick = viewModel::undo,
+                        onRedoClick = viewModel::redo,
+                        modifier = Modifier.align(Alignment.BottomStart)
                     )
-
-
                 }
-                UndoRedoRow(
-                    canUndo = uiState.canUndo,
-                    canRedo = uiState.canRedo,
-                    onUndoClick = viewModel::undo,
-                    onRedoClick = viewModel::redo,
-                    modifier = Modifier.align(Alignment.BottomStart)
+
+                EditPager(
+                    onStickerClick = viewModel::addDecoration,
+                    onTextClick = viewModel::addDecoration,
+                    onColorSelected = { color ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updateColor(decorationId, color)
+                        }
+                    },
+                    onStrokeColorSelected = { color ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updateStrokeColor(decorationId, color)
+                        }
+                    },
+                    onSecondBorderColorSelected = { color ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updateSecondBorderColor(decorationId, color)
+                        }
+                    },
+                    onTextWeightChanged = { weight ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updateWidth(decorationId, weight)
+                        }
+                    },
+                    onStrokeWeightChanged = { weight ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updateStrokeWidth(decorationId, weight)
+                        }
+                    },
+                    onSecondBorderWeightChanged = { weight ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updateSecondBorderWidth(decorationId, weight)
+                        }
+                    },
+                    onImagePicked = { uri ->
+                        val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
+                        onNavigateToImagePreview(encodedUri)
+                    },
+                    onImageClick = viewModel::addDecoration,
+                    onImageLongPress = viewModel::startImageDeletionMode,
+                    onUchiwaColorSelected = viewModel::updateUchiwaColor,
+                    onBackgroundColorSelected = viewModel::updateBackgroundColor,
+                    selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
+                    allImages = uiState.allImages,
+                    isDeletingImage = uiState.isDeletingImage,
+                    selectedDeletingImages = uiState.selectedDeletingImages,
+                    onImageToggleSelection = viewModel::toggleImageSelection,
+                    uchiwaColor = uiState.uchiwaColor,
+                    backgroundColor = uiState.backgroundColor,
+                    decorations = uiState.decorations,
+                    selectedDecorationId = uiState.selectedDecorationId,
+                    onDecorationClick = viewModel::selectDecoration,
+                    onMoveDecoration = viewModel::moveDecoration,
+                    modifier = Modifier
                 )
             }
 
-            EditPager(
-                onStickerClick = viewModel::addDecoration,
-                onTextClick = viewModel::addDecoration,
-                onColorSelected = { color ->
-                    uiState.selectedDecorationId?.let { decorationId ->
-                        viewModel.updateColor(decorationId, color)
-                    }
-                },
-                onStrokeColorSelected = { color ->
-                    uiState.selectedDecorationId?.let { decorationId ->
-                        viewModel.updateStrokeColor(decorationId, color)
-                    }
-                },
-                onSecondBorderColorSelected = { color ->
-                    uiState.selectedDecorationId?.let { decorationId ->
-                        viewModel.updateSecondBorderColor(decorationId, color)
-                    }
-                },
-                onTextWeightChanged = { weight ->
-                    uiState.selectedDecorationId?.let { decorationId ->
-                        viewModel.updateWidth(decorationId, weight)
-                    }
-                },
-                onStrokeWeightChanged = { weight ->
-                    uiState.selectedDecorationId?.let { decorationId ->
-                        viewModel.updateStrokeWidth(decorationId, weight)
-                    }
-                },
-                onSecondBorderWeightChanged = { weight ->
-                    uiState.selectedDecorationId?.let { decorationId ->
-                        viewModel.updateSecondBorderWidth(decorationId, weight)
-                    }
-                },
-                onImagePicked = { uri ->
-                    val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
-                    onNavigateToImagePreview(encodedUri)
-                },
-                onImageClick = viewModel::addDecoration,
-                onImageLongPress = viewModel::startImageDeletionMode,
-                onUchiwaColorSelected = viewModel::updateUchiwaColor,
-                onBackgroundColorSelected = viewModel::updateBackgroundColor,
-                selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
-                allImages = uiState.allImages,
-                isDeletingImage = uiState.isDeletingImage,
-                selectedDeletingImages = uiState.selectedDeletingImages,
-                onImageToggleSelection = viewModel::toggleImageSelection,
-                uchiwaColor = uiState.uchiwaColor,
-                backgroundColor = uiState.backgroundColor,
-                decorations = uiState.decorations,
-                selectedDecorationId = uiState.selectedDecorationId,
-                onDecorationClick = viewModel::selectDecoration,
-                onMoveDecoration = viewModel::moveDecoration,
-                modifier = Modifier
-            )
+            val editingTextId = uiState.editingTextId
+            if (editingTextId != null) {
+                val editingDecoration = remember(editingTextId, uiState.decorations) {
+                    uiState.decorations
+                        .filterIsInstance<Decoration.Text>()
+                        .find { it.id == editingTextId }
+                }
+                editingDecoration?.let { decoration ->
+                    TextInputBar(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .imePadding(),
+                        initialText = decoration.text,
+                        onTextChanged = { newText ->
+                            viewModel.updateText(editingTextId, newText)
+                        },
+                        onDone = { viewModel.finishEditingText() }
+                    )
+                }
+
+            }
         }
     }
 
@@ -459,20 +480,16 @@ fun EditScreen(
 fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecorationId: String?,
-    editingTextId: String?,
     onDecorationTap: (String) -> Unit,
     onDecorationDoubleTap: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
-    onTextChanged: (String, String) -> Unit,
-    onDoneTextEdit: () -> Unit,
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
     uchiwaColor: Color,
     backgroundColor: Color
 ) {
-    val focusManager = LocalFocusManager.current
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
     var snappedX by remember { mutableStateOf(false) }
     var snappedY by remember { mutableStateOf(false) }
@@ -489,8 +506,6 @@ fun UchiwaPreview(
                 indication = null
             ) {
                 onBackgroundTap()
-                onDoneTextEdit()
-                focusManager.clearFocus()
             },
         contentAlignment = Alignment.Center
     ) {
@@ -517,16 +532,6 @@ fun UchiwaPreview(
                 val isSelected = decoration.id == selectedDecorationId
                 when (decoration) {
                     is Decoration.Text -> {
-                        TextItem(
-                            decoration = decoration,
-                            isSelected = isSelected,
-                            isEditing = decoration.id == editingTextId,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
-                            onTextChanged = { onTextChanged(decoration.id, it) },
-                            onFinishEditing = onDoneTextEdit
-                        )
                         val textMeasurer = rememberTextMeasurer()
                         val decorationSize = textMeasurer.measure(
                             decoration.text,
@@ -538,6 +543,13 @@ fun UchiwaPreview(
                         val decorationDpSize = with(LocalDensity.current) {
                             decorationSize.toDpSize() + DpSize(TEXT_ITEM_PADDING, TEXT_ITEM_PADDING)
                         }
+                        TextItem(
+                            decoration = decoration,
+                            isSelected = isSelected,
+                            currentOffset = decoration.offset + offsetDiff,
+                            currentScale = decoration.scale + scaleDiff,
+                            currentRotation = decoration.rotation + rotationDiff
+                        )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
                             scale = decoration.scale,
@@ -910,12 +922,9 @@ private fun GestureInputLayer(
 private fun TextItem(
     decoration: Decoration.Text,
     isSelected: Boolean,
-    isEditing: Boolean,
     currentOffset: Offset,
     currentScale: Float,
-    currentRotation: Float,
-    onTextChanged: (String) -> Unit,
-    onFinishEditing: () -> Unit
+    currentRotation: Float
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -938,11 +947,8 @@ private fun TextItem(
         TextItemContent(
             decoration = decoration,
             isSelected = isSelected,
-            isEditing = isEditing,
             textSize = textSize,
-            modifier = borderModifier,
-            onTextChanged = onTextChanged,
-            onFinishEditing = onFinishEditing
+            modifier = borderModifier
         )
         if (isSelected) {
             TransformHandleIcon(
@@ -1257,12 +1263,9 @@ private fun TextItemPreview() {
                     font = FontFamilies.ZEN_MARU_GOTHIC
                 ),
                 isSelected = true,
-                isEditing = false,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
-                currentRotation = 0f,
-                onTextChanged = {},
-                onFinishEditing = {}
+                currentRotation = 0f
             )
         }
     }
