@@ -24,36 +24,72 @@ class DefaultTemplateRepository @Inject constructor() : TemplateRepository {
             savedUchiwa = SavedUchiwa(
                 decorations = listOf(
                     Decoration.Text(
-                        text = "大好き",
-                        id = "template_2_text_1",
-                        offset = Offset(-124.754555f, -139.34021f),
-                        rotation = -19.011398f,
-                        scale = 1.9864473f,
-                        color = DecorationColors.YELLOW.value,
-                        strokeColor = DecorationColors.BLUE.value,
-                        strokeWidth = 25.0f,
-                        secondBorderColor = DecorationColors.WHITE.value,
+                        text = "プロポーズ",
+                        id = "f61e514b-11ce-4342-ae2d-d0d223a3d4ff",
+                        offset = Offset(0.0f, -81.89173f),
+                        rotation = -0.5187378f,
+                        scale = 1.9523201f,
+                        color = DecorationColors.WHITE.value,
+                        strokeColor = DecorationColors.CYAN.value,
+                        strokeWidth = 24.545456f,
+                        secondBorderColor = DecorationColors.CYAN.value,
                         secondBorderWidth = 0.0f,
                         width = 900,
-                        font = FontFamilies.MOCHIY_POP_ONE
+                        font = FontFamilies.M_PLUS_ROUNDED_1C
+                    ),
+                    Decoration.Sticker(
+                        label = "heart",
+                        id = "87a716cf-7402-4a31-9e5f-6c6011968aee",
+                        offset = Offset(207.50427f, -212.45009f),
+                        rotation = 23.069443f,
+                        scale = 0.6699208f,
+                        color = DecorationColors.MAGENTA.value,
+                        strokeColor = DecorationColors.WHITE.value,
+                        strokeWidth = 3.0f,
+                        secondStrokeColor = DecorationColors.WHITE.value,
+                        secondStrokeWidth = 0.0f
                     ),
                     Decoration.Text(
-                        text = "あいしてる",
-                        id = "3a6bd08c-b334-4d72-9db0-d59a3bfde73e",
-                        offset = Offset(41.6437f, 128.98508f),
-                        rotation = 15.709348f,
-                        scale = 1.5701048f,
+                        text = "して！",
+                        id = "b8b1db2c-7cd1-4296-9921-630ab6456181",
+                        offset = Offset(0.0f, 87.4123f),
+                        rotation = 0.4986801f,
+                        scale = 1.9638611f,
                         color = DecorationColors.WHITE.value,
-                        strokeColor = DecorationColors.MAGENTA.value,
-                        strokeWidth = 30.0f,
+                        strokeColor = DecorationColors.CYAN.value,
+                        strokeWidth = 24.545456f,
                         secondBorderColor = DecorationColors.WHITE.value,
                         secondBorderWidth = 0.0f,
                         width = 900,
-                        font = FontFamilies.M_PLUS_1P
+                        font = FontFamilies.M_PLUS_ROUNDED_1C
+                    ),
+                    Decoration.Sticker(
+                        label = "heart",
+                        id = "70e19f4f-b389-41c5-976b-2530205d85bd",
+                        offset = Offset(-155.83173f, 223.11134f),
+                        rotation = 31.532291f,
+                        scale = 0.5f,
+                        color = DecorationColors.MAGENTA.value,
+                        strokeColor = DecorationColors.WHITE.value,
+                        strokeWidth = 3.0f,
+                        secondStrokeColor = DecorationColors.WHITE.value,
+                        secondStrokeWidth = 0.0f
+                    ),
+                    Decoration.Sticker(
+                        label = "heart",
+                        id = "6cb3980b-f4f1-4cee-b213-ea84c1213c5a",
+                        offset = Offset(-270.38416f, 125.276855f),
+                        rotation = -15.544874f,
+                        scale = 0.531031f,
+                        color = DecorationColors.MAGENTA.value,
+                        strokeColor = DecorationColors.WHITE.value,
+                        strokeWidth = 3.0f,
+                        secondStrokeColor = DecorationColors.WHITE.value,
+                        secondStrokeWidth = 0.0f
                     )
                 ),
-                uchiwaColor = Color(0xFF1E90FF),
-                backgroundColor = Color(0xFFFFFFFF)
+                uchiwaColor = Color(0xFFFFBBFE),
+                backgroundColor = Color(0x11000000)
             )
         ),
         Template(
