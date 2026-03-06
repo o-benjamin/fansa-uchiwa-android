@@ -381,8 +381,7 @@ private fun TemplateItem(
     Card(
         modifier = modifier
             .width(HomeItemMinWidth)
-            .aspectRatio(1.2f)
-            .background(MaterialTheme.colorScheme.primaryContainer),
+            .aspectRatio(1.2f),
         onClick = onClick
     ) {
         if (isPreview) {
