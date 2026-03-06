@@ -48,6 +48,10 @@ class HomeViewModel @Inject constructor(
         logEvent(AnalyticsActions.TAP_HOME_ITEM_EDIT)
     }
 
+    fun logTemplateTap(templateId: String) {
+        logEvent(AnalyticsActions.TAP_HOME_TEMPLATE, mapOf("template_id" to templateId))
+    }
+
     fun loadAllMasterpieces() {
         viewModelScope.launch {
             val pathList = masterpieceRepository.loadAllMasterpieces()

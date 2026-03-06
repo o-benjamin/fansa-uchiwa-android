@@ -246,6 +246,7 @@ fun HomeScreen(
                 }
             },
             onTemplateClick = { templateId ->
+                viewModel.logTemplateTap(templateId)
                 val newUchiwaId = UUID.randomUUID().toString()
                 onImageClick(newUchiwaId, templateId)
             },
@@ -380,7 +381,8 @@ private fun TemplateItem(
     Card(
         modifier = modifier
             .width(HomeItemMinWidth)
-            .aspectRatio(1.2f),
+            .aspectRatio(1.2f)
+            .background(MaterialTheme.colorScheme.primaryContainer),
         onClick = onClick
     ) {
         if (isPreview) {
