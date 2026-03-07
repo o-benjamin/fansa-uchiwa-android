@@ -2,12 +2,10 @@ package com.fansauchiwa.edit
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -106,7 +104,7 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel(),
@@ -294,10 +292,12 @@ fun EditScreen(
                         UchiwaPreview(
                             decorations = uiState.decorations,
                             selectedDecorationId = uiState.selectedDecorationId,
-                            onDecorationTap = viewModel::selectDecoration,
-                            onDecorationDoubleTap = { decorationId ->
-                                viewModel.selectDecoration(decorationId)
-                                viewModel.startEditingText(decorationId)
+                            onDecorationTap = { decorationId ->
+                                if (uiState.selectedDecorationId == decorationId) {
+                                    viewModel.startEditingText(decorationId)
+                                } else {
+                                    viewModel.selectDecoration(decorationId)
+                                }
                             },
                             onBackgroundTap = {
                                 viewModel.unSelectDecoration()
@@ -392,18 +392,20 @@ fun EditScreen(
                         .find { it.id == editingTextId }
                 }
                 editingDecoration?.let { decoration ->
-                    TextInputBar(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .imePadding(),
-                        initialText = decoration.text,
-                        onTextChanged = { newText ->
-                            viewModel.updateText(editingTextId, newText)
-                        },
-                        onDone = { viewModel.finishEditingText() },
-                        onDismissBlocked = { viewModel.notifyDismissBlocked() }
-                    )
+                    key(editingTextId) {
+                        TextInputBar(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .imePadding(),
+                            initialText = decoration.text,
+                            onTextChanged = { newText ->
+                                viewModel.updateText(editingTextId, newText)
+                            },
+                            onDone = { viewModel.finishEditingText() },
+                            onDismissBlocked = { viewModel.notifyDismissBlocked() }
+                        )
+                    }
                 }
 
             }
@@ -494,7 +496,6 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecorationId: String?,
     onDecorationTap: (String) -> Unit,
-    onDecorationDoubleTap: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
@@ -578,7 +579,6 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDecorationDoubleTap = { onDecorationDoubleTap(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -862,7 +862,6 @@ fun UchiwaPreview(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GestureInputLayer(
     offset: Offset,
@@ -878,7 +877,6 @@ private fun GestureInputLayer(
     onTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
-    onDecorationDoubleTap: () -> Unit = {}
 ) {
 
     Box(
@@ -891,11 +889,10 @@ private fun GestureInputLayer(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .combinedClickable(
+            .clickable(
                 interactionSource = null,
                 indication = null,
-                onClick = onDecorationTap,
-                onDoubleClick = onDecorationDoubleTap
+                onClick = onDecorationTap
             )
             .pointerInput(offset, scale, rotation) {
                 detectDragGestures(
