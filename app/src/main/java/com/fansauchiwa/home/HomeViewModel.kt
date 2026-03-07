@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -22,7 +23,8 @@ class HomeViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val analyticsRepository: AnalyticsRepository,
-    private val templateRepository: TemplateRepository
+    private val templateRepository: TemplateRepository,
+    private val uuidProvider: UuidProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -101,6 +103,31 @@ class HomeViewModel @Inject constructor(
                 masterpieceRepository.deleteMasterpiece(path)
                 // データベースのカラム削除
                 localDatabaseRepository.deleteUchiwa(uchiwaId)
+            }
+            exitDeletingMode()
+            loadAllMasterpieces()
+        }
+    }
+
+    fun duplicateSelectedMasterpieces() {
+        viewModelScope.launch {
+            logEvent(AnalyticsActions.TAP_HOME_ITEM_DUPLICATE)
+            val selectedPaths = _uiState.value.selectedDeletingPaths
+            selectedPaths.forEach { path ->
+                val oldId = extractUchiwaId(path)
+                val newId = uuidProvider.generate()
+                // ファイル複製
+                masterpieceRepository.duplicateMasterpiece(path, newId)
+                    ?: return@forEach
+                // データベースの複製
+                val savedUchiwa = localDatabaseRepository.getUchiwa(oldId)
+                    ?: return@forEach
+                localDatabaseRepository.saveUchiwa(
+                    newId,
+                    savedUchiwa.decorations,
+                    savedUchiwa.uchiwaColor,
+                    savedUchiwa.backgroundColor
+                )
             }
             exitDeletingMode()
             loadAllMasterpieces()

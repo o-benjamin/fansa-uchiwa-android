@@ -31,6 +31,7 @@ object AnalyticsActions {
     const val TAP_HOME_NEW_CREATE = "tap_home_new_create"
     const val TAP_HOME_ITEM_EDIT = "tap_home_item_edit"
     const val TAP_HOME_ITEM_DELETE = "tap_home_item_delete"
+    const val TAP_HOME_ITEM_DUPLICATE = "tap_home_item_duplicate"
     const val TAP_HOME_TEMPLATE = "tap_home_template"
 
     const val TAP_EDIT_BACK = "tap_edit_back"
