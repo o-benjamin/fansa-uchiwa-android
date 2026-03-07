@@ -54,7 +54,7 @@ fun getSelectionBorderColor(rotation: Float): Color {
     return if (isSnapped) {
         MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.tertiary
+        MaterialTheme.colorScheme.secondary
     }
 }
 

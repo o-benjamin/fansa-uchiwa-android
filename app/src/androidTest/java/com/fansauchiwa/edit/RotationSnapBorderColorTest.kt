@@ -131,7 +131,7 @@ class RotationSnapBorderColorTest {
         var tertiaryColor = Color.Unspecified
         composeTestRule.setContent {
             FansaUchiwaTheme {
-                tertiaryColor = MaterialTheme.colorScheme.tertiary
+                tertiaryColor = MaterialTheme.colorScheme.secondary
                 TextItemWithBorderSemantics(
                     decoration = createTextDecoration(rotation = 45f),
                     isSelected = true
@@ -209,7 +209,7 @@ class RotationSnapBorderColorTest {
         var tertiaryColor = Color.Unspecified
         composeTestRule.setContent {
             FansaUchiwaTheme {
-                tertiaryColor = MaterialTheme.colorScheme.tertiary
+                tertiaryColor = MaterialTheme.colorScheme.secondary
                 TextItemWithBorderSemantics(
                     decoration = createTextDecoration(rotation = 405f),
                     isSelected = true

@@ -198,7 +198,6 @@ fun EditScreen(
                                 coroutineScope.launch {
                                     // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
                                     withFrameMillis { }
-                                    val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                                     val highResBitmap = captureHighResBitmap(
                                         graphicsLayer,
                                         density,
@@ -425,8 +424,12 @@ fun EditScreen(
                             viewModel.resetEditUiState()
                             coroutineScope.launch {
                                 withFrameMillis { }
-                                val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                                viewModel.saveUchiwaBitmap(bitmap, uchiwaId)
+                                val highResBitmap = captureHighResBitmap(
+                                    graphicsLayer,
+                                    density,
+                                    layoutDirection
+                                ).asAndroidBitmap()
+                                viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
                                 // 保存完了後に戻る
                                 onBack()
                             }
@@ -830,7 +833,7 @@ fun UchiwaPreview(
             }
         }
         if (snappedX || snappedY) {
-            val guideLineColor = MaterialTheme.colorScheme.tertiary
+            val guideLineColor = MaterialTheme.colorScheme.secondary
             val guideLineWidth = with(LocalDensity.current) { 1.dp.toPx() }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 if (snappedX) {
