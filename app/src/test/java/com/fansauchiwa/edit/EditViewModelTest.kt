@@ -2,6 +2,7 @@ package com.fansauchiwa.edit
 
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
@@ -9,7 +10,9 @@ import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -37,6 +40,7 @@ class EditViewModelTest {
     private lateinit var localDatabaseRepository: LocalDatabaseRepository
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var templateRepository: TemplateRepository
 
     @Before
     fun setUp() {
@@ -45,6 +49,7 @@ class EditViewModelTest {
         localDatabaseRepository = mockk(relaxed = true)
         masterpieceRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        templateRepository = mockk(relaxed = true)
     }
 
     @After
@@ -52,10 +57,16 @@ class EditViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(uchiwaId: String?): EditViewModel {
+    private fun createViewModel(
+        uchiwaId: String?,
+        templateId: String? = null
+    ): EditViewModel {
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
                 set(UCHIWA_ID_ARG, uchiwaId)
+            }
+            if (templateId != null) {
+                set(TEMPLATE_ID_ARG, templateId)
             }
         }
         return EditViewModel(
@@ -63,6 +74,7 @@ class EditViewModelTest {
             localDatabaseRepository = localDatabaseRepository,
             masterpieceRepository = masterpieceRepository,
             analyticsRepository = analyticsRepository,
+            templateRepository = templateRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -234,6 +246,130 @@ class EditViewModelTest {
                 )
             }
         }
+
+    @Test
+    fun restoreExistingUchiwa_existingDataFound_stateRestoredCorrectly() = runTest {
+        val uchiwaId = "existing-uchiwa-id"
+        val textDecoration = Decoration.Text(
+            id = "text-1",
+            text = "既存テキスト",
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwaColor = Color(0xFFFF0000)
+        val savedBackgroundColor = Color(0xFF00FF00)
+
+        val savedUchiwa = SavedUchiwa(
+            decorations = listOf(textDecoration),
+            uchiwaColor = savedUchiwaColor,
+            backgroundColor = savedBackgroundColor
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+
+        assertEquals(uchiwaId, state.uchiwaId)
+        assertEquals(1, state.decorations.size)
+        assertEquals("text-1", state.decorations[0].id)
+        assertEquals(savedUchiwaColor, state.uchiwaColor)
+        assertEquals(savedBackgroundColor, state.backgroundColor)
+
+        coVerify(exactly = 0) {
+            localDatabaseRepository.saveUchiwa(
+                id = any(),
+                decorations = any(),
+                uchiwaColor = any(),
+                backgroundColor = any()
+            )
+        }
+    }
+
+    @Test
+    fun applyNewUchiwaState_templateIdSpecified_templateDataAppliedToState() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        val templateId = "template_1"
+        val templateUchiwaColor = Color(0xFFFF69B4)
+        val templateBackgroundColor = Color(0xFFFFFFFF)
+
+        val templateTextDecoration = Decoration.Text(
+            text = "推し",
+            id = "template_1_text_1",
+            font = FontFamilies.DELA_GOTHIC_ONE
+        )
+        val templateStickerDecoration = Decoration.Sticker(
+            label = "heart",
+            id = "template_1_sticker_1"
+        )
+
+        val templateSavedUchiwa = SavedUchiwa(
+            decorations = listOf(templateTextDecoration, templateStickerDecoration),
+            uchiwaColor = templateUchiwaColor,
+            backgroundColor = templateBackgroundColor
+        )
+
+        val template = Template(
+            id = templateId,
+            previewImageResId = 0,
+            savedUchiwa = templateSavedUchiwa
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        coEvery { templateRepository.getTemplateById(templateId) } returns template
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId, templateId = templateId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+
+        assertEquals(uchiwaId, state.uchiwaId)
+        assertEquals(2, state.decorations.size)
+        assertTrue(state.decorations.any { it.id == "template_1_text_1" })
+        assertTrue(state.decorations.any { it.id == "template_1_sticker_1" })
+        assertEquals(templateUchiwaColor, state.uchiwaColor)
+        assertEquals(templateBackgroundColor, state.backgroundColor)
+
+        coVerify(exactly = 0) {
+            localDatabaseRepository.saveUchiwa(
+                id = any(),
+                decorations = any(),
+                uchiwaColor = any(),
+                backgroundColor = any()
+            )
+        }
+    }
+
+    @Test
+    fun applyNewUchiwaState_noTemplateId_defaultBlankState() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        val defaultState = EditUiState()
+
+        assertEquals(uchiwaId, state.uchiwaId)
+        assertTrue(state.decorations.isEmpty())
+        assertEquals(defaultState.uchiwaColor, state.uchiwaColor)
+        assertEquals(defaultState.backgroundColor, state.backgroundColor)
+
+        coVerify(exactly = 0) {
+            localDatabaseRepository.saveUchiwa(
+                id = any(),
+                decorations = any(),
+                uchiwaColor = any(),
+                backgroundColor = any()
+            )
+        }
+    }
 }
 
 

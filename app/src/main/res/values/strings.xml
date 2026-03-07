@@ -53,4 +53,7 @@
     <string name="delete_image_warning_title">警告</string>
     <string name="delete_image_warning_message">選択した画像は保存済みの他の作品で使用されています。削除すると、その作品でも画像が表示されなくなります。本当に削除しますか？</string>
     <string name="delete_image_warning_confirm">削除する</string>
+    <string name="template_section_title">テンプレートから作成</string>
+    <string name="my_design_section_title">マイデザイン</string>
+    <string name="export_template">テンプレートエクスポート</string>
 </resources>

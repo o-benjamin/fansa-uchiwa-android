@@ -27,8 +27,8 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.6.0"
+        versionCode = 14
+        versionName = "1.7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -123,7 +123,6 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)

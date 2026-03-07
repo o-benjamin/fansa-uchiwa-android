@@ -15,6 +15,15 @@
     - Compose内では `colorResource(id = R.color.name)` を使用します。
 - **文字列リソース**:
     - UIテキストは `app/src/main/res/values/strings.xml` を使用し、ハードコーディングを避けてください。
+- **サイズ（dp）定義**:
+    - dp指定をする際は数値を直接ハードコーディングせず、必ず `ui/theme/Dimens.kt`
+      等のKotlinファイルに定義された定数を使用してください。
+    - `Dimens.kt` に適切な値が存在しない場合は、新規に定数を追加してから使用してください。
+    - 複数の箇所で共通化できそうなサイズ（余白やアイコンサイズなど）がある場合は、特定の画面に依存しない汎用的な命名に変更するなどして、積極的に共通化を図ってください。
+    - **8-Point Grid Systemの適用**: UIのサイズや余白は、原則として**8の倍数 (8, 16, 24, 32...)**
+      で定義してください（テキスト周りなど細かい調整が必要な場合のみ4の倍数を許容します）。
+    - 既存のコードや提案するコードにおいて、対象となるサイズが8の倍数になっていない場合（例: `10.dp` や
+      `15.dp` など）は、Copilot自身で最も近い8の倍数（または4の倍数）に修正した上で、定数化および適用を行ってください。
 
 ## 3. アーキテクチャとデータ設計ガイドライン
 
@@ -31,6 +40,8 @@
     - `ViewModel` からは、`~Repository` というファイル内の `~Repository` インターフェースを呼び出してください。
     - そのインターフェースは、同一ファイル内の `~RepositoryImpl` クラスが実装してください。
     - インターフェースと実装クラスは、`~Repository.kt` という同一ファイルに記述してください。
+    - `~Repository.kt` ファイルは必ず `app/src/main/java/com/fansauchiwa/data/repository`
+      配下に作成してください。
 - **DataSourceパターン (Infra層)**:
     - `~Repository` の実装クラスは、データの永続化や外部APIアクセスなどのインフラ層処理を
       `~DataSource` インターフェースに委譲してください。
@@ -38,6 +49,8 @@
     - そのインターフェースの実装クラスは、`~LocalSource` や `~RemoteSource`
       など、データソースの種類に応じた名前を付け、別ファイルに記述してください（例:
       `MasterpieceLocalSource.kt`）。
+    - `~DataSource` および `~LocalSource`/`~RemoteSource` は必ず
+      `app/src/main/java/com/fansauchiwa/data/infra` 配下に作成してください。
     - これにより、データアクセス層の切り替えやテスタビリティが向上します。
 - **ScreenとViewModelの役割分担**:
     - "~Screen"というファイルにはロジックを持たせず、UIの宣言だけを行なうようにしてください。
@@ -79,8 +92,8 @@
 - **命名規則**:
     - `テスト対象_条件_期待される結果` のパターンを使用し、テストの意図を明確にしてください。（例:
       `emailValidator_CorrectEmailSimple_ReturnsTrue`）
-    - または、Kotlinのバッククォート（\`）を利用した自然言語の命名（例:
-      `` `when continue button clicked then welcome screen displayed` ``）を使用してください。
+    - バッククォート（\`）を使った自然言語の命名は使用しないでください。Kotlinのlintで "Remove
+      redundant backticks" の警告が発生するためです。
 - **場所**:
     - テストの種類に応じて、以下の適切なディレクトリ配下にScreen・機能ごとのパッケージで作成してください。対応するパッケージが存在しない場合は新規作成してください。
         - **ユニットテスト**: `app/src/test/java/com/fansauchiwa/...`

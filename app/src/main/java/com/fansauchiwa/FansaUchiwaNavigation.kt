@@ -13,12 +13,13 @@ object FansaUchiwaScreens {
 }
 
 const val UCHIWA_ID_ARG = "uchiwaId"
+const val TEMPLATE_ID_ARG = "templateId"
 const val IMAGE_PATH_ARG = "imagePath"
 const val IMAGE_URI_ARG = "imageUri"
 
 object FansaUchiwaDestinations {
     const val HOME = HOME_SCREEN
-    const val EDIT = "$EDIT_SCREEN?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}"
+    const val EDIT = "$EDIT_SCREEN?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}"
     const val PREVIEW = "$PREVIEW_SCREEN/{$IMAGE_PATH_ARG}"
     const val IMAGE_PREVIEW = "$IMAGE_PREVIEW_SCREEN/{$IMAGE_URI_ARG}"
 }
