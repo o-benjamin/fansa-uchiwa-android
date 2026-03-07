@@ -78,6 +78,7 @@ fun EditPager(
     modifier: Modifier = Modifier,
     onStickerClick: (Decoration.Sticker) -> Unit,
     onTextClick: (Decoration.Text) -> Unit,
+    onFontChanged: (FontFamilies) -> Unit,
     onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
@@ -159,6 +160,7 @@ fun EditPager(
                 0 -> {
                     TextPage(
                         onTextClick = onTextClick,
+                        onFontChanged = onFontChanged,
                         onColorSelected = onColorSelected,
                         onTextWeightChanged = onTextWeightChanged,
                         onStrokeColorSelected = onStrokeColorSelected,

@@ -32,6 +32,7 @@ import java.util.UUID
 @Composable
 fun TextPage(
     onTextClick: (Decoration.Text) -> Unit,
+    onFontChanged: (FontFamilies) -> Unit,
     onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
@@ -42,6 +43,7 @@ fun TextPage(
 ) {
     FontFamilySelectionGrid(
         onTextClick = onTextClick,
+        onFontChanged = onFontChanged,
         onColorSelected = onColorSelected,
         onTextWeightChanged = onTextWeightChanged,
         onStrokeColorSelected = onStrokeColorSelected,
@@ -106,6 +108,7 @@ fun TextDecorationControls(
 @Composable
 fun FontFamilySelectionGrid(
     onTextClick: (Decoration.Text) -> Unit,
+    onFontChanged: (FontFamilies) -> Unit,
     onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
@@ -152,12 +155,16 @@ fun FontFamilySelectionGrid(
         items(FontFamilies.entries.toList()) { fontFamily ->
             FilledTonalButton(
                 onClick = {
-                    onTextClick(
-                        Decoration.Text(
-                            id = UUID.randomUUID().toString(),
-                            font = fontFamily
+                    if (selectedDecoration is Decoration.Text) {
+                        onFontChanged(fontFamily)
+                    } else {
+                        onTextClick(
+                            Decoration.Text(
+                                id = UUID.randomUUID().toString(),
+                                font = fontFamily
+                            )
                         )
-                    )
+                    }
                 },
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier.height(buttonHeight)
@@ -179,6 +186,7 @@ fun TextPagePreview() {
     FansaUchiwaTheme {
         TextPage(
             onTextClick = {},
+            onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
             onStrokeColorSelected = {},
@@ -204,6 +212,7 @@ fun FontFamilySelectionGridNarrowPreview() {
     FansaUchiwaTheme {
         FontFamilySelectionGrid(
             onTextClick = {},
+            onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
             onStrokeColorSelected = {},
@@ -221,6 +230,7 @@ fun FontFamilySelectionGridMediumPreview() {
     FansaUchiwaTheme {
         FontFamilySelectionGrid(
             onTextClick = {},
+            onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
             onStrokeColorSelected = {},
@@ -238,6 +248,7 @@ fun FontFamilySelectionGridWidePreview() {
     FansaUchiwaTheme {
         FontFamilySelectionGrid(
             onTextClick = {},
+            onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
             onStrokeColorSelected = {},

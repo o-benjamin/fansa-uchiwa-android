@@ -326,6 +326,11 @@ fun EditScreen(
                 EditPager(
                     onStickerClick = viewModel::addDecoration,
                     onTextClick = viewModel::addDecoration,
+                    onFontChanged = { font ->
+                        uiState.selectedDecorationId?.let { id ->
+                            viewModel.updateFont(id, font)
+                        }
+                    },
                     onColorSelected = { color ->
                         uiState.selectedDecorationId?.let { decorationId ->
                             viewModel.updateColor(decorationId, color)
