@@ -34,8 +34,10 @@
 - **UI状態管理 (State Hoisting)**:
     - 画面の状態は `UiState` データクラスに集約し、`ViewModel` の `StateFlow` で管理してください。
     - `ViewModel` 内では `data class` の `copy()` メソッドを使用して不変性を保ちながら状態を更新してください。
-- **副作用の排除**:
-    - Composable関数内でビジネスロジックを実行せず、ラムダ式を通じて `ViewModel` の関数を呼び出してください。
+- **状態管理とUIインタラクション**:
+    -
+    UIイベントはすべてViewModelのメソッドに委譲し、Compose側でビジネスロジックを持たないでください (
+    UDF: Unidirectional Data Flow の徹底)。
 - **Repositoryパターン**:
     - `ViewModel` からは、`~Repository` というファイル内の `~Repository` インターフェースを呼び出してください。
     - そのインターフェースは、同一ファイル内の `~RepositoryImpl` クラスが実装してください。
