@@ -73,30 +73,30 @@ class HomeViewModel @Inject constructor(
         return path.substringAfterLast("/").substringBeforeLast(".png")
     }
 
-    fun enterDeletingMode() {
-        _uiState.update { it.copy(isDeletingMode = true, selectedDeletingPaths = emptyList()) }
+    fun enterSelectionMode() {
+        _uiState.update { it.copy(isSelectionMode = true, selectedPaths = emptyList()) }
     }
 
-    fun exitDeletingMode() {
-        _uiState.update { it.copy(isDeletingMode = false, selectedDeletingPaths = emptyList()) }
+    fun exitSelectionMode() {
+        _uiState.update { it.copy(isSelectionMode = false, selectedPaths = emptyList()) }
     }
 
     fun togglePathSelection(path: String) {
         _uiState.update { currentState ->
-            val currentSelected = currentState.selectedDeletingPaths
+            val currentSelected = currentState.selectedPaths
             val newSelected = if (path in currentSelected) {
                 currentSelected - path
             } else {
                 currentSelected + path
             }
-            currentState.copy(selectedDeletingPaths = newSelected)
+            currentState.copy(selectedPaths = newSelected)
         }
     }
 
     fun deleteSelectedMasterpieces() {
         viewModelScope.launch {
             logEvent(AnalyticsActions.TAP_HOME_ITEM_DELETE)
-            val selectedPaths = _uiState.value.selectedDeletingPaths
+            val selectedPaths = _uiState.value.selectedPaths
             selectedPaths.forEach { path ->
                 val uchiwaId = extractUchiwaId(path)
                 // ファイル削除
@@ -104,7 +104,7 @@ class HomeViewModel @Inject constructor(
                 // データベースのカラム削除
                 localDatabaseRepository.deleteUchiwa(uchiwaId)
             }
-            exitDeletingMode()
+            exitSelectionMode()
             loadAllMasterpieces()
         }
     }
@@ -112,7 +112,7 @@ class HomeViewModel @Inject constructor(
     fun duplicateSelectedMasterpieces() {
         viewModelScope.launch {
             logEvent(AnalyticsActions.TAP_HOME_ITEM_DUPLICATE)
-            val selectedPaths = _uiState.value.selectedDeletingPaths
+            val selectedPaths = _uiState.value.selectedPaths
             selectedPaths.forEach { path ->
                 val oldId = extractUchiwaId(path)
                 val newId = uuidProvider.generate()
@@ -129,7 +129,7 @@ class HomeViewModel @Inject constructor(
                     savedUchiwa.backgroundColor
                 )
             }
-            exitDeletingMode()
+            exitSelectionMode()
             loadAllMasterpieces()
         }
     }

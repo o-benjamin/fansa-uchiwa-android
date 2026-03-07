@@ -4,6 +4,8 @@ import androidx.compose.ui.unit.dp
 
 val HomeItemMinWidth = 152.dp
 
+val SelectionFabSpacing = 8.dp
+
 val TextInputBarHorizontalPadding = 8.dp
 val TextInputBarVerticalPadding = 8.dp
 val TextInputBarCornerRadius = 16.dp

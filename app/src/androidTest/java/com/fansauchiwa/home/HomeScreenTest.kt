@@ -44,8 +44,8 @@ class HomeScreenTest {
             HomeScreenContent(
                 masterpiecePathList = sampleMasterpieces,
                 templates = previewTemplates(),
-                isDeletingMode = false,
-                selectedDeletingPaths = emptyList(),
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
                 onImageClick = {},
                 onTemplateClick = {},
                 onImageLongPress = {},
@@ -71,8 +71,8 @@ class HomeScreenTest {
             HomeScreenContent(
                 masterpiecePathList = emptyList(),
                 templates = previewTemplates(),
-                isDeletingMode = false,
-                selectedDeletingPaths = emptyList(),
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
                 onImageClick = {},
                 onTemplateClick = {},
                 onImageLongPress = {},
@@ -99,8 +99,8 @@ class HomeScreenTest {
             HomeScreenContent(
                 masterpiecePathList = sampleMasterpieces,
                 templates = emptyList(),
-                isDeletingMode = false,
-                selectedDeletingPaths = emptyList(),
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
                 onImageClick = {},
                 onTemplateClick = {},
                 onImageLongPress = {},
@@ -126,8 +126,8 @@ class HomeScreenTest {
             HomeScreenContent(
                 masterpiecePathList = emptyList(),
                 templates = emptyList(),
-                isDeletingMode = false,
-                selectedDeletingPaths = emptyList(),
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
                 onImageClick = {},
                 onTemplateClick = {},
                 onImageLongPress = {},
@@ -147,4 +147,3 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText(emptyMessageTitle).assertIsDisplayed()
     }
 }
-

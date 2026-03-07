@@ -100,7 +100,7 @@ class HomeViewModelTest {
         val viewModel = createViewModel()
 
         // 選択モードに入り、パスを選択
-        viewModel.enterDeletingMode()
+        viewModel.enterSelectionMode()
         viewModel.togglePathSelection(path1)
         viewModel.togglePathSelection(path2)
 
@@ -139,7 +139,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
 
-        viewModel.enterDeletingMode()
+        viewModel.enterSelectionMode()
         viewModel.togglePathSelection(path1)
 
         // 実行
@@ -179,7 +179,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
 
-        viewModel.enterDeletingMode()
+        viewModel.enterSelectionMode()
         viewModel.togglePathSelection(path1)
 
         // 実行
@@ -187,8 +187,8 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         // 検証: 選択モードが解除されていること
-        assertFalse(viewModel.uiState.value.isDeletingMode)
-        assertEquals(emptyList<String>(), viewModel.uiState.value.selectedDeletingPaths)
+        assertFalse(viewModel.uiState.value.isSelectionMode)
+        assertEquals(emptyList<String>(), viewModel.uiState.value.selectedPaths)
     }
 
     @Test
@@ -210,7 +210,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
 
-        viewModel.enterDeletingMode()
+        viewModel.enterSelectionMode()
         viewModel.togglePathSelection(path1)
 
         // 実行
@@ -258,7 +258,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
 
-        viewModel.enterDeletingMode()
+        viewModel.enterSelectionMode()
         viewModel.togglePathSelection(path1)
 
         // 実行
@@ -287,7 +287,7 @@ class HomeViewModelTest {
 
         val viewModel = createViewModel()
 
-        viewModel.enterDeletingMode()
+        viewModel.enterSelectionMode()
         viewModel.togglePathSelection(path1)
 
         // 実行
@@ -301,6 +301,3 @@ class HomeViewModelTest {
 
     // endregion
 }
-
-
-
