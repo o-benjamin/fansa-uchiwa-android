@@ -34,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -305,6 +306,7 @@ fun EditScreen(
                             },
                             onDecorationDragEnd = viewModel::updateDecorationGraphic,
                             onTapDelete = viewModel::deleteDecoration,
+                            onTapDuplicate = viewModel::duplicateDecoration,
                             modifier = Modifier.fillMaxSize(),
                             images = uiState.images,
                             uchiwaColor = uiState.uchiwaColor,
@@ -488,6 +490,7 @@ fun UchiwaPreview(
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
+    onTapDuplicate: (String) -> Unit,
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
     uchiwaColor: Color,
@@ -551,7 +554,8 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff
+                            currentRotation = decoration.rotation + rotationDiff,
+                            onDuplicate = { onTapDuplicate(decoration.id) }
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -715,7 +719,8 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff
+                            currentRotation = decoration.rotation + rotationDiff,
+                            onDuplicate = { onTapDuplicate(decoration.id) }
                         )
                     }
 
@@ -808,7 +813,8 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            imagePath = images.find { it.id == decoration.imageId }?.path
+                            imagePath = images.find { it.id == decoration.imageId }?.path,
+                            onDuplicate = { onTapDuplicate(decoration.id) }
                         )
                     }
                 }
@@ -927,7 +933,8 @@ private fun TextItem(
     isSelected: Boolean,
     currentOffset: Offset,
     currentScale: Float,
-    currentRotation: Float
+    currentRotation: Float,
+    onDuplicate: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -978,6 +985,19 @@ private fun TextItem(
                         -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
                     )
             )
+            DuplicateIcon(
+                onClick = onDuplicate,
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / currentScale
+                        scaleY = 1 / currentScale
+                    }
+                    .align(Alignment.TopStart)
+                    .offset(
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                    )
+            )
         }
     }
 }
@@ -989,6 +1009,7 @@ private fun StickerItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    onDuplicate: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -1037,6 +1058,19 @@ private fun StickerItem(
                         -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
                     )
             )
+            DuplicateIcon(
+                onClick = onDuplicate,
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / currentScale
+                        scaleY = 1 / currentScale
+                    }
+                    .align(Alignment.TopStart)
+                    .offset(
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                    )
+            )
         }
     }
 }
@@ -1048,7 +1082,8 @@ private fun ImageItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
-    imagePath: String? = null,
+    imagePath: String?,
+    onDuplicate: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -1096,6 +1131,19 @@ private fun ImageItem(
                     .align(Alignment.TopEnd)
                     .offset(
                         (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                    )
+            )
+            DuplicateIcon(
+                onClick = onDuplicate,
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / currentScale
+                        scaleY = 1 / currentScale
+                    }
+                    .align(Alignment.TopStart)
+                    .offset(
+                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
                         -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
                     )
             )
@@ -1178,6 +1226,27 @@ private fun DeleteIcon(
 }
 
 @Composable
+private fun DuplicateIcon(
+    onClick: () -> Unit,
+    modifier: Modifier
+) {
+    Icon(
+        imageVector = Icons.Default.ContentCopy,
+        contentDescription = "Duplicate",
+        tint = MaterialTheme.colorScheme.onPrimary,
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primary, CircleShape)
+            .size(GESTURE_INPUT_HANDLE_SIZE)
+            .padding(4.dp)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                onClick = onClick
+            )
+    )
+}
+
+@Composable
 private fun UndoRedoRow(
     canUndo: Boolean,
     canRedo: Boolean,
@@ -1241,7 +1310,8 @@ private fun StickerItemPreview() {
                 isSelected = true,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
-                currentRotation = 0f
+                currentRotation = 0f,
+                onDuplicate = {}
             )
         }
     }
@@ -1268,7 +1338,8 @@ private fun TextItemPreview() {
                 isSelected = true,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
-                currentRotation = 0f
+                currentRotation = 0f,
+                onDuplicate = {}
             )
         }
     }

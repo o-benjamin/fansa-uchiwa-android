@@ -37,6 +37,7 @@ object AnalyticsActions {
     const val TAP_EDIT_BACK_DIALOG = "tap_edit_back_dialog"
     const val TAP_EDIT_COMPLETE = "tap_edit_complete"
     const val TAP_EDIT_UNDO_REDO = "tap_edit_undo_redo"
+    const val TAP_EDIT_DUPLICATE = "tap_edit_duplicate"
     const val TAP_EDIT_TEXT_COLOR = "tap_edit_text_color"
     const val TAP_EDIT_STICKER_COLOR = "tap_edit_sticker_color"
 

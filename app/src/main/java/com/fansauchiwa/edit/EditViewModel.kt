@@ -27,6 +27,7 @@ import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -186,6 +187,43 @@ class EditViewModel @Inject constructor(
                 loadImage(decoration.imageId)
             }
         }
+    }
+
+    fun duplicateDecoration(id: String) {
+        val original = uiState.value.decorations.find { it.id == id } ?: return
+        saveSnapshot()
+        val updatedState = uiState.value
+        val newId = UUID.randomUUID().toString()
+        val duplicatedOffset = Offset(50f, 50f)
+        val duplicate = when (original) {
+            is Decoration.Text -> original.copy(
+                id = newId,
+                offset = original.offset + duplicatedOffset
+            )
+
+            is Decoration.Sticker -> original.copy(
+                id = newId,
+                offset = original.offset + duplicatedOffset
+            )
+
+            is Decoration.Image -> original.copy(
+                id = newId,
+                offset = original.offset + duplicatedOffset
+            )
+        }
+        savedStateHandle[UI_STATE_KEY] = updatedState.copy(
+            decorations = updatedState.decorations + duplicate,
+            selectedDecorationId = newId
+        )
+        val decorationType = when (original) {
+            is Decoration.Text -> "text"
+            is Decoration.Sticker -> "sticker"
+            is Decoration.Image -> "image"
+        }
+        logEvent(
+            AnalyticsActions.TAP_EDIT_DUPLICATE,
+            mapOf("type" to decorationType)
+        )
     }
 
     fun deleteDecoration(id: String) {
@@ -526,6 +564,8 @@ class EditViewModel @Inject constructor(
             canUndo = undoStack.isNotEmpty(),
             canRedo = redoStack.isNotEmpty()
         )
+        footprint(undoStack.size)
+        footprint(savedStateHandle[UI_STATE_KEY])
     }
 
     fun undo() {
