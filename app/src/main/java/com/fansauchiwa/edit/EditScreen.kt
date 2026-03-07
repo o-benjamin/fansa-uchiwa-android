@@ -34,8 +34,6 @@ import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -555,7 +553,6 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            onDuplicate = { onTapDuplicate(decoration.id) }
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -630,7 +627,8 @@ fun UchiwaPreview(
                                 scaleDiff = 0f
                                 rotationDiff = 0f
                             },
-                            onTapDelete = { onTapDelete(decoration.id) }
+                            onTapDelete = { onTapDelete(decoration.id) },
+                            onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
                     }
 
@@ -712,7 +710,8 @@ fun UchiwaPreview(
                                 scaleDiff = 0f
                                 rotationDiff = 0f
                             },
-                            onTapDelete = { onTapDelete(decoration.id) }
+                            onTapDelete = { onTapDelete(decoration.id) },
+                            onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
                         StickerItem(
                             decoration = decoration,
@@ -720,7 +719,6 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            onDuplicate = { onTapDuplicate(decoration.id) }
                         )
                     }
 
@@ -805,7 +803,8 @@ fun UchiwaPreview(
                                 scaleDiff = 0f
                                 rotationDiff = 0f
                             },
-                            onTapDelete = { onTapDelete(decoration.id) }
+                            onTapDelete = { onTapDelete(decoration.id) },
+                            onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
                         ImageItem(
                             decoration = decoration,
@@ -814,7 +813,6 @@ fun UchiwaPreview(
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
                             imagePath = images.find { it.id == decoration.imageId }?.path,
-                            onDuplicate = { onTapDuplicate(decoration.id) }
                         )
                     }
                 }
@@ -860,6 +858,7 @@ private fun GestureInputLayer(
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
+    onTapDuplicate: () -> Unit,
     onDecorationDoubleTap: () -> Unit = {}
 ) {
 
@@ -923,6 +922,20 @@ private fun GestureInputLayer(
                         -(GESTURE_INPUT_HANDLE_SIZE / 2)
                     )
             )
+            TapInputHandle(
+                onTap = onTapDuplicate,
+                scale = scale,
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / scale
+                        scaleY = 1 / scale
+                    }
+                    .align(Alignment.TopStart)
+                    .offset(
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2),
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                    )
+            )
         }
     }
 }
@@ -934,7 +947,6 @@ private fun TextItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
-    onDuplicate: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -961,43 +973,7 @@ private fun TextItem(
             modifier = borderModifier
         )
         if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.BottomEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
-                    )
-            )
-            DeleteIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
-            DuplicateIcon(
-                onClick = onDuplicate,
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopStart)
-                    .offset(
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
+            DecorationHandleIcons(currentScale = currentScale)
         }
     }
 }
@@ -1009,7 +985,6 @@ private fun StickerItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
-    onDuplicate: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -1034,43 +1009,7 @@ private fun StickerItem(
             isSelected = isSelected
         )
         if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.BottomEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
-                    )
-            )
-            DeleteIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
-            DuplicateIcon(
-                onClick = onDuplicate,
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopStart)
-                    .offset(
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
+            DecorationHandleIcons(currentScale = currentScale)
         }
     }
 }
@@ -1083,7 +1022,6 @@ private fun ImageItem(
     currentScale: Float,
     currentRotation: Float,
     imagePath: String?,
-    onDuplicate: () -> Unit
 ) {
     val borderModifier = if (isSelected) Modifier.border(
         1.dp,
@@ -1110,43 +1048,7 @@ private fun ImageItem(
             isSelected = isSelected
         )
         if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.BottomEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
-                    )
-            )
-            DeleteIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
-            DuplicateIcon(
-                onClick = onDuplicate,
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopStart)
-                    .offset(
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
+            DecorationHandleIcons(currentScale = currentScale)
         }
     }
 }
@@ -1195,56 +1097,6 @@ private fun TapInputHandle(
     )
 }
 
-@Composable
-private fun TransformHandleIcon(
-    modifier: Modifier
-) {
-    Icon(
-        painter = painterResource(R.drawable.outline_arrows_outward_24),
-        contentDescription = "Zoom and Rotate",
-        tint = MaterialTheme.colorScheme.onPrimary,
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
-    )
-}
-
-@Composable
-private fun DeleteIcon(
-    modifier: Modifier
-) {
-    Icon(
-        imageVector = Icons.Default.Delete,
-        contentDescription = "Delete",
-        tint = MaterialTheme.colorScheme.onPrimary,
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
-    )
-}
-
-@Composable
-private fun DuplicateIcon(
-    onClick: () -> Unit,
-    modifier: Modifier
-) {
-    Icon(
-        imageVector = Icons.Default.ContentCopy,
-        contentDescription = "Duplicate",
-        tint = MaterialTheme.colorScheme.onPrimary,
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onClick
-            )
-    )
-}
 
 @Composable
 private fun UndoRedoRow(
@@ -1285,7 +1137,7 @@ private fun UndoRedoRow(
     }
 }
 
-private val GESTURE_INPUT_HANDLE_SIZE = 24.dp
+internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 
@@ -1311,7 +1163,6 @@ private fun StickerItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
-                onDuplicate = {}
             )
         }
     }
@@ -1339,7 +1190,6 @@ private fun TextItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
-                onDuplicate = {}
             )
         }
     }
