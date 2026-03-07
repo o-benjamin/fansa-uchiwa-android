@@ -106,6 +106,34 @@ internal fun Offset.rotateBy(degrees: Float): Offset {
     )
 }
 
+/**
+ * 回転角度のスナップ判定と補正を行う。
+ *
+ * スナップ目標角度（0, 90, 180, 270度）に対して ±[ROTATION_SNAP_THRESHOLD_DEGREES] 以内であれば、
+ * 角度をスナップ先に固定する。
+ *
+ * @param totalRotation 現在のトータル回転角度（確定済み角度 + diff）
+ * @return スナップ結果
+ */
+internal fun applyRotationSnap(totalRotation: Float): RotationSnapResult {
+    val normalized = ((totalRotation % 360f) + 360f) % 360f
+    for (snapPoint in ROTATION_SNAP_POINTS) {
+        if (abs(normalized - snapPoint) <= ROTATION_SNAP_THRESHOLD_DEGREES) {
+            val snappedTotal = totalRotation - normalized + snapPoint
+            return RotationSnapResult(snappedRotation = snappedTotal, isSnapped = true)
+        }
+    }
+    // 360度近傍（例: 358度）のケース: 0度へのスナップ
+    if (360f - normalized <= ROTATION_SNAP_THRESHOLD_DEGREES) {
+        val snappedTotal = totalRotation - normalized + 360f
+        return RotationSnapResult(snappedRotation = snappedTotal, isSnapped = true)
+    }
+    return RotationSnapResult(snappedRotation = totalRotation, isSnapped = false)
+}
+
+private val ROTATION_SNAP_POINTS = listOf(0f, 90f, 180f, 270f)
+private const val ROTATION_SNAP_THRESHOLD_DEGREES = 8f
+
 internal val TextUnit.nonScaledSp: TextUnit
     @Composable
     get() = (value / LocalDensity.current.fontScale).sp

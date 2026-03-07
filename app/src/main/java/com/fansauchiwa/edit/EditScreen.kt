@@ -76,8 +76,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -614,7 +616,10 @@ fun UchiwaPreview(
                                         6f
                                     )
                                 scaleDiff = targetScale - decoration.scale
-                                rotationDiff = transformation.rotationDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
@@ -697,7 +702,10 @@ fun UchiwaPreview(
                                         3f
                                     )
                                 scaleDiff = targetScale - decoration.scale
-                                rotationDiff = transformation.rotationDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
@@ -790,7 +798,10 @@ fun UchiwaPreview(
                                         5f
                                     )
                                 scaleDiff = targetScale - decoration.scale
-                                rotationDiff = transformation.rotationDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
@@ -948,10 +959,12 @@ private fun TextItem(
     currentScale: Float,
     currentRotation: Float,
 ) {
-    val borderModifier = if (isSelected) Modifier.border(
-        1.dp,
-        MaterialTheme.colorScheme.primary
-    ) else Modifier
+    val borderColor = getSelectionBorderColor(currentRotation)
+    val borderModifier = if (isSelected) Modifier
+        .testTag("TextItemBorder")
+        .semantics { this.borderColor = borderColor }
+        .border(1.dp, borderColor)
+    else Modifier
 
     Box(
         modifier = Modifier
@@ -986,10 +999,10 @@ private fun StickerItem(
     currentScale: Float,
     currentRotation: Float,
 ) {
-    val borderModifier = if (isSelected) Modifier.border(
-        1.dp,
-        MaterialTheme.colorScheme.primary
-    ) else Modifier
+    val borderColor = getSelectionBorderColor(currentRotation)
+    val borderModifier = if (isSelected) Modifier
+        .border(1.dp, borderColor)
+    else Modifier
 
     Box(
         modifier = Modifier
@@ -1023,10 +1036,10 @@ private fun ImageItem(
     currentRotation: Float,
     imagePath: String?,
 ) {
-    val borderModifier = if (isSelected) Modifier.border(
-        1.dp,
-        MaterialTheme.colorScheme.primary
-    ) else Modifier
+    val borderColor = getSelectionBorderColor(currentRotation)
+    val borderModifier = if (isSelected) Modifier
+        .border(1.dp, borderColor)
+    else Modifier
 
     Box(
         modifier = Modifier
