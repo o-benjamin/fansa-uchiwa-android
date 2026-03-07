@@ -35,9 +35,9 @@
     - 画面の状態は `UiState` データクラスに集約し、`ViewModel` の `StateFlow` で管理してください。
     - `ViewModel` 内では `data class` の `copy()` メソッドを使用して不変性を保ちながら状態を更新してください。
 - **状態管理とUIインタラクション**:
-    -
-    UIイベントはすべてViewModelのメソッドに委譲し、Compose側でビジネスロジックを持たないでください (
-    UDF: Unidirectional Data Flow の徹底)。
+  -
+  UIイベントはすべてViewModelのメソッドに委譲し、Compose側でビジネスロジックを持たないでください (
+  UDF: Unidirectional Data Flow の徹底)。
 - **Repositoryパターン**:
     - `ViewModel` からは、`~Repository` というファイル内の `~Repository` インターフェースを呼び出してください。
     - そのインターフェースは、同一ファイル内の `~RepositoryImpl` クラスが実装してください。
@@ -81,6 +81,11 @@
 - **プレビュー**:
     - 作成したコンポーザブルは、基本的にPreviewを作成してください。
     - 状態によって見た目が変わるコンポーザブルは、状態の数だけPreviewを作成してください。
+- **セマンティクスキー (Semantics)**:
+    - UIテストで値を検証する必要があるセマンティクスプロパティキーは、必ず `edit/SemanticsKeys.kt`
+      に集約してください。
+    - `SemanticsPropertyKey` の定義と `SemanticsPropertyReceiver` の拡張プロパティを同一ファイルに記述してください。
+    - これにより、セマンティクスキーの管理と再利用性が向上し、テスト実装との連携が容易になります。
 
 ## 5. テスト実装ガイドライン
 
