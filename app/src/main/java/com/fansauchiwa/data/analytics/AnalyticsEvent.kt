@@ -45,6 +45,7 @@ object AnalyticsActions {
     const val SELECT_EDIT_IMAGE = "select_edit_image"
     const val SELECT_EDIT_STICKER = "select_edit_sticker"
     const val SELECT_EDIT_TEXT_COLOR = "select_edit_text_color"
+    const val SELECT_EDIT_TEXT_FONT = "select_edit_text_font"
     const val SELECT_EDIT_TEXT_WEIGHT = "select_edit_text_weight"
     const val SELECT_EDIT_STICKER_COLOR = "select_edit_sticker_color"
     const val SELECT_EDIT_STICKER_WEIGHT = "select_edit_sticker_weight"

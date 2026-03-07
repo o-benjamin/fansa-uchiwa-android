@@ -27,7 +27,6 @@ import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
-import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -391,6 +390,23 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun updateFont(id: String, newFont: FontFamilies) {
+        saveSnapshot()
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+                        mapOf("font_family" to newFont.name)
+                    )
+                    decoration.copy(font = newFont)
+                }
+
+                else -> decoration
+            }
+        }
+    }
+
     fun updateWidth(id: String, newWidth: Int) {
         saveSnapshot()
         updateDecoration(id) { decoration ->
@@ -564,8 +580,6 @@ class EditViewModel @Inject constructor(
             canUndo = undoStack.isNotEmpty(),
             canRedo = redoStack.isNotEmpty()
         )
-        footprint(undoStack.size)
-        footprint(savedStateHandle[UI_STATE_KEY])
     }
 
     fun undo() {
