@@ -59,4 +59,6 @@
     <string name="template_section_title">テンプレートから作成</string>
     <string name="my_design_section_title">マイデザイン</string>
     <string name="export_template">テンプレートエクスポート</string>
+    <string name="check_how_to_use">使い方をチェック✨</string>
+    <string name="external_link">外部リンク</string>
 </resources>

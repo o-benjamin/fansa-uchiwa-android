@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
@@ -43,6 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,10 +59,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -459,6 +463,7 @@ private fun MyDesignSectionHeader(modifier: Modifier = Modifier) {
 
 @Composable
 private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -473,11 +478,22 @@ private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.displaySmall,
                 textAlign = TextAlign.Center
             )
-            Text(
-                text = stringResource(R.string.empty_masterpiece_message),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
+            TextButton(
+                onClick = {
+                    uriHandler.openUri("https://fansauchiwa-578d22ff.web.app#how-to-use")
+                }
+            ) {
+                Text(
+                    text = stringResource(R.string.check_how_to_use),
+                    textDecoration = TextDecoration.Underline,
+                    fontSize = 16.sp
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                    contentDescription = stringResource(R.string.external_link)
+                )
+
+            }
         }
     }
 }
