@@ -1,6 +1,8 @@
 package com.fansauchiwa.edit
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.core.net.toUri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,8 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,6 +121,7 @@ fun EditScreen(
     val showBackDialog = remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -145,6 +148,16 @@ fun EditScreen(
         showBackDialog.value = true
     }
 
+    val showExportDialog = remember { mutableStateOf(false) }
+
+    // シェイク検知
+    val isDebuggable = remember {
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
+    if (isDebuggable) {
+        ShakeDetector(onShake = { showExportDialog.value = true })
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -161,32 +174,19 @@ fun EditScreen(
                     }
                 },
                 actions = {
-                    val context = LocalContext.current
-                    val isDebuggable = remember {
-                        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-                    }
-                    if (isDebuggable) {
-                        IconButton(
-                            onClick = {
-                                viewModel.exportTemplateCode { uchiwaId ->
-                                    viewModel.resetEditUiState()
-                                    coroutineScope.launch {
-                                        withFrameMillis { }
-                                        val highResBitmap = captureHighResBitmap(
-                                            graphicsLayer,
-                                            density,
-                                            layoutDirection
-                                        ).asAndroidBitmap()
-                                        viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.BugReport,
-                                contentDescription = stringResource(R.string.export_template)
+                    IconButton(
+                        onClick = {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                "https://fansauchiwa-578d22ff.web.app#guide.html".toUri()
                             )
+                            context.startActivity(intent)
                         }
+                    ) {
+                        Icon(
+                            imageVector = @Suppress("DEPRECATION") Icons.Outlined.HelpOutline,
+                            contentDescription = stringResource(R.string.help)
+                        )
                     }
                     Button(
                         onClick = {
@@ -486,6 +486,47 @@ fun EditScreen(
             dismissButton = {
                 TextButton(
                     onClick = { viewModel.dismissImageDeleteWarningDialog() }
+                ) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // テンプレートエクスポートダイアログ（シェイクで表示）
+    if (showExportDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog.value = false },
+            title = {
+                Text(text = stringResource(R.string.export_template))
+            },
+            text = {
+                Text(text = stringResource(R.string.export_template_dialog_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExportDialog.value = false
+                        viewModel.exportTemplateCode { uchiwaId ->
+                            viewModel.resetEditUiState()
+                            coroutineScope.launch {
+                                withFrameMillis { }
+                                val highResBitmap = captureHighResBitmap(
+                                    graphicsLayer,
+                                    density,
+                                    layoutDirection
+                                ).asAndroidBitmap()
+                                viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
+                            }
+                        }
+                    }
+                ) {
+                    Text(text = stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExportDialog.value = false }
                 ) {
                     Text(text = stringResource(R.string.cancel))
                 }
