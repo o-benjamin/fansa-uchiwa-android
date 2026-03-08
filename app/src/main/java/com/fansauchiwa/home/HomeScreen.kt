@@ -156,7 +156,8 @@ private fun HomeFab(
 @Composable
 private fun HomeTopAppBar(
     onOpenPrivacyPolicy: () -> Unit,
-    onOpenFeedback: () -> Unit
+    onOpenFeedback: () -> Unit,
+    onOpenOfficialSite: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -173,6 +174,13 @@ private fun HomeTopAppBar(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.official_site)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenOfficialSite()
+                    }
+                )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.privacy_policy)) },
                     onClick = {
@@ -230,6 +238,11 @@ fun HomeScreen(
                 },
                 onOpenFeedback = {
                     val url = "https://forms.gle/UyTgAZ2ewDHzwTwN6"
+                    val customTabsIntent = CustomTabsIntent.Builder().build()
+                    customTabsIntent.launchUrl(context, url.toUri())
+                },
+                onOpenOfficialSite = {
+                    val url = "https://fansauchiwa-578d22ff.web.app"
                     val customTabsIntent = CustomTabsIntent.Builder().build()
                     customTabsIntent.launchUrl(context, url.toUri())
                 }
