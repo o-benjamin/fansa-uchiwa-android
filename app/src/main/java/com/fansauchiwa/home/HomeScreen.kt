@@ -243,7 +243,7 @@ fun HomeScreen(
                     customTabsIntent.launchUrl(context, url.toUri())
                 },
                 onOpenOfficialSite = {
-                    uriHandler.openUri("https://fansauchiwa-578d22ff.web.app#how-to-use")
+                    uriHandler.openUri("https://fansauchiwa-578d22ff.web.app")
                 }
             )
         },
