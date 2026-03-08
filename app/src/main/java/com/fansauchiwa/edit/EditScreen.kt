@@ -299,6 +299,9 @@ fun EditScreen(
                                     viewModel.selectDecoration(decorationId)
                                 }
                             },
+                            onDecorationDragStart = { decorationId ->
+                                viewModel.selectDecoration(decorationId)
+                            },
                             onBackgroundTap = {
                                 viewModel.unSelectDecoration()
                                 viewModel.finishEditingText()
@@ -496,6 +499,7 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecorationId: String?,
     onDecorationTap: (String) -> Unit,
+    onDecorationDragStart: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
@@ -579,6 +583,7 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
+                            onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -665,6 +670,7 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
+                            onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -761,6 +767,7 @@ fun UchiwaPreview(
                             decorationSize = imageDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
+                            onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -870,6 +877,7 @@ private fun GestureInputLayer(
     decorationSize: DpSize,
     isSelected: Boolean,
     onDecorationTap: () -> Unit,
+    onDragStart: () -> Unit,
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
     onTransformStart: () -> Unit,
@@ -896,9 +904,11 @@ private fun GestureInputLayer(
             )
             .pointerInput(offset, scale, rotation) {
                 detectDragGestures(
+                    onDragStart = {
+                        onDragStart()
+                    },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        onDecorationTap()
                         onDrag(
                             rotatedDragAmount(
                                 rotation,
