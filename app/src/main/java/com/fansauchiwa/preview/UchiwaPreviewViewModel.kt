@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
@@ -66,7 +67,7 @@ class UchiwaPreviewViewModel @Inject constructor(
      * 広告のロードに失敗している場合は即座に保存を実行（UX低下を防ぐ）
      */
     fun showRewardedAdAndSave(activity: Activity) {
-        logEvent(com.fansauchiwa.data.analytics.AnalyticsActions.TAP_PREVIEW_EXPORT)
+        logEvent(AnalyticsActions.TAP_PREVIEW_EXPORT)
 
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
@@ -105,6 +106,37 @@ class UchiwaPreviewViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             saveSuccess = null
         )
+    }
+
+    /**
+     * リワード広告を表示し、広告視聴後（または失敗時）に共有用パスをセットする
+     * 広告のロードに失敗している場合は即座に共有を実行（UX低下を防ぐ）
+     */
+    fun showRewardedAdAndShare(activity: Activity) {
+        logEvent(AnalyticsActions.TAP_PREVIEW_SHARE)
+
+        adMobRepository.showRewardedAd(
+            activity = activity,
+            placement = AnalyticsScreens.PREVIEW_SCREEN,
+            waitForLoad = true,
+            onUserEarnedReward = {
+                setShareImagePath()
+            },
+            onAdFailedOrSkipped = {
+                setShareImagePath()
+            }
+        )
+    }
+
+    private fun setShareImagePath() {
+        val imagePath = uiState.value.imagePath ?: return
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(shareImagePath = imagePath)
+    }
+
+    fun clearShareImage() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(shareImagePath = null)
     }
 }
 
