@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
@@ -43,6 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,10 +59,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,15 +80,84 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
+import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.theme.HomeItemMinWidth
+import com.fansauchiwa.ui.theme.SelectionFabSpacing
 import kotlinx.coroutines.launch
 import java.util.UUID
+
+@Composable
+private fun HomeFab(
+    isSelectionMode: Boolean,
+    selectedCount: Int,
+    isFabExpanded: Boolean,
+    onExitSelectionMode: () -> Unit,
+    onDuplicate: () -> Unit,
+    onDelete: () -> Unit,
+    onAdd: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (isSelectionMode) {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(SelectionFabSpacing)
+        ) {
+            FloatingActionButton(onClick = onExitSelectionMode) {
+                Text(
+                    text = stringResource(R.string.cancel),
+                    modifier = Modifier.padding(horizontal = SelectionFabSpacing)
+                )
+            }
+            if (selectedCount > 0) {
+                FloatingActionButton(
+                    onClick = onDuplicate,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Text(
+                        text = stringResource(R.string.duplicate),
+                        modifier = Modifier.padding(horizontal = SelectionFabSpacing)
+                    )
+                }
+                FloatingActionButton(
+                    onClick = onDelete,
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete),
+                        modifier = Modifier.padding(horizontal = SelectionFabSpacing)
+                    )
+                }
+            }
+        }
+    } else {
+        ExtendedFloatingActionButton(
+            modifier = modifier,
+            onClick = onAdd,
+            expanded = isFabExpanded,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.add)
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.add),
+                    fontSize = 16.sp
+                )
+            }
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTopAppBar(
     onOpenPrivacyPolicy: () -> Unit,
-    onOpenFeedback: () -> Unit
+    onOpenFeedback: () -> Unit,
+    onOpenOfficialSite: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -101,6 +174,13 @@ private fun HomeTopAppBar(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.official_site)) },
+                    onClick = {
+                        menuExpanded = false
+                        onOpenOfficialSite()
+                    }
+                )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.privacy_policy)) },
                     onClick = {
@@ -137,6 +217,8 @@ fun HomeScreen(
         derivedStateOf { lazyGridState.firstVisibleItemIndex == 0 }
     }
     val context = LocalContext.current
+    val duplicateMasterpieceSnackbar = stringResource(R.string.duplicate_masterpiece_snackbar)
+    val deleteMasterpieceSnackbar = stringResource(R.string.delete_masterpiece_snackbar)
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -147,6 +229,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
+            val uriHandler = LocalUriHandler.current
             HomeTopAppBar(
                 onOpenPrivacyPolicy = {
                     val url =
@@ -158,6 +241,9 @@ fun HomeScreen(
                     val url = "https://forms.gle/UyTgAZ2ewDHzwTwN6"
                     val customTabsIntent = CustomTabsIntent.Builder().build()
                     customTabsIntent.launchUrl(context, url.toUri())
+                },
+                onOpenOfficialSite = {
+                    uriHandler.openUri("https://fansauchiwa-578d22ff.web.app")
                 }
             )
         },
@@ -168,59 +254,30 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            if (uiState.isDeletingMode) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FloatingActionButton(
-                        onClick = { viewModel.exitDeletingMode() },
-                    ) {
-                        Text(
-                            text = stringResource(R.string.cancel),
-                            modifier = Modifier.padding(horizontal = 8.dp)
+            HomeFab(
+                isSelectionMode = uiState.isSelectionMode,
+                selectedCount = uiState.selectedPaths.size,
+                isFabExpanded = isFabExpanded,
+                onExitSelectionMode = { viewModel.exitSelectionMode() },
+                onDuplicate = {
+                    viewModel.duplicateSelectedMasterpieces()
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            "${uiState.selectedPaths.size}${duplicateMasterpieceSnackbar}"
                         )
                     }
-                    val deletedCount = uiState.selectedDeletingPaths.size
-                    if (deletedCount > 0) {
-                        FloatingActionButton(
-                            onClick = {
-                                viewModel.deleteSelectedMasterpieces()
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("${deletedCount}件削除しました")
-                                }
-                            },
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        ) {
-                            val selectedCount = uiState.selectedDeletingPaths.size
-                            Text(
-                                text = stringResource(R.string.delete_masterpiece, selectedCount),
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
-                        }
+                },
+                onDelete = {
+                    viewModel.deleteSelectedMasterpieces()
+                    scope.launch {
+                        snackbarHostState.showSnackbar("${uiState.selectedPaths.size}${deleteMasterpieceSnackbar}")
                     }
+                },
+                onAdd = {
+                    viewModel.logNewCreateTap()
+                    onAddClick()
                 }
-            } else {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        viewModel.logNewCreateTap()
-                        onAddClick()
-                    },
-                    expanded = isFabExpanded,
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(R.string.add)
-                        )
-                    },
-                    text = {
-                        Text(
-                            text = stringResource(R.string.add),
-                            fontSize = 16.sp
-                        )
-                    }
-                )
-            }
+            )
         },
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState)
@@ -233,11 +290,11 @@ fun HomeScreen(
                 .padding(bottom = innerPadding.calculateBottomPadding()),
             masterpiecePathList = uiState.masterpiecePathList,
             templates = uiState.templates,
-            isDeletingMode = uiState.isDeletingMode,
-            selectedDeletingPaths = uiState.selectedDeletingPaths,
+            isSelectionMode = uiState.isSelectionMode,
+            selectedPaths = uiState.selectedPaths,
             lazyGridState = lazyGridState,
             onImageClick = { path ->
-                if (uiState.isDeletingMode) {
+                if (uiState.isSelectionMode) {
                     viewModel.togglePathSelection(path)
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
@@ -251,7 +308,7 @@ fun HomeScreen(
                 onImageClick(newUchiwaId, templateId)
             },
             onImageLongPress = {
-                viewModel.enterDeletingMode()
+                viewModel.enterSelectionMode()
             },
             statusBarPadding = innerPadding.calculateTopPadding()
         )
@@ -265,8 +322,8 @@ internal fun HomeScreenContent(
     modifier: Modifier = Modifier,
     masterpiecePathList: List<String>,
     templates: List<Template>,
-    isDeletingMode: Boolean,
-    selectedDeletingPaths: List<String>,
+    isSelectionMode: Boolean,
+    selectedPaths: List<String>,
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState = rememberLazyGridState(),
     onImageClick: (String) -> Unit,
     onTemplateClick: (String) -> Unit,
@@ -318,8 +375,8 @@ internal fun HomeScreenContent(
             items(masterpiecePathList) { path ->
                 MasterpieceItem(
                     imagePath = path,
-                    isSelected = selectedDeletingPaths.contains(path),
-                    isDeletingMode = isDeletingMode,
+                    isSelected = selectedPaths.contains(path),
+                    isSelectionMode = isSelectionMode,
                     onClick = { onImageClick(path) },
                     onLongClick = onImageLongPress,
                     isPreview = isPreview
@@ -418,6 +475,7 @@ private fun MyDesignSectionHeader(modifier: Modifier = Modifier) {
 
 @Composable
 private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
+    val uriHandler = LocalUriHandler.current
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -432,11 +490,22 @@ private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.displaySmall,
                 textAlign = TextAlign.Center
             )
-            Text(
-                text = stringResource(R.string.empty_masterpiece_message),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
+            TextButton(
+                onClick = {
+                    uriHandler.openUri("https://fansauchiwa-578d22ff.web.app#how-to-use")
+                }
+            ) {
+                Text(
+                    text = stringResource(R.string.check_how_to_use),
+                    textDecoration = TextDecoration.Underline,
+                    fontSize = 16.sp
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                    contentDescription = stringResource(R.string.external_link)
+                )
+
+            }
         }
     }
 }
@@ -446,7 +515,7 @@ private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
 private fun MasterpieceItem(
     imagePath: String,
     isSelected: Boolean,
-    isDeletingMode: Boolean,
+    isSelectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -487,7 +556,7 @@ private fun MasterpieceItem(
                 )
             }
 
-            if (isDeletingMode) {
+            if (isSelectionMode) {
                 SelectionCircleIcon(
                     isSelected = isSelected,
                     modifier = Modifier.align(Alignment.TopEnd)
@@ -519,8 +588,8 @@ private fun HomeScreenPreview_TemplatesAndMasterpieces() {
         modifier = Modifier.fillMaxSize(),
         masterpiecePathList = (1..6).map { "masterpiece_$it" },
         templates = previewTemplates(),
-        isDeletingMode = false,
-        selectedDeletingPaths = emptyList(),
+        isSelectionMode = false,
+        selectedPaths = emptyList(),
         onImageClick = {},
         onTemplateClick = {},
         onImageLongPress = {},
@@ -536,8 +605,8 @@ private fun HomeScreenPreview_TemplatesOnly() {
         modifier = Modifier.fillMaxSize(),
         masterpiecePathList = emptyList(),
         templates = previewTemplates(),
-        isDeletingMode = false,
-        selectedDeletingPaths = emptyList(),
+        isSelectionMode = false,
+        selectedPaths = emptyList(),
         onImageClick = {},
         onTemplateClick = {},
         onImageLongPress = {},
@@ -553,8 +622,8 @@ private fun HomeScreenPreview_MasterpiecesOnly() {
         modifier = Modifier.fillMaxSize(),
         masterpiecePathList = (1..6).map { "masterpiece_$it" },
         templates = emptyList(),
-        isDeletingMode = false,
-        selectedDeletingPaths = emptyList(),
+        isSelectionMode = false,
+        selectedPaths = emptyList(),
         onImageClick = {},
         onTemplateClick = {},
         onImageLongPress = {},
@@ -570,8 +639,8 @@ private fun HomeScreenPreview_Empty() {
         modifier = Modifier.fillMaxSize(),
         masterpiecePathList = emptyList(),
         templates = emptyList(),
-        isDeletingMode = false,
-        selectedDeletingPaths = emptyList(),
+        isSelectionMode = false,
+        selectedPaths = emptyList(),
         onImageClick = {},
         onTemplateClick = {},
         onImageLongPress = {},
@@ -579,3 +648,72 @@ private fun HomeScreenPreview_Empty() {
         isPreview = true
     )
 }
+
+// region FAB Previews
+
+@Preview(showBackground = true, name = "FAB - 通常モード（展開）")
+@Composable
+private fun HomeFabPreview_Normal_Expanded() {
+    FansaUchiwaTheme {
+        HomeFab(
+            isSelectionMode = false,
+            selectedCount = 0,
+            isFabExpanded = true,
+            onExitSelectionMode = {},
+            onDuplicate = {},
+            onDelete = {},
+            onAdd = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "FAB - 通常モード（折りたたみ）")
+@Composable
+private fun HomeFabPreview_Normal_Collapsed() {
+    FansaUchiwaTheme {
+        HomeFab(
+            isSelectionMode = false,
+            selectedCount = 0,
+            isFabExpanded = false,
+            onExitSelectionMode = {},
+            onDuplicate = {},
+            onDelete = {},
+            onAdd = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "FAB - 選択モード（選択数0）")
+@Composable
+private fun HomeFabPreview_SelectionMode_NoSelection() {
+    FansaUchiwaTheme {
+        HomeFab(
+            isSelectionMode = true,
+            selectedCount = 0,
+            isFabExpanded = false,
+            onExitSelectionMode = {},
+            onDuplicate = {},
+            onDelete = {},
+            onAdd = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "FAB - 選択モード（選択あり）")
+@Composable
+private fun HomeFabPreview_SelectionMode_WithSelection() {
+    FansaUchiwaTheme() {
+        HomeFab(
+            isSelectionMode = true,
+            selectedCount = 3,
+            isFabExpanded = false,
+            onExitSelectionMode = {},
+            onDuplicate = {},
+            onDelete = {},
+            onAdd = {}
+        )
+    }
+}
+
+// endregion
+

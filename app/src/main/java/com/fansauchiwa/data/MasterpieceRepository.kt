@@ -8,6 +8,7 @@ interface MasterpieceRepository {
     fun saveMasterpieceToGallery(imagePath: String): Boolean
     fun loadAllMasterpieces(): List<String>
     fun deleteMasterpiece(filePath: String): Boolean
+    fun duplicateMasterpiece(sourceFilePath: String, newId: String): String?
 }
 
 class MasterpieceRepositoryImpl @Inject constructor(
@@ -28,5 +29,9 @@ class MasterpieceRepositoryImpl @Inject constructor(
 
     override fun deleteMasterpiece(filePath: String): Boolean {
         return masterpieceDataSource.deleteMasterpiece(filePath)
+    }
+
+    override fun duplicateMasterpiece(sourceFilePath: String, newId: String): String? {
+        return masterpieceDataSource.duplicateMasterpiece(sourceFilePath, newId)
     }
 }

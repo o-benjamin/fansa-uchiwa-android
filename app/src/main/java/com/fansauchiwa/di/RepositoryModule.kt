@@ -16,6 +16,8 @@ import com.fansauchiwa.data.MasterpieceDataSource
 import com.fansauchiwa.data.MasterpieceLocalSource
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.MasterpieceRepositoryImpl
+import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.UuidProviderImpl
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
@@ -69,6 +71,12 @@ abstract class RepositoryModule {
     abstract fun bindTemplateRepository(
         impl: DefaultTemplateRepository
     ): TemplateRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUuidProvider(
+        impl: UuidProviderImpl
+    ): UuidProvider
 }
 
 @Module

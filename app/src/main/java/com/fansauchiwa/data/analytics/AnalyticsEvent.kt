@@ -31,12 +31,14 @@ object AnalyticsActions {
     const val TAP_HOME_NEW_CREATE = "tap_home_new_create"
     const val TAP_HOME_ITEM_EDIT = "tap_home_item_edit"
     const val TAP_HOME_ITEM_DELETE = "tap_home_item_delete"
+    const val TAP_HOME_ITEM_DUPLICATE = "tap_home_item_duplicate"
     const val TAP_HOME_TEMPLATE = "tap_home_template"
 
     const val TAP_EDIT_BACK = "tap_edit_back"
     const val TAP_EDIT_BACK_DIALOG = "tap_edit_back_dialog"
     const val TAP_EDIT_COMPLETE = "tap_edit_complete"
     const val TAP_EDIT_UNDO_REDO = "tap_edit_undo_redo"
+    const val TAP_EDIT_DUPLICATE = "tap_edit_duplicate"
     const val TAP_EDIT_TEXT_COLOR = "tap_edit_text_color"
     const val TAP_EDIT_STICKER_COLOR = "tap_edit_sticker_color"
 
@@ -44,6 +46,7 @@ object AnalyticsActions {
     const val SELECT_EDIT_IMAGE = "select_edit_image"
     const val SELECT_EDIT_STICKER = "select_edit_sticker"
     const val SELECT_EDIT_TEXT_COLOR = "select_edit_text_color"
+    const val SELECT_EDIT_TEXT_FONT = "select_edit_text_font"
     const val SELECT_EDIT_TEXT_WEIGHT = "select_edit_text_weight"
     const val SELECT_EDIT_STICKER_COLOR = "select_edit_sticker_color"
     const val SELECT_EDIT_STICKER_WEIGHT = "select_edit_sticker_weight"
@@ -53,6 +56,7 @@ object AnalyticsActions {
     const val TAP_IMAGE_PREVIEW_CONFIRM = "tap_image_preview_confirm"
 
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
+    const val TAP_PREVIEW_SHARE = "tap_preview_share"
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
 

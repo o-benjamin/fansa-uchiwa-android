@@ -11,6 +11,7 @@ import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
@@ -339,6 +340,112 @@ class EditViewModelTest {
                 decorations = any(),
                 uchiwaColor = any(),
                 backgroundColor = any()
+            )
+        }
+    }
+
+    @Test
+    fun updateFont_existingTextDecoration_fontPropertyUpdated() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = SavedUchiwa(
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateFont(textDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
+        advanceUntilIdle()
+
+        val updatedDecoration = viewModel.uiState.value.decorations
+            .filterIsInstance<Decoration.Text>()
+            .find { it.id == textDecorationId }
+
+        assertEquals(FontFamilies.ZEN_MARU_GOTHIC, updatedDecoration?.font)
+    }
+
+    @Test
+    fun updateFont_callsSaveSnapshot_undoStackHasHistory() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = SavedUchiwa(
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        // Undo不可であることを確認
+        assertFalse(viewModel.uiState.value.canUndo)
+
+        viewModel.updateFont(textDecorationId, FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        // saveSnapshotが呼ばれたのでUndoが可能になっていること
+        assertTrue(viewModel.uiState.value.canUndo)
+
+        // Undoすると元のフォントに戻ること
+        viewModel.undo()
+        advanceUntilIdle()
+
+        val restoredDecoration = viewModel.uiState.value.decorations
+            .filterIsInstance<Decoration.Text>()
+            .find { it.id == textDecorationId }
+
+        assertEquals(FontFamilies.HACHI_MARU_POP, restoredDecoration?.font)
+    }
+
+    @Test
+    fun updateFont_logsAnalyticsEvent_eventSentWithFontFamily() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = SavedUchiwa(
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateFont(textDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_TEXT_FONT &&
+                            it.params["font_family"] == FontFamilies.ZEN_MARU_GOTHIC.name
+                }
             )
         }
     }

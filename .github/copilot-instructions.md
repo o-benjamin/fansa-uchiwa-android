@@ -34,8 +34,10 @@
 - **UI状態管理 (State Hoisting)**:
     - 画面の状態は `UiState` データクラスに集約し、`ViewModel` の `StateFlow` で管理してください。
     - `ViewModel` 内では `data class` の `copy()` メソッドを使用して不変性を保ちながら状態を更新してください。
-- **副作用の排除**:
-    - Composable関数内でビジネスロジックを実行せず、ラムダ式を通じて `ViewModel` の関数を呼び出してください。
+- **状態管理とUIインタラクション**:
+  -
+  UIイベントはすべてViewModelのメソッドに委譲し、Compose側でビジネスロジックを持たないでください (
+  UDF: Unidirectional Data Flow の徹底)。
 - **Repositoryパターン**:
     - `ViewModel` からは、`~Repository` というファイル内の `~Repository` インターフェースを呼び出してください。
     - そのインターフェースは、同一ファイル内の `~RepositoryImpl` クラスが実装してください。
@@ -79,6 +81,16 @@
 - **プレビュー**:
     - 作成したコンポーザブルは、基本的にPreviewを作成してください。
     - 状態によって見た目が変わるコンポーザブルは、状態の数だけPreviewを作成してください。
+    - Previewは、対応するコンポーザブルの直後に配置するか、ファイルの最下部にまとめて
+      `// region <機能名> Previews` と `// endregion` で囲んで配置してください。
+    - Previewは `FansauchiwaTheme` で囲み、テーマの影響を受けるコンポーザブル（色、形状など）が正しく表示されるようにしてください。
+    - `HomeScreen.kt` の `HomeFab` など、複数パターンの Preview がある場合は、最下部に
+      `// region FAB Previews` のようにセクション化してまとめてください。
+- **セマンティクスキー (Semantics)**:
+    - UIテストで値を検証する必要があるセマンティクスプロパティキーは、必ず `edit/SemanticsKeys.kt`
+      に集約してください。
+    - `SemanticsPropertyKey` の定義と `SemanticsPropertyReceiver` の拡張プロパティを同一ファイルに記述してください。
+    - これにより、セマンティクスキーの管理と再利用性が向上し、テスト実装との連携が容易になります。
 
 ## 5. テスト実装ガイドライン
 

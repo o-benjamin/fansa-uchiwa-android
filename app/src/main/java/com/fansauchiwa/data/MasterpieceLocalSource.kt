@@ -52,4 +52,21 @@ class MasterpieceLocalSource @Inject constructor(
             false
         }
     }
+
+    override fun duplicateMasterpiece(sourceFilePath: String, newId: String): String? {
+        return try {
+            val sourceFile = File(sourceFilePath)
+            if (!sourceFile.exists()) return null
+
+            val directory = ContextWrapper(context).getDir(
+                "masterpiece",
+                Context.MODE_PRIVATE
+            )
+            val newFile = File(directory, "$newId.png")
+            sourceFile.copyTo(newFile, overwrite = true)
+            newFile.absolutePath
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

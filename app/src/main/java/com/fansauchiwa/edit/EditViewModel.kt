@@ -188,6 +188,43 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun duplicateDecoration(id: String) {
+        val original = uiState.value.decorations.find { it.id == id } ?: return
+        saveSnapshot()
+        val updatedState = uiState.value
+        val newId = UUID.randomUUID().toString()
+        val duplicatedOffset = Offset(50f, 50f)
+        val duplicate = when (original) {
+            is Decoration.Text -> original.copy(
+                id = newId,
+                offset = original.offset + duplicatedOffset
+            )
+
+            is Decoration.Sticker -> original.copy(
+                id = newId,
+                offset = original.offset + duplicatedOffset
+            )
+
+            is Decoration.Image -> original.copy(
+                id = newId,
+                offset = original.offset + duplicatedOffset
+            )
+        }
+        savedStateHandle[UI_STATE_KEY] = updatedState.copy(
+            decorations = updatedState.decorations + duplicate,
+            selectedDecorationId = newId
+        )
+        val decorationType = when (original) {
+            is Decoration.Text -> "text"
+            is Decoration.Sticker -> "sticker"
+            is Decoration.Image -> "image"
+        }
+        logEvent(
+            AnalyticsActions.TAP_EDIT_DUPLICATE,
+            mapOf("type" to decorationType)
+        )
+    }
+
     fun deleteDecoration(id: String) {
         saveSnapshot()
         val currentState = uiState.value
@@ -349,6 +386,23 @@ class EditViewModel @Inject constructor(
                 }
 
                 is Decoration.Image -> decoration.copy(strokeColor = newColor)
+            }
+        }
+    }
+
+    fun updateFont(id: String, newFont: FontFamilies) {
+        saveSnapshot()
+        updateDecoration(id) { decoration ->
+            when (decoration) {
+                is Decoration.Text -> {
+                    logEvent(
+                        AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+                        mapOf("font_family" to newFont.name)
+                    )
+                    decoration.copy(font = newFont)
+                }
+
+                else -> decoration
             }
         }
     }

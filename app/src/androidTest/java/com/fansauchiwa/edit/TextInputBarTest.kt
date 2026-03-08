@@ -29,7 +29,8 @@ class TextInputBarTest {
                 TextInputBar(
                     initialText = "Hello",
                     onTextChanged = {},
-                    onDone = {}
+                    onDone = {},
+                    onDismissBlocked = {}
                 )
             }
         }
@@ -45,7 +46,8 @@ class TextInputBarTest {
                 TextInputBar(
                     initialText = "Hello",
                     onTextChanged = { updatedText = it },
-                    onDone = {}
+                    onDone = {},
+                    onDismissBlocked = {}
                 )
             }
         }
@@ -66,7 +68,8 @@ class TextInputBarTest {
                 TextInputBar(
                     initialText = "Hello",
                     onTextChanged = {},
-                    onDone = { isDone = true }
+                    onDone = { isDone = true },
+                    onDismissBlocked = {}
                 )
             }
         }
@@ -82,7 +85,8 @@ class TextInputBarTest {
                 TextInputBar(
                     initialText = "",
                     onTextChanged = {},
-                    onDone = {}
+                    onDone = {},
+                    onDismissBlocked = {}
                 )
             }
         }

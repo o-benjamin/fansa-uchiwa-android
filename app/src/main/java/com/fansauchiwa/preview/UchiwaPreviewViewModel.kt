@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
@@ -28,6 +29,9 @@ class UchiwaPreviewViewModel @Inject constructor(
 
     val uiState: StateFlow<UchiwaPreviewUiState> =
         savedStateHandle.getStateFlow(UI_STATE_KEY, UchiwaPreviewUiState())
+
+    /** この画面のセッション中にリワード広告を既に視聴済みかどうか */
+    private var hasEarnedReward = false
 
     init {
         adMobRepository.loadRewardedAd()
@@ -64,23 +68,28 @@ class UchiwaPreviewViewModel @Inject constructor(
     /**
      * リワード広告を表示し、報酬獲得後にギャラリーに保存する
      * 広告のロードに失敗している場合は即座に保存を実行（UX低下を防ぐ）
+     * この画面で既に広告を視聴済みの場合は広告をスキップして保存を実行
      */
     fun showRewardedAdAndSave(activity: Activity) {
-        logEvent(com.fansauchiwa.data.analytics.AnalyticsActions.TAP_PREVIEW_EXPORT)
+        logEvent(AnalyticsActions.TAP_PREVIEW_EXPORT)
 
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
+
+        if (hasEarnedReward) {
+            saveToGallery()
+            return
+        }
 
         adMobRepository.showRewardedAd(
             activity = activity,
             placement = AnalyticsScreens.PREVIEW_SCREEN,
             waitForLoad = true,
             onUserEarnedReward = {
-                // 報酬獲得（広告を最後まで視聴）したら保存を実行
+                hasEarnedReward = true
                 saveToGallery()
             },
             onAdFailedOrSkipped = {
-                // 広告が表示できなかった場合も保存を実行
                 saveToGallery()
             }
         )
@@ -106,5 +115,46 @@ class UchiwaPreviewViewModel @Inject constructor(
             saveSuccess = null
         )
     }
-}
 
+    /**
+     * リワード広告を表示し、広告視聴後（または失敗時）に共有用パスをセットする
+     * 広告のロードに失敗している場合は即座に共有を実行（UX低下を防ぐ）
+     * この画面で既に広告を視聴済みの場合は広告をスキップして共有を実行
+     */
+    fun showRewardedAdAndShare(activity: Activity) {
+        logEvent(AnalyticsActions.TAP_PREVIEW_SHARE)
+
+        if (hasEarnedReward) {
+            setShareImagePath()
+            return
+        }
+
+        adMobRepository.showRewardedAd(
+            activity = activity,
+            placement = AnalyticsScreens.PREVIEW_SCREEN,
+            waitForLoad = true,
+            onUserEarnedReward = {
+                hasEarnedReward = true
+            },
+            onAdFailedOrSkipped = {
+                // 広告が表示されなかった場合は onAdDismissed が来ないためここで共有を実行
+                setShareImagePath()
+            },
+            onAdDismissed = {
+                // 広告が閉じられた後（画面が前面に戻ってから）共有シートを起動
+                setShareImagePath()
+            }
+        )
+    }
+
+    private fun setShareImagePath() {
+        val imagePath = uiState.value.imagePath ?: return
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(shareImagePath = imagePath)
+    }
+
+    fun clearShareImage() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(shareImagePath = null)
+    }
+}

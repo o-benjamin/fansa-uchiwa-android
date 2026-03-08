@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -22,7 +23,8 @@ class HomeViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val analyticsRepository: AnalyticsRepository,
-    private val templateRepository: TemplateRepository
+    private val templateRepository: TemplateRepository,
+    private val uuidProvider: UuidProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -71,30 +73,30 @@ class HomeViewModel @Inject constructor(
         return path.substringAfterLast("/").substringBeforeLast(".png")
     }
 
-    fun enterDeletingMode() {
-        _uiState.update { it.copy(isDeletingMode = true, selectedDeletingPaths = emptyList()) }
+    fun enterSelectionMode() {
+        _uiState.update { it.copy(isSelectionMode = true, selectedPaths = emptyList()) }
     }
 
-    fun exitDeletingMode() {
-        _uiState.update { it.copy(isDeletingMode = false, selectedDeletingPaths = emptyList()) }
+    fun exitSelectionMode() {
+        _uiState.update { it.copy(isSelectionMode = false, selectedPaths = emptyList()) }
     }
 
     fun togglePathSelection(path: String) {
         _uiState.update { currentState ->
-            val currentSelected = currentState.selectedDeletingPaths
+            val currentSelected = currentState.selectedPaths
             val newSelected = if (path in currentSelected) {
                 currentSelected - path
             } else {
                 currentSelected + path
             }
-            currentState.copy(selectedDeletingPaths = newSelected)
+            currentState.copy(selectedPaths = newSelected)
         }
     }
 
     fun deleteSelectedMasterpieces() {
         viewModelScope.launch {
             logEvent(AnalyticsActions.TAP_HOME_ITEM_DELETE)
-            val selectedPaths = _uiState.value.selectedDeletingPaths
+            val selectedPaths = _uiState.value.selectedPaths
             selectedPaths.forEach { path ->
                 val uchiwaId = extractUchiwaId(path)
                 // ファイル削除
@@ -102,7 +104,32 @@ class HomeViewModel @Inject constructor(
                 // データベースのカラム削除
                 localDatabaseRepository.deleteUchiwa(uchiwaId)
             }
-            exitDeletingMode()
+            exitSelectionMode()
+            loadAllMasterpieces()
+        }
+    }
+
+    fun duplicateSelectedMasterpieces() {
+        viewModelScope.launch {
+            logEvent(AnalyticsActions.TAP_HOME_ITEM_DUPLICATE)
+            val selectedPaths = _uiState.value.selectedPaths
+            selectedPaths.forEach { path ->
+                val oldId = extractUchiwaId(path)
+                val newId = uuidProvider.generate()
+                // ファイル複製
+                masterpieceRepository.duplicateMasterpiece(path, newId)
+                    ?: return@forEach
+                // データベースの複製
+                val savedUchiwa = localDatabaseRepository.getUchiwa(oldId)
+                    ?: return@forEach
+                localDatabaseRepository.saveUchiwa(
+                    newId,
+                    savedUchiwa.decorations,
+                    savedUchiwa.uchiwaColor,
+                    savedUchiwa.backgroundColor
+                )
+            }
+            exitSelectionMode()
             loadAllMasterpieces()
         }
     }

@@ -18,9 +18,14 @@
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
     <string name="snackbar_saved">画像を保存しました</string>
     <string name="delete_images">%d個の写真を削除</string>
-    <string name="delete_masterpiece">%d個の作品を削除</string>
+    <string name="delete">削除</string>
+    <string name="duplicate">複製</string>
+    <string name="duplicate_masterpiece_snackbar">件複製しました</string>
+    <string name="delete_masterpiece_snackbar">件削除しました</string>
     <string name="cancel">キャンセル</string>
     <string name="save_as_image">画像として保存</string>
+    <string name="send_to_print_app">印刷アプリ等に送る</string>
+    <string name="share_chooser_title">送信先を選択</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
@@ -37,7 +42,6 @@
     <string name="design_saved">デザインを保存しました！</string>
     <string name="print_instructions">実際にうちわを作るときは、画像として端末に保存しA3サイズで印刷してください</string>
     <string name="empty_masterpiece_title">あなただけの\nファンサうちわを\n作ろう！</string>
-    <string name="empty_masterpiece_message">右下のボタンをタップして\n今すぐ作成スタート✨↘️</string>
     <string name="privacy_policy">プライバシーポリシー</string>
     <string name="more_options">その他のオプション</string>
     <string name="feedback">ご意見はこちら</string>
@@ -56,4 +60,9 @@
     <string name="template_section_title">テンプレートから作成</string>
     <string name="my_design_section_title">マイデザイン</string>
     <string name="export_template">テンプレートエクスポート</string>
+    <string name="export_template_dialog_message">テンプレート用にデータ出力します</string>
+    <string name="help">ヘルプ</string>
+    <string name="check_how_to_use">使い方をチェック✨</string>
+    <string name="external_link">外部リンク</string>
+    <string name="official_site">公式サイト</string>
 </resources>

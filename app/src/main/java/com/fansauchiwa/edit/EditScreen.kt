@@ -1,13 +1,13 @@
 package com.fansauchiwa.edit
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.core.net.toUri
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,9 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,8 +76,10 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -105,7 +106,7 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel(),
@@ -120,6 +121,7 @@ fun EditScreen(
     val showBackDialog = remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -146,6 +148,16 @@ fun EditScreen(
         showBackDialog.value = true
     }
 
+    val showExportDialog = remember { mutableStateOf(false) }
+
+    // シェイク検知
+    val isDebuggable = remember {
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
+    if (isDebuggable) {
+        ShakeDetector(onShake = { showExportDialog.value = true })
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -162,32 +174,19 @@ fun EditScreen(
                     }
                 },
                 actions = {
-                    val context = LocalContext.current
-                    val isDebuggable = remember {
-                        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-                    }
-                    if (isDebuggable) {
-                        IconButton(
-                            onClick = {
-                                viewModel.exportTemplateCode { uchiwaId ->
-                                    viewModel.resetEditUiState()
-                                    coroutineScope.launch {
-                                        withFrameMillis { }
-                                        val highResBitmap = captureHighResBitmap(
-                                            graphicsLayer,
-                                            density,
-                                            layoutDirection
-                                        ).asAndroidBitmap()
-                                        viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.BugReport,
-                                contentDescription = stringResource(R.string.export_template)
+                    IconButton(
+                        onClick = {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                "https://fansauchiwa-578d22ff.web.app/guide.html".toUri()
                             )
+                            context.startActivity(intent)
                         }
+                    ) {
+                        Icon(
+                            imageVector = @Suppress("DEPRECATION") Icons.Outlined.HelpOutline,
+                            contentDescription = stringResource(R.string.help)
+                        )
                     }
                     Button(
                         onClick = {
@@ -197,7 +196,6 @@ fun EditScreen(
                                 coroutineScope.launch {
                                     // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
                                     withFrameMillis { }
-                                    val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
                                     val highResBitmap = captureHighResBitmap(
                                         graphicsLayer,
                                         density,
@@ -294,10 +292,15 @@ fun EditScreen(
                         UchiwaPreview(
                             decorations = uiState.decorations,
                             selectedDecorationId = uiState.selectedDecorationId,
-                            onDecorationTap = viewModel::selectDecoration,
-                            onDecorationDoubleTap = { decorationId ->
+                            onDecorationTap = { decorationId ->
+                                if (uiState.selectedDecorationId == decorationId) {
+                                    viewModel.startEditingText(decorationId)
+                                } else {
+                                    viewModel.selectDecoration(decorationId)
+                                }
+                            },
+                            onDecorationDragStart = { decorationId ->
                                 viewModel.selectDecoration(decorationId)
-                                viewModel.startEditingText(decorationId)
                             },
                             onBackgroundTap = {
                                 viewModel.unSelectDecoration()
@@ -305,6 +308,7 @@ fun EditScreen(
                             },
                             onDecorationDragEnd = viewModel::updateDecorationGraphic,
                             onTapDelete = viewModel::deleteDecoration,
+                            onTapDuplicate = viewModel::duplicateDecoration,
                             modifier = Modifier.fillMaxSize(),
                             images = uiState.images,
                             uchiwaColor = uiState.uchiwaColor,
@@ -325,6 +329,11 @@ fun EditScreen(
                 EditPager(
                     onStickerClick = viewModel::addDecoration,
                     onTextClick = viewModel::addDecoration,
+                    onFontChanged = { font ->
+                        uiState.selectedDecorationId?.let { id ->
+                            viewModel.updateFont(id, font)
+                        }
+                    },
                     onColorSelected = { color ->
                         uiState.selectedDecorationId?.let { decorationId ->
                             viewModel.updateColor(decorationId, color)
@@ -386,18 +395,20 @@ fun EditScreen(
                         .find { it.id == editingTextId }
                 }
                 editingDecoration?.let { decoration ->
-                    TextInputBar(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .imePadding(),
-                        initialText = decoration.text,
-                        onTextChanged = { newText ->
-                            viewModel.updateText(editingTextId, newText)
-                        },
-                        onDone = { viewModel.finishEditingText() },
-                        onDismissBlocked = { viewModel.notifyDismissBlocked() }
-                    )
+                    key(editingTextId) {
+                        TextInputBar(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .imePadding(),
+                            initialText = decoration.text,
+                            onTextChanged = { newText ->
+                                viewModel.updateText(editingTextId, newText)
+                            },
+                            onDone = { viewModel.finishEditingText() },
+                            onDismissBlocked = { viewModel.notifyDismissBlocked() }
+                        )
+                    }
                 }
 
             }
@@ -423,8 +434,12 @@ fun EditScreen(
                             viewModel.resetEditUiState()
                             coroutineScope.launch {
                                 withFrameMillis { }
-                                val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-                                viewModel.saveUchiwaBitmap(bitmap, uchiwaId)
+                                val highResBitmap = captureHighResBitmap(
+                                    graphicsLayer,
+                                    density,
+                                    layoutDirection
+                                ).asAndroidBitmap()
+                                viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
                                 // 保存完了後に戻る
                                 onBack()
                             }
@@ -477,6 +492,47 @@ fun EditScreen(
             }
         )
     }
+
+    // テンプレートエクスポートダイアログ（シェイクで表示）
+    if (showExportDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog.value = false },
+            title = {
+                Text(text = stringResource(R.string.export_template))
+            },
+            text = {
+                Text(text = stringResource(R.string.export_template_dialog_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExportDialog.value = false
+                        viewModel.exportTemplateCode { uchiwaId ->
+                            viewModel.resetEditUiState()
+                            coroutineScope.launch {
+                                withFrameMillis { }
+                                val highResBitmap = captureHighResBitmap(
+                                    graphicsLayer,
+                                    density,
+                                    layoutDirection
+                                ).asAndroidBitmap()
+                                viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
+                            }
+                        }
+                    }
+                ) {
+                    Text(text = stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExportDialog.value = false }
+                ) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -484,10 +540,11 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecorationId: String?,
     onDecorationTap: (String) -> Unit,
-    onDecorationDoubleTap: (String) -> Unit,
+    onDecorationDragStart: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
+    onTapDuplicate: (String) -> Unit,
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
     uchiwaColor: Color,
@@ -551,7 +608,7 @@ fun UchiwaPreview(
                             isSelected = isSelected,
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff
+                            currentRotation = decoration.rotation + rotationDiff,
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -567,7 +624,7 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDecorationDoubleTap = { onDecorationDoubleTap(decoration.id) },
+                            onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -613,7 +670,10 @@ fun UchiwaPreview(
                                         6f
                                     )
                                 scaleDiff = targetScale - decoration.scale
-                                rotationDiff = transformation.rotationDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
@@ -626,7 +686,8 @@ fun UchiwaPreview(
                                 scaleDiff = 0f
                                 rotationDiff = 0f
                             },
-                            onTapDelete = { onTapDelete(decoration.id) }
+                            onTapDelete = { onTapDelete(decoration.id) },
+                            onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
                     }
 
@@ -650,6 +711,7 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
+                            onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -695,7 +757,10 @@ fun UchiwaPreview(
                                         3f
                                     )
                                 scaleDiff = targetScale - decoration.scale
-                                rotationDiff = transformation.rotationDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
@@ -708,14 +773,15 @@ fun UchiwaPreview(
                                 scaleDiff = 0f
                                 rotationDiff = 0f
                             },
-                            onTapDelete = { onTapDelete(decoration.id) }
+                            onTapDelete = { onTapDelete(decoration.id) },
+                            onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
                         StickerItem(
                             decoration = decoration,
                             isSelected = isSelected,
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff
+                            currentRotation = decoration.rotation + rotationDiff,
                         )
                     }
 
@@ -742,6 +808,7 @@ fun UchiwaPreview(
                             decorationSize = imageDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
+                            onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
                                 rawOffsetDiff = calculateClampedOffset(
                                     currentConfirmedOffset = decoration.offset,
@@ -787,7 +854,10 @@ fun UchiwaPreview(
                                         5f
                                     )
                                 scaleDiff = targetScale - decoration.scale
-                                rotationDiff = transformation.rotationDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
                                 onDecorationDragEnd(
@@ -800,7 +870,8 @@ fun UchiwaPreview(
                                 scaleDiff = 0f
                                 rotationDiff = 0f
                             },
-                            onTapDelete = { onTapDelete(decoration.id) }
+                            onTapDelete = { onTapDelete(decoration.id) },
+                            onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
                         ImageItem(
                             decoration = decoration,
@@ -808,14 +879,14 @@ fun UchiwaPreview(
                             currentOffset = decoration.offset + offsetDiff,
                             currentScale = decoration.scale + scaleDiff,
                             currentRotation = decoration.rotation + rotationDiff,
-                            imagePath = images.find { it.id == decoration.imageId }?.path
+                            imagePath = images.find { it.id == decoration.imageId }?.path,
                         )
                     }
                 }
             }
         }
         if (snappedX || snappedY) {
-            val guideLineColor = MaterialTheme.colorScheme.tertiary
+            val guideLineColor = MaterialTheme.colorScheme.secondary
             val guideLineWidth = with(LocalDensity.current) { 1.dp.toPx() }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 if (snappedX) {
@@ -839,7 +910,6 @@ fun UchiwaPreview(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GestureInputLayer(
     offset: Offset,
@@ -848,13 +918,14 @@ private fun GestureInputLayer(
     decorationSize: DpSize,
     isSelected: Boolean,
     onDecorationTap: () -> Unit,
+    onDragStart: () -> Unit,
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
     onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
-    onDecorationDoubleTap: () -> Unit = {}
+    onTapDuplicate: () -> Unit,
 ) {
 
     Box(
@@ -867,17 +938,18 @@ private fun GestureInputLayer(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .combinedClickable(
+            .clickable(
                 interactionSource = null,
                 indication = null,
-                onClick = onDecorationTap,
-                onDoubleClick = onDecorationDoubleTap
+                onClick = onDecorationTap
             )
             .pointerInput(offset, scale, rotation) {
                 detectDragGestures(
+                    onDragStart = {
+                        onDragStart()
+                    },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        onDecorationTap()
                         onDrag(
                             rotatedDragAmount(
                                 rotation,
@@ -917,6 +989,20 @@ private fun GestureInputLayer(
                         -(GESTURE_INPUT_HANDLE_SIZE / 2)
                     )
             )
+            TapInputHandle(
+                onTap = onTapDuplicate,
+                scale = scale,
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = 1 / scale
+                        scaleY = 1 / scale
+                    }
+                    .align(Alignment.TopStart)
+                    .offset(
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2),
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                    )
+            )
         }
     }
 }
@@ -927,12 +1013,14 @@ private fun TextItem(
     isSelected: Boolean,
     currentOffset: Offset,
     currentScale: Float,
-    currentRotation: Float
+    currentRotation: Float,
 ) {
-    val borderModifier = if (isSelected) Modifier.border(
-        1.dp,
-        MaterialTheme.colorScheme.primary
-    ) else Modifier
+    val borderColor = getSelectionBorderColor(currentRotation)
+    val borderModifier = if (isSelected) Modifier
+        .testTag("TextItemBorder")
+        .semantics { this.borderColor = borderColor }
+        .border(1.dp, borderColor)
+    else Modifier
 
     Box(
         modifier = Modifier
@@ -954,30 +1042,7 @@ private fun TextItem(
             modifier = borderModifier
         )
         if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.BottomEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
-                    )
-            )
-            DeleteIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
+            DecorationHandleIcons(currentScale = currentScale)
         }
     }
 }
@@ -990,10 +1055,10 @@ private fun StickerItem(
     currentScale: Float,
     currentRotation: Float,
 ) {
-    val borderModifier = if (isSelected) Modifier.border(
-        1.dp,
-        MaterialTheme.colorScheme.primary
-    ) else Modifier
+    val borderColor = getSelectionBorderColor(currentRotation)
+    val borderModifier = if (isSelected) Modifier
+        .border(1.dp, borderColor)
+    else Modifier
 
     Box(
         modifier = Modifier
@@ -1013,30 +1078,7 @@ private fun StickerItem(
             isSelected = isSelected
         )
         if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.BottomEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
-                    )
-            )
-            DeleteIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
+            DecorationHandleIcons(currentScale = currentScale)
         }
     }
 }
@@ -1048,12 +1090,12 @@ private fun ImageItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
-    imagePath: String? = null,
+    imagePath: String?,
 ) {
-    val borderModifier = if (isSelected) Modifier.border(
-        1.dp,
-        MaterialTheme.colorScheme.primary
-    ) else Modifier
+    val borderColor = getSelectionBorderColor(currentRotation)
+    val borderModifier = if (isSelected) Modifier
+        .border(1.dp, borderColor)
+    else Modifier
 
     Box(
         modifier = Modifier
@@ -1075,30 +1117,7 @@ private fun ImageItem(
             isSelected = isSelected
         )
         if (isSelected) {
-            TransformHandleIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.BottomEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
-                    )
-            )
-            DeleteIcon(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / currentScale
-                        scaleY = 1 / currentScale
-                    }
-                    .align(Alignment.TopEnd)
-                    .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                        -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
-                    )
-            )
+            DecorationHandleIcons(currentScale = currentScale)
         }
     }
 }
@@ -1147,35 +1166,6 @@ private fun TapInputHandle(
     )
 }
 
-@Composable
-private fun TransformHandleIcon(
-    modifier: Modifier
-) {
-    Icon(
-        painter = painterResource(R.drawable.outline_arrows_outward_24),
-        contentDescription = "Zoom and Rotate",
-        tint = MaterialTheme.colorScheme.onPrimary,
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
-    )
-}
-
-@Composable
-private fun DeleteIcon(
-    modifier: Modifier
-) {
-    Icon(
-        imageVector = Icons.Default.Delete,
-        contentDescription = "Delete",
-        tint = MaterialTheme.colorScheme.onPrimary,
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
-    )
-}
 
 @Composable
 private fun UndoRedoRow(
@@ -1216,7 +1206,7 @@ private fun UndoRedoRow(
     }
 }
 
-private val GESTURE_INPUT_HANDLE_SIZE = 24.dp
+internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 
@@ -1241,7 +1231,7 @@ private fun StickerItemPreview() {
                 isSelected = true,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
-                currentRotation = 0f
+                currentRotation = 0f,
             )
         }
     }
@@ -1268,7 +1258,7 @@ private fun TextItemPreview() {
                 isSelected = true,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
-                currentRotation = 0f
+                currentRotation = 0f,
             )
         }
     }
