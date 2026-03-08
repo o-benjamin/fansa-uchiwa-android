@@ -178,7 +178,7 @@ fun EditScreen(
                         onClick = {
                             val intent = Intent(
                                 Intent.ACTION_VIEW,
-                                "https://fansauchiwa-578d22ff.web.app#guide.html".toUri()
+                                "https://fansauchiwa-578d22ff.web.app/guide.html".toUri()
                             )
                             context.startActivity(intent)
                         }
