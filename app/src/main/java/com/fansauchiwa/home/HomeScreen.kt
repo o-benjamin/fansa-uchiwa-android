@@ -229,6 +229,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
+            val uriHandler = LocalUriHandler.current
             HomeTopAppBar(
                 onOpenPrivacyPolicy = {
                     val url =
@@ -242,9 +243,7 @@ fun HomeScreen(
                     customTabsIntent.launchUrl(context, url.toUri())
                 },
                 onOpenOfficialSite = {
-                    val url = "https://fansauchiwa-578d22ff.web.app"
-                    val customTabsIntent = CustomTabsIntent.Builder().build()
-                    customTabsIntent.launchUrl(context, url.toUri())
+                    uriHandler.openUri("https://fansauchiwa-578d22ff.web.app#how-to-use")
                 }
             )
         },
