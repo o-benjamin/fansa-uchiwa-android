@@ -24,6 +24,8 @@
     <string name="delete_masterpiece_snackbar">件削除しました</string>
     <string name="cancel">キャンセル</string>
     <string name="save_as_image">画像として保存</string>
+    <string name="send_to_print_app">印刷アプリ等に送る</string>
+    <string name="share_chooser_title">送信先を選択</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>

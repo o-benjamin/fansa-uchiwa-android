@@ -47,13 +47,15 @@ interface AdMobRepository {
      * @param waitForLoad trueの場合、ロード中の広告のロードが完了するまで待つ。falseの場合、ロード中であれば即座にスキップ
      * @param onUserEarnedReward ユーザーが報酬を獲得した際のコールバック
      * @param onAdFailedOrSkipped 広告の表示に失敗した、または広告がロードされていない場合のコールバック
+     * @param onAdDismissed 広告画面が閉じられた後に呼ばれるコールバック（nullの場合は呼ばれない）
      */
     fun showRewardedAd(
         activity: Activity,
         placement: String,
         waitForLoad: Boolean,
         onUserEarnedReward: () -> Unit,
-        onAdFailedOrSkipped: () -> Unit
+        onAdFailedOrSkipped: () -> Unit,
+        onAdDismissed: (() -> Unit)? = null
     )
 
     /**
@@ -123,7 +125,8 @@ class AdMobRepositoryImpl @Inject constructor(
         placement: String,
         waitForLoad: Boolean,
         onUserEarnedReward: () -> Unit,
-        onAdFailedOrSkipped: () -> Unit
+        onAdFailedOrSkipped: () -> Unit,
+        onAdDismissed: (() -> Unit)?
     ) {
         val ad = rewardedAd
 
@@ -131,11 +134,18 @@ class AdMobRepositoryImpl @Inject constructor(
         if (ad == null) {
             // ロード中で、かつwaitForLoad=trueの場合は、ロード完了を待つ
             if (_isLoadingRewardedAd.value && waitForLoad) {
-                waitForRewardedAdLoad(activity, placement, onUserEarnedReward, onAdFailedOrSkipped)
+                waitForRewardedAdLoad(
+                    activity,
+                    placement,
+                    onUserEarnedReward,
+                    onAdFailedOrSkipped,
+                    onAdDismissed
+                )
                 return
             }
             // それ以外の場合は即座に処理をスキップ（UX低下を防ぐため）
             onAdFailedOrSkipped()
+            onAdDismissed?.invoke()
             loadRewardedAd()
             return
         }
@@ -166,6 +176,7 @@ class AdMobRepositoryImpl @Inject constructor(
                 // 広告を閉じた後、次回のために新しい広告をロード
                 rewardedAd = null
                 loadRewardedAd()
+                onAdDismissed?.invoke()
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
@@ -173,6 +184,7 @@ class AdMobRepositoryImpl @Inject constructor(
                 rewardedAd = null
                 loadRewardedAd()
                 onAdFailedOrSkipped()
+                onAdDismissed?.invoke()
             }
         }
 
@@ -198,7 +210,8 @@ class AdMobRepositoryImpl @Inject constructor(
         activity: Activity,
         placement: String,
         onUserEarnedReward: () -> Unit,
-        onAdFailedOrSkipped: () -> Unit
+        onAdFailedOrSkipped: () -> Unit,
+        onAdDismissed: (() -> Unit)?
     ) {
         analyticsScope.launch {
             val startTime = System.currentTimeMillis()
@@ -217,11 +230,13 @@ class AdMobRepositoryImpl @Inject constructor(
                         placement,
                         false,
                         onUserEarnedReward,
-                        onAdFailedOrSkipped
+                        onAdFailedOrSkipped,
+                        onAdDismissed
                     )
                 } else {
                     // タイムアウトまたはロード失敗
                     onAdFailedOrSkipped()
+                    onAdDismissed?.invoke()
                     loadRewardedAd()
                 }
             }
@@ -306,4 +321,3 @@ class AdMobRepositoryImpl @Inject constructor(
         ad.show(activity)
     }
 }
-

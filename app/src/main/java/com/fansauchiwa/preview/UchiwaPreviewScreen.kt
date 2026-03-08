@@ -20,9 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,7 +65,13 @@ import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.ui.theme.ButtonIconEndPadding
+import com.fansauchiwa.ui.theme.ButtonTextVerticalPadding
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.theme.PreviewContentHorizontalPadding
+import com.fansauchiwa.ui.theme.PreviewContentSpacing
+import com.fansauchiwa.ui.theme.PreviewContentVerticalPadding
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +101,34 @@ fun UchiwaPreviewScreen(
             snackbarHostState.showSnackbar("保存に失敗しました")
             viewModel.clearSaveStatus()
         }
+    }
+
+    // 共有シートの発火
+    val shareChooserTitle = stringResource(R.string.share_chooser_title)
+    LaunchedEffect(uiState.shareImagePath) {
+        val shareImagePath = uiState.shareImagePath ?: return@LaunchedEffect
+        val sourceFile = File(shareImagePath)
+        if (!sourceFile.exists()) {
+            viewModel.clearShareImage()
+            return@LaunchedEffect
+        }
+        val sharedDir = File(context.cacheDir, "shared_images").apply { mkdirs() }
+        val destFile = File(sharedDir, sourceFile.name)
+        sourceFile.copyTo(destFile, overwrite = true)
+        val contentUri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            destFile
+        )
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(
+            Intent.createChooser(shareIntent, shareChooserTitle)
+        )
+        viewModel.clearShareImage()
     }
 
     Scaffold(
@@ -142,6 +179,12 @@ fun UchiwaPreviewScreen(
                 val activity = context as? Activity
                 if (activity != null) {
                     viewModel.showRewardedAdAndSave(activity)
+                }
+            },
+            onShareClick = {
+                val activity = context as? Activity
+                if (activity != null) {
+                    viewModel.showRewardedAdAndShare(activity)
                 }
             },
             onBackToHomeClick = {
@@ -201,19 +244,23 @@ fun UchiwaPreviewScreen(
 fun UchiwaPreviewContent(
     imagePath: String?,
     onSaveClick: () -> Unit,
+    onShareClick: () -> Unit,
     onBackToHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 32.dp),
+        modifier = modifier.padding(horizontal = PreviewContentHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+        verticalArrangement = Arrangement.spacedBy(
+            PreviewContentSpacing,
+            Alignment.CenterVertically
+        )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp)
+                .padding(vertical = PreviewContentVerticalPadding)
         ) {
             if (isPreview && imagePath != null) {
                 // Preview用のサンプルBox
@@ -275,12 +322,31 @@ fun UchiwaPreviewContent(
             Icon(
                 imageVector = Icons.Default.Save,
                 contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
+                modifier = Modifier.padding(end = ButtonIconEndPadding)
             )
             Text(
                 text = stringResource(R.string.save_as_image),
                 fontSize = 20.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = ButtonTextVerticalPadding)
+            )
+        }
+        Button(
+            onClick = onShareClick,
+            enabled = imagePath != null,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Share,
+                contentDescription = null,
+                modifier = Modifier.padding(end = ButtonIconEndPadding)
+            )
+            Text(
+                text = stringResource(R.string.send_to_print_app),
+                fontSize = 20.sp,
+                modifier = Modifier.padding(vertical = ButtonTextVerticalPadding)
             )
         }
         TextButton(
@@ -302,6 +368,7 @@ private fun UchiwaPreviewContentLoadingAdPreview() {
         UchiwaPreviewContent(
             imagePath = "/sample/path/uchiwa.png",
             onSaveClick = {},
+            onShareClick = {},
             onBackToHomeClick = {},
             modifier = Modifier
                 .padding(16.dp),

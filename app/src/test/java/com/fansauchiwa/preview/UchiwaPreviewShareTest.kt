@@ -64,32 +64,65 @@ class UchiwaPreviewShareTest {
         )
     }
 
-    // region showRewardedAdAndShare - onUserEarnedReward
+    // region showRewardedAdAndShare - onUserEarnedReward → onAdDismissed
 
     @Test
-    fun showRewardedAdAndShare_userEarnedReward_shareImagePathIsSetToCurrentImagePath() = runTest {
-        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(imagePath)
-        val activity = mockk<Activity>()
+    fun showRewardedAdAndShare_userEarnedRewardThenAdDismissed_shareImagePathIsSetToCurrentImagePath() =
+        runTest {
+            val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+            val viewModel = createViewModel(imagePath)
+            val activity = mockk<Activity>()
 
-        val onUserEarnedRewardSlot = slot<() -> Unit>()
-        every {
-            adMobRepository.showRewardedAd(
-                activity = activity,
-                placement = AnalyticsScreens.PREVIEW_SCREEN,
-                waitForLoad = true,
-                onUserEarnedReward = capture(onUserEarnedRewardSlot),
-                onAdFailedOrSkipped = any()
-            )
-        } answers {
-            onUserEarnedRewardSlot.captured.invoke()
+            val onUserEarnedRewardSlot = slot<() -> Unit>()
+            val onAdDismissedSlot = slot<() -> Unit>()
+            every {
+                adMobRepository.showRewardedAd(
+                    activity = activity,
+                    placement = AnalyticsScreens.PREVIEW_SCREEN,
+                    waitForLoad = true,
+                    onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                    onAdFailedOrSkipped = any(),
+                    onAdDismissed = capture(onAdDismissedSlot)
+                )
+            } answers {
+                onUserEarnedRewardSlot.captured.invoke()
+                onAdDismissedSlot.captured.invoke()
+            }
+
+            viewModel.showRewardedAdAndShare(activity)
+            advanceUntilIdle()
+
+            assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
         }
 
-        viewModel.showRewardedAdAndShare(activity)
-        advanceUntilIdle()
+    @Test
+    fun showRewardedAdAndShare_userEarnedRewardButAdNotYetDismissed_shareImagePathIsNull() =
+        runTest {
+            val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+            val viewModel = createViewModel(imagePath)
+            val activity = mockk<Activity>()
 
-        assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
-    }
+            val onUserEarnedRewardSlot = slot<() -> Unit>()
+            every {
+                adMobRepository.showRewardedAd(
+                    activity = activity,
+                    placement = AnalyticsScreens.PREVIEW_SCREEN,
+                    waitForLoad = true,
+                    onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                    onAdFailedOrSkipped = any(),
+                    onAdDismissed = any()
+                )
+            } answers {
+                // onAdDismissed は呼ばない（広告がまだ表示中の状態）
+                onUserEarnedRewardSlot.captured.invoke()
+            }
+
+            viewModel.showRewardedAdAndShare(activity)
+            advanceUntilIdle()
+
+            // 広告が閉じられるまで shareImagePath はセットされない
+            assertNull(viewModel.uiState.value.shareImagePath)
+        }
 
     // endregion
 
@@ -108,7 +141,8 @@ class UchiwaPreviewShareTest {
                 placement = AnalyticsScreens.PREVIEW_SCREEN,
                 waitForLoad = true,
                 onUserEarnedReward = any(),
-                onAdFailedOrSkipped = capture(onAdFailedOrSkippedSlot)
+                onAdFailedOrSkipped = capture(onAdFailedOrSkippedSlot),
+                onAdDismissed = any()
             )
         } answers {
             onAdFailedOrSkippedSlot.captured.invoke()
@@ -130,22 +164,63 @@ class UchiwaPreviewShareTest {
         val activity = mockk<Activity>()
 
         val onUserEarnedRewardSlot = slot<() -> Unit>()
+        val onAdDismissedSlot = slot<() -> Unit>()
         every {
             adMobRepository.showRewardedAd(
                 activity = activity,
                 placement = AnalyticsScreens.PREVIEW_SCREEN,
                 waitForLoad = true,
                 onUserEarnedReward = capture(onUserEarnedRewardSlot),
-                onAdFailedOrSkipped = any()
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = capture(onAdDismissedSlot)
             )
         } answers {
             onUserEarnedRewardSlot.captured.invoke()
+            onAdDismissedSlot.captured.invoke()
         }
 
         viewModel.showRewardedAdAndShare(activity)
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.shareImagePath)
+    }
+
+    // endregion
+
+    // region showRewardedAdAndShare - 視聴済みスキップ
+
+    @Test
+    fun showRewardedAdAndShare_alreadyEarnedReward_shareImagePathIsSetWithoutShowingAd() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(imagePath)
+        val activity = mockk<Activity>()
+
+        // 1回目：広告を視聴済みにする
+        val onUserEarnedRewardSlot = slot<() -> Unit>()
+        val onAdDismissedSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = capture(onAdDismissedSlot)
+            )
+        } answers {
+            onUserEarnedRewardSlot.captured.invoke()
+            onAdDismissedSlot.captured.invoke()
+        }
+        viewModel.showRewardedAdAndShare(activity)
+        advanceUntilIdle()
+        viewModel.clearShareImage()
+        advanceUntilIdle()
+
+        // 2回目：視聴済みのため広告なしで即座に shareImagePath がセットされる
+        viewModel.showRewardedAdAndShare(activity)
+        advanceUntilIdle()
+
+        assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
     }
 
     // endregion
@@ -159,16 +234,19 @@ class UchiwaPreviewShareTest {
         val activity = mockk<Activity>()
 
         val onUserEarnedRewardSlot = slot<() -> Unit>()
+        val onAdDismissedSlot = slot<() -> Unit>()
         every {
             adMobRepository.showRewardedAd(
                 activity = activity,
                 placement = AnalyticsScreens.PREVIEW_SCREEN,
                 waitForLoad = true,
                 onUserEarnedReward = capture(onUserEarnedRewardSlot),
-                onAdFailedOrSkipped = any()
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = capture(onAdDismissedSlot)
             )
         } answers {
             onUserEarnedRewardSlot.captured.invoke()
+            onAdDismissedSlot.captured.invoke()
         }
 
         viewModel.showRewardedAdAndShare(activity)
@@ -193,4 +271,3 @@ class UchiwaPreviewShareTest {
 
     // endregion
 }
-

@@ -12,3 +12,10 @@ val TextInputBarCornerRadius = 16.dp
 val TextInputBarInnerHorizontalPadding = 16.dp
 val TextInputBarInnerVerticalPadding = 8.dp
 val TextInputBarDoneButtonPadding = 8.dp
+
+val PreviewContentHorizontalPadding = 32.dp
+val PreviewContentSpacing = 16.dp
+val PreviewContentVerticalPadding = 16.dp
+val ButtonIconEndPadding = 8.dp
+val ButtonTextVerticalPadding = 8.dp
+
