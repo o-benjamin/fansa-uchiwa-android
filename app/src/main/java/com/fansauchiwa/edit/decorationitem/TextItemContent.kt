@@ -7,7 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -18,17 +18,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.TEXT_ITEM_PADDING
+import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @Composable
 fun TextItemContent(
     decoration: Decoration.Text,
     textSize: TextUnit,
-    modifier: Modifier = Modifier,
-    isSelected: Boolean = false
+    modifier: Modifier = Modifier
 ) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
@@ -65,7 +68,6 @@ fun TextItemContent(
                             join = StrokeJoin.Round
                         ),
                         color = secondBorderColor,
-                        blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
                     )
                 }
                 // 枠線（中間）: strokeColor で描画（太さ：borderWidth）
@@ -73,15 +75,55 @@ fun TextItemContent(
                     textLayoutResult = layoutResult,
                     drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
                     color = strokeColor,
-                    blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
                 )
                 // 塗りつぶし（最前面）: color で本体を描画
                 drawText(
                     textLayoutResult = layoutResult,
                     drawStyle = Fill,
                     color = textColor,
-                    blendMode = if (!isSelected) BlendMode.SrcIn else BlendMode.SrcOver
                 )
             }
     )
 }
+
+// region TextItemContent Previews
+
+private val previewTextDecoration = Decoration.Text(
+    id = "preview-text-1",
+    text = "推し活最高！",
+    font = FontFamilies.HACHI_MARU_POP,
+    color = Color.White,
+    strokeColor = Color.Magenta,
+    strokeWidth = 30f,
+    secondBorderColor = Color.White,
+    secondBorderWidth = 0f,
+    width = FontWeight.W900.weight,
+)
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+private fun TextItemContentPreview() {
+    FansaUchiwaTheme {
+        TextItemContent(
+            decoration = previewTextDecoration,
+            textSize = 48.sp,
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+private fun TextItemContentWithSecondBorderPreview() {
+    FansaUchiwaTheme {
+        TextItemContent(
+            decoration = previewTextDecoration.copy(
+                secondBorderWidth = 10f,
+                secondBorderColor = Color.Cyan
+            ),
+            textSize = 48.sp,
+        )
+    }
+}
+
+// endregion
+

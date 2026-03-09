@@ -1044,7 +1044,6 @@ private fun TextItem(
         val textSize = 24.sp.nonScaledSp
         TextItemContent(
             decoration = decoration,
-            isSelected = isSelected,
             textSize = textSize,
             modifier = borderModifier
         )
@@ -1082,7 +1081,6 @@ private fun StickerItem(
         StickerItemContent(
             decoration = decoration,
             modifier = borderModifier,
-            isSelected = isSelected
         )
         if (isSelected) {
             DecorationHandleIcons(currentScale = currentScale)
@@ -1121,7 +1119,6 @@ private fun ImageItem(
             imagePath = imagePath,
             size = IMAGE_SIZE_DEFAULT,
             modifier = Modifier.then(borderModifier),
-            isSelected = isSelected
         )
         if (isSelected) {
             DecorationHandleIcons(currentScale = currentScale)

@@ -6,10 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.toRect
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -21,23 +18,23 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.graphics.vector.VectorGroup
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.tooling.preview.Preview
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.ui.StickerAsset
+import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 /**
  * StickerのコンテンツをCanvasを使って描画するComposable
  *
  * @param decoration 描画対象のStickerデコレーション
  * @param modifier Modifier
- * @param isSelected 選択状態かどうか（BlendModeに影響）
  */
 @Composable
 fun StickerItemContent(
     decoration: Decoration.Sticker,
-    modifier: Modifier,
-    isSelected: Boolean
+    modifier: Modifier
 ) {
     if (decoration.resId == 0) return
 
@@ -73,24 +70,15 @@ fun StickerItemContent(
             )
             .drawWithCache {
                 onDrawWithContent {
-                    // 選択されていない場合はうちわ形状でクリップ
-                    drawContext.canvas.withSaveLayer(
-                        bounds = size.toRect(),
-                        paint = Paint().apply {
-                            blendMode =
-                                if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
-                        }
-                    ) {
-                        drawStickerWithStrokeScaled(
-                            imageVector = imageVector,
-                            fillColor = fillColor,
-                            strokeColor = strokeColor,
-                            strokeWidth = strokeWidth,
-                            innerScale = innerScale,
-                            secondStrokeColor = secondStrokeColor,
-                            secondStrokeWidth = secondStrokeWidth
-                        )
-                    }
+                    drawStickerWithStrokeScaled(
+                        imageVector = imageVector,
+                        fillColor = fillColor,
+                        strokeColor = strokeColor,
+                        strokeWidth = strokeWidth,
+                        innerScale = innerScale,
+                        secondStrokeColor = secondStrokeColor,
+                        secondStrokeWidth = secondStrokeWidth
+                    )
                 }
             }
     ) {
@@ -249,4 +237,43 @@ private fun DrawScope.drawVectorPath(
         }
     }
 }
+
+// region StickerItemContent Previews
+
+private val previewStickerDecoration = Decoration.Sticker(
+    id = "preview-sticker-1",
+    label = StickerAsset.HEART.type,
+    color = Color.Magenta,
+    strokeColor = Color.White,
+    strokeWidth = 3f,
+    secondStrokeColor = Color.White,
+    secondStrokeWidth = 0f,
+)
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+private fun StickerItemContentPreview() {
+    FansaUchiwaTheme {
+        StickerItemContent(
+            decoration = previewStickerDecoration,
+            modifier = Modifier,
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+private fun StickerItemContentWithSecondStrokePreview() {
+    FansaUchiwaTheme {
+        StickerItemContent(
+            decoration = previewStickerDecoration.copy(
+                secondStrokeColor = Color.Cyan,
+                secondStrokeWidth = 6f,
+            ),
+            modifier = Modifier,
+        )
+    }
+}
+
+// endregion
 

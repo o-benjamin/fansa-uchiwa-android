@@ -439,7 +439,6 @@ private fun LayerItemPreview(
                     modifier = Modifier
                         .padding(4.dp)
                         .size(36.dp),
-                    isSelected = false
                 )
             }
 
@@ -451,7 +450,6 @@ private fun LayerItemPreview(
                         imagePath = imageReference.path,
                         size = 36.dp,
                         modifier = Modifier.padding(4.dp),
-                        isSelected = false
                     )
                 }
             }

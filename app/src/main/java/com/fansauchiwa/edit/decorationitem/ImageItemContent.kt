@@ -3,18 +3,16 @@ package com.fansauchiwa.edit.decorationitem
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.toRect
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.size.SizeResolver
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 /**
  * ImageデコレーションのコンテンツをAsyncImageで描画するComposable
@@ -23,15 +21,13 @@ import com.fansauchiwa.data.Decoration
  * @param imagePath 画像ファイルのパス
  * @param size 画像の表示サイズ
  * @param modifier Modifier
- * @param isSelected 選択状態かどうか（BlendModeに影響）
  */
 @Composable
 fun ImageItemContent(
     decoration: Decoration.Image,
     imagePath: String?,
     size: Dp,
-    modifier: Modifier,
-    isSelected: Boolean
+    modifier: Modifier
 ) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
@@ -42,15 +38,26 @@ fun ImageItemContent(
         contentDescription = null,
         modifier = modifier
             .size(size)
-            .drawWithContent {
-                drawContext.canvas.withSaveLayer(
-                    bounds = this.size.toRect(),
-                    paint = Paint().apply {
-                        blendMode = if (!isSelected) BlendMode.SrcAtop else BlendMode.SrcOver
-                    }
-                ) {
-                    drawContent()
-                }
-            }
     )
 }
+
+// region ImageItemContent Previews
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+private fun ImageItemContentPreview() {
+    FansaUchiwaTheme {
+        ImageItemContent(
+            decoration = Decoration.Image(
+                id = "preview-image-1",
+                imageId = "preview-image-id"
+            ),
+            imagePath = null,
+            size = 120.dp,
+            modifier = Modifier,
+        )
+    }
+}
+
+// endregion
+
