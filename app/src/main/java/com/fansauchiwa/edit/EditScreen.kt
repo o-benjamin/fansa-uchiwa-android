@@ -2,7 +2,6 @@ package com.fansauchiwa.edit
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.core.net.toUri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -89,6 +88,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.R
@@ -566,7 +566,14 @@ fun UchiwaPreview(
                 indication = null
             ) {
                 onBackgroundTap()
-            },
+            }
+            .then(
+                if (selectedDecorationId == null) {
+                    Modifier.clip(UchiwaShape())
+                } else {
+                    Modifier
+                }
+            ),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -1037,7 +1044,6 @@ private fun TextItem(
         val textSize = 24.sp.nonScaledSp
         TextItemContent(
             decoration = decoration,
-            isSelected = isSelected,
             textSize = textSize,
             modifier = borderModifier
         )
@@ -1075,7 +1081,6 @@ private fun StickerItem(
         StickerItemContent(
             decoration = decoration,
             modifier = borderModifier,
-            isSelected = isSelected
         )
         if (isSelected) {
             DecorationHandleIcons(currentScale = currentScale)
@@ -1114,7 +1119,6 @@ private fun ImageItem(
             imagePath = imagePath,
             size = IMAGE_SIZE_DEFAULT,
             modifier = Modifier.then(borderModifier),
-            isSelected = isSelected
         )
         if (isSelected) {
             DecorationHandleIcons(currentScale = currentScale)

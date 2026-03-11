@@ -1,0 +1,61 @@
+package com.fansauchiwa.edit
+
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+
+// これらの定数は res/drawable/uchiwa_shape.xml の viewportWidth / viewportHeight / pathData と同一の値です。
+// XML側では文字列リソース参照が使えないため、このファイルを Single Source of Truth として管理します。
+// XML側を変更した場合は、必ずこちらの定数も合わせて更新してください。
+private const val UCHIWA_VIEWPORT_WIDTH = 529f
+private const val UCHIWA_VIEWPORT_HEIGHT = 497f
+private const val UCHIWA_PATH_DATA =
+    "M208,4c-19.9,1.9 -36.9,4.8 -55.6,9.7 -19,4.8 -27,7.5 -42.5,14 -65.2,27.3 " +
+            "-102.3,78 -109.6,149.8 -3.4,33.6 3.9,87.7 17.2,128.1 22.3,67.6 64.1,119 " +
+            "124.6,153.3 21.1,11.9 45.8,21.7 70.1,27.7 19.5,4.8 27.2,5.9 46.7,6.5 " +
+            "15,0.5 20.2,0.2 31.6,-1.4 76.5,-11.4 145.4,-54.1 186.6,-115.7 " +
+            "11.9,-17.8 19.4,-31.9 27.6,-52 8.8,-21.4 17.9,-55.8 20.2,-76 " +
+            "0.3,-3.3 1.1,-8.3 1.6,-11 2.7,-14.6 2.7,-63.1 0,-75.4 " +
+            "-0.6,-2.5 -1.8,-8 -2.7,-12.1 -4.3,-19.6 -14,-42.6 -24.6,-58.5 " +
+            "-6.8,-10.2 -19.5,-24.3 -29,-32.3 -25.8,-21.6 -53.6,-34.9 -94.3,-45.1 " +
+            "-16.6,-4.2 -27.6,-6.2 -48,-8.8 -17.3,-2.2 -99.3,-2.7 -119.9,-0.8z"
+
+class UchiwaShape : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val path = PathParser().parsePathString(UCHIWA_PATH_DATA).toPath()
+
+        // 1. Imageの ContentScale.Fit と同じように、枠に収まる最大のスケール（倍率）を計算する
+        val defaultSize = size * 0.95f
+        val scaleX = defaultSize.width / UCHIWA_VIEWPORT_WIDTH
+        val scaleY = defaultSize.height / UCHIWA_VIEWPORT_HEIGHT
+        val scale = minOf(scaleX, scaleY)
+
+        // 2. スケール適用後の実際のパスのサイズを計算する
+        val scaledWidth = UCHIWA_VIEWPORT_WIDTH * scale
+        val scaledHeight = UCHIWA_VIEWPORT_HEIGHT * scale
+
+        // 3. 中央に配置するためのオフセット（余白の半分）を計算する
+        val offsetX = (size.width - scaledWidth) / 2f
+        val offsetY = (size.height - scaledHeight) / 2f
+
+        // 4. パスにスケール（拡大縮小）を適用
+        val scaleMatrix = Matrix()
+        scaleMatrix.scale(x = scale, y = scale)
+        path.transform(scaleMatrix)
+
+        // 5. パスにオフセット（平行移動）を適用して中央揃えにする
+        val translateMatrix = Matrix()
+        translateMatrix.translate(x = offsetX, y = offsetY)
+        path.transform(translateMatrix)
+
+        return Outline.Generic(path)
+    }
+}
