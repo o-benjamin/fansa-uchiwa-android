@@ -13,9 +13,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Badge
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -23,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,6 +29,8 @@ import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.ColorAndWeightControl
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.ItemBadge
+import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.util.UUID
 
@@ -130,10 +129,7 @@ fun FontFamilySelectionGrid(
 
     // isNew = false のエントリだけで 0 始まりの通し番号を付与するマップ
     val rankIndexMap = remember {
-        var rank = 0
-        FontFamilies.entries.associateWith { font ->
-            if (!font.isNew) rank++ else null
-        }
+        buildRankIndexMap(FontFamilies.entries) { it.isNew }
     }
 
     LazyVerticalGrid(
@@ -192,32 +188,11 @@ fun FontFamilySelectionGrid(
                     )
                 }
                 val rankIndex = rankIndexMap[fontFamily]
-                if (rankIndex != null && rankIndex < 5) {
-                    val containerColor = when (rankIndex) {
-                        0 -> colorResource(R.color.rank_1_gold)
-                        1 -> colorResource(R.color.rank_2_silver)
-                        2 -> colorResource(R.color.rank_3_bronze)
-                        else -> colorResource(R.color.rank_4_5_gray)
-                    }
-                    val contentColor = when (rankIndex) {
-                        0,1,2 -> colorResource(R.color.white)
-                        3,4 -> colorResource(R.color.white)
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                    Badge(
-                        modifier = Modifier.align(Alignment.TopStart),
-                        containerColor = containerColor,
-                        contentColor = contentColor
-                    ) {
-                        Text(text = stringResource(R.string.font_badge_ranking, rankIndex + 1))
-                    }
-                } else if (fontFamily.isNew) {
-                    Badge(
-                        modifier = Modifier.align(Alignment.TopStart)
-                    ) {
-                        Text(text = stringResource(R.string.font_badge_new))
-                    }
-                }
+                ItemBadge(
+                    rankIndex = rankIndex,
+                    isNew = fontFamily.isNew,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
             }
         }
     }
