@@ -8,6 +8,9 @@ enum class StickerAsset(
     @DrawableRes val resId: Int
 ) {
     HEART("heart", R.drawable.sticker_heart),
+    HEART_CUTE("heart_cute", R.drawable.sticker_heart_cute),
+    HEART_HORIZONTAL("heart_horizontal", R.drawable.sticker_heart_horizontal),
+    HEART_VERTICAL("heart_vertical", R.drawable.sticker_heart_vertical),
     AUTO_AWESOME("auto_awesome", R.drawable.round_auto_awesome_24),
     AUDIO_TRACK("audio_track", R.drawable.round_audiotrack_24),
     STAR("star", R.drawable.baseline_star_24),
