@@ -19,4 +19,10 @@
     <color name="decoration_yellow">#FFFFFF00</color>
     <color name="decoration_white">#FFFFFFFF</color>
 
+    <!-- Font Badge Colors -->
+    <color name="rank_1_gold">#B8860B</color>
+    <color name="rank_2_silver">#757575</color>
+    <color name="rank_3_bronze">#8B4513</color>
+    <color name="rank_4_5_gray">#424242</color>
+
 </resources>

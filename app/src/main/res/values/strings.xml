@@ -65,4 +65,6 @@
     <string name="check_how_to_use">使い方をチェック✨</string>
     <string name="external_link">外部リンク</string>
     <string name="official_site">公式サイト</string>
+    <string name="badge_ranking">No.%d</string>
+    <string name="badge_new">New</string>
 </resources>

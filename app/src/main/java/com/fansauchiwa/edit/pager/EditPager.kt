@@ -49,21 +49,22 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.edit.ColorAndWeightControl
+import com.fansauchiwa.edit.ColorPickerRow
 import com.fansauchiwa.edit.DecorationTabType
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.HeaderTitle
-import com.fansauchiwa.edit.ColorPickerRow
-import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.edit.ItemBadge
+import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.ui.DecorationColors
 import com.fansauchiwa.ui.StickerAsset
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -232,6 +233,10 @@ fun StickerPage(
     selectedDecoration: Decoration? = null,
 ) {
     val scrollState = rememberScrollState()
+    // isNew = false のエントリだけで 0 始まりの通し番号を付与するマップ
+    val rankIndexMap = remember {
+        buildRankIndexMap(StickerAsset.entries) { it.isNew }
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -272,7 +277,7 @@ fun StickerPage(
         }
 
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .wrapContentWidth()
@@ -281,7 +286,7 @@ fun StickerPage(
             StickerAsset.entries.forEach { sticker ->
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(72.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .clickable {
                             onStickerClick(
@@ -297,7 +302,13 @@ fun StickerPage(
                         contentDescription = sticker.type,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(8.dp)
+                            .padding(12.dp)
+                    )
+                    val rankIndex = rankIndexMap[sticker]
+                    ItemBadge(
+                        rankIndex = rankIndex,
+                        isNew = sticker.isNew,
+                        modifier = Modifier.align(Alignment.TopStart)
                     )
                 }
             }

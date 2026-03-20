@@ -1,5 +1,6 @@
 package com.fansauchiwa.ui.theme
 
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.Font
@@ -286,3 +287,14 @@ val zenOldMinchoFontFamily = FontFamily(
     Font(googleFont = ZenOldMinchoFont, fontProvider = provider, weight = FontWeight.W400),
 )
 
+val keiFontFamily = FontFamily(
+    Font(R.font.keifont)
+)
+
+val akazukinPopFontFamily = FontFamily(
+    Font(R.font.akazukinpop)
+)
+
+val lightNovelPopFontFamily = FontFamily(
+    Font(R.font.lightnovelpopv2)
+)

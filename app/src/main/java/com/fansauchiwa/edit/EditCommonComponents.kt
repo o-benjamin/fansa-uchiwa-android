@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
@@ -31,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -179,6 +181,58 @@ fun ColorAndWeightControl(
                 modifier = Modifier.padding(top = 8.dp),
                 currentColor = color
             )
+        }
+    }
+}
+
+/**
+ * isNew でないエントリに 0 始まりの通し番号を付与するマップを作成する。
+ * isNew = true のエントリには null が割り当てられる。
+ */
+fun <T> buildRankIndexMap(
+    entries: List<T>,
+    isNew: (T) -> Boolean
+): Map<T, Int?> {
+    var rank = 0
+    return entries.associateWith { entry ->
+        if (!isNew(entry)) rank++ else null
+    }
+}
+
+/**
+ * ランキングバッジまたは New バッジを表示する共通コンポーザブル。
+ * BoxScope 内で使用することを想定。
+ *
+ * @param rankIndex isNew でないエントリの通し番号（0始まり）。isNew の場合は null。
+ * @param isNew 新規アイテムかどうか
+ * @param modifier 配置用の Modifier（例: Modifier.align(Alignment.TopStart)）
+ * @param topRankCount ランキングバッジを表示する上位件数（デフォルト 5）
+ */
+@Composable
+fun ItemBadge(
+    rankIndex: Int?,
+    isNew: Boolean,
+    modifier: Modifier = Modifier,
+    topRankCount: Int = 5
+) {
+    if (rankIndex != null && rankIndex < topRankCount) {
+        val containerColor = when (rankIndex) {
+            0 -> colorResource(R.color.rank_1_gold)
+            1 -> colorResource(R.color.rank_2_silver)
+            2 -> colorResource(R.color.rank_3_bronze)
+            else -> colorResource(R.color.rank_4_5_gray)
+        }
+        val contentColor = colorResource(R.color.white)
+        Badge(
+            modifier = modifier,
+            containerColor = containerColor,
+            contentColor = contentColor
+        ) {
+            Text(text = stringResource(R.string.badge_ranking, rankIndex + 1))
+        }
+    } else if (isNew) {
+        Badge(modifier = modifier) {
+            Text(text = stringResource(R.string.badge_new))
         }
     }
 }

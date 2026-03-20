@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit.pager
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -26,6 +29,8 @@ import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.ColorAndWeightControl
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.ItemBadge
+import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.util.UUID
 
@@ -122,6 +127,11 @@ fun FontFamilySelectionGrid(
     val buttonHeight = 54.dp
     val spacing = 8.dp
 
+    // isNew = false のエントリだけで 0 始まりの通し番号を付与するマップ
+    val rankIndexMap = remember {
+        buildRankIndexMap(FontFamilies.entries) { it.isNew }
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = minButtonWidth),
         horizontalArrangement = Arrangement.spacedBy(spacing),
@@ -153,27 +163,35 @@ fun FontFamilySelectionGrid(
         }
 
         items(FontFamilies.entries.toList()) { fontFamily ->
-            FilledTonalButton(
-                onClick = {
-                    if (selectedDecoration is Decoration.Text) {
-                        onFontChanged(fontFamily)
-                    } else {
-                        onTextClick(
-                            Decoration.Text(
-                                id = UUID.randomUUID().toString(),
-                                font = fontFamily
+            Box(contentAlignment = Alignment.Center) {
+                FilledTonalButton(
+                    onClick = {
+                        if (selectedDecoration is Decoration.Text) {
+                            onFontChanged(fontFamily)
+                        } else {
+                            onTextClick(
+                                Decoration.Text(
+                                    id = UUID.randomUUID().toString(),
+                                    font = fontFamily
+                                )
                             )
-                        )
-                    }
-                },
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.height(buttonHeight)
-            ) {
-                val density = LocalDensity.current
-                Text(
-                    text = "あA!",
-                    fontSize = (20.dp.value / density.fontScale).sp,
-                    fontFamily = fontFamily.value
+                        }
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(buttonHeight)
+                ) {
+                    val density = LocalDensity.current
+                    Text(
+                        text = "あA!",
+                        fontSize = (20.dp.value / density.fontScale).sp,
+                        fontFamily = fontFamily.value
+                    )
+                }
+                val rankIndex = rankIndexMap[fontFamily]
+                ItemBadge(
+                    rankIndex = rankIndex,
+                    isNew = fontFamily.isNew,
+                    modifier = Modifier.align(Alignment.TopStart)
                 )
             }
         }

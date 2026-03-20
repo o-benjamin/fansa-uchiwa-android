@@ -1,13 +1,16 @@
 package com.fansauchiwa.edit
 
 import androidx.compose.ui.text.font.FontFamily
+import com.fansauchiwa.ui.theme.akazukinPopFontFamily
 import com.fansauchiwa.ui.theme.delaGothicOneFontFamily
 import com.fansauchiwa.ui.theme.dotGothic16FontFamily
 import com.fansauchiwa.ui.theme.hachiMaruPopFontFamily
+import com.fansauchiwa.ui.theme.keiFontFamily
 import com.fansauchiwa.ui.theme.kiwiMaruFontFamily
 import com.fansauchiwa.ui.theme.kleeOneFontFamily
 import com.fansauchiwa.ui.theme.kosugiFontFamily
 import com.fansauchiwa.ui.theme.kosugiMaruFontFamily
+import com.fansauchiwa.ui.theme.lightNovelPopFontFamily
 import com.fansauchiwa.ui.theme.mPlus1CodeFontFamily
 import com.fansauchiwa.ui.theme.mPlus1FontFamily
 import com.fansauchiwa.ui.theme.mPlus1pFontFamily
@@ -41,42 +44,45 @@ import com.fansauchiwa.ui.theme.zenOldMinchoFontFamily
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class FontFamilies(val value: FontFamily) {
-    HACHI_MARU_POP(hachiMaruPopFontFamily),
-    ZEN_MARU_GOTHIC(zenMaruGothicFontFamily),
+enum class FontFamilies(val value: FontFamily, val isNew: Boolean = false) {
+    KEI_FONT(keiFontFamily, isNew = true),
+    LIGHT_NOVEL_POP(lightNovelPopFontFamily, isNew = true),
+    AKAZUKI_POP(akazukinPopFontFamily, isNew = true),
     M_PLUS_ROUNDED_1C(mPlusRounded1cFontFamily),
-    M_PLUS_1P(mPlus1pFontFamily),
-    ZEN_KAKU_GOTHIC_NEW(zenKakuGothicNewFontFamily),
     DELA_GOTHIC_ONE(delaGothicOneFontFamily),
-    DOT_GOTHIC_16(dotGothic16FontFamily),
-    RAMPART_ONE(rampartOneFontFamily),
-    ROCKNROLL_ONE(rocknRollOneFontFamily),
-    YUSEI_MAGIC(yuseiMagicFontFamily),
-    KIWI_MARU(kiwiMaruFontFamily),
-    KLEE_ONE(kleeOneFontFamily),
-    KOSUGI(kosugiFontFamily),
-    KOSUGI_MARU(kosugiMaruFontFamily),
+    ZEN_MARU_GOTHIC(zenMaruGothicFontFamily),
     MOCHIY_POP_ONE(mochiyPopOneFontFamily),
     MOCHIY_POP_P_ONE(mochiyPopPOneFontFamily),
-    M_PLUS_2(mPlus2FontFamily),
-    M_PLUS_1(mPlus1FontFamily),
-    M_PLUS_1_CODE(mPlus1CodeFontFamily),
-    NOTO_SANS_JP(notoSansJPFontFamily),
-    NOTO_SERIF_JP(notoSerifJPFontFamily),
-    POTTA_ONE(pottaOneFontFamily),
-    REGGAE_ONE(reggaeOneFontFamily),
-    SAWARABI_GOTHIC(sawarabiGothicFontFamily),
-    SAWARABI_MINCHO(sawarabiMinchoFontFamily),
-    SHIPPORI_ANTIQUE_B1(shipporiAntiqueBFontFamily),
-    SHIPPORI_ANTIQUE(shipporiAntiqueFontFamily),
-    SHIPPORI_MINCHO(shipporiMinchoFontFamily),
+    M_PLUS_1P(mPlus1pFontFamily),
+    ZEN_KAKU_GOTHIC_NEW(zenKakuGothicNewFontFamily),
     SHIPPORI_MINCHO_B1(shipporiMinchoB1FontFamily),
-    STICK(stickyFontFamily),
-    TRAIN_ONE(trainOneFontFamily),
-    YOMOGI(yomogiFontFamily),
-    ZEN_ANTIQUE(zenAntiqueFontFamily),
+    HACHI_MARU_POP(hachiMaruPopFontFamily),
+    YUSEI_MAGIC(yuseiMagicFontFamily),
+    RAMPART_ONE(rampartOneFontFamily),
+    SHIPPORI_ANTIQUE_B1(shipporiAntiqueBFontFamily),
+    ROCKNROLL_ONE(rocknRollOneFontFamily),
+    SHIPPORI_MINCHO(shipporiMinchoFontFamily),
+    POTTA_ONE(pottaOneFontFamily),
+    KIWI_MARU(kiwiMaruFontFamily),
+    M_PLUS_1_CODE(mPlus1CodeFontFamily),
+    KOSUGI(kosugiFontFamily),
+    DOT_GOTHIC_16(dotGothic16FontFamily),
+    M_PLUS_1(mPlus1FontFamily),
+    REGGAE_ONE(reggaeOneFontFamily),
+    SHIPPORI_ANTIQUE(shipporiAntiqueFontFamily),
+    M_PLUS_2(mPlus2FontFamily),
+    KOSUGI_MARU(kosugiMaruFontFamily),
+    SAWARABI_MINCHO(sawarabiMinchoFontFamily),
+    NOTO_SANS_JP(notoSansJPFontFamily),
+    KLEE_ONE(kleeOneFontFamily),
     ZEN_ANTIQUE_SOFT(zenAntiqueSoftFontFamily),
+    NOTO_SERIF_JP(notoSerifJPFontFamily),
     ZEN_KAKU_GOTHIC_ANTIQUE(zenKakuGothicAntiqueFontFamily),
-    ZEN_KURENAIDO(zenKurenaidoFontFamily),
+    TRAIN_ONE(trainOneFontFamily),
+    SAWARABI_GOTHIC(sawarabiGothicFontFamily),
     ZEN_OLD_MINCHO(zenOldMinchoFontFamily),
+    ZEN_ANTIQUE(zenAntiqueFontFamily),
+    ZEN_KURENAIDO(zenKurenaidoFontFamily),
+    YOMOGI(yomogiFontFamily),
+    STICK(stickyFontFamily),
 }
