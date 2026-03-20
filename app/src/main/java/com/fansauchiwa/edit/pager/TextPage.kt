@@ -1,5 +1,6 @@
 package com.fansauchiwa.edit.pager
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,7 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -163,6 +168,7 @@ fun FontFamilySelectionGrid(
         }
 
         items(FontFamilies.entries.toList()) { fontFamily ->
+            val isSelected = selectedDecoration is Decoration.Text && selectedDecoration.font == fontFamily
             Box(contentAlignment = Alignment.Center) {
                 FilledTonalButton(
                     onClick = {
@@ -178,7 +184,11 @@ fun FontFamilySelectionGrid(
                         }
                     },
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(buttonHeight)
+                    border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                    modifier = Modifier
+                        .height(buttonHeight)
+                        .testTag("font_button_${fontFamily.name}")
+                        .semantics { selected = isSelected }
                 ) {
                     val density = LocalDensity.current
                     Text(
