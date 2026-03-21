@@ -87,7 +87,7 @@ fun TextDecorationControls(
             color = textColor,
             width = textWidth.toFloat(),
             valueRange = 100f..900f,
-            steps = 9,
+            steps = 7,
             onColorSelected = onColorSelected,
             onWeightChanged = { newValue ->
                 onTextWeightChanged(newValue.toInt())
@@ -99,7 +99,7 @@ fun TextDecorationControls(
             color = strokeColor,
             width = strokeWidth,
             valueRange = 0f..90f,
-            steps = 10,
+            steps = 8,
             onColorSelected = onStrokeColorSelected,
             onWeightChanged = onStrokeWeightChanged
         )
@@ -109,7 +109,7 @@ fun TextDecorationControls(
             color = secondBorderColor,
             width = secondBorderWidth,
             valueRange = 0f..90f,
-            steps = 10,
+            steps = 8,
             onColorSelected = onSecondBorderColorSelected,
             onWeightChanged = onSecondBorderWeightChanged
         )

@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.DecorationColors
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.util.FansaHapticType
+import com.fansauchiwa.ui.util.rememberFansaHapticManager
 
 @Composable
 fun HeaderTitle(title: String, modifier: Modifier = Modifier) {
@@ -123,6 +125,7 @@ fun ColorAndWeightControl(
     onWeightChanged: (Float) -> Unit = {},
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
+    val hapticManager = rememberFansaHapticManager()
 
     Column(modifier = modifier.padding(top = 16.dp)) {
         HeaderTitle(title)
@@ -168,6 +171,7 @@ fun ColorAndWeightControl(
                 onValueChange = { newValue ->
                     onWeightChanged(newValue)
                     isColorPickerOpen.value = false
+                    hapticManager.perform(FansaHapticType.SEGMENT_FREQUENT_TICK)
                 },
                 valueRange = valueRange,
                 steps = steps,

@@ -103,6 +103,8 @@ import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.util.FansaHapticType
+import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
@@ -122,6 +124,7 @@ fun EditScreen(
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
+    val hapticManager = rememberFansaHapticManager()
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -320,8 +323,14 @@ fun EditScreen(
                     UndoRedoRow(
                         canUndo = uiState.canUndo,
                         canRedo = uiState.canRedo,
-                        onUndoClick = viewModel::undo,
-                        onRedoClick = viewModel::redo,
+                        onUndoClick = {
+                            hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                            viewModel.undo()
+                        },
+                        onRedoClick = {
+                            hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                            viewModel.redo()
+                        },
                         modifier = Modifier.align(Alignment.BottomStart)
                     )
                 }
@@ -382,7 +391,10 @@ fun EditScreen(
                     decorations = uiState.decorations,
                     selectedDecorationId = uiState.selectedDecorationId,
                     onDecorationClick = viewModel::selectDecoration,
-                    onMoveDecoration = viewModel::moveDecoration,
+                    onMoveDecoration = { fromIndex, toIndex ->
+                        hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                        viewModel.moveDecoration(fromIndex, toIndex)
+                    },
                     modifier = Modifier
                 )
             }
@@ -554,6 +566,7 @@ fun UchiwaPreview(
     var snappedX by remember { mutableStateOf(false) }
     var snappedY by remember { mutableStateOf(false) }
     val snapThreshold = with(LocalDensity.current) { 4.dp.toPx() }
+    val hapticManager = rememberFansaHapticManager()
 
     Box(
         modifier = modifier
@@ -596,6 +609,7 @@ fun UchiwaPreview(
                 var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
                 var scaleDiff by remember { mutableFloatStateOf(0f) }
                 var rotationDiff by remember { mutableFloatStateOf(0f) }
+                var wasRotationSnapped by remember { mutableStateOf(false) }
                 val isSelected = decoration.id == selectedDecorationId
                 when (decoration) {
                     is Decoration.Text -> {
@@ -680,6 +694,10 @@ fun UchiwaPreview(
                                 val snapResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
+                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                }
+                                wasRotationSnapped = snapResult.isSnapped
                                 rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
@@ -692,6 +710,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                wasRotationSnapped = false
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
                             onTapDuplicate = { onTapDuplicate(decoration.id) }
@@ -767,6 +786,10 @@ fun UchiwaPreview(
                                 val snapResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
+                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                }
+                                wasRotationSnapped = snapResult.isSnapped
                                 rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
@@ -779,6 +802,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                wasRotationSnapped = false
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
                             onTapDuplicate = { onTapDuplicate(decoration.id) }
@@ -864,6 +888,10 @@ fun UchiwaPreview(
                                 val snapResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
+                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                }
+                                wasRotationSnapped = snapResult.isSnapped
                                 rotationDiff = snapResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
@@ -876,6 +904,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                wasRotationSnapped = false
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
                             onTapDuplicate = { onTapDuplicate(decoration.id) }
@@ -897,6 +926,7 @@ fun UchiwaPreview(
             val guideLineWidth = with(LocalDensity.current) { 1.dp.toPx() }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 if (snappedX) {
+                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                     drawLine(
                         color = guideLineColor,
                         start = Offset(size.width / 2f, 0f),
@@ -905,6 +935,7 @@ fun UchiwaPreview(
                     )
                 }
                 if (snappedY) {
+                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                     drawLine(
                         color = guideLineColor,
                         start = Offset(0f, size.height / 2f),

@@ -72,6 +72,8 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.util.rememberFansaHapticManager
+import com.fansauchiwa.ui.util.FansaHapticType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -643,6 +645,8 @@ private fun ManualCorrectionControls(
     onUndoCorrection: () -> Unit,
     onRedoCorrection: () -> Unit
 ) {
+    val hapticManager = rememberFansaHapticManager()
+    
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -651,7 +655,10 @@ private fun ManualCorrectionControls(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             IconButton(
-                onClick = onUndoCorrection,
+                onClick = {
+                    hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                    onUndoCorrection()
+                },
                 modifier = Modifier.weight(1f)
             ) {
                 Icon(
@@ -660,7 +667,10 @@ private fun ManualCorrectionControls(
                 )
             }
             IconButton(
-                onClick = onRedoCorrection,
+                onClick = {
+                    hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                    onRedoCorrection()
+                },
                 modifier = Modifier.weight(1f)
             ) {
                 Icon(
