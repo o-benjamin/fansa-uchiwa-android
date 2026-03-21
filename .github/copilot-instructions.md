@@ -78,6 +78,9 @@
     - 実装は原則として、上記の**共通コンポーネント**（`FansaButton`等）または**共通のカスタムModifier
       **（`hapticClickable`等）を使用してください。
     - 個別の `onClick` 等の中で `LocalHapticFeedback` を直接呼び出すことは、一貫性保持のため避けてください。
+    - Compose標準の `LocalHapticFeedback` を直接呼び出すことは**禁止**します。必ず
+      `rememberFansaHapticManager()` を使用してマネージャーを取得し、アプリ独自のEnumである
+      `FansaHapticType` を引数に渡して実行してください。
 - **デフォルト引数**:
     - デフォルト引数は、基本的に設定しないでください。
     - デフォルト引数があることで、呼び出し側でのコード記述量が大きく削減される場合は、特例としてデフォルト引数を設定してもよいこととします。

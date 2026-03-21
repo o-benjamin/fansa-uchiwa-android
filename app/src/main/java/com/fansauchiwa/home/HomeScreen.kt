@@ -1,10 +1,8 @@
 package com.fansauchiwa.home
 
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,7 +34,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.ui.util.FansaHapticType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -79,7 +77,9 @@ import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
+import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.theme.HomeItemMinWidth
 import com.fansauchiwa.ui.theme.SelectionFabSpacing
@@ -102,14 +102,14 @@ private fun HomeFab(
             modifier = modifier,
             horizontalArrangement = Arrangement.spacedBy(SelectionFabSpacing)
         ) {
-            FloatingActionButton(onClick = onExitSelectionMode) {
+            FansaFloatingActionButton(onClick = onExitSelectionMode) {
                 Text(
                     text = stringResource(R.string.cancel),
                     modifier = Modifier.padding(horizontal = SelectionFabSpacing)
                 )
             }
             if (selectedCount > 0) {
-                FloatingActionButton(
+                FansaFloatingActionButton(
                     onClick = onDuplicate,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -119,8 +119,9 @@ private fun HomeFab(
                         modifier = Modifier.padding(horizontal = SelectionFabSpacing)
                     )
                 }
-                FloatingActionButton(
+                FansaFloatingActionButton(
                     onClick = onDelete,
+                    hapticFeedbackType = FansaHapticType.CONFIRM,
                     containerColor = MaterialTheme.colorScheme.error,
                     contentColor = MaterialTheme.colorScheme.onError
                 ) {
@@ -316,7 +317,6 @@ fun HomeScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeScreenContent(
     modifier: Modifier = Modifier,
@@ -510,7 +510,6 @@ private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MasterpieceItem(
     imagePath: String,
@@ -525,7 +524,12 @@ private fun MasterpieceItem(
         modifier = modifier
             .fillMaxWidth()
     ) {
-        Box {
+        Box(
+            modifier = Modifier.fansaCombinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+        ) {
             if (isPreview) {
                 Box(
                     modifier = Modifier
@@ -546,12 +550,7 @@ private fun MasterpieceItem(
                         .addLastModifiedToFileCacheKey(true)
                         .build(),
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .combinedClickable(
-                            onClick = onClick,
-                            onLongClick = onLongClick
-                        ),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
                 )
             }
