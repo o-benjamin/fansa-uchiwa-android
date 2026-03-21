@@ -1,10 +1,15 @@
 package com.fansauchiwa.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import com.fansauchiwa.data.infra.AnalyticsDataSource
 import com.fansauchiwa.data.infra.FirebaseAnalyticsRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
+import com.fansauchiwa.data.infra.SettingsDataSource
+import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -15,6 +20,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -54,4 +61,23 @@ abstract class ImageProcessingModule {
     ): ImageProcessingRepository
 }
 
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class SettingsModule {
 
+    @Binds
+    @Singleton
+    abstract fun bindSettingsDataSource(
+        impl: SettingsLocalSource
+    ): SettingsDataSource
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideDataStore(
+            @ApplicationContext context: Context
+        ): DataStore<Preferences> {
+            return context.dataStore
+        }
+    }
+}

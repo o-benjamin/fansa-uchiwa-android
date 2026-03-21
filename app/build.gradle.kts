@@ -165,6 +165,9 @@ dependencies {
     // Reorderable
     implementation(libs.reorderable)
 
+    // DataStore Preferences
+    implementation(libs.androidx.datastore.preferences)
+
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)

@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -156,6 +157,7 @@ private fun HomeFab(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTopAppBar(
+    onNavigateToSettings: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenFeedback: () -> Unit,
     onOpenOfficialSite: () -> Unit
@@ -165,6 +167,12 @@ private fun HomeTopAppBar(
     TopAppBar(
         title = {},
         actions = {
+            IconButton(onClick = onNavigateToSettings) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.settings)
+                )
+            }
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
@@ -207,7 +215,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     onImageClick: (String, String?) -> Unit = { _, _ -> },
-    onAddClick: () -> Unit = {}
+    onAddClick: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -232,6 +241,7 @@ fun HomeScreen(
         topBar = {
             val uriHandler = LocalUriHandler.current
             HomeTopAppBar(
+                onNavigateToSettings = onNavigateToSettings,
                 onOpenPrivacyPolicy = {
                     val url =
                         "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"

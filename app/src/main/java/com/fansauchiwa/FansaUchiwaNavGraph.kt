@@ -18,6 +18,7 @@ import com.fansauchiwa.edit.imagepreview.ImagePreviewViewModel
 import com.fansauchiwa.home.HomeScreen
 import com.fansauchiwa.preview.UchiwaPreviewScreen
 import com.fansauchiwa.preview.UchiwaPreviewViewModel
+import com.fansauchiwa.settings.SettingsScreen
 
 @Composable
 fun FansaUchiwaNavGraph(
@@ -41,6 +42,9 @@ fun FansaUchiwaNavGraph(
                 },
                 onAddClick = {
                     navController.navigate(FansaUchiwaScreens.EDIT_SCREEN)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(FansaUchiwaDestinations.SETTINGS)
                 }
             )
         }
@@ -68,6 +72,9 @@ fun FansaUchiwaNavGraph(
                 },
                 onNavigateToImagePreview = { uri ->
                     navController.navigate("${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/$uri")
+                },
+                onNavigateToSettings = {
+                    navController.navigate(FansaUchiwaDestinations.SETTINGS)
                 }
             )
         }
@@ -117,6 +124,11 @@ fun FansaUchiwaNavGraph(
                 },
                 onBack = { navController.navigateUp() },
                 viewModel = viewModel
+            )
+        }
+        composable(FansaUchiwaDestinations.SETTINGS) {
+            SettingsScreen(
+                onBack = { navController.navigateUp() }
             )
         }
     }
