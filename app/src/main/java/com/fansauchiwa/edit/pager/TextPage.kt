@@ -35,6 +35,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.ColorAndWeightControl
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.ItemBadge
+import com.fansauchiwa.edit.TestTags
 import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.util.UUID
@@ -142,7 +143,7 @@ fun FontFamilySelectionGrid(
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
         contentPadding = PaddingValues(start = 32.dp, end = 32.dp, bottom = 32.dp),
-        modifier = modifier.testTag("font_family_grid")
+        modifier = modifier.testTag(TestTags.FONT_FAMILY_GRID)
     ) {
         if (selectedDecoration is Decoration.Text) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -187,7 +188,7 @@ fun FontFamilySelectionGrid(
                     border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
                     modifier = Modifier
                         .height(buttonHeight)
-                        .testTag("font_button_${fontFamily.name}")
+                        .testTag(TestTags.FONT_BUTTON_PREFIX + fontFamily.name)
                         .semantics { selected = isSelected }
                 ) {
                     val density = LocalDensity.current
