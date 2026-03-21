@@ -193,6 +193,7 @@ fun EditScreen(
                     }
                     Button(
                         onClick = {
+                            hapticManager.perform(FansaHapticType.CONFIRM)
                             viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
                             viewModel.saveUchiwa { uchiwaId ->
                                 viewModel.resetEditUiState()
