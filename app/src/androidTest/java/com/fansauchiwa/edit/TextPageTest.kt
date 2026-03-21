@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.pager.TextPage
@@ -70,6 +71,9 @@ class TextPageTest {
         FontFamilies.entries
             .filter { it != FontFamilies.HACHI_MARU_POP }
             .forEach { fontFamily ->
+                composeTestRule
+                    .onNode(hasTestTag("font_family_grid"))
+                    .performScrollToNode(hasTestTag("font_button_${fontFamily.name}"))
                 composeTestRule
                     .onNode(hasTestTag("font_button_${fontFamily.name}"))
                     .assertIsNotSelected()

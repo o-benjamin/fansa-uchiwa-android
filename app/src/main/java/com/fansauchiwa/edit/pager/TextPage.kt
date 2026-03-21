@@ -142,7 +142,7 @@ fun FontFamilySelectionGrid(
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
         contentPadding = PaddingValues(start = 32.dp, end = 32.dp, bottom = 32.dp),
-        modifier = modifier
+        modifier = modifier.testTag("font_family_grid")
     ) {
         if (selectedDecoration is Decoration.Text) {
             item(span = { GridItemSpan(maxLineSpan) }) {
