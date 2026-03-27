@@ -19,3 +19,6 @@ val PreviewContentVerticalPadding = 16.dp
 val ButtonIconEndPadding = 8.dp
 val ButtonTextVerticalPadding = 8.dp
 
+val SettingsItemHorizontalPadding = 16.dp
+val SettingsItemVerticalPadding = 8.dp
+

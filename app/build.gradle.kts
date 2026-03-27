@@ -27,8 +27,8 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 17
-        versionName = "2.0.0"
+        versionCode = 18
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -123,6 +123,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)
@@ -163,6 +164,9 @@ dependencies {
 
     // Reorderable
     implementation(libs.reorderable)
+
+    // DataStore Preferences
+    implementation(libs.androidx.datastore.preferences)
 
     // Firebase
     implementation(platform(libs.firebase.bom))

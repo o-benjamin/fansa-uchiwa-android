@@ -67,4 +67,9 @@
     <string name="official_site">公式サイト</string>
     <string name="badge_ranking">No.%d</string>
     <string name="badge_new">New</string>
+
+    <!-- Settings -->
+    <string name="settings">設定</string>
+    <string name="settings_title">アプリ設定</string>
+    <string name="settings_haptic_feedback">触覚フィードバック</string>
 </resources>

@@ -1,8 +1,6 @@
 package com.fansauchiwa.edit.pager
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +30,7 @@ import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
+import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.util.UUID
 
@@ -89,7 +88,6 @@ private fun AddImageButton(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ImageGridItem(
     image: ImageReference,
@@ -120,7 +118,7 @@ private fun ImageGridItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(4.dp))
-                    .combinedClickable(
+                    .fansaCombinedClickable(
                         onClick = {
                             if (isDeletingImage) {
                                 onImageToggleSelection(image.id)
@@ -146,7 +144,6 @@ private fun ImageGridItem(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PreviewImageContent(
     image: ImageReference,
@@ -161,7 +158,7 @@ private fun PreviewImageContent(
             .fillMaxSize()
             .clip(RoundedCornerShape(4.dp))
             .background(colorResource(R.color.gray))
-            .combinedClickable(
+            .fansaCombinedClickable(
                 onClick = {
                     if (isDeletingImage) {
                         onImageToggleSelection(image.id)

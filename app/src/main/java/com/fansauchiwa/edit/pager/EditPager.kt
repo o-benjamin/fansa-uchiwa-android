@@ -260,7 +260,7 @@ fun StickerPage(
                 color = selectedDecoration.strokeColor,
                 width = selectedDecoration.strokeWidth,
                 valueRange = 0f..16f,
-                steps = 8,
+                steps = 7,
                 onColorSelected = onStrokeColorSelected,
                 onWeightChanged = onStrokeWeightChanged
             )
@@ -270,7 +270,7 @@ fun StickerPage(
                 color = selectedDecoration.secondStrokeColor,
                 width = selectedDecoration.secondStrokeWidth,
                 valueRange = 0f..16f,
-                steps = 8,
+                steps = 7,
                 onColorSelected = onSecondStrokeColorSelected,
                 onWeightChanged = onSecondStrokeWeightChanged
             )

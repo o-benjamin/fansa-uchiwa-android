@@ -21,6 +21,8 @@ import com.fansauchiwa.data.UuidProviderImpl
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
+import com.fansauchiwa.data.repository.SettingsRepository
+import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaDatabase
@@ -77,6 +79,12 @@ abstract class RepositoryModule {
     abstract fun bindUuidProvider(
         impl: UuidProviderImpl
     ): UuidProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(
+        impl: SettingsRepositoryImpl
+    ): SettingsRepository
 }
 
 @Module
