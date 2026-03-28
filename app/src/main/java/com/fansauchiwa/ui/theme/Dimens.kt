@@ -22,3 +22,5 @@ val ButtonTextVerticalPadding = 8.dp
 val SettingsItemHorizontalPadding = 16.dp
 val SettingsItemVerticalPadding = 8.dp
 
+val SelectionCircleIconPadding = 4.dp
+

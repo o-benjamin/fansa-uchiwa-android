@@ -68,6 +68,10 @@
     <string name="badge_ranking">No.%d</string>
     <string name="badge_new">New</string>
 
+    <!-- SelectionCircleIcon -->
+    <string name="selection_circle_icon_selected">Selected</string>
+    <string name="selection_circle_icon_not_selected">Not selected</string>
+
     <!-- Settings -->
     <string name="settings">設定</string>
     <string name="settings_title">アプリ設定</string>

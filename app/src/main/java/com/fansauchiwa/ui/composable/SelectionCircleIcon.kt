@@ -11,37 +11,36 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.theme.SelectionCircleIconPadding
 
 @Composable
 fun SelectionCircleIcon(
     isSelected: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val imageVector = if (isSelected) Icons.Filled.CheckCircle else Icons.Outlined.Circle
+    val contentDescription = stringResource(
+        if (isSelected) R.string.selection_circle_icon_selected
+        else R.string.selection_circle_icon_not_selected
+    )
+    val tint = if (isSelected) MaterialTheme.colorScheme.primary else colorResource(R.color.white)
+    val backgroundModifier = if (isSelected) {
+        Modifier.background(colorResource(R.color.white), CircleShape)
+    } else {
+        Modifier
+    }
+
     Icon(
-        imageVector = if (isSelected) {
-            Icons.Filled.CheckCircle
-        } else {
-            Icons.Outlined.Circle
-        },
-        contentDescription = if (isSelected) "Selected" else "Not selected",
-        tint = if (isSelected) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            colorResource(R.color.white)
-        },
+        imageVector = imageVector,
+        contentDescription = contentDescription,
+        tint = tint,
         modifier = modifier
-            .padding(4.dp)
-            .then(
-                if (isSelected) {
-                    Modifier.background(colorResource(R.color.white), CircleShape)
-                } else {
-                    Modifier
-                }
-            )
+            .padding(SelectionCircleIconPadding)
+            .then(backgroundModifier),
     )
 }
 
