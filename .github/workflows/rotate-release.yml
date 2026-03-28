@@ -1,0 +1,93 @@
+name: Rotate Release Branch
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  rotate-release:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate next version and create new branch
+        id: calc_version
+        run: |
+          OLD_BRANCH="${{ github.event.pull_request.head.ref }}"
+          
+          # 'release/' と 'v' を取り除く
+          OLD_VERSION=$(echo "$OLD_BRANCH" | sed -e 's/^release\///' -e 's/^v//')
+          
+          # major.minor.patch に分割
+          IFS='.' read -r major minor patch <<< "$OLD_VERSION"
+          
+          if ! [[ "$major" =~ ^[0-9]+$ ]]; then
+            major=1; minor=0; patch=0
+          else
+            # マイナーバージョンをインクリメント、パッチを0リセット
+            minor=$((minor + 1))
+            patch=0
+          fi
+          
+          NEW_VERSION="${major}.${minor}.${patch}"
+          NEW_BRANCH="release/v${NEW_VERSION}"
+          
+          # 後続のステップで使えるように環境変数に保存
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "NEW_BRANCH=$NEW_BRANCH" >> $GITHUB_ENV
+          
+          git checkout master
+          git pull origin master
+          git checkout -b "$NEW_BRANCH"
+
+      - name: Update build.gradle.kts and Commit
+        run: |
+          # Gitユーザー設定
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          GRADLE_FILE="app/build.gradle.kts"
+          
+          if [ ! -f "$GRADLE_FILE" ]; then
+            echo "エラー: $GRADLE_FILE が見つかりません。"
+            exit 1
+          fi
+
+          # 1. versionName の更新 (例: versionName = "2.1.0" に書き換え)
+          # 正規表現で versionName = "..." の部分を探して置換します
+          sed -i -E "s/versionName\s*=\s*\"[^\"]+\"/versionName = \"${{ env.NEW_VERSION }}\"/" "$GRADLE_FILE"
+          
+          # 2. versionCode の更新 (現在の値を取得して +1 する)
+          # grepと正規表現で versionCode = 123 のような行から数字だけを抽出
+          CURRENT_VERSION_CODE=$(grep -oE "versionCode\s*=\s*[0-9]+" "$GRADLE_FILE" | grep -oE "[0-9]+")
+          
+          if [ -z "$CURRENT_VERSION_CODE" ]; then
+            echo "警告: versionCode が見つかりませんでした。スキップします。"
+          else
+            NEW_VERSION_CODE=$((CURRENT_VERSION_CODE + 1))
+            # 抽出した数字を元に、新しい数字で置換
+            sed -i -E "s/versionCode\s*=\s*[0-9]+/versionCode = $NEW_VERSION_CODE/" "$GRADLE_FILE"
+            echo "versionCode を $CURRENT_VERSION_CODE から $NEW_VERSION_CODE に更新しました。"
+          fi
+
+          # 変更をコミットしてプッシュ
+          git add "$GRADLE_FILE"
+          git commit -m "chore: bump version to ${{ env.NEW_VERSION }} (versionCode: $NEW_VERSION_CODE)"
+          
+          # 作成した新しいブランチをリモートにプッシュ
+          git push -u origin "${{ env.NEW_BRANCH }}"
+
+      - name: Delete old release branch
+        run: |
+          OLD_BRANCH="${{ github.event.pull_request.head.ref }}"
+          git push origin --delete "$OLD_BRANCH"
+          echo "古いブランチ ($OLD_BRANCH) を削除しました。"

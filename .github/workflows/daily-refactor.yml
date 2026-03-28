@@ -3,47 +3,60 @@ name: Daily Auto Refactoring
 # ワークフローの実行タイミングを定義します
 on:
   schedule:
-    # 【実行時間の設定】
-    # cron式はUTC（協定世界時）で記述します。日本時間(JST)はUTC+9時間です。
-    # そのため、日本時間の「午前7時」に実行するには、マイナス9時間した「前日の22時」を指定します。
-    # 書式: 分 時 日 月 曜日
     - cron: '0 22 * * *' 
-  
-  # GitHubのブラウザ画面上からボタンクリックで手動実行できるようにする設定です。
-  # （設定がうまく書けているか、まずは手動でテストしたい時に必須の設定です）
   workflow_dispatch: 
 
 jobs:
   refactor:
-    # GitHubが用意してくれている、毎回まっさらな状態のUbuntu（Linux）環境を使用します。
     runs-on: ubuntu-latest
     
     steps:
-      # 1. ソースコードのダウンロード
-      # あなたのアプリのリポジトリ（ソースコード）を、この使い捨てサーバー上にコピー（チェックアウト）します。
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # 【重要】全てのリモートブランチ情報を取得し、後の切り替えを可能にします
+          fetch-depth: 0
 
-      # 2. Copilot CLIのインストール
-      # サーバーが毎回初期化されるため、ここでCLIツールをインストールします。
+      # --- releaseブランチの特定と切り替え ---
+      - name: Determine release branch and checkout
+        id: branch-check
+        run: |
+          # リモートリポジトリから 'release/' で始まるブランチの一覧を取得
+          BRANCHES=$(git ls-remote --heads origin "refs/heads/release/*" | awk '{print $2}' | sed 's|refs/heads/||')
+          
+          # 見つかったブランチの数をカウント
+          BRANCH_COUNT=$(echo "$BRANCHES" | awk 'NF' | wc -l)
+          
+          if [ "$BRANCH_COUNT" -eq 0 ]; then
+            echo "エラー: 'release/' から始まるブランチが見つかりません。処理を中止します。"
+            exit 1
+          elif [ "$BRANCH_COUNT" -gt 1 ]; then
+            echo "エラー: 'release/' から始まるブランチが複数存在します。処理を中止します。"
+            echo "見つかったブランチ:"
+            echo "$BRANCHES"
+            exit 1
+          fi
+          
+          # 1つだけ見つかった場合、そのブランチ名を確定（trコマンドで余計な空白や改行を完全に削除）
+          BASE_BRANCH=$(echo "$BRANCHES" | awk 'NF' | tr -d '[:space:]')
+          echo "ベースブランチを $BASE_BRANCH に決定しました。"
+          
+          # 【重要】ここで master から release/〜 ブランチに切り替えます！
+          git checkout "$BASE_BRANCH"
+          
+          # 最後のPR作成ステップで確実に使えるように環境変数に記録
+          echo "BASE_BRANCH=$BASE_BRANCH" >> $GITHUB_ENV
+
       - name: Install GitHub Copilot CLI
         run: npm install -g @github/copilot
 
-      # 3. リファクタリング対象の選定とCopilotの実行
       - name: Run Copilot CLI for Refactoring
         env:
-          # Settings > Secrets で設定した、Copilot実行用トークン（COPILOT_PAT）を読み込みます。
           GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }} 
         run: |
-          # --- 対象ファイルの自動選定 ---
-          # app/src/main/java 配下にある .kt 拡張子のファイルを全て探し、shufコマンドでランダムに1つだけ抽出します。
-          # これにより、毎日違うファイルがリファクタリングの対象になります。
           TARGET_FILE=$(find app/src/main/java -name "*.kt" -type f | shuf -n 1)
           echo "本日のターゲット: $TARGET_FILE"
           
-          # --- Copilot CLIによるコード書き換え ---
-          # copilotコマンドを使って、選ばれたファイルに対して非対話（--no-ask-user）で指示を出します。
-          # --allow-tool='write' を許可しているため、Copilotが直接ローカルのファイルを上書き修正します。
           copilot -p "対象のKotlinファイル ($TARGET_FILE) を、MVVMとDDD-like Layered Architectureの設計思想に従ってリファクタリングし、ファイルを直接上書き保存してください。
           【厳守ルール】
           1. PDS(Presentation Domain Separation)の徹底
@@ -54,39 +67,33 @@ jobs:
             --allow-tool='read' \
             --allow-tool='write'
 
-      # 4. 変更のコミットとプルリクエスト(PR)の作成
       - name: Create Pull Request
         env:
-          # PRを作成するために、GitHub Actionsが標準で持っている権限トークンを使用します。
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         run: |
-          # ActionsのBot（自動プログラム）としてGitのユーザー情報を設定します。
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # 今日の日付を入れた新しい作業用ブランチを作成します。（例: auto-refactor/20260326）
           BRANCH_NAME="auto-refactor/$(date +%Y%m%d)"
-          git checkout -b $BRANCH_NAME
+          git checkout -b "$BRANCH_NAME"
           
-          # Copilotが書き換えた変更をGitに認識させます。
           git add .
           
-          # --- 変更の有無をチェック ---
-          # Copilotが「このファイルは既に綺麗だからリファクタの必要なし」と判断してファイルを変更しなかった場合、
-          # ここで処理を終了(exit 0)し、無駄な空のPRが作られるのを防ぎます。
           if git diff --staged --quiet; then
             echo "リファクタリングの必要なしと判断されました。PR作成をスキップします。"
             exit 0
           fi
           
-          # 変更があった場合はコミットし、リモートリポジトリにプッシュします。
           git commit -m "refactor: Copilot CLIによる自動リファクタリング"
-          git push origin $BRANCH_NAME
+          git push origin "$BRANCH_NAME"
           
-          # GitHub CLI (ghコマンド) を使って、mainブランチ宛にプルリクエストを自動作成します。
+          # GitHub側が新しいブランチを認識するまで5秒待つ（エラー防止）
+          sleep 5
+          
+          # PRの向け先(--base)を main ではなく、上で取得した release/〜 ブランチに設定
           gh pr create \
             --title "[Auto-Maintenance] 日次リファクタリング ($TARGET_FILE)" \
             --body "GitHub Copilot CLIによる自動リファクタリングの提案です。
             設計ルール（MVVM・ViewModelの責務）に準拠しているか確認をお願いします。" \
-            --base main \
-            --head $BRANCH_NAME
+            --base "${{ env.BASE_BRANCH }}" \
+            --head "$BRANCH_NAME"
