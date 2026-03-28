@@ -56,16 +56,66 @@ jobs:
         run: |
           TARGET_FILE=$(find app/src/main/java -name "*.kt" -type f | shuf -n 1)
           echo "本日のターゲット: $TARGET_FILE"
-          
-          copilot -p "対象のKotlinファイル ($TARGET_FILE) を、MVVMとDDD-like Layered Architectureの設計思想に従ってリファクタリングし、ファイルを直接上書き保存してください。
+          echo "TARGET_FILE=$TARGET_FILE" >> "$GITHUB_ENV"
+
+          COPILOT_OUTPUT=$(copilot -p "対象のKotlinファイル ($TARGET_FILE) を、MVVMとDDD-like Layered Architectureの設計思想に従ってリファクタリングし、ファイルを直接上書き保存してください。
           【厳守ルール】
           1. PDS(Presentation Domain Separation)の徹底
           2. ViewModelの責務はUI状態保持とイベントディスパッチのみに限定
-          3. アプリケーションの既存の動作（UIや機能）は一切変更しないこと" \
+          3. アプリケーションの既存の動作（UIや機能）は一切変更しないこと
+
+          リファクタリング完了後、以下のフォーマットで標準出力に出力してください：
+
+          REFACTOR_TITLE_BEGIN
+          {リファクタリングの概要（1行）}
+          REFACTOR_TITLE_END
+
+          REFACTOR_COMMIT_BEGIN
+          refactor: {概要}
+
+          {詳細（複数行可）}
+          REFACTOR_COMMIT_END
+
+          REFACTOR_BODY_BEGIN
+          ## リファクタリングの意図と概要
+          （例）xxだったのでxxになるように修正
+
+          ## リファクタリングの詳細
+          - ...
+
+          ## 影響範囲
+          - ...
+
+          ## するべき動作確認
+          - ...
+          REFACTOR_BODY_END" \
             --no-ask-user \
             --allow-tool='shell(git:*)' \
             --allow-tool='read' \
-            --allow-tool='write'
+            --allow-tool='write')
+
+          echo "$COPILOT_OUTPUT"
+
+          REFACTOR_TITLE=$(echo "$COPILOT_OUTPUT" | awk '/REFACTOR_TITLE_BEGIN/{flag=1; next} /REFACTOR_TITLE_END/{flag=0} flag && NF{print; exit}')
+          REFACTOR_TITLE=${REFACTOR_TITLE:-"[Auto-Maintenance] 日次リファクタリング ($TARGET_FILE)"}
+
+          REFACTOR_COMMIT=$(echo "$COPILOT_OUTPUT" | awk '/REFACTOR_COMMIT_BEGIN/{flag=1; next} /REFACTOR_COMMIT_END/{flag=0} flag{print}')
+          REFACTOR_COMMIT=${REFACTOR_COMMIT:-"refactor: Copilot CLIによる自動リファクタリング"}
+
+          REFACTOR_BODY=$(echo "$COPILOT_OUTPUT" | awk '/REFACTOR_BODY_BEGIN/{flag=1; next} /REFACTOR_BODY_END/{flag=0} flag{print}')
+          REFACTOR_BODY=${REFACTOR_BODY:-"GitHub Copilot CLIによる自動リファクタリングの提案です。設計ルール（MVVM・ViewModelの責務）に準拠しているか確認をお願いします。"}
+
+          echo "REFACTOR_TITLE=$REFACTOR_TITLE" >> "$GITHUB_ENV"
+          {
+            echo "REFACTOR_COMMIT<<__COMMIT_EOF__"
+            echo "$REFACTOR_COMMIT"
+            echo "__COMMIT_EOF__"
+          } >> "$GITHUB_ENV"
+          {
+            echo "REFACTOR_BODY<<__BODY_EOF__"
+            echo "$REFACTOR_BODY"
+            echo "__BODY_EOF__"
+          } >> "$GITHUB_ENV"
 
       - name: Create Pull Request
         env:
@@ -84,7 +134,7 @@ jobs:
             exit 0
           fi
           
-          git commit -m "refactor: Copilot CLIによる自動リファクタリング"
+          git commit -m "$REFACTOR_COMMIT"
           git push origin "$BRANCH_NAME"
           
           # GitHub側が新しいブランチを認識するまで5秒待つ（エラー防止）
@@ -92,8 +142,7 @@ jobs:
           
           # PRの向け先(--base)を main ではなく、上で取得した release/〜 ブランチに設定
           gh pr create \
-            --title "[Auto-Maintenance] 日次リファクタリング ($TARGET_FILE)" \
-            --body "GitHub Copilot CLIによる自動リファクタリングの提案です。
-            設計ルール（MVVM・ViewModelの責務）に準拠しているか確認をお願いします。" \
+            --title "$REFACTOR_TITLE" \
+            --body "$REFACTOR_BODY" \
             --base "${{ env.BASE_BRANCH }}" \
             --head "$BRANCH_NAME"
