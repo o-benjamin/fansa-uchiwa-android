@@ -1,5 +1,6 @@
 name: Daily Auto Refactoring
 
+# ワークフローの実行タイミングを定義します
 on:
   schedule:
     - cron: '0 22 * * *' 
@@ -13,10 +14,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # 全てのブランチ履歴を取得し、後続のブランチ切り替えをスムーズに行うための設定
+          # 【重要】全てのリモートブランチ情報を取得し、後の切り替えを可能にします
           fetch-depth: 0
 
-      # --- 新規追加：releaseブランチの特定と切り替え ---
+      # --- releaseブランチの特定と切り替え ---
       - name: Determine release branch and checkout
         id: branch-check
         run: |
@@ -36,14 +37,14 @@ jobs:
             exit 1
           fi
           
-          # 1つだけ見つかった場合、そのブランチ名を確定
-          BASE_BRANCH=$(echo "$BRANCHES" | awk 'NF')
+          # 1つだけ見つかった場合、そのブランチ名を確定（trコマンドで余計な空白や改行を完全に削除）
+          BASE_BRANCH=$(echo "$BRANCHES" | awk 'NF' | tr -d '[:space:]')
           echo "ベースブランチを $BASE_BRANCH に決定しました。"
           
-          # そのブランチに切り替え（ここがリファクタリングの起点になります）
-          git checkout $BASE_BRANCH
+          # 【重要】ここで master から release/〜 ブランチに切り替えます！
+          git checkout "$BASE_BRANCH"
           
-          # 後のPR作成ステップで使えるように環境変数に記録しておく
+          # 最後のPR作成ステップで確実に使えるように環境変数に記録
           echo "BASE_BRANCH=$BASE_BRANCH" >> $GITHUB_ENV
 
       - name: Install GitHub Copilot CLI
@@ -74,7 +75,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           BRANCH_NAME="auto-refactor/$(date +%Y%m%d)"
-          git checkout -b $BRANCH_NAME
+          git checkout -b "$BRANCH_NAME"
           
           git add .
           
@@ -84,15 +85,15 @@ jobs:
           fi
           
           git commit -m "refactor: Copilot CLIによる自動リファクタリング"
-          git push origin $BRANCH_NAME
+          git push origin "$BRANCH_NAME"
           
           # GitHub側が新しいブランチを認識するまで5秒待つ（エラー防止）
           sleep 5
           
-          # PRの向け先(--base)を main ではなく $BASE_BRANCH に設定する
+          # PRの向け先(--base)を main ではなく、上で取得した release/〜 ブランチに設定
           gh pr create \
             --title "[Auto-Maintenance] 日次リファクタリング ($TARGET_FILE)" \
             --body "GitHub Copilot CLIによる自動リファクタリングの提案です。
             設計ルール（MVVM・ViewModelの責務）に準拠しているか確認をお願いします。" \
-            --base $BASE_BRANCH \
-            --head $BRANCH_NAME
+            --base "${{ env.BASE_BRANCH }}" \
+            --head "$BRANCH_NAME"
