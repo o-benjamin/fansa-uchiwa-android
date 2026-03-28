@@ -44,7 +44,7 @@ jobs:
           # --- Copilot CLIによるコード書き換え ---
           # copilotコマンドを使って、選ばれたファイルに対して非対話（--no-ask-user）で指示を出します。
           # --allow-tool='write' を許可しているため、Copilotが直接ローカルのファイルを上書き修正します。
-          copilot "対象のKotlinファイル ($TARGET_FILE) を、MVVMとDDD-like Layered Architectureの設計思想に従ってリファクタリングし、ファイルを直接上書き保存してください。
+          copilot -p "対象のKotlinファイル ($TARGET_FILE) を、MVVMとDDD-like Layered Architectureの設計思想に従ってリファクタリングし、ファイルを直接上書き保存してください。
           【厳守ルール】
           1. PDS(Presentation Domain Separation)の徹底
           2. ViewModelの責務はUI状態保持とイベントディスパッチのみに限定
