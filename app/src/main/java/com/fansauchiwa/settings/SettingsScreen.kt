@@ -69,6 +69,7 @@ private fun SettingsContent(
     ) { innerPadding ->
         HapticFeedbackSettingRow(
             isEnabled = uiState.isHapticFeedbackEnabled,
+            isLoading = uiState.isLoading,
             onToggle = onToggleHapticFeedback,
             modifier = Modifier.padding(innerPadding)
         )
@@ -78,6 +79,7 @@ private fun SettingsContent(
 @Composable
 private fun HapticFeedbackSettingRow(
     isEnabled: Boolean,
+    isLoading: Boolean,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -97,7 +99,8 @@ private fun HapticFeedbackSettingRow(
         )
         Switch(
             checked = isEnabled,
-            onCheckedChange = onToggle
+            onCheckedChange = onToggle,
+            enabled = !isLoading
         )
     }
 }
@@ -107,7 +110,7 @@ private fun HapticFeedbackSettingRow(
 private fun SettingsScreenPreview_HapticEnabled() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState(isHapticFeedbackEnabled = true),
+            uiState = SettingsUiState(isHapticFeedbackEnabled = true, isLoading = false),
             onBack = {},
             onToggleHapticFeedback = {}
         )
@@ -119,7 +122,7 @@ private fun SettingsScreenPreview_HapticEnabled() {
 private fun SettingsScreenPreview_HapticDisabled() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState(isHapticFeedbackEnabled = false),
+            uiState = SettingsUiState(isHapticFeedbackEnabled = false, isLoading = false),
             onBack = {},
             onToggleHapticFeedback = {}
         )

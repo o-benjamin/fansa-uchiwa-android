@@ -17,7 +17,7 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = settingsRepository.isHapticFeedbackEnabled
-        .map { enabled -> SettingsUiState(isHapticFeedbackEnabled = enabled) }
+        .map { enabled -> SettingsUiState(isHapticFeedbackEnabled = enabled, isLoading = false) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(),
