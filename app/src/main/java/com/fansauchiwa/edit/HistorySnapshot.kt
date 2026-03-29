@@ -1,10 +1,5 @@
 package com.fansauchiwa.edit
 
-import androidx.compose.ui.graphics.Color
-import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.SavedUchiwa
 
-internal data class HistorySnapshot(
-    val decorations: List<Decoration>,
-    val uchiwaColor: Color,
-    val backgroundColor: Color
-)
+internal typealias HistorySnapshot = SavedUchiwa
