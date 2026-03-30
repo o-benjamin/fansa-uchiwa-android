@@ -1,7 +1,7 @@
 package com.fansauchiwa.settings
 
-data class SettingsUiState(
-    val isHapticFeedbackEnabled: Boolean = false,
-    val isLoading: Boolean = true
-)
-
+sealed interface SettingsUiState {
+    data object Loading : SettingsUiState
+    data class Success(val isHapticFeedbackEnabled: Boolean) : SettingsUiState
+    data class Error(val message: String) : SettingsUiState
+}
