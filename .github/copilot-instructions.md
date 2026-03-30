@@ -33,6 +33,11 @@
     - 例: 画像オブジェクトは `id: String` (UUID) と `imageId: String` (リソース参照) の両方を持つべきです。
 - **UI状態管理 (State Hoisting)**:
     - 画面の状態は `UiState` データクラスに集約し、`ViewModel` の `StateFlow` で管理してください。
+    - **Sealed Interfaceによる状態定義:**
+        - 画面のUI状態（UiState）は必ず `sealed interface` を用いて定義すること。
+        - 基本構造として `Loading`, `Success`, `Error` の3つの状態（data class / data object）を持たせること。
+    - **Flowを用いたリアクティブな状態管理:**
+        - ViewModelでの UiState の初期値（デフォルト値）は原則として `Loading` とすること。
     - `ViewModel` 内では `data class` の `copy()` メソッドを使用して不変性を保ちながら状態を更新してください。
 - **状態管理とUIインタラクション**:
   -
