@@ -46,8 +46,8 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
         return uchiwaData?.let {
             SavedUchiwa(
                 decorations = it.decorations,
-                uchiwaColor = it.uchiwaColor,
-                backgroundColor = it.backgroundColor
+                uchiwaColor = Color(it.uchiwaColorValue.toULong()),
+                backgroundColor = Color(it.backgroundColorValue.toULong())
             )
         }
     }
