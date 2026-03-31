@@ -15,7 +15,7 @@ class SettingsLocalSource @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : SettingsDataSource {
 
-    override val isHapticFeedbackEnabled: Flow<Boolean> = dataStore.data
+    override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -39,4 +39,3 @@ class SettingsLocalSource @Inject constructor(
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
     }
 }
-
