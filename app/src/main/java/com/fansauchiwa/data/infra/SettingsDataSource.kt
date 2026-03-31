@@ -7,7 +7,7 @@ interface SettingsDataSource {
      * 触覚フィードバックが有効かどうかのFlowを返す
      * デフォルト値は true
      */
-    val isHapticFeedbackEnabled: Flow<Boolean>
+    fun getHapticFeedbackEnabledStream(): Flow<Boolean>
 
     /**
      * 触覚フィードバックの有効/無効を設定する
@@ -16,4 +16,3 @@ interface SettingsDataSource {
      */
     suspend fun setHapticFeedbackEnabled(enabled: Boolean)
 }
-
