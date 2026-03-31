@@ -139,6 +139,20 @@ internal val TextUnit.nonScaledSp: TextUnit
     get() = (value / LocalDensity.current.fontScale).sp
 
 /**
+ * isNew でないエントリに 0 始まりの通し番号を付与するマップを作成する。
+ * isNew = true のエントリには null が割り当てられる。
+ */
+fun <T> buildRankIndexMap(
+    entries: List<T>,
+    isNew: (T) -> Boolean
+): Map<T, Int?> {
+    var rank = 0
+    return entries.associateWith { entry ->
+        if (!isNew(entry)) rank++ else null
+    }
+}
+
+/**
  * デコレーションアイテムの移動量を境界内に制限する
  *
  * @param currentConfirmedOffset 現在の確定座標
