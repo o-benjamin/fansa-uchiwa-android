@@ -103,6 +103,7 @@ import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.pager.EditPager
+import com.fansauchiwa.ui.theme.DecorationHandleSize
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -1014,8 +1015,8 @@ private fun GestureInputLayer(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        (GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (DecorationHandleSize / 2),
+                        (DecorationHandleSize / 2)
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
@@ -1032,8 +1033,8 @@ private fun GestureInputLayer(
                     }
                     .align(Alignment.TopEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (DecorationHandleSize / 2),
+                        -(DecorationHandleSize / 2)
                     )
             )
             TapInputHandle(
@@ -1046,8 +1047,8 @@ private fun GestureInputLayer(
                     }
                     .align(Alignment.TopStart)
                     .offset(
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2),
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                        -(DecorationHandleSize / 2),
+                        -(DecorationHandleSize / 2)
                     )
             )
         }
@@ -1177,7 +1178,7 @@ private fun GestureInputHandle(
 ) {
     Box(
         modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
+            .size(DecorationHandleSize / scale)
             .pointerInput(onTransform, onTransformStart, onTransformEnd) {
                 detectDragGestures(
                     onDragStart = {
@@ -1201,7 +1202,7 @@ private fun TapInputHandle(
 ) {
     Box(
         modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
+            .size(DecorationHandleSize / scale)
             .clickable(
                 interactionSource = null,
                 indication = null,
@@ -1250,7 +1251,6 @@ private fun UndoRedoRow(
     }
 }
 
-internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 

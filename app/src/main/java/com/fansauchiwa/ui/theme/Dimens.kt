@@ -24,3 +24,6 @@ val SettingsItemVerticalPadding = 8.dp
 
 val SelectionCircleIconPadding = 4.dp
 
+val DecorationHandleSize = 24.dp
+val DecorationHandleIconPadding = 4.dp
+

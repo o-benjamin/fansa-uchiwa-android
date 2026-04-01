@@ -72,6 +72,11 @@
     <string name="selection_circle_icon_selected">Selected</string>
     <string name="selection_circle_icon_not_selected">Not selected</string>
 
+    <!-- DecorationHandleIcons -->
+    <string name="decoration_handle_transform_content_description">Zoom and Rotate</string>
+    <string name="decoration_handle_delete_content_description">Delete</string>
+    <string name="decoration_handle_duplicate_content_description">Duplicate</string>
+
     <!-- Settings -->
     <string name="settings">設定</string>
     <string name="settings_title">アプリ設定</string>

@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -16,8 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import com.fansauchiwa.R
+import com.fansauchiwa.ui.theme.DecorationHandleIconPadding
+import com.fansauchiwa.ui.theme.DecorationHandleSize
+import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @Composable
 internal fun BoxScope.DecorationHandleIcons(
@@ -31,8 +36,8 @@ internal fun BoxScope.DecorationHandleIcons(
             }
             .align(Alignment.BottomEnd)
             .offset(
-                (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale
+                (DecorationHandleSize / 2) * currentScale,
+                (DecorationHandleSize / 2) * currentScale
             )
     )
     DeleteIcon(
@@ -43,8 +48,8 @@ internal fun BoxScope.DecorationHandleIcons(
             }
             .align(Alignment.TopEnd)
             .offset(
-                (GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale,
-                -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                (DecorationHandleSize / 2) * currentScale,
+                -((DecorationHandleSize / 2) * currentScale)
             )
     )
     DuplicateIcon(
@@ -55,8 +60,8 @@ internal fun BoxScope.DecorationHandleIcons(
             }
             .align(Alignment.TopStart)
             .offset(
-                -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale),
-                -((GESTURE_INPUT_HANDLE_SIZE / 2) * currentScale)
+                -((DecorationHandleSize / 2) * currentScale),
+                -((DecorationHandleSize / 2) * currentScale)
             )
     )
 }
@@ -67,12 +72,12 @@ internal fun TransformHandleIcon(
 ) {
     Icon(
         painter = painterResource(R.drawable.outline_arrows_outward_24),
-        contentDescription = "Zoom and Rotate",
+        contentDescription = stringResource(R.string.decoration_handle_transform_content_description),
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
+            .size(DecorationHandleSize)
+            .padding(DecorationHandleIconPadding)
     )
 }
 
@@ -82,12 +87,12 @@ internal fun DeleteIcon(
 ) {
     Icon(
         imageVector = Icons.Default.Delete,
-        contentDescription = "Delete",
+        contentDescription = stringResource(R.string.decoration_handle_delete_content_description),
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
+            .size(DecorationHandleSize)
+            .padding(DecorationHandleIconPadding)
     )
 }
 
@@ -97,12 +102,46 @@ internal fun DuplicateIcon(
 ) {
     Icon(
         imageVector = Icons.Default.ContentCopy,
-        contentDescription = "Duplicate",
+        contentDescription = stringResource(R.string.decoration_handle_duplicate_content_description),
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)
-            .size(GESTURE_INPUT_HANDLE_SIZE)
-            .padding(4.dp)
+            .size(DecorationHandleSize)
+            .padding(DecorationHandleIconPadding)
     )
+}
+
+@Preview
+@Composable
+private fun PreviewTransformHandleIcon() {
+    FansaUchiwaTheme {
+        TransformHandleIcon(modifier = Modifier)
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDeleteIcon() {
+    FansaUchiwaTheme {
+        DeleteIcon(modifier = Modifier)
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDuplicateIcon() {
+    FansaUchiwaTheme {
+        DuplicateIcon(modifier = Modifier)
+    }
+}
+
+@Preview
+@Composable
+private fun PreviewDecorationHandleIcons() {
+    FansaUchiwaTheme {
+        Box(modifier = Modifier.size(DecorationHandleSize * 3)) {
+            DecorationHandleIcons(currentScale = 1f)
+        }
+    }
 }
 
