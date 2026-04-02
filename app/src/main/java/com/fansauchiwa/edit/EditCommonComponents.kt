@@ -36,9 +36,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.DecorationColors
+import com.fansauchiwa.ui.theme.ColorSwatchBorderWidth
+import com.fansauchiwa.ui.theme.ColorSwatchSize
+import com.fansauchiwa.ui.theme.EditControlSpacing
+import com.fansauchiwa.ui.theme.EditSectionSpacing
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -64,15 +67,15 @@ fun ColorPickerRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(top = EditControlSpacing),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(24.dp)
+                .size(ColorSwatchSize)
                 .clip(CircleShape)
-                .border(1.dp, colorResource(R.color.gray), CircleShape)
+                .border(ColorSwatchBorderWidth, colorResource(R.color.gray), CircleShape)
                 .background(
                     brush = Brush.sweepGradient(
                         colors = listOf(
@@ -93,9 +96,9 @@ fun ColorPickerRow(
         DecorationColors.entries.forEach { decorationColor ->
             Box(
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(ColorSwatchSize)
                     .clip(CircleShape)
-                    .border(1.dp, colorResource(R.color.gray), CircleShape)
+                    .border(ColorSwatchBorderWidth, colorResource(R.color.gray), CircleShape)
                     .background(color = decorationColor.value)
                     .clickable {
                         onColorSelected(decorationColor.value)
@@ -127,14 +130,14 @@ fun ColorAndWeightControl(
     val isColorPickerOpen = remember { mutableStateOf(false) }
     val hapticManager = rememberFansaHapticManager()
 
-    Column(modifier = modifier.padding(top = 16.dp)) {
+    Column(modifier = modifier.padding(top = EditSectionSpacing)) {
         HeaderTitle(title)
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(top = EditControlSpacing),
+            horizontalArrangement = Arrangement.spacedBy(EditSectionSpacing),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box {
@@ -142,7 +145,7 @@ fun ColorAndWeightControl(
                     onClick = {
                         isColorPickerOpen.value = false
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(ColorSwatchSize)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ExpandLess,
@@ -156,9 +159,9 @@ fun ColorAndWeightControl(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(ColorSwatchSize)
                             .clip(CircleShape)
-                            .border(1.dp, colorResource(R.color.gray), CircleShape)
+                            .border(ColorSwatchBorderWidth, colorResource(R.color.gray), CircleShape)
                             .background(color = color)
                             .clickable {
                                 isColorPickerOpen.value = true
@@ -182,24 +185,10 @@ fun ColorAndWeightControl(
         AnimatedVisibility(isColorPickerOpen.value) {
             ColorPickerRow(
                 onColorSelected = onColorSelected,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = EditControlSpacing),
                 currentColor = color
             )
         }
-    }
-}
-
-/**
- * isNew でないエントリに 0 始まりの通し番号を付与するマップを作成する。
- * isNew = true のエントリには null が割り当てられる。
- */
-fun <T> buildRankIndexMap(
-    entries: List<T>,
-    isNew: (T) -> Boolean
-): Map<T, Int?> {
-    var rank = 0
-    return entries.associateWith { entry ->
-        if (!isNew(entry)) rank++ else null
     }
 }
 

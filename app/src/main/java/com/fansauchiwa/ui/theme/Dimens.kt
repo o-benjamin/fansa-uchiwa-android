@@ -24,3 +24,8 @@ val SettingsItemVerticalPadding = 8.dp
 
 val SelectionCircleIconPadding = 4.dp
 
+val ColorSwatchSize = 24.dp
+val ColorSwatchBorderWidth = 1.dp
+val EditControlSpacing = 8.dp
+val EditSectionSpacing = 16.dp
+
