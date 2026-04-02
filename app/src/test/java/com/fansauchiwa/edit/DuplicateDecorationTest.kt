@@ -9,7 +9,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
-import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
@@ -79,14 +79,16 @@ class DuplicateDecorationTest {
         vararg decorations: Decoration
     ): EditViewModel {
         val uchiwaId = "test-uchiwa-id"
-        val savedUchiwa = SavedUchiwa(
+        val uchiwa = Uchiwa(
+            id = uchiwaId,
             decorations = decorations.toList(),
             uchiwaColor = Color.Black,
             backgroundColor = Color.White
         )
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns uchiwa
         every { localImageRepository.getAllImages() } returns emptyList()
-        every { localImageRepository.loadImage(any()) } returns null
+        val mockImage = com.fansauchiwa.data.ImageReference(id = "dummy", path = "dummy")
+        every { localImageRepository.loadImage(any()) } returns mockImage
 
         return createViewModel(uchiwaId = uchiwaId)
     }
@@ -303,5 +305,3 @@ class DuplicateDecorationTest {
         assertFalse(stateAfter.canUndo)
     }
 }
-
-

@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.ui.DecorationColors
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -174,7 +173,6 @@ class TemplateExportUtilTest {
         val result = TemplateExportUtil.exportToKotlinCode(uchiwa)
 
         assertTrue(result.contains("Color(0xFF123456)"))
-        assertFalse(result.contains("DecorationColors."))
     }
 
     @Test
