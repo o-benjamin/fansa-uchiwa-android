@@ -10,6 +10,7 @@ import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.fansauchiwa.data.Uchiwa
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -123,10 +124,12 @@ class HomeViewModel @Inject constructor(
                 val savedUchiwa = localDatabaseRepository.getUchiwa(oldId)
                     ?: return@forEach
                 localDatabaseRepository.saveUchiwa(
-                    newId,
-                    savedUchiwa.decorations,
-                    savedUchiwa.uchiwaColor,
-                    savedUchiwa.backgroundColor
+                    Uchiwa(
+                        id = newId,
+                        decorations = savedUchiwa.decorations,
+                        uchiwaColor = savedUchiwa.uchiwaColor,
+                        backgroundColor = savedUchiwa.backgroundColor
+                    )
                 )
             }
             exitSelectionMode()
