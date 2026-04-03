@@ -19,12 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import com.fansauchiwa.ui.theme.SettingsItemHorizontalPadding
-import com.fansauchiwa.ui.theme.SettingsItemVerticalPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,8 +84,8 @@ private fun HapticFeedbackSettingRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                horizontal = SettingsItemHorizontalPadding,
-                vertical = SettingsItemVerticalPadding
+                horizontal = 16.dp,
+                vertical = 8.dp
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {

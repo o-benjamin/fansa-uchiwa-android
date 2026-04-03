@@ -13,9 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import com.fansauchiwa.ui.theme.SelectionCircleIconPadding
 
 @Composable
 fun SelectionCircleIcon(
@@ -39,7 +39,7 @@ fun SelectionCircleIcon(
         contentDescription = contentDescription,
         tint = tint,
         modifier = modifier
-            .padding(SelectionCircleIconPadding)
+            .padding(4.dp)
             .then(backgroundModifier),
     )
 }

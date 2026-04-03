@@ -34,12 +34,6 @@ import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.data.DEFAULT_DECORATION_TEXT
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import com.fansauchiwa.ui.theme.TextInputBarCornerRadius
-import com.fansauchiwa.ui.theme.TextInputBarDoneButtonPadding
-import com.fansauchiwa.ui.theme.TextInputBarHorizontalPadding
-import com.fansauchiwa.ui.theme.TextInputBarInnerHorizontalPadding
-import com.fansauchiwa.ui.theme.TextInputBarInnerVerticalPadding
-import com.fansauchiwa.ui.theme.TextInputBarVerticalPadding
 
 @Composable
 fun TextInputBar(
@@ -81,8 +75,8 @@ fun TextInputBar(
             )
             .padding(top = 8.dp)
             .padding(
-                horizontal = TextInputBarHorizontalPadding,
-                vertical = TextInputBarVerticalPadding
+                horizontal = 8.dp,
+                vertical = 8.dp
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -113,15 +107,15 @@ fun TextInputBar(
                 .focusRequester(focusRequester)
                 .background(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(TextInputBarCornerRadius)
+                    shape = RoundedCornerShape(16.dp)
                 )
                 .padding(
-                    horizontal = TextInputBarInnerHorizontalPadding,
-                    vertical = TextInputBarInnerVerticalPadding
+                    horizontal = 16.dp,
+                    vertical = 8.dp
                 )
         )
         Button(
-            shape = RoundedCornerShape(TextInputBarCornerRadius),
+            shape = RoundedCornerShape(16.dp),
             onClick = {
                 if (textFieldValue.text.isEmpty()) {
                     onDismissBlocked()
@@ -130,7 +124,7 @@ fun TextInputBar(
                     onDone()
                 }
             },
-            modifier = Modifier.padding(start = TextInputBarDoneButtonPadding)
+            modifier = Modifier.padding(start = 8.dp)
         ) {
             Text(text = stringResource(R.string.decide))
         }
