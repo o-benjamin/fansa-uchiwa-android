@@ -66,17 +66,33 @@ private fun SettingsContent(
             )
         }
     ) { innerPadding ->
-        HapticFeedbackSettingRow(
-            isEnabled = uiState.isHapticFeedbackEnabled,
-            onToggle = onToggleHapticFeedback,
-            modifier = Modifier.padding(innerPadding)
-        )
+        when (uiState) {
+            is SettingsUiState.Loading -> HapticFeedbackSettingRow(
+                isEnabled = false,
+                isLoading = true,
+                onToggle = onToggleHapticFeedback,
+                modifier = Modifier.padding(innerPadding)
+            )
+            is SettingsUiState.Success -> HapticFeedbackSettingRow(
+                isEnabled = uiState.isHapticFeedbackEnabled,
+                isLoading = false,
+                onToggle = onToggleHapticFeedback,
+                modifier = Modifier.padding(innerPadding)
+            )
+            is SettingsUiState.Error -> HapticFeedbackSettingRow(
+                isEnabled = false,
+                isLoading = false,
+                onToggle = onToggleHapticFeedback,
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
     }
 }
 
 @Composable
 private fun HapticFeedbackSettingRow(
     isEnabled: Boolean,
+    isLoading: Boolean,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -96,7 +112,8 @@ private fun HapticFeedbackSettingRow(
         )
         Switch(
             checked = isEnabled,
-            onCheckedChange = onToggle
+            onCheckedChange = onToggle,
+            enabled = !isLoading
         )
     }
 }
@@ -106,7 +123,7 @@ private fun HapticFeedbackSettingRow(
 private fun SettingsScreenPreview_HapticEnabled() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState(isHapticFeedbackEnabled = true),
+            uiState = SettingsUiState.Success(isHapticFeedbackEnabled = true),
             onBack = {},
             onToggleHapticFeedback = {}
         )
@@ -118,7 +135,19 @@ private fun SettingsScreenPreview_HapticEnabled() {
 private fun SettingsScreenPreview_HapticDisabled() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState(isHapticFeedbackEnabled = false),
+            uiState = SettingsUiState.Success(isHapticFeedbackEnabled = false),
+            onBack = {},
+            onToggleHapticFeedback = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview_Loading() {
+    FansaUchiwaTheme {
+        SettingsContent(
+            uiState = SettingsUiState.Loading,
             onBack = {},
             onToggleHapticFeedback = {}
         )

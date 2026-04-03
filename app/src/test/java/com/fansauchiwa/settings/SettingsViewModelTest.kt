@@ -46,8 +46,10 @@ class SettingsViewModelTest {
 
         advanceUntilIdle()
 
-        // 初期値が反映されるか
-        assertTrue(viewModel.uiState.first().isHapticFeedbackEnabled)
+        // リポジトリからの値が反映され、ローディング状態が解除されるか
+        val stateAfterLoad = viewModel.uiState.first()
+        assertTrue(stateAfterLoad.isHapticFeedbackEnabled)
+        assertFalse(stateAfterLoad.isLoading)
 
         // トグル処理の呼び出し
         viewModel.toggleHapticFeedback(false)

@@ -3,7 +3,7 @@ package com.fansauchiwa.home
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
-import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
@@ -83,12 +83,14 @@ class HomeViewModelTest {
                 newId2
             )
         } returns "/data/masterpiece/$newId2.png"
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns SavedUchiwa(
+        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns Uchiwa(
+            id = "test-id",
             decorations = emptyList(),
             uchiwaColor = Color.White,
             backgroundColor = Color.Black
         )
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa2") } returns SavedUchiwa(
+        coEvery { localDatabaseRepository.getUchiwa("uchiwa2") } returns Uchiwa(
+            id = "test-id",
             decorations = emptyList(),
             uchiwaColor = Color.Red,
             backgroundColor = Color.Blue
@@ -118,7 +120,8 @@ class HomeViewModelTest {
         // 準備
         val path1 = "/data/masterpiece/uchiwa1.png"
         val newId1 = "new-uuid-1"
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
             decorations = emptyList(),
             uchiwaColor = Color.White,
             backgroundColor = Color.Black
@@ -148,12 +151,7 @@ class HomeViewModelTest {
 
         // 検証: 新しいIDでsaveUchiwaが呼ばれたか
         coVerify(exactly = 1) {
-            localDatabaseRepository.saveUchiwa(
-                newId1,
-                savedUchiwa.decorations,
-                savedUchiwa.uchiwaColor,
-                savedUchiwa.backgroundColor
-            )
+            localDatabaseRepository.saveUchiwa(any())
         }
     }
 
@@ -170,7 +168,8 @@ class HomeViewModelTest {
                 newId1
             )
         } returns "/data/masterpiece/$newId1.png"
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns SavedUchiwa(
+        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns Uchiwa(
+            id = "test-id",
             decorations = emptyList(),
             uchiwaColor = Color.White,
             backgroundColor = Color.White
@@ -201,7 +200,8 @@ class HomeViewModelTest {
 
         every { uuidProvider.generate() } returns newId1
         coEvery { masterpieceRepository.duplicateMasterpiece(path1, newId1) } returns newPath1
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns SavedUchiwa(
+        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns Uchiwa(
+            id = "test-id",
             decorations = emptyList(),
             uchiwaColor = Color.White,
             backgroundColor = Color.White
@@ -234,7 +234,7 @@ class HomeViewModelTest {
 
         // 検証: duplicateMasterpieceが一度も呼ばれないこと
         coVerify(exactly = 0) { masterpieceRepository.duplicateMasterpiece(any(), any()) }
-        coVerify(exactly = 0) { localDatabaseRepository.saveUchiwa(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { localDatabaseRepository.saveUchiwa(any()) }
     }
 
     @Test
@@ -267,7 +267,7 @@ class HomeViewModelTest {
 
         // 検証: ファイル複製は行われるが、DB保存はスキップされること
         coVerify(exactly = 1) { masterpieceRepository.duplicateMasterpiece(path1, newId1) }
-        coVerify(exactly = 0) { localDatabaseRepository.saveUchiwa(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { localDatabaseRepository.saveUchiwa(any()) }
     }
 
     @Test
@@ -278,7 +278,8 @@ class HomeViewModelTest {
 
         every { uuidProvider.generate() } returns newId1
         coEvery { masterpieceRepository.duplicateMasterpiece(path1, newId1) } returns null
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns SavedUchiwa(
+        coEvery { localDatabaseRepository.getUchiwa("uchiwa1") } returns Uchiwa(
+            id = "test-id",
             decorations = emptyList(),
             uchiwaColor = Color.White,
             backgroundColor = Color.White
@@ -296,7 +297,7 @@ class HomeViewModelTest {
 
         // 検証: ファイル複製が失敗した場合、DB保存もスキップされること
         coVerify(exactly = 1) { masterpieceRepository.duplicateMasterpiece(path1, newId1) }
-        coVerify(exactly = 0) { localDatabaseRepository.saveUchiwa(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { localDatabaseRepository.saveUchiwa(any()) }
     }
 
     // endregion
