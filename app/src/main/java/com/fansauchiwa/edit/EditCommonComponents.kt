@@ -36,12 +36,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.DecorationColors
-import com.fansauchiwa.ui.theme.ColorSwatchBorderWidth
-import com.fansauchiwa.ui.theme.ColorSwatchSize
-import com.fansauchiwa.ui.theme.EditControlSpacing
-import com.fansauchiwa.ui.theme.EditSectionSpacing
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -67,15 +64,15 @@ fun ColorPickerRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = EditControlSpacing),
+            .padding(top = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(ColorSwatchSize)
+                .size(24.dp)
                 .clip(CircleShape)
-                .border(ColorSwatchBorderWidth, colorResource(R.color.gray), CircleShape)
+                .border(1.dp, colorResource(R.color.gray), CircleShape)
                 .background(
                     brush = Brush.sweepGradient(
                         colors = listOf(
@@ -96,9 +93,9 @@ fun ColorPickerRow(
         DecorationColors.entries.forEach { decorationColor ->
             Box(
                 modifier = Modifier
-                    .size(ColorSwatchSize)
+                    .size(24.dp)
                     .clip(CircleShape)
-                    .border(ColorSwatchBorderWidth, colorResource(R.color.gray), CircleShape)
+                    .border(1.dp, colorResource(R.color.gray), CircleShape)
                     .background(color = decorationColor.value)
                     .clickable {
                         onColorSelected(decorationColor.value)
@@ -130,14 +127,14 @@ fun ColorAndWeightControl(
     val isColorPickerOpen = remember { mutableStateOf(false) }
     val hapticManager = rememberFansaHapticManager()
 
-    Column(modifier = modifier.padding(top = EditSectionSpacing)) {
+    Column(modifier = modifier.padding(top = 16.dp)) {
         HeaderTitle(title)
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = EditControlSpacing),
-            horizontalArrangement = Arrangement.spacedBy(EditSectionSpacing),
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box {
@@ -145,7 +142,7 @@ fun ColorAndWeightControl(
                     onClick = {
                         isColorPickerOpen.value = false
                     },
-                    modifier = Modifier.size(ColorSwatchSize)
+                    modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ExpandLess,
@@ -159,9 +156,9 @@ fun ColorAndWeightControl(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(ColorSwatchSize)
+                            .size(24.dp)
                             .clip(CircleShape)
-                            .border(ColorSwatchBorderWidth, colorResource(R.color.gray), CircleShape)
+                            .border(1.dp, colorResource(R.color.gray), CircleShape)
                             .background(color = color)
                             .clickable {
                                 isColorPickerOpen.value = true
@@ -185,7 +182,7 @@ fun ColorAndWeightControl(
         AnimatedVisibility(isColorPickerOpen.value) {
             ColorPickerRow(
                 onColorSelected = onColorSelected,
-                modifier = Modifier.padding(top = EditControlSpacing),
+                modifier = Modifier.padding(top = 8.dp),
                 currentColor = color
             )
         }
