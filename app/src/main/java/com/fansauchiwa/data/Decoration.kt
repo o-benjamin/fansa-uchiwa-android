@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.FontFamiliesParceler
-import com.fansauchiwa.ui.DecorationColors
 import com.fansauchiwa.ui.StickerAsset
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
