@@ -6,67 +6,100 @@ import android.graphics.Bitmap
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import javax.inject.Inject
 
 class MasterpieceLocalSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) : MasterpieceDataSource {
-    override fun saveBitmap(bitmap: Bitmap, id: String): String? {
-        val directory = ContextWrapper(context).getDir(
-            "masterpiece",
-            Context.MODE_PRIVATE
-        )
-        val file = File(directory, "$id.png")
+    private val storage = MasterpieceStorage(context)
+
+    override fun saveBitmap(bitmap: Bitmap, id: String): String? =
+        storage.save(bitmap = bitmap, id = MasterpieceId(id))
+
+    override fun loadAllMasterpieces(): List<String> = storage.loadAll()
+
+    override fun deleteMasterpiece(filePath: String): Boolean = storage.delete(filePath)
+
+    override fun duplicateMasterpiece(sourceFilePath: String, newId: String): String? =
+        storage.duplicate(sourceFilePath = sourceFilePath, newId = MasterpieceId(newId))
+}
+
+private class MasterpieceStorage(
+    private val context: Context
+) {
+    fun save(bitmap: Bitmap, id: MasterpieceId): String? {
+        val file = masterpieceFile(id)
 
         return try {
             FileOutputStream(file).use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
             }
             file.absolutePath
-        } catch (_: Exception) {
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
             null
         }
     }
 
-    override fun loadAllMasterpieces(): List<String> {
-        val directory = ContextWrapper(context).getDir(
-            "masterpiece",
-            Context.MODE_PRIVATE
-        )
+    fun loadAll(): List<String> {
         return try {
-            directory.listFiles()
-                ?.filter { it.extension == "png" }
-                ?.sortedByDescending { it.lastModified() }
-                ?.map { it.absolutePath }
-                ?: emptyList()
-        } catch (_: Exception) {
+            masterpieceDirectory().listFiles()
+                .orEmpty()
+                .asSequence()
+                .filter(File::isMasterpieceImage)
+                .sortedByDescending(File::lastModified)
+                .map(File::absolutePath)
+                .toList()
+        } catch (_: SecurityException) {
             emptyList()
         }
     }
 
-    override fun deleteMasterpiece(filePath: String): Boolean {
+    fun delete(filePath: String): Boolean {
         return try {
-            val file = File(filePath)
-            file.delete()
-        } catch (_: Exception) {
+            File(filePath).delete()
+        } catch (_: SecurityException) {
             false
         }
     }
 
-    override fun duplicateMasterpiece(sourceFilePath: String, newId: String): String? {
-        return try {
-            val sourceFile = File(sourceFilePath)
-            if (!sourceFile.exists()) return null
+    fun duplicate(sourceFilePath: String, newId: MasterpieceId): String? {
+        val sourceFile = File(sourceFilePath)
+        if (!sourceFile.exists()) {
+            return null
+        }
 
-            val directory = ContextWrapper(context).getDir(
-                "masterpiece",
-                Context.MODE_PRIVATE
-            )
-            val newFile = File(directory, "$newId.png")
+        val newFile = masterpieceFile(newId)
+        return try {
             sourceFile.copyTo(newFile, overwrite = true)
             newFile.absolutePath
-        } catch (_: Exception) {
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
             null
         }
     }
+
+    private fun masterpieceDirectory(): File = ContextWrapper(context).getDir(
+        MASTERPIECE_DIRECTORY_NAME,
+        Context.MODE_PRIVATE
+    )
+
+    private fun masterpieceFile(id: MasterpieceId): File =
+        File(masterpieceDirectory(), id.fileName)
 }
+
+@JvmInline
+private value class MasterpieceId(
+    val value: String
+) {
+    val fileName: String
+        get() = "$value.$MASTERPIECE_FILE_EXTENSION"
+}
+
+private fun File.isMasterpieceImage(): Boolean = extension == MASTERPIECE_FILE_EXTENSION
+
+private const val MASTERPIECE_DIRECTORY_NAME = "masterpiece"
+private const val MASTERPIECE_FILE_EXTENSION = "png"
