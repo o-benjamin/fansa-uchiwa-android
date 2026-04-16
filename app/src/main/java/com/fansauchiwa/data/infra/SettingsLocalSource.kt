@@ -1,6 +1,7 @@
 package com.fansauchiwa.data.infra
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -15,27 +16,41 @@ class SettingsLocalSource @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : SettingsDataSource {
 
-    override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
-        .map { preferences ->
-            preferences[KEY_HAPTIC_FEEDBACK_ENABLED] ?: DEFAULT_HAPTIC_FEEDBACK_ENABLED
-        }
+    override fun getHapticFeedbackEnabledStream(): Flow<Boolean> =
+        dataStore.data
+            .recoverPreferences()
+            .map(SettingsPreferencesSchema::readHapticFeedbackEnabled)
 
     override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
-            preferences[KEY_HAPTIC_FEEDBACK_ENABLED] = enabled
+            SettingsPreferencesSchema.writeHapticFeedbackEnabled(
+                preferences = preferences,
+                enabled = enabled
+            )
+        }
+    }
+}
+
+private fun Flow<Preferences>.recoverPreferences(): Flow<Preferences> =
+    catch { exception ->
+        if (exception is IOException) {
+            emit(emptyPreferences())
+        } else {
+            throw exception
         }
     }
 
-    companion object {
-        private val KEY_HAPTIC_FEEDBACK_ENABLED =
-            booleanPreferencesKey("haptic_feedback_enabled")
-        private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
+private object SettingsPreferencesSchema {
+    private val keyHapticFeedbackEnabled = booleanPreferencesKey("haptic_feedback_enabled")
+    private const val defaultHapticFeedbackEnabled = true
+
+    fun readHapticFeedbackEnabled(preferences: Preferences): Boolean =
+        preferences[keyHapticFeedbackEnabled] ?: defaultHapticFeedbackEnabled
+
+    fun writeHapticFeedbackEnabled(
+        preferences: MutablePreferences,
+        enabled: Boolean
+    ) {
+        preferences[keyHapticFeedbackEnabled] = enabled
     }
 }
