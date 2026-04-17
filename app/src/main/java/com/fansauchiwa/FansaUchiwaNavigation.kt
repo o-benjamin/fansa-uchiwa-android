@@ -1,10 +1,9 @@
 package com.fansauchiwa
 
-import com.fansauchiwa.FansaUchiwaScreens.EDIT_SCREEN
-import com.fansauchiwa.FansaUchiwaScreens.HOME_SCREEN
-import com.fansauchiwa.FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN
-import com.fansauchiwa.FansaUchiwaScreens.PREVIEW_SCREEN
-import com.fansauchiwa.FansaUchiwaScreens.SETTINGS_SCREEN
+sealed interface FansaUchiwaNavigationDestination {
+    val screen: String
+    val route: String
+}
 
 object FansaUchiwaScreens {
     const val HOME_SCREEN = "home"
@@ -19,10 +18,62 @@ const val TEMPLATE_ID_ARG = "templateId"
 const val IMAGE_PATH_ARG = "imagePath"
 const val IMAGE_URI_ARG = "imageUri"
 
+data object HomeDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.HOME_SCREEN
+    override val route: String = screen
+}
+
+data object EditDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.EDIT_SCREEN
+    override val route: String =
+        "$screen?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}"
+
+    fun createRoute(uchiwaId: String, templateId: String?): String =
+        buildQueryRoute(
+            screen = screen,
+            arguments = arrayOf(
+                UCHIWA_ID_ARG to uchiwaId,
+                TEMPLATE_ID_ARG to templateId
+            )
+        )
+}
+
+data object PreviewDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.PREVIEW_SCREEN
+    override val route: String = "$screen/{$IMAGE_PATH_ARG}"
+
+    fun createRoute(imagePath: String): String = buildPathRoute(screen = screen, argument = imagePath)
+}
+
+data object ImagePreviewDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN
+    override val route: String = "$screen/{$IMAGE_URI_ARG}"
+
+    fun createRoute(imageUri: String): String = buildPathRoute(screen = screen, argument = imageUri)
+}
+
+data object SettingsDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.SETTINGS_SCREEN
+    override val route: String = screen
+}
+
 object FansaUchiwaDestinations {
-    const val HOME = HOME_SCREEN
-    const val EDIT = "$EDIT_SCREEN?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}"
-    const val PREVIEW = "$PREVIEW_SCREEN/{$IMAGE_PATH_ARG}"
-    const val IMAGE_PREVIEW = "$IMAGE_PREVIEW_SCREEN/{$IMAGE_URI_ARG}"
-    const val SETTINGS = SETTINGS_SCREEN
+    const val HOME = FansaUchiwaScreens.HOME_SCREEN
+    const val EDIT = "${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}"
+    const val PREVIEW = "${FansaUchiwaScreens.PREVIEW_SCREEN}/{$IMAGE_PATH_ARG}"
+    const val IMAGE_PREVIEW = "${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/{$IMAGE_URI_ARG}"
+    const val SETTINGS = FansaUchiwaScreens.SETTINGS_SCREEN
+}
+
+private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"
+
+private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String?>>): String {
+    val query = arguments.mapNotNull { (key, value) ->
+        value?.let { "$key=$it" }
+    }
+    return if (query.isEmpty()) {
+        screen
+    } else {
+        "$screen?${query.joinToString("&")}"
+    }
 }
