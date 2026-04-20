@@ -3,8 +3,8 @@ package com.fansauchiwa.edit
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
-import com.fansauchiwa.ui.DecorationColors
 
 object TemplateExportUtil {
 
@@ -91,7 +91,7 @@ object TemplateExportUtil {
     }
 
     private fun colorToDecorationColorCode(color: Color): String {
-        val matched = DecorationColors.entries.find { it.value == color }
+        val matched = DecorationColors.from(color)
         return if (matched != null) {
             "DecorationColors.${matched.name}.value"
         } else {
@@ -99,4 +99,3 @@ object TemplateExportUtil {
         }
     }
 }
-
