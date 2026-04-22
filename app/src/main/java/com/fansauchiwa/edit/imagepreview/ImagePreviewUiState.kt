@@ -3,51 +3,68 @@ package com.fansauchiwa.edit.imagepreview
 import android.net.Uri
 
 sealed interface ImagePreviewUiState {
-    /**
-     * 初期ロード中
-     */
     data object Loading : ImagePreviewUiState
 
-    /**
-     * 画像URIのロード失敗
-     */
-    data class LoadError(val error: Throwable) : ImagePreviewUiState
+    sealed interface Error : ImagePreviewUiState {
+        val error: Throwable
+    }
 
-    /**
-     * 画像URIロード完了
-     */
-    sealed interface Ready : ImagePreviewUiState {
+    data class LoadError(
+        override val error: Throwable
+    ) : Error
+
+    sealed interface Success : ImagePreviewUiState {
         val originalUri: Uri
+        val displayUri: Uri
+        val isOriginalSelected: Boolean
+        val isTransparentProcessing: Boolean
+        val isManualCorrectionMode: Boolean
+    }
 
-        /**
-         * オリジナル画像を表示
-         */
-        data class ShowingOriginal(override val originalUri: Uri) : Ready
+    sealed interface Ready : Success {
+        override val displayUri: Uri
+            get() = originalUri
 
-        /**
-         * 背景透過画像を表示
-         */
+        override val isOriginalSelected: Boolean
+            get() = true
+
+        override val isTransparentProcessing: Boolean
+            get() = false
+
+        override val isManualCorrectionMode: Boolean
+            get() = false
+
+        data class ShowingOriginal(
+            override val originalUri: Uri
+        ) : Ready
+
         sealed interface ShowingTransparent : Ready {
-            /**
-             * 背景透過処理中
-             */
-            data class Loading(override val originalUri: Uri) : ShowingTransparent
+            val transparentUri: Uri?
 
-            /**
-             * 背景透過処理成功
-             */
+            override val displayUri: Uri
+                get() = transparentUri ?: originalUri
+
+            override val isOriginalSelected: Boolean
+                get() = false
+
+            data class Loading(
+                override val originalUri: Uri
+            ) : ShowingTransparent {
+                override val transparentUri: Uri? = null
+                override val isTransparentProcessing: Boolean = true
+            }
+
             data class Success(
                 override val originalUri: Uri,
-                val transparentUri: Uri
+                override val transparentUri: Uri
             ) : ShowingTransparent
 
-            /**
-             * 手動修正モード
-             */
             data class ManualCorrection(
                 override val originalUri: Uri,
-                val transparentUri: Uri
-            ) : ShowingTransparent
+                override val transparentUri: Uri
+            ) : ShowingTransparent {
+                override val isManualCorrectionMode: Boolean = true
+            }
         }
     }
 }
