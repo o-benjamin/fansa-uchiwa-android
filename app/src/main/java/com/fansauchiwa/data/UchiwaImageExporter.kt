@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.graphics.createBitmap
 
+private const val DEFAULT_EXPORT_WIDTH = 2382
+private const val DEFAULT_EXPORT_HEIGHT = 1684
+
 /**
  * GraphicsLayerの内容を指定された解像度のBitmapとして描画して返します。
  */
@@ -20,33 +23,107 @@ suspend fun captureHighResBitmap(
     graphicsLayer: GraphicsLayer,
     density: Density,
     layoutDirection: LayoutDirection,
-    targetWidth: Int = 2382,
-    targetHeight: Int = 1684
+    targetWidth: Int = DEFAULT_EXPORT_WIDTH,
+    targetHeight: Int = DEFAULT_EXPORT_HEIGHT
 ): ImageBitmap {
-    // 1. 指定サイズのAndroid Bitmapを作成 (ARGB_8888で高品質に)
-    val bitmap = createBitmap(targetWidth, targetHeight).asImageBitmap()
-
-    // 2. ComposeのCanvasでラップ
-    val canvas = Canvas(bitmap)
-
-    // 3. 現在のGraphicsLayerのサイズを取得
-    val layerSize = graphicsLayer.size
-
-    val scaleX = targetWidth.toFloat() / layerSize.width
-    val scaleY = targetHeight.toFloat() / layerSize.height
-
-    // 5. CanvasDrawScopeを使って描画
-    CanvasDrawScope().draw(
+    return UchiwaImageExporter.export(
+        graphicsLayer = graphicsLayer,
         density = density,
         layoutDirection = layoutDirection,
-        canvas = canvas,
-        size = Size(targetWidth.toFloat(), targetHeight.toFloat())
-    ) {
-        // スケールを適用して描画
-        scale(scaleX = scaleX, scaleY = scaleY, pivot = Offset.Zero) {
-            drawLayer(graphicsLayer)
-        }
+        targetWidth = targetWidth,
+        targetHeight = targetHeight
+    )
+}
+
+private object UchiwaImageExporter {
+
+    fun export(
+        graphicsLayer: GraphicsLayer,
+        density: Density,
+        layoutDirection: LayoutDirection,
+        targetWidth: Int,
+        targetHeight: Int
+    ): ImageBitmap {
+        val renderPlan = createUchiwaImageRenderPlan(
+            layerWidth = graphicsLayer.size.width,
+            layerHeight = graphicsLayer.size.height,
+            targetWidth = targetWidth,
+            targetHeight = targetHeight
+        )
+        val bitmap = createExportBitmap(targetWidth = targetWidth, targetHeight = targetHeight)
+
+        drawGraphicsLayer(
+            bitmap = bitmap,
+            graphicsLayer = graphicsLayer,
+            density = density,
+            layoutDirection = layoutDirection,
+            renderPlan = renderPlan
+        )
+
+        return bitmap
     }
 
-    return bitmap
+    private fun createExportBitmap(
+        targetWidth: Int,
+        targetHeight: Int
+    ): ImageBitmap {
+        validateBitmapSize(targetWidth = targetWidth, targetHeight = targetHeight)
+        return createBitmap(targetWidth, targetHeight).asImageBitmap()
+    }
+
+    private fun drawGraphicsLayer(
+        bitmap: ImageBitmap,
+        graphicsLayer: GraphicsLayer,
+        density: Density,
+        layoutDirection: LayoutDirection,
+        renderPlan: UchiwaImageRenderPlan
+    ) {
+        CanvasDrawScope().draw(
+            density = density,
+            layoutDirection = layoutDirection,
+            canvas = Canvas(bitmap),
+            size = Size(renderPlan.targetWidth.toFloat(), renderPlan.targetHeight.toFloat())
+        ) {
+            scale(
+                scaleX = renderPlan.scaleX,
+                scaleY = renderPlan.scaleY,
+                pivot = Offset.Zero
+            ) {
+                drawLayer(graphicsLayer)
+            }
+        }
+    }
+}
+
+internal fun createUchiwaImageRenderPlan(
+    layerWidth: Float,
+    layerHeight: Float,
+    targetWidth: Int,
+    targetHeight: Int
+): UchiwaImageRenderPlan {
+    require(layerWidth > 0f) { "layerWidth must be greater than 0." }
+    require(layerHeight > 0f) { "layerHeight must be greater than 0." }
+    validateBitmapSize(targetWidth = targetWidth, targetHeight = targetHeight)
+
+    return UchiwaImageRenderPlan(
+        targetWidth = targetWidth,
+        targetHeight = targetHeight,
+        scaleX = targetWidth.toFloat() / layerWidth,
+        scaleY = targetHeight.toFloat() / layerHeight
+    )
+}
+
+internal class UchiwaImageRenderPlan(
+    val targetWidth: Int,
+    val targetHeight: Int,
+    val scaleX: Float,
+    val scaleY: Float
+)
+
+private fun validateBitmapSize(
+    targetWidth: Int,
+    targetHeight: Int
+) {
+    require(targetWidth > 0) { "targetWidth must be greater than 0." }
+    require(targetHeight > 0) { "targetHeight must be greater than 0." }
 }
