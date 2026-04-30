@@ -5,6 +5,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -25,111 +27,232 @@ fun FansaUchiwaNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = FansaUchiwaDestinations.HOME
 ) {
+    val navigator = rememberFansaUchiwaNavigator(navController)
+
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable(FansaUchiwaDestinations.HOME) {
-            HomeScreen(
-                onImageClick = { id, templateId ->
-                    val route = buildString {
-                        append("${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG=$id")
-                        if (templateId != null) {
-                            append("&$TEMPLATE_ID_ARG=$templateId")
-                        }
-                    }
-                    navController.navigate(route)
-                },
-                onAddClick = {
-                    navController.navigate(FansaUchiwaScreens.EDIT_SCREEN)
-                },
-                onNavigateToSettings = {
-                    navController.navigate(FansaUchiwaDestinations.SETTINGS)
-                }
-            )
-        }
-        composable(
-            route = FansaUchiwaDestinations.EDIT,
-            arguments = listOf(
-                navArgument(UCHIWA_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(TEMPLATE_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) {
-            val viewModel: EditViewModel = hiltViewModel()
-            EditScreen(
-                viewModel = viewModel,
-                onBack = { navController.navigateUp() },
-                onPreview = { path ->
-                    navController.navigate("${FansaUchiwaScreens.PREVIEW_SCREEN}/$path")
-                },
-                onNavigateToImagePreview = { uri ->
-                    navController.navigate("${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/$uri")
-                },
-                onNavigateToSettings = {
-                    navController.navigate(FansaUchiwaDestinations.SETTINGS)
-                }
-            )
-        }
-        composable(
-            route = FansaUchiwaDestinations.PREVIEW,
-            arguments = listOf(
-                navArgument(IMAGE_PATH_ARG) { type = NavType.StringType }
-            )
-        ) {
-            val viewModel: UchiwaPreviewViewModel = hiltViewModel()
-            UchiwaPreviewScreen(
-                viewModel = viewModel,
-                onBack = { navController.navigateUp() },
-                onBackToHome = {
-                    navController.popBackStack(
-                        route = FansaUchiwaDestinations.HOME,
-                        inclusive = false
-                    )
-                }
-            )
-        }
-        composable(
-            route = FansaUchiwaDestinations.IMAGE_PREVIEW,
-            arguments = listOf(
-                navArgument(IMAGE_URI_ARG) { type = NavType.StringType }
-            ),
-            enterTransition = {
-                slideInVertically(initialOffsetY = { it })
-            },
-            exitTransition = {
-                slideOutVertically(targetOffsetY = { it })
-            }
-        ) { backStackEntry ->
-            val viewModel: ImagePreviewViewModel = hiltViewModel()
-            // EditScreenのバックスタックエントリからEditViewModelを取得
-            // TODO: もっといいやり方があれば…
-            val editBackStackEntry = remember(backStackEntry) {
-                navController.getBackStackEntry(FansaUchiwaDestinations.EDIT)
-            }
-            val editViewModel: EditViewModel = hiltViewModel(editBackStackEntry)
+        homeDestination(navigator)
+        editDestination(navigator)
+        previewDestination(navigator)
+        imagePreviewDestination(
+            navController = navController,
+            navigator = navigator
+        )
+        settingsDestination(navigator)
+    }
+}
 
-            ImagePreviewScreen(
-                onConfirm = { resultUri ->
-                    // EditViewModelのメソッドを直接呼び出す
-                    editViewModel.handleImageResult(resultUri)
-                    navController.popBackStack()
-                },
-                onBack = { navController.navigateUp() },
-                viewModel = viewModel
-            )
+@Composable
+private fun rememberFansaUchiwaNavigator(
+    navController: NavHostController
+): FansaUchiwaNavigator {
+    return remember(navController) {
+        FansaUchiwaNavigator(navController)
+    }
+}
+
+private fun NavGraphBuilder.homeDestination(
+    navigator: FansaUchiwaNavigator
+) {
+    composable(FansaUchiwaDestinations.HOME) {
+        HomeScreen(
+            onImageClick = { id, templateId ->
+                navigator.openEdit(
+                    EditNavigationRequest(
+                        uchiwaId = id,
+                        templateId = templateId
+                    )
+                )
+            },
+            onAddClick = navigator::openNewEdit,
+            onNavigateToSettings = navigator::openSettings
+        )
+    }
+}
+
+private fun NavGraphBuilder.editDestination(
+    navigator: FansaUchiwaNavigator
+) {
+    composable(
+        route = FansaUchiwaDestinations.EDIT,
+        arguments = listOf(
+            navArgument(UCHIWA_ID_ARG) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+            navArgument(TEMPLATE_ID_ARG) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) {
+        val viewModel: EditViewModel = hiltViewModel()
+        EditScreen(
+            viewModel = viewModel,
+            onBack = navigator::navigateUp,
+            onPreview = { path ->
+                navigator.openPreview(
+                    PreviewNavigationRequest(imagePath = path)
+                )
+            },
+            onNavigateToImagePreview = { uri ->
+                navigator.openImagePreview(
+                    ImagePreviewNavigationRequest(imageUri = uri)
+                )
+            },
+            onNavigateToSettings = navigator::openSettings
+        )
+    }
+}
+
+private fun NavGraphBuilder.previewDestination(
+    navigator: FansaUchiwaNavigator
+) {
+    composable(
+        route = FansaUchiwaDestinations.PREVIEW,
+        arguments = listOf(
+            navArgument(IMAGE_PATH_ARG) { type = NavType.StringType }
+        )
+    ) {
+        val viewModel: UchiwaPreviewViewModel = hiltViewModel()
+        UchiwaPreviewScreen(
+            viewModel = viewModel,
+            onBack = navigator::navigateUp,
+            onBackToHome = navigator::returnToHome
+        )
+    }
+}
+
+private fun NavGraphBuilder.imagePreviewDestination(
+    navController: NavHostController,
+    navigator: FansaUchiwaNavigator
+) {
+    composable(
+        route = FansaUchiwaDestinations.IMAGE_PREVIEW,
+        arguments = listOf(
+            navArgument(IMAGE_URI_ARG) { type = NavType.StringType }
+        ),
+        enterTransition = {
+            slideInVertically(initialOffsetY = { it })
+        },
+        exitTransition = {
+            slideOutVertically(targetOffsetY = { it })
         }
-        composable(FansaUchiwaDestinations.SETTINGS) {
-            SettingsScreen(
-                onBack = { navController.navigateUp() }
-            )
+    ) { backStackEntry ->
+        val viewModel: ImagePreviewViewModel = hiltViewModel()
+        val onConfirm = rememberImagePreviewConfirmHandler(
+            navController = navController,
+            backStackEntry = backStackEntry,
+            navigator = navigator
+        )
+
+        ImagePreviewScreen(
+            onConfirm = onConfirm,
+            onBack = navigator::navigateUp,
+            viewModel = viewModel
+        )
+    }
+}
+
+private fun NavGraphBuilder.settingsDestination(
+    navigator: FansaUchiwaNavigator
+) {
+    composable(FansaUchiwaDestinations.SETTINGS) {
+        SettingsScreen(
+            onBack = navigator::navigateUp
+        )
+    }
+}
+
+@Composable
+private fun rememberImagePreviewConfirmHandler(
+    navController: NavHostController,
+    backStackEntry: NavBackStackEntry,
+    navigator: FansaUchiwaNavigator
+): (String) -> Unit {
+    val editBackStackEntry = remember(backStackEntry) {
+        navController.getBackStackEntry(FansaUchiwaDestinations.EDIT)
+    }
+    val editViewModel: EditViewModel = hiltViewModel(editBackStackEntry)
+
+    return remember(editViewModel, navigator) {
+        { resultUri ->
+            editViewModel.handleImageResult(resultUri)
+            navigator.popBackStack()
         }
     }
+}
+
+private class FansaUchiwaNavigator(
+    private val navController: NavHostController
+) {
+    fun openEdit(request: EditNavigationRequest) {
+        navController.navigate(request.route)
+    }
+
+    fun openNewEdit() {
+        navController.navigate(FansaUchiwaScreens.EDIT_SCREEN)
+    }
+
+    fun openPreview(request: PreviewNavigationRequest) {
+        navController.navigate(request.route)
+    }
+
+    fun openImagePreview(request: ImagePreviewNavigationRequest) {
+        navController.navigate(request.route)
+    }
+
+    fun openSettings() {
+        navController.navigate(FansaUchiwaDestinations.SETTINGS)
+    }
+
+    fun navigateUp() {
+        navController.navigateUp()
+    }
+
+    fun popBackStack() {
+        navController.popBackStack()
+    }
+
+    fun returnToHome() {
+        navController.popBackStack(
+            route = FansaUchiwaDestinations.HOME,
+            inclusive = false
+        )
+    }
+}
+
+private data class EditNavigationRequest(
+    val uchiwaId: String? = null,
+    val templateId: String? = null
+) {
+    val route: String
+        get() {
+            val queryParameters = buildList {
+                uchiwaId?.let { add("$UCHIWA_ID_ARG=$it") }
+                templateId?.let { add("$TEMPLATE_ID_ARG=$it") }
+            }
+
+            return if (queryParameters.isEmpty()) {
+                FansaUchiwaScreens.EDIT_SCREEN
+            } else {
+                "${FansaUchiwaScreens.EDIT_SCREEN}?${queryParameters.joinToString("&")}"
+            }
+        }
+}
+
+private data class PreviewNavigationRequest(
+    val imagePath: String
+) {
+    val route: String = "${FansaUchiwaScreens.PREVIEW_SCREEN}/$imagePath"
+}
+
+private data class ImagePreviewNavigationRequest(
+    val imageUri: String
+) {
+    val route: String = "${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/$imageUri"
 }
