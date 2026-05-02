@@ -15,7 +15,6 @@ import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -223,9 +222,6 @@ suspend fun generateSdfTexture(textMask: Bitmap): Bitmap = withContext(Dispatche
     val width = textMask.width
     val height = textMask.height
 
-    Log.d("PuffyDebug", "=== SDF生成スタート ===")
-    Log.d("PuffyDebug", "マスク画像サイズ: ${width}x${height}")
-
     val format = PixelFormat.RGBA_8888
     val usage = HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE or HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
 
@@ -285,7 +281,6 @@ suspend fun generateSdfTexture(textMask: Bitmap): Bitmap = withContext(Dispatche
         setFloatUniform("size", width.toFloat(), height.toFloat())
     }
     renderTo(readerA, initShader)
-    Log.d("PuffyDebug", "Pass 0 (初期化) 完了")
 
     // Pass 1〜N (JFAループ)
     var stepSize = Integer.highestOneBit(maxOf(width, height))
@@ -303,7 +298,6 @@ suspend fun generateSdfTexture(textMask: Bitmap): Bitmap = withContext(Dispatche
 
         val targetReader = if (useReaderB) readerB else readerA
         renderTo(targetReader, jfaShader)
-        Log.d("PuffyDebug", "Pass $passCount (JFA): stepSize = $stepSize 完了")
 
         useReaderB = !useReaderB
         stepSize /= 2
@@ -318,7 +312,6 @@ suspend fun generateSdfTexture(textMask: Bitmap): Bitmap = withContext(Dispatche
     readerB.close()
     renderer.destroy()
 
-    Log.d("PuffyDebug", "=== SDF生成 正常終了 ===")
     return@withContext finalSoftwareBitmap
 }
 
