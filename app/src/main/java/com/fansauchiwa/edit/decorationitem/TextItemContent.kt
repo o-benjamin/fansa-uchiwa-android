@@ -198,7 +198,7 @@ const val PUFFY_RENDER_SHADER = """
         // shininess: 反射の鋭さ。
         // - 大きくする(例: 150.0): ジェルやガラスのように、点が鋭く光ります。
         // - 小さくする(例: 20.0): ゴム素材のように、ハイライトが広くぼやけます。
-        float shininess = 120.0;
+        float shininess = 300.0;
 
         // specularの係数(* 1.2): ハイライトの「白さ」の強さ。
         // - 大きくする(例: 1.5): より強烈に白飛びします。
@@ -370,7 +370,8 @@ fun createTextMaskBitmap(
     drawStyle: DrawStyle = Fill,
     scaleFactor: Float = 2f,
     maxStroke: Float = 0f,
-    clearInner: Boolean = false
+    clearInner: Boolean = false,
+    clearStroke: Stroke? = null
 ): Bitmap {
     val width = ((layoutResult.size.width + maxStroke) * scaleFactor).toInt()
     val height = ((layoutResult.size.height + maxStroke) * scaleFactor).toInt()
@@ -391,6 +392,14 @@ fun createTextMaskBitmap(
                     color = Color.White,
                     drawStyle = drawStyle
                 )
+                if (clearStroke != null) {
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        color = Color.Transparent,
+                        drawStyle = clearStroke,
+                        blendMode = BlendMode.Clear
+                    )
+                }
                 if (clearInner) {
                     drawText(
                         textLayoutResult = layoutResult,
@@ -440,6 +449,7 @@ fun TextItemContent(
 
     var fillSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var strokeSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var secondBorderSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // ▼ チューニング: 【描画の解像度（綺麗さ）】 ▼
     // scaleFactor: 画像を何倍のサイズで内部生成して縮小表示するか（スーパーサンプリング）。
@@ -451,7 +461,11 @@ fun TextItemContent(
         Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round)
     }
 
-    LaunchedEffect(layoutResult, decoration.strokeWidth, isPuffyEnabled, maxStroke) {
+    val secondBorderDrawStyle = remember(decoration.strokeWidth, decoration.secondBorderWidth) {
+        Stroke(width = decoration.strokeWidth + decoration.secondBorderWidth, join = StrokeJoin.Round)
+    }
+
+    LaunchedEffect(layoutResult, decoration.strokeWidth, decoration.secondBorderWidth, isPuffyEnabled, maxStroke) {
         if (isPuffyEnabled) {
             val fillMaskBitmap =
                 createTextMaskBitmap(layoutResult, density, Fill, scaleFactor, maxStroke)
@@ -471,9 +485,26 @@ fun TextItemContent(
             } else {
                 strokeSdfBitmap = null
             }
+
+            if (decoration.secondBorderWidth > 0f) {
+                val secondBorderMaskBitmap =
+                    createTextMaskBitmap(
+                        layoutResult,
+                        density,
+                        secondBorderDrawStyle,
+                        scaleFactor,
+                        maxStroke,
+                        clearInner = true,
+                        clearStroke = strokeDrawStyle
+                    )
+                secondBorderSdfBitmap = generateSdfTexture(secondBorderMaskBitmap)
+            } else {
+                secondBorderSdfBitmap = null
+            }
         } else {
             fillSdfBitmap = null
             strokeSdfBitmap = null
+            secondBorderSdfBitmap = null
         }
     }
 
@@ -483,14 +514,16 @@ fun TextItemContent(
         Canvas(modifier = Modifier.matchParentSize()) {
             translate(maxStroke / 2f, maxStroke / 2f) {
                 if (secondBorderWidth > 0f) {
-                    drawText(
-                        textLayoutResult = layoutResult,
-                        drawStyle = Stroke(
-                            width = decoration.strokeWidth + secondBorderWidth,
-                            join = StrokeJoin.Round
-                        ),
-                        color = secondBorderColor,
-                    )
+                    if (!isPuffyEnabled || secondBorderSdfBitmap == null) {
+                        drawText(
+                            textLayoutResult = layoutResult,
+                            drawStyle = Stroke(
+                                width = decoration.strokeWidth + secondBorderWidth,
+                                join = StrokeJoin.Round
+                            ),
+                            color = secondBorderColor,
+                        )
+                    }
                 }
 
                 if (!isPuffyEnabled || strokeSdfBitmap == null) {
@@ -512,6 +545,14 @@ fun TextItemContent(
         }
 
         if (isPuffyEnabled) {
+            if (secondBorderSdfBitmap != null) {
+                PuffyTextRenderer(
+                    sdfTextureBitmap = secondBorderSdfBitmap!!,
+                    baseColor = secondBorderColor,
+                    scaleFactor = scaleFactor,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
             if (strokeSdfBitmap != null) {
                 PuffyTextRenderer(
                     sdfTextureBitmap = strokeSdfBitmap!!,
