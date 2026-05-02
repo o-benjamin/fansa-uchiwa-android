@@ -30,12 +30,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -75,7 +78,7 @@ const val INIT_SDF_SHADER = """
     uniform float2 size;
     half4 main(float2 fragCoord) {
         float alpha = textMask.eval(fragCoord).a;
-        if (alpha <= 0.0) return half4(0.0, 0.0, 0.0, 0.0); 
+        if (alpha <= 0.0) return half4(0.0, 0.0, 0.0, 0.0);
 
         float aTop   = textMask.eval(fragCoord + float2(0.0, -1.0)).a;
         float aBot   = textMask.eval(fragCoord + float2(0.0, 1.0)).a;
@@ -98,7 +101,7 @@ const val JFA_STEP_SHADER = """
     
     half4 main(float2 fragCoord) {
         half4 bestData = prevPass.eval(fragCoord);
-        float originalAlpha = bestData.a; 
+        float originalAlpha = bestData.a;
         
         float2 bestCoord = bestData.rg * size;
         float bestDist = (bestData.b > 0.5) ? distance(fragCoord, bestCoord) : 999999.0;
@@ -133,7 +136,7 @@ const val PUFFY_RENDER_SHADER = """
     
     float getHeight(float2 coord) {
         half4 data = sdfTexture.eval(coord);
-        if (data.a <= 0.0) return 0.0; 
+        if (data.a <= 0.0) return 0.0;
         
         float2 closestEdge = data.rg * size;
         float dist = distance(coord, closestEdge);
@@ -186,7 +189,7 @@ const val PUFFY_RENDER_SHADER = """
         // shadowDarkness: 光が全く当たらない斜面の最も暗い部分の明るさ。
         // - 0.0に近づける: 影が漆黒（真っ黒）になります。
         // - 0.2など大きくする: 影が薄くなり、全体的に明るくなります。
-        float shadowDarkness = 0.0; 
+        float shadowDarkness = 0.0;
         
         // 面の明るさを計算（平らな面は1.0、斜面はshadowDarknessまで落ちる）
         float brightness = shadowDarkness + currentDiffuse * ((1.0 - shadowDarkness) / flatDiffuse);
@@ -194,12 +197,12 @@ const val PUFFY_RENDER_SHADER = """
         // ▼ チューニング: 【ハイライト（白飛び）の鋭さと強さ】 ▼
         float3 viewDir = float3(0.0, 0.0, 1.0); 
         float3 halfDir = normalize(lightDir + viewDir);
-        
+
         // shininess: 反射の鋭さ。
         // - 大きくする(例: 150.0): ジェルやガラスのように、点が鋭く光ります。
         // - 小さくする(例: 20.0): ゴム素材のように、ハイライトが広くぼやけます。
         float shininess = 120.0;
-        
+
         // specularの係数(* 1.2): ハイライトの「白さ」の強さ。
         // - 大きくする(例: 1.5): より強烈に白飛びします。
         float specular = pow(max(0.0, dot(normal, halfDir)), shininess) * 1.2;
@@ -250,7 +253,7 @@ suspend fun generateSdfTexture(textMask: Bitmap): Bitmap = withContext(Dispatche
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
         renderNode.endRecording()
 
-        val nextImage = suspendCancellableCoroutine<Image> { cont ->
+        val nextImage = suspendCancellableCoroutine { cont ->
             targetReader.setOnImageAvailableListener({ reader ->
                 reader.setOnImageAvailableListener(null, null)
                 val image = reader.acquireNextImage()
@@ -342,7 +345,7 @@ fun PuffyTextRenderer(
             setFloatUniform("scaleFactor", scaleFactor)
         }
 
-        val nativePaint = android.graphics.Paint().apply {
+        val nativePaint = Paint().apply {
             this.shader = shader
             this.isFilterBitmap = true
             this.isAntiAlias = true
@@ -373,7 +376,10 @@ fun PuffyTextRenderer(
 fun createTextMaskBitmap(
     layoutResult: TextLayoutResult,
     density: Density,
-    scaleFactor: Float = 2f
+    drawStyle: DrawStyle = Fill,
+    scaleFactor: Float = 2f,
+    renderScale: Float = 1f,
+    clearInner: Boolean = false
 ): Bitmap {
     val width = (layoutResult.size.width * scaleFactor).toInt()
     val height = (layoutResult.size.height * scaleFactor).toInt()
@@ -387,11 +393,26 @@ fun createTextMaskBitmap(
     val size = Size(width.toFloat(), height.toFloat())
 
     CanvasDrawScope().draw(density, LayoutDirection.Ltr, canvas, size) {
-        scale(scaleFactor, scaleFactor, pivot = androidx.compose.ui.geometry.Offset.Zero) {
-            drawText(
-                textLayoutResult = layoutResult,
-                color = Color.White
+        scale(scaleFactor, scaleFactor, pivot = Offset.Zero) {
+            val pivotScale = Offset(
+                layoutResult.size.width / 2f,
+                layoutResult.size.height / 2f
             )
+            scale(renderScale, renderScale, pivot = pivotScale) {
+                drawText(
+                    textLayoutResult = layoutResult,
+                    color = Color.White,
+                    drawStyle = drawStyle
+                )
+                if (clearInner) {
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        color = Color.Transparent,
+                        drawStyle = Fill,
+                        blendMode = BlendMode.Clear
+                    )
+                }
+            }
         }
     }
 
@@ -427,7 +448,17 @@ fun TextItemContent(
 
     val boxSize = with(density) { layoutResult.size.toSize().toDpSize() }
 
-    var sdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val tw = layoutResult.size.width.toFloat()
+    val th = layoutResult.size.height.toFloat()
+    val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
+    val renderScale = remember(tw, th, maxStroke) {
+        if (tw > 0f && th > 0f) {
+            minOf(tw / (tw + maxStroke), th / (th + maxStroke))
+        } else 1f
+    }
+
+    var fillSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var strokeSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // ▼ チューニング: 【描画の解像度（綺麗さ）】 ▼
     // scaleFactor: 画像を何倍のサイズで内部生成して縮小表示するか（スーパーサンプリング）。
@@ -435,12 +466,33 @@ fun TextItemContent(
     // - 小さくする(例: 1.0f): 処理は軽いですが、画質が荒くなります。
     val scaleFactor = 2.0f
 
-    LaunchedEffect(layoutResult, isPuffyEnabled) {
+    val strokeDrawStyle = remember(decoration.strokeWidth) {
+        Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round)
+    }
+
+    LaunchedEffect(layoutResult, decoration.strokeWidth, isPuffyEnabled, renderScale) {
         if (isPuffyEnabled) {
-            val maskBitmap = createTextMaskBitmap(layoutResult, density, scaleFactor)
-            sdfBitmap = generateSdfTexture(maskBitmap)
+            val fillMaskBitmap =
+                createTextMaskBitmap(layoutResult, density, Fill, scaleFactor, renderScale)
+            fillSdfBitmap = generateSdfTexture(fillMaskBitmap)
+
+            if (decoration.strokeWidth > 0f) {
+                val strokeMaskBitmap =
+                    createTextMaskBitmap(
+                        layoutResult,
+                        density,
+                        strokeDrawStyle,
+                        scaleFactor,
+                        renderScale,
+                        clearInner = true
+                    )
+                strokeSdfBitmap = generateSdfTexture(strokeMaskBitmap)
+            } else {
+                strokeSdfBitmap = null
+            }
         } else {
-            sdfBitmap = null
+            fillSdfBitmap = null
+            strokeSdfBitmap = null
         }
     }
 
@@ -450,38 +502,57 @@ fun TextItemContent(
             .size(boxSize)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            if (secondBorderWidth > 0f) {
-                drawText(
-                    textLayoutResult = layoutResult,
-                    drawStyle = Stroke(
-                        width = decoration.strokeWidth + secondBorderWidth,
-                        join = StrokeJoin.Round
-                    ),
-                    color = secondBorderColor,
-                )
-            }
-            drawText(
-                textLayoutResult = layoutResult,
-                drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
-                color = strokeColor,
+            val pivotScale = Offset(
+                layoutResult.size.width / 2f,
+                layoutResult.size.height / 2f
             )
+            scale(renderScale, renderScale, pivot = pivotScale) {
+                if (secondBorderWidth > 0f) {
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        drawStyle = Stroke(
+                            width = decoration.strokeWidth + secondBorderWidth,
+                            join = StrokeJoin.Round
+                        ),
+                        color = secondBorderColor,
+                    )
+                }
 
-            if (!isPuffyEnabled || sdfBitmap == null) {
-                drawText(
-                    textLayoutResult = layoutResult,
-                    drawStyle = Fill,
-                    color = textColor,
-                )
+                if (!isPuffyEnabled || strokeSdfBitmap == null) {
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
+                        color = strokeColor,
+                    )
+                }
+
+                if (!isPuffyEnabled || fillSdfBitmap == null) {
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        drawStyle = Fill,
+                        color = textColor,
+                    )
+                }
             }
         }
 
-        if (isPuffyEnabled && sdfBitmap != null) {
-            PuffyTextRenderer(
-                sdfTextureBitmap = sdfBitmap!!,
-                baseColor = textColor,
-                scaleFactor = scaleFactor,
-                modifier = Modifier.matchParentSize()
-            )
+        if (isPuffyEnabled) {
+            if (strokeSdfBitmap != null) {
+                PuffyTextRenderer(
+                    sdfTextureBitmap = strokeSdfBitmap!!,
+                    baseColor = strokeColor,
+                    scaleFactor = scaleFactor,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+            if (fillSdfBitmap != null) {
+                PuffyTextRenderer(
+                    sdfTextureBitmap = fillSdfBitmap!!,
+                    baseColor = textColor,
+                    scaleFactor = scaleFactor,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
         }
     }
 }
