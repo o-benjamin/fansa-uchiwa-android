@@ -32,14 +32,14 @@ class TextPageTest {
                     onStrokeWeightChanged = {},
                     onSecondBorderColorSelected = {},
                     onSecondBorderWeightChanged = {},
+                    onPuffyEnabledChanged = {},
                     selectedDecoration = Decoration.Text(
-                        id = "test-id",
+                        id = "test_id",
                         font = selectedFont,
-                        text = "テスト",
-                        color = Color.Black,
-                        strokeColor = Color.White,
-                        width = 700,
-                        strokeWidth = 2.5f
+                        color = Color.White,
+                        strokeColor = Color.Black,
+                        strokeWidth = 2f,
+                        width = 400
                     )
                 )
             }
@@ -80,4 +80,3 @@ class TextPageTest {
             }
     }
 }
-

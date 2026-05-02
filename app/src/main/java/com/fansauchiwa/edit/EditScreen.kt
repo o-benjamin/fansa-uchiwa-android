@@ -382,6 +382,11 @@ fun EditScreen(
                             viewModel.updateSecondBorderWidth(decorationId, weight)
                         }
                     },
+                    onTextPuffyEnabledChanged = { isPuffyEnabled ->
+                        uiState.selectedDecorationId?.let { decorationId ->
+                            viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
+                        }
+                    },
                     onImagePicked = { uri ->
                         val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
                         onNavigateToImagePreview(encodedUri)

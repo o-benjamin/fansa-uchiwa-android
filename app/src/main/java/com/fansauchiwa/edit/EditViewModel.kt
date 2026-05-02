@@ -510,6 +510,15 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun updatePuffyEnabled(id: String, isPuffyEnabled: Boolean) {
+        saveSnapshot()
+        updateDecoration(id) { decoration ->
+            if (decoration is Decoration.Text) {
+                decoration.copy(isPuffyEnabled = isPuffyEnabled)
+            } else decoration
+        }
+    }
+
     fun updateUchiwaColor(color: Color) {
         saveSnapshot()
         logEvent(

@@ -52,6 +52,7 @@ sealed interface Decoration : Parcelable {
         @Serializable(with = ColorSerializer::class)
         val secondBorderColor: Color = DecorationColors.WHITE.value,
         val secondBorderWidth: Float = 0f,
+        val isPuffyEnabled: Boolean = false,
         val width: Int = FontWeight.W900.weight,
         val font: FontFamilies
     ) : Decoration

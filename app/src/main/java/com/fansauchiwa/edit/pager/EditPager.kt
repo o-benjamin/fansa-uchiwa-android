@@ -86,6 +86,7 @@ fun EditPager(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
+    onTextPuffyEnabledChanged: (Boolean) -> Unit,
     onImageClick: (Decoration.Image) -> Unit,
     onImageLongPress: () -> Unit,
     onImagePicked: (Uri) -> Unit,
@@ -168,6 +169,7 @@ fun EditPager(
                         onStrokeWeightChanged = onStrokeWeightChanged,
                         onSecondBorderColorSelected = onSecondBorderColorSelected,
                         onSecondBorderWeightChanged = onSecondBorderWeightChanged,
+                        onPuffyEnabledChanged = onTextPuffyEnabledChanged,
                         selectedDecoration = selectedDecoration
                     )
                 }

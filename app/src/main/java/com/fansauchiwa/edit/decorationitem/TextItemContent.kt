@@ -417,7 +417,7 @@ fun createTextMaskBitmap(
 fun TextItemContent(
     decoration: Decoration.Text,
     textSize: TextUnit,
-    isPuffyEnabled: Boolean = true,
+    isPuffyEnabled: Boolean = decoration.isPuffyEnabled,
     modifier: Modifier = Modifier
 ) {
     val measurer = rememberTextMeasurer()
