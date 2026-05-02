@@ -56,7 +56,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -106,6 +105,7 @@ import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 
@@ -207,7 +207,7 @@ fun EditScreen(
                                 viewModel.resetEditUiState()
                                 coroutineScope.launch {
                                     // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
-                                    withFrameMillis { }
+                                    delay(150L)
                                     val highResBitmap = captureHighResBitmap(
                                         graphicsLayer,
                                         density,
@@ -454,7 +454,7 @@ fun EditScreen(
                         viewModel.saveUchiwa { uchiwaId ->
                             viewModel.resetEditUiState()
                             coroutineScope.launch {
-                                withFrameMillis { }
+                                delay(150L)
                                 val highResBitmap = captureHighResBitmap(
                                     graphicsLayer,
                                     density,
@@ -531,7 +531,7 @@ fun EditScreen(
                         viewModel.exportTemplateCode { uchiwaId ->
                             viewModel.resetEditUiState()
                             coroutineScope.launch {
-                                withFrameMillis { }
+                                delay(150L)
                                 val highResBitmap = captureHighResBitmap(
                                     graphicsLayer,
                                     density,
