@@ -19,7 +19,6 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +41,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
@@ -55,11 +55,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.toSize
 import androidx.core.graphics.createBitmap
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.FontFamilies
-import com.fansauchiwa.edit.TEXT_ITEM_PADDING
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -371,11 +369,11 @@ fun createTextMaskBitmap(
     density: Density,
     drawStyle: DrawStyle = Fill,
     scaleFactor: Float = 2f,
-    renderScale: Float = 1f,
+    maxStroke: Float = 0f,
     clearInner: Boolean = false
 ): Bitmap {
-    val width = (layoutResult.size.width * scaleFactor).toInt()
-    val height = (layoutResult.size.height * scaleFactor).toInt()
+    val width = ((layoutResult.size.width + maxStroke) * scaleFactor).toInt()
+    val height = ((layoutResult.size.height + maxStroke) * scaleFactor).toInt()
 
     if (width <= 0 || height <= 0) {
         return createBitmap(1, 1, Bitmap.Config.ALPHA_8)
@@ -387,11 +385,7 @@ fun createTextMaskBitmap(
 
     CanvasDrawScope().draw(density, LayoutDirection.Ltr, canvas, size) {
         scale(scaleFactor, scaleFactor, pivot = Offset.Zero) {
-            val pivotScale = Offset(
-                layoutResult.size.width / 2f,
-                layoutResult.size.height / 2f
-            )
-            scale(renderScale, renderScale, pivot = pivotScale) {
+            translate(maxStroke / 2f, maxStroke / 2f) {
                 drawText(
                     textLayoutResult = layoutResult,
                     color = Color.White,
@@ -417,8 +411,8 @@ fun createTextMaskBitmap(
 fun TextItemContent(
     decoration: Decoration.Text,
     textSize: TextUnit,
-    isPuffyEnabled: Boolean = decoration.isPuffyEnabled,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPuffyEnabled: Boolean = decoration.isPuffyEnabled
 ) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
@@ -439,15 +433,9 @@ fun TextItemContent(
         )
     }
 
-    val boxSize = with(density) { layoutResult.size.toSize().toDpSize() }
-
-    val tw = layoutResult.size.width.toFloat()
-    val th = layoutResult.size.height.toFloat()
     val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
-    val renderScale = remember(tw, th, maxStroke) {
-        if (tw > 0f && th > 0f) {
-            minOf(tw / (tw + maxStroke), th / (th + maxStroke))
-        } else 1f
+    val boxSize = with(density) {
+        Size(layoutResult.size.width + maxStroke, layoutResult.size.height + maxStroke).toDpSize()
     }
 
     var fillSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -457,16 +445,16 @@ fun TextItemContent(
     // scaleFactor: 画像を何倍のサイズで内部生成して縮小表示するか（スーパーサンプリング）。
     // - 大きくする(例: 3.0f): 文字の輪郭や影のギザギザがより滑らかになりますが、処理は重くなります。
     // - 小さくする(例: 1.0f): 処理は軽いですが、画質が荒くなります。
-    val scaleFactor = 2.0f
+    val scaleFactor = 3.0f
 
     val strokeDrawStyle = remember(decoration.strokeWidth) {
         Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round)
     }
 
-    LaunchedEffect(layoutResult, decoration.strokeWidth, isPuffyEnabled, renderScale) {
+    LaunchedEffect(layoutResult, decoration.strokeWidth, isPuffyEnabled, maxStroke) {
         if (isPuffyEnabled) {
             val fillMaskBitmap =
-                createTextMaskBitmap(layoutResult, density, Fill, scaleFactor, renderScale)
+                createTextMaskBitmap(layoutResult, density, Fill, scaleFactor, maxStroke)
             fillSdfBitmap = generateSdfTexture(fillMaskBitmap)
 
             if (decoration.strokeWidth > 0f) {
@@ -476,7 +464,7 @@ fun TextItemContent(
                         density,
                         strokeDrawStyle,
                         scaleFactor,
-                        renderScale,
+                        maxStroke,
                         clearInner = true
                     )
                 strokeSdfBitmap = generateSdfTexture(strokeMaskBitmap)
@@ -490,16 +478,10 @@ fun TextItemContent(
     }
 
     Box(
-        modifier = modifier
-            .padding(TEXT_ITEM_PADDING)
-            .size(boxSize)
+        modifier = modifier.size(boxSize)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val pivotScale = Offset(
-                layoutResult.size.width / 2f,
-                layoutResult.size.height / 2f
-            )
-            scale(renderScale, renderScale, pivot = pivotScale) {
+            translate(maxStroke / 2f, maxStroke / 2f) {
                 if (secondBorderWidth > 0f) {
                     drawText(
                         textLayoutResult = layoutResult,
