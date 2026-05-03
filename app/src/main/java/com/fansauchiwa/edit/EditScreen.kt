@@ -1087,8 +1087,8 @@ private fun GestureInputLayer(
                                 val zoomChange = event.calculateZoom()
                                 val rotationChange = event.calculateRotation()
                                 if (
-                                    abs(zoomChange - 1f) > 0.001f ||
-                                    abs(rotationChange) > 0.001f
+                                    abs(zoomChange - 1f) > TRANSFORM_GESTURE_THRESHOLD ||
+                                    abs(rotationChange) > TRANSFORM_GESTURE_THRESHOLD
                                 ) {
                                     if (hasStartedDrag) {
                                         hasStartedDrag = false
@@ -1114,9 +1114,11 @@ private fun GestureInputLayer(
                                 onTransformEnd()
                             }
 
-                            pressedChanges.size == 1 &&
-                                    !hasStartedTransform &&
-                                    !hasTransformedInGesture -> {
+                            canStartSingleFingerDrag(
+                                pressedCount = pressedChanges.size,
+                                hasStartedTransform = hasStartedTransform,
+                                hasTransformedInGesture = hasTransformedInGesture
+                            ) -> {
                                 val change = pressedChanges.first()
                                 val dragAmount = change.positionChange()
                                 if (dragAmount != Offset.Zero) {
@@ -1446,16 +1448,19 @@ private const val MIN_DECORATION_SCALE = 0.5f
 private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
+private const val TRANSFORM_GESTURE_THRESHOLD = 0.001f
 
-private sealed interface TransformGesture {
-    data class HandleDrag(
-        val dragAmount: Offset
-    ) : TransformGesture
-
-    data class DirectManipulation(
-        val zoomChange: Float,
-        val rotationChange: Float
-    ) : TransformGesture
+/**
+ * Single-finger drag should start only while the gesture is still a pure drag interaction:
+ * one pointer remains pressed, a transform has not started yet, and this touch sequence has
+ * not already been used for a two-finger transform.
+ */
+private fun canStartSingleFingerDrag(
+    pressedCount: Int,
+    hasStartedTransform: Boolean,
+    hasTransformedInGesture: Boolean
+): Boolean {
+    return pressedCount == 1 && !hasStartedTransform && !hasTransformedInGesture
 }
 
 @Preview(showBackground = true)
