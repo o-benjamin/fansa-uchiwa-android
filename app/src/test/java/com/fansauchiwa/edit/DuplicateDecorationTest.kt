@@ -11,6 +11,7 @@ import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
@@ -42,6 +43,7 @@ class DuplicateDecorationTest {
     private lateinit var localDatabaseRepository: LocalDatabaseRepository
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var editDecorationRepository: EditDecorationRepository
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var templateRepository: TemplateRepository
 
@@ -78,6 +80,7 @@ class DuplicateDecorationTest {
         localDatabaseRepository = mockk(relaxed = true)
         masterpieceRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        editDecorationRepository = mockk(relaxed = true)
         settingsRepository = FakeSettingsRepository()
         templateRepository = mockk(relaxed = true)
     }
@@ -100,6 +103,7 @@ class DuplicateDecorationTest {
             localDatabaseRepository = localDatabaseRepository,
             masterpieceRepository = masterpieceRepository,
             analyticsRepository = analyticsRepository,
+            editDecorationRepository = editDecorationRepository,
             settingsRepository = settingsRepository,
             templateRepository = templateRepository,
             savedStateHandle = savedStateHandle

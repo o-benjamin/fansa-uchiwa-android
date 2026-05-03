@@ -37,6 +37,7 @@ import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,89 +72,82 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.util.UUID
+
+@Immutable
+data class EditPagerUiState(
+    val selectedDecoration: Decoration? = null,
+    val allImages: List<ImageReference> = emptyList(),
+    val isDeletingImage: Boolean = false,
+    val selectedDeletingImages: List<String> = emptyList(),
+    val uchiwaColor: Color,
+    val backgroundColor: Color,
+    val decorations: List<Decoration> = emptyList(),
+    val selectedDecorationId: String? = null
+)
+
+data class EditPagerActions(
+    val onStickerSelected: (String) -> Unit,
+    val onAddText: (FontFamilies) -> Unit,
+    val onFontChanged: (FontFamilies) -> Unit,
+    val onColorSelected: (Color) -> Unit,
+    val onTextWeightChanged: (Int) -> Unit,
+    val onStrokeColorSelected: (Color) -> Unit,
+    val onStrokeWeightChanged: (Float) -> Unit,
+    val onSecondBorderColorSelected: (Color) -> Unit,
+    val onSecondBorderWeightChanged: (Float) -> Unit,
+    val onTextPuffyEnabledChanged: (Boolean) -> Unit,
+    val onImageSelected: (String) -> Unit,
+    val onImageLongPress: () -> Unit,
+    val onImagePicked: (Uri) -> Unit,
+    val onImageToggleSelection: (String) -> Unit,
+    val onUchiwaColorSelected: (Color) -> Unit,
+    val onBackgroundColorSelected: (Color) -> Unit,
+    val onDecorationClick: (String) -> Unit,
+    val onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
+)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EditPager(
-    modifier: Modifier = Modifier,
-    onStickerClick: (Decoration.Sticker) -> Unit,
-    onTextClick: (Decoration.Text) -> Unit,
-    onFontChanged: (FontFamilies) -> Unit,
-    onColorSelected: (Color) -> Unit,
-    onTextWeightChanged: (Int) -> Unit,
-    onStrokeColorSelected: (Color) -> Unit,
-    onStrokeWeightChanged: (Float) -> Unit,
-    onSecondBorderColorSelected: (Color) -> Unit,
-    onSecondBorderWeightChanged: (Float) -> Unit,
-    onTextPuffyEnabledChanged: (Boolean) -> Unit,
-    onImageClick: (Decoration.Image) -> Unit,
-    onImageLongPress: () -> Unit,
-    onImagePicked: (Uri) -> Unit,
-    onUchiwaColorSelected: (Color) -> Unit,
-    onBackgroundColorSelected: (Color) -> Unit,
-    selectedDecoration: Decoration? = null,
-    allImages: List<ImageReference>,
-    isDeletingImage: Boolean = false,
-    selectedDeletingImages: List<String> = emptyList(),
-    onImageToggleSelection: (String) -> Unit,
-    uchiwaColor: Color,
-    backgroundColor: Color,
-    decorations: List<Decoration> = emptyList(),
-    selectedDecorationId: String? = null,
-    onDecorationClick: (String) -> Unit,
-    onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
+    state: EditPagerUiState,
+    actions: EditPagerActions,
+    modifier: Modifier = Modifier
 ) {
     val pickMedia =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
-                // 保存せず、プレビュー画面へ遷移
-                onImagePicked(uri)
+                actions.onImagePicked(uri)
             } else {
                 Log.d("PhotoPicker", "No media selected")
             }
         }
+    val pagerState = rememberPagerState(pageCount = { DecorationTabType.entries.size })
+    val scope = rememberCoroutineScope()
+    val selectedTabIndex = pagerState.currentPage
+    val isLayerTabSelected = selectedTabIndex == DecorationTabType.LAYERS.ordinal
+    val selectedTextDecoration = state.selectedDecoration as? Decoration.Text
+    val selectedStickerDecoration = state.selectedDecoration as? Decoration.Sticker
+
+    LaunchedEffect(state.selectedDecoration, isLayerTabSelected) {
+        val targetPage = state.selectedDecoration.toDecorationPageIndex() ?: return@LaunchedEffect
+        if (!isLayerTabSelected) {
+            scope.launch {
+                pagerState.animateScrollToPage(targetPage)
+            }
+        }
+    }
 
     Column(
         modifier = modifier
     ) {
-        val pagerState = rememberPagerState(pageCount = { DecorationTabType.entries.size })
-        val tabIndex = pagerState.currentPage
-        val scope = rememberCoroutineScope()
-
-        // selectedDecorationの種類に応じてページを自動的に切り替える
-        val isLayerTabSelected = tabIndex == DecorationTabType.LAYERS.ordinal
-        LaunchedEffect(selectedDecoration) {
-            if (selectedDecoration != null && !isLayerTabSelected) {
-                val targetPage = when (selectedDecoration) {
-                    is Decoration.Text -> 0
-                    is Decoration.Image -> 1
-                    is Decoration.Sticker -> 2
-                }
+        EditPagerTabRow(
+            selectedTabIndex = selectedTabIndex,
+            onTabSelected = { index ->
                 scope.launch {
-                    pagerState.animateScrollToPage(targetPage)
+                    pagerState.animateScrollToPage(index)
                 }
             }
-        }
-
-        Box {
-            PrimaryScrollableTabRow(
-                selectedTabIndex = tabIndex,
-                edgePadding = 0.dp
-            ) {
-                DecorationTabType.entries.forEachIndexed { index, title ->
-                    Tab(
-                        selected = tabIndex == index,
-                        onClick = {
-                            scope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        text = { Text(text = title.tabText, maxLines = 1) }
-                    )
-                }
-            }
-        }
+        )
 
         HorizontalPager(
             state = pagerState
@@ -161,61 +155,61 @@ fun EditPager(
             when (page) {
                 0 -> {
                     TextPage(
-                        onTextClick = onTextClick,
-                        onFontChanged = onFontChanged,
-                        onColorSelected = onColorSelected,
-                        onTextWeightChanged = onTextWeightChanged,
-                        onStrokeColorSelected = onStrokeColorSelected,
-                        onStrokeWeightChanged = onStrokeWeightChanged,
-                        onSecondBorderColorSelected = onSecondBorderColorSelected,
-                        onSecondBorderWeightChanged = onSecondBorderWeightChanged,
-                        onPuffyEnabledChanged = onTextPuffyEnabledChanged,
-                        selectedDecoration = selectedDecoration
+                        onAddText = actions.onAddText,
+                        onFontChanged = actions.onFontChanged,
+                        onColorSelected = actions.onColorSelected,
+                        onTextWeightChanged = actions.onTextWeightChanged,
+                        onStrokeColorSelected = actions.onStrokeColorSelected,
+                        onStrokeWeightChanged = actions.onStrokeWeightChanged,
+                        onSecondBorderColorSelected = actions.onSecondBorderColorSelected,
+                        onSecondBorderWeightChanged = actions.onSecondBorderWeightChanged,
+                        onPuffyEnabledChanged = actions.onTextPuffyEnabledChanged,
+                        selectedTextDecoration = selectedTextDecoration
                     )
                 }
 
                 1 -> {
                     ImagePage(
-                        onClick = {
+                        onAddImageClick = {
                             pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
-                        images = allImages,
-                        onImageClick = onImageClick,
-                        onImageLongPress = onImageLongPress,
-                        isDeletingImage = isDeletingImage,
-                        selectedImages = selectedDeletingImages,
-                        onImageToggleSelection = onImageToggleSelection
+                        images = state.allImages,
+                        onImageSelected = actions.onImageSelected,
+                        onImageLongPress = actions.onImageLongPress,
+                        isDeletingImage = state.isDeletingImage,
+                        selectedImages = state.selectedDeletingImages,
+                        onImageToggleSelection = actions.onImageToggleSelection
                     )
                 }
 
                 2 -> {
                     StickerPage(
-                        onStickerClick = onStickerClick,
-                        onColorSelected = onColorSelected,
-                        onStrokeColorSelected = onStrokeColorSelected,
-                        onStrokeWeightChanged = onStrokeWeightChanged,
-                        onSecondStrokeColorSelected = onSecondBorderColorSelected,
-                        onSecondStrokeWeightChanged = onSecondBorderWeightChanged,
-                        selectedDecoration = selectedDecoration
+                        onStickerSelected = actions.onStickerSelected,
+                        onColorSelected = actions.onColorSelected,
+                        onStrokeColorSelected = actions.onStrokeColorSelected,
+                        onStrokeWeightChanged = actions.onStrokeWeightChanged,
+                        onSecondStrokeColorSelected = actions.onSecondBorderColorSelected,
+                        onSecondStrokeWeightChanged = actions.onSecondBorderWeightChanged,
+                        selectedStickerDecoration = selectedStickerDecoration
                     )
                 }
 
                 3 -> {
                     UchiwaBackgroundPage(
-                        onUchiwaColorSelected = onUchiwaColorSelected,
-                        onBackgroundColorSelected = onBackgroundColorSelected,
-                        currentUchiwaColor = uchiwaColor,
-                        currentBackgroundColor = backgroundColor
+                        onUchiwaColorSelected = actions.onUchiwaColorSelected,
+                        onBackgroundColorSelected = actions.onBackgroundColorSelected,
+                        currentUchiwaColor = state.uchiwaColor,
+                        currentBackgroundColor = state.backgroundColor
                     )
                 }
 
                 4 -> {
                     LayerPage(
-                        decorations = decorations,
-                        selectedDecorationId = selectedDecorationId,
-                        onDecorationClick = onDecorationClick,
-                        onMoveDecoration = onMoveDecoration,
-                        allImages = allImages
+                        decorations = state.decorations,
+                        selectedDecorationId = state.selectedDecorationId,
+                        onDecorationClick = actions.onDecorationClick,
+                        onMoveDecoration = actions.onMoveDecoration,
+                        allImages = state.allImages
                     )
                 }
             }
@@ -223,16 +217,46 @@ fun EditPager(
     }
 }
 
+private fun Decoration?.toDecorationPageIndex(): Int? {
+    return when (this) {
+        is Decoration.Text -> DecorationTabType.TEXT.ordinal
+        is Decoration.Image -> DecorationTabType.IMAGE.ordinal
+        is Decoration.Sticker -> DecorationTabType.STAMP.ordinal
+        null -> null
+    }
+}
+
+@Composable
+private fun EditPagerTabRow(
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    Box {
+        PrimaryScrollableTabRow(
+            selectedTabIndex = selectedTabIndex,
+            edgePadding = 0.dp
+        ) {
+            DecorationTabType.entries.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { onTabSelected(index) },
+                    text = { Text(text = title.tabText, maxLines = 1) }
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun StickerPage(
-    onStickerClick: (Decoration.Sticker) -> Unit,
+    onStickerSelected: (String) -> Unit,
     onColorSelected: (Color) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondStrokeColorSelected: (Color) -> Unit,
     onSecondStrokeWeightChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    selectedDecoration: Decoration? = null,
+    selectedStickerDecoration: Decoration.Sticker? = null,
 ) {
     val scrollState = rememberScrollState()
     // isNew = false のエントリだけで 0 始まりの通し番号を付与するマップ
@@ -247,20 +271,20 @@ fun StickerPage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        if (selectedDecoration is Decoration.Sticker) {
+        if (selectedStickerDecoration != null) {
             Column(modifier = Modifier.padding(top = 16.dp)) {
                 HeaderTitle(title = stringResource(R.string.sticker_color))
                 ColorPickerRow(
                     onColorSelected = onColorSelected,
                     modifier = Modifier.padding(top = 8.dp),
-                    currentColor = selectedDecoration.color
+                    currentColor = selectedStickerDecoration.color
                 )
             }
 
             ColorAndWeightControl(
                 title = stringResource(R.string.stroke_color_and_weight),
-                color = selectedDecoration.strokeColor,
-                width = selectedDecoration.strokeWidth,
+                color = selectedStickerDecoration.strokeColor,
+                width = selectedStickerDecoration.strokeWidth,
                 valueRange = 0f..16f,
                 steps = 7,
                 onColorSelected = onStrokeColorSelected,
@@ -269,8 +293,8 @@ fun StickerPage(
 
             ColorAndWeightControl(
                 title = stringResource(R.string.second_stroke_color_and_weight),
-                color = selectedDecoration.secondStrokeColor,
-                width = selectedDecoration.secondStrokeWidth,
+                color = selectedStickerDecoration.secondStrokeColor,
+                width = selectedStickerDecoration.secondStrokeWidth,
                 valueRange = 0f..16f,
                 steps = 7,
                 onColorSelected = onSecondStrokeColorSelected,
@@ -290,14 +314,7 @@ fun StickerPage(
                     modifier = Modifier
                         .size(72.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .clickable {
-                            onStickerClick(
-                                Decoration.Sticker(
-                                    label = sticker.type,
-                                    id = UUID.randomUUID().toString(),
-                                )
-                            )
-                        }
+                        .clickable { onStickerSelected(sticker.type) }
                 ) {
                     Image(
                         painter = painterResource(id = sticker.resId),
@@ -476,13 +493,13 @@ private fun LayerItemPreview(
 fun StickerPagePreview() {
     FansaUchiwaTheme {
         StickerPage(
-            onStickerClick = {},
+            onStickerSelected = {},
             onColorSelected = {},
             onStrokeColorSelected = {},
             onStrokeWeightChanged = {},
             onSecondStrokeColorSelected = {},
             onSecondStrokeWeightChanged = {},
-            selectedDecoration = Decoration.Sticker(
+            selectedStickerDecoration = Decoration.Sticker(
                 id = "preview-id",
                 label = "star",
                 color = Color(0xFFFF0000)

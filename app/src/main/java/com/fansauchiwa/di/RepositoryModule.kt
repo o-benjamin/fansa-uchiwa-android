@@ -21,6 +21,8 @@ import com.fansauchiwa.data.UuidProviderImpl
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
@@ -85,6 +87,12 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         impl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEditDecorationRepository(
+        impl: EditDecorationRepositoryImpl
+    ): EditDecorationRepository
 }
 
 @Module

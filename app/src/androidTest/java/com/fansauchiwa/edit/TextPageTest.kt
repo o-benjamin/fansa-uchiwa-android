@@ -24,7 +24,7 @@ class TextPageTest {
         composeTestRule.setContent {
             FansaUchiwaTheme {
                 TextPage(
-                    onTextClick = {},
+                    onAddText = {},
                     onFontChanged = {},
                     onColorSelected = {},
                     onTextWeightChanged = {},
@@ -33,7 +33,7 @@ class TextPageTest {
                     onSecondBorderColorSelected = {},
                     onSecondBorderWeightChanged = {},
                     onPuffyEnabledChanged = {},
-                    selectedDecoration = Decoration.Text(
+                    selectedTextDecoration = Decoration.Text(
                         id = "test_id",
                         font = selectedFont,
                         color = Color.White,
