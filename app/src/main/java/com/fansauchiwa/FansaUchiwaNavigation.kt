@@ -42,7 +42,8 @@ data object PreviewDestination : FansaUchiwaNavigationDestination {
     override val screen: String = FansaUchiwaScreens.PREVIEW_SCREEN
     override val route: String = "$screen/{$IMAGE_PATH_ARG}"
 
-    fun createRoute(imagePath: String): String = buildPathRoute(screen = screen, argument = imagePath)
+    fun createRoute(imagePath: String): String =
+        buildPathRoute(screen = screen, argument = imagePath)
 }
 
 data object ImagePreviewDestination : FansaUchiwaNavigationDestination {
@@ -55,14 +56,6 @@ data object ImagePreviewDestination : FansaUchiwaNavigationDestination {
 data object SettingsDestination : FansaUchiwaNavigationDestination {
     override val screen: String = FansaUchiwaScreens.SETTINGS_SCREEN
     override val route: String = screen
-}
-
-object FansaUchiwaDestinations {
-    const val HOME = FansaUchiwaScreens.HOME_SCREEN
-    const val EDIT = "${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}"
-    const val PREVIEW = "${FansaUchiwaScreens.PREVIEW_SCREEN}/{$IMAGE_PATH_ARG}"
-    const val IMAGE_PREVIEW = "${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/{$IMAGE_URI_ARG}"
-    const val SETTINGS = FansaUchiwaScreens.SETTINGS_SCREEN
 }
 
 private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"
