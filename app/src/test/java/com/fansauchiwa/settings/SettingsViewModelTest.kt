@@ -3,8 +3,8 @@ package com.fansauchiwa.settings
 import com.fansauchiwa.data.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -22,11 +22,27 @@ class SettingsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     class FakeSettingsRepository : SettingsRepository {
-        val hapticState = MutableStateFlow(true)
-        override val isHapticFeedbackEnabled = hapticState
-        override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
-            hapticState.value = enabled
+        private val hapticState = MutableSharedFlow<Boolean>(replay = 1)
+        private var hapticEnabled = true
+
+        override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticState
+
+        override suspend fun fetchHapticFeedbackEnabled() {
+            hapticState.emit(hapticEnabled)
         }
+
+        override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
+            hapticEnabled = enabled
+            hapticState.emit(enabled)
+        }
+
+        override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> = MutableSharedFlow()
+
+        override suspend fun fetchHasSeenEditCompletionTooltip() = Unit
+
+        override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) = Unit
+
+        fun isHapticEnabled(): Boolean = hapticEnabled
     }
 
     @Before
@@ -46,18 +62,17 @@ class SettingsViewModelTest {
 
         advanceUntilIdle()
 
-        // リポジトリからの値が反映され、ローディング状態が解除されるか
-        val stateAfterLoad = viewModel.uiState.first()
-        assertTrue(stateAfterLoad.isHapticFeedbackEnabled)
-        assertFalse(stateAfterLoad.isLoading)
+        val stateAfterLoad = viewModel.uiState.value
+        assertTrue(stateAfterLoad is SettingsUiState.Success)
+        assertTrue((stateAfterLoad as SettingsUiState.Success).isHapticFeedbackEnabled)
 
-        // トグル処理の呼び出し
         viewModel.toggleHapticFeedback(false)
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.first().isHapticFeedbackEnabled)
-        assertFalse(fakeRepository.hapticState.value)
+        val stateAfterToggle = viewModel.uiState.value
+        assertTrue(stateAfterToggle is SettingsUiState.Success)
+        assertFalse((stateAfterToggle as SettingsUiState.Success).isHapticFeedbackEnabled)
+        assertFalse(fakeRepository.isHapticEnabled())
     }
 }
-
 

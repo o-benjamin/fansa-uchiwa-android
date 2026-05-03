@@ -41,12 +41,15 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,6 +58,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -127,6 +131,7 @@ fun EditScreen(
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
     val hapticManager = rememberFansaHapticManager()
+    val completionTooltipState = rememberTooltipState(isPersistent = true)
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -144,6 +149,14 @@ fun EditScreen(
         uiState.savedPath?.let {
             viewModel.resetIsUchiwaSaved()
             onPreview(URLEncoder.encode(it, "UTF-8"))
+        }
+    }
+
+    LaunchedEffect(uiState.showCompletionTooltip) {
+        if (uiState.showCompletionTooltip) {
+            completionTooltipState.show()
+        } else {
+            completionTooltipState.dismiss()
         }
     }
 
@@ -199,37 +212,56 @@ fun EditScreen(
                             contentDescription = stringResource(R.string.help)
                         )
                     }
-                    Button(
-                        onClick = {
-                            hapticManager.perform(FansaHapticType.CONFIRM)
-                            viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
-                            viewModel.saveUchiwa { uchiwaId ->
-                                viewModel.resetEditUiState()
-                                coroutineScope.launch {
-                                    // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
-                                    delay(150L)
-                                    val highResBitmap = captureHighResBitmap(
-                                        graphicsLayer,
-                                        density,
-                                        layoutDirection
-                                    ).asAndroidBitmap()
-                                    viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+                        state = completionTooltipState,
+                        tooltip = {
+                            RichTooltip(
+                                title = {
+                                    Text(text = stringResource(R.string.edit_completion_tooltip_title))
+                                },
+                                action = {
+                                    TextButton(onClick = viewModel::onTooltipDismissed) {
+                                        Text(text = stringResource(R.string.ok))
+                                    }
                                 }
+                            ) {
+                                Text(text = stringResource(R.string.edit_completion_tooltip_message))
                             }
-                        },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        modifier = Modifier.padding(end = 8.dp)
+                        }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.complete),
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                        Button(
+                            onClick = {
+                                hapticManager.perform(FansaHapticType.CONFIRM)
+                                viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
+                                viewModel.saveUchiwa { uchiwaId ->
+                                    viewModel.resetEditUiState()
+                                    coroutineScope.launch {
+                                        // uiStateを同期的にリセットしても、再コンポーズが非同期で実行されるため、描画完了が期待されるフレーム分待つ
+                                        delay(150L)
+                                        val highResBitmap = captureHighResBitmap(
+                                            graphicsLayer,
+                                            density,
+                                            layoutDirection
+                                        ).asAndroidBitmap()
+                                        viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
+                                    }
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.complete),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
             )

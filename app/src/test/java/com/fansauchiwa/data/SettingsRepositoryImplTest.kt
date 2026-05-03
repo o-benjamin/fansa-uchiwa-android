@@ -17,31 +17,41 @@ class SettingsRepositoryImplTest {
     @get:Rule
     val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
 
-    private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
-        produceFile = { tmpFolder.newFile("settings.preferences_pb") }
-    )
-    private val localSource = SettingsLocalSource(dataStore)
-    private val repository = SettingsRepositoryImpl(localSource)
+    private val dataStore: DataStore<Preferences> by lazy {
+        PreferenceDataStoreFactory.create(
+            produceFile = { tmpFolder.newFile("settings.preferences_pb") }
+        )
+    }
+    private val localSource by lazy { SettingsLocalSource(dataStore) }
+    private val repository by lazy { SettingsRepositoryImpl(localSource) }
 
     @Test
-    fun isHapticFeedbackEnabled_defaultIsTrue() = runTest {
-        assertTrue(repository.isHapticFeedbackEnabled.first())
+    fun fetchHapticFeedbackEnabled_defaultIsTrue() = runTest {
+        repository.fetchHapticFeedbackEnabled()
+
+        assertTrue(repository.getHapticFeedbackEnabledStream().first())
     }
 
     @Test
     fun setHapticFeedbackEnabled_updatesValue() = runTest {
         repository.setHapticFeedbackEnabled(false)
-        assertFalse(repository.isHapticFeedbackEnabled.first())
+        assertFalse(repository.getHapticFeedbackEnabledStream().first())
 
         repository.setHapticFeedbackEnabled(true)
-        assertTrue(repository.isHapticFeedbackEnabled.first())
+        assertTrue(repository.getHapticFeedbackEnabledStream().first())
     }
 
     @Test
-    fun isHapticFeedbackEnabled_catchesIOException() = runTest {
-        // IOExceptionをシミュレートするテスト（ファイルへのアクセス権限がない場合など）
-        // 実際のアプリではFlowのcatchブロックで emptyPreferences() をemitし、デフォルト値(true)にフォールバックすることが期待される
-        // ※このテストを完全にモックで再現するのは難しいため、実装時にFlowに `catch { if (it is IOException) emit(emptyPreferences()) else throw it }` が含まれているか確認すること。
+    fun fetchHasSeenEditCompletionTooltip_defaultIsFalse() = runTest {
+        repository.fetchHasSeenEditCompletionTooltip()
+
+        assertFalse(repository.getHasSeenEditCompletionTooltipStream().first())
+    }
+
+    @Test
+    fun setHasSeenEditCompletionTooltip_updatesValue() = runTest {
+        repository.setHasSeenEditCompletionTooltip(true)
+
+        assertTrue(repository.getHasSeenEditCompletionTooltipStream().first())
     }
 }
-
