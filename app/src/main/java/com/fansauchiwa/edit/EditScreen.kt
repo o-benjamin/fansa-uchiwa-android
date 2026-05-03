@@ -320,6 +320,9 @@ fun EditScreen(
                             onDecorationDragStart = { decorationId ->
                                 viewModel.selectDecoration(decorationId)
                             },
+                            onDecorationTransformStart = { decorationId ->
+                                viewModel.selectDecoration(decorationId)
+                            },
                             onBackgroundTap = {
                                 viewModel.unSelectDecoration()
                                 viewModel.finishEditingText()
@@ -573,6 +576,7 @@ fun UchiwaPreview(
     selectedDecorationId: String?,
     onDecorationTap: (String) -> Unit,
     onDecorationDragStart: (String) -> Unit,
+    onDecorationTransformStart: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
@@ -707,8 +711,8 @@ fun UchiwaPreview(
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
-                                        0.5f,
-                                        6f
+                                        MIN_DECORATION_SCALE,
+                                        MAX_TEXT_DECORATION_SCALE
                                     )
                                 scaleDiff = targetScale - decoration.scale
                                 val snapResult = applyRotationSnap(
@@ -733,7 +737,7 @@ fun UchiwaPreview(
                                 wasRotationSnapped = false
                             },
                             onDirectTransformStart = {
-                                onDecorationDragStart(decoration.id)
+                                onDecorationTransformStart(decoration.id)
                             },
                             onDirectTransform = { zoomChange, rotationChange ->
                                 val transformation = accumulateDirectManipulationTransformation(
@@ -742,8 +746,8 @@ fun UchiwaPreview(
                                     currentRotationDiff = rotationDiff,
                                     zoomChange = zoomChange,
                                     rotationChange = rotationChange,
-                                    minScale = 0.5f,
-                                    maxScale = 6f
+                                    minScale = MIN_DECORATION_SCALE,
+                                    maxScale = MAX_TEXT_DECORATION_SCALE
                                 )
                                 scaleDiff = transformation.scaleDiff
                                 val snapResult = applyRotationSnap(
@@ -837,8 +841,8 @@ fun UchiwaPreview(
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
-                                        0.5f,
-                                        3f
+                                        MIN_DECORATION_SCALE,
+                                        MAX_STICKER_DECORATION_SCALE
                                     )
                                 scaleDiff = targetScale - decoration.scale
                                 val snapResult = applyRotationSnap(
@@ -863,7 +867,7 @@ fun UchiwaPreview(
                                 wasRotationSnapped = false
                             },
                             onDirectTransformStart = {
-                                onDecorationDragStart(decoration.id)
+                                onDecorationTransformStart(decoration.id)
                             },
                             onDirectTransform = { zoomChange, rotationChange ->
                                 val transformation = accumulateDirectManipulationTransformation(
@@ -872,8 +876,8 @@ fun UchiwaPreview(
                                     currentRotationDiff = rotationDiff,
                                     zoomChange = zoomChange,
                                     rotationChange = rotationChange,
-                                    minScale = 0.5f,
-                                    maxScale = 3f
+                                    minScale = MIN_DECORATION_SCALE,
+                                    maxScale = MAX_STICKER_DECORATION_SCALE
                                 )
                                 scaleDiff = transformation.scaleDiff
                                 val snapResult = applyRotationSnap(
@@ -977,8 +981,8 @@ fun UchiwaPreview(
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
-                                        0.5f,
-                                        5f
+                                        MIN_DECORATION_SCALE,
+                                        MAX_IMAGE_DECORATION_SCALE
                                     )
                                 scaleDiff = targetScale - decoration.scale
                                 val snapResult = applyRotationSnap(
@@ -1003,7 +1007,7 @@ fun UchiwaPreview(
                                 wasRotationSnapped = false
                             },
                             onDirectTransformStart = {
-                                onDecorationDragStart(decoration.id)
+                                onDecorationTransformStart(decoration.id)
                             },
                             onDirectTransform = { zoomChange, rotationChange ->
                                 val transformation = accumulateDirectManipulationTransformation(
@@ -1012,8 +1016,8 @@ fun UchiwaPreview(
                                     currentRotationDiff = rotationDiff,
                                     zoomChange = zoomChange,
                                     rotationChange = rotationChange,
-                                    minScale = 0.5f,
-                                    maxScale = 5f
+                                    minScale = MIN_DECORATION_SCALE,
+                                    maxScale = MAX_IMAGE_DECORATION_SCALE
                                 )
                                 scaleDiff = transformation.scaleDiff
                                 val snapResult = applyRotationSnap(
@@ -1137,6 +1141,8 @@ private fun GestureInputLayer(
                 )
             }
             .pointerInput(offset, scale, rotation) {
+                // detectTransformGestures returns after each gesture, so we loop to keep
+                // multi-touch manipulation active across repeated pinch/rotate interactions.
                 while (true) {
                     var hasTransformed = false
                     detectTransformGestures { _, _, zoomChange, rotationChange ->
@@ -1453,6 +1459,10 @@ fun CompleteEditButton(
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
+private const val MIN_DECORATION_SCALE = 0.5f
+private const val MAX_TEXT_DECORATION_SCALE = 6f
+private const val MAX_STICKER_DECORATION_SCALE = 3f
+private const val MAX_IMAGE_DECORATION_SCALE = 5f
 
 @Preview(showBackground = true)
 @Composable
