@@ -115,8 +115,11 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1143,10 +1146,13 @@ private fun GestureInputLayer(
             .pointerInput(offset, scale, rotation) {
                 // detectTransformGestures returns after each gesture, so we loop to keep
                 // multi-touch manipulation active across repeated pinch/rotate interactions.
-                while (true) {
+                while (currentCoroutineContext().isActive) {
                     var hasTransformed = false
                     detectTransformGestures { _, _, zoomChange, rotationChange ->
-                        if (zoomChange == 1f && rotationChange == 0f) {
+                        if (
+                            abs(zoomChange - 1f) < DIRECT_TRANSFORM_EPSILON &&
+                            abs(rotationChange) < DIRECT_TRANSFORM_EPSILON
+                        ) {
                             return@detectTransformGestures
                         }
                         if (!hasTransformed) {
@@ -1463,6 +1469,7 @@ private const val MIN_DECORATION_SCALE = 0.5f
 private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
+private const val DIRECT_TRANSFORM_EPSILON = 0.001f
 
 @Preview(showBackground = true)
 @Composable
