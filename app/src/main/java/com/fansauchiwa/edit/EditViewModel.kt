@@ -605,12 +605,7 @@ class EditViewModel @Inject constructor(
     }
 
     private fun saveSnapshot() {
-        val currentState = uiState.value
-        val snapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
+        val snapshot = HistorySnapshot.from(uiState.value)
         undoStack.addLast(snapshot)
         if (undoStack.size > MAX_HISTORY_SIZE) {
             undoStack.removeFirst()
@@ -634,21 +629,11 @@ class EditViewModel @Inject constructor(
             mapOf("actions" to AnalyticsUndoRedoActions.ACTION_UNDO)
         )
         val currentState = uiState.value
-        val currentSnapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
+        val currentSnapshot = HistorySnapshot.from(currentState)
         redoStack.addLast(currentSnapshot)
 
         val previousSnapshot = undoStack.removeLast()
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = previousSnapshot.decorations,
-            uchiwaColor = previousSnapshot.uchiwaColor,
-            backgroundColor = previousSnapshot.backgroundColor,
-            selectedDecorationId = null,
-            editingTextId = null
-        )
+        savedStateHandle[UI_STATE_KEY] = previousSnapshot.restore(currentState)
         updateHistoryAvailability()
     }
 
@@ -659,21 +644,11 @@ class EditViewModel @Inject constructor(
             mapOf("actions" to AnalyticsUndoRedoActions.ACTION_REDO)
         )
         val currentState = uiState.value
-        val currentSnapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
+        val currentSnapshot = HistorySnapshot.from(currentState)
         undoStack.addLast(currentSnapshot)
 
         val nextSnapshot = redoStack.removeLast()
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = nextSnapshot.decorations,
-            uchiwaColor = nextSnapshot.uchiwaColor,
-            backgroundColor = nextSnapshot.backgroundColor,
-            selectedDecorationId = null,
-            editingTextId = null
-        )
+        savedStateHandle[UI_STATE_KEY] = nextSnapshot.restore(currentState)
         updateHistoryAvailability()
     }
 
