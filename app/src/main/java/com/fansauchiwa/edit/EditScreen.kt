@@ -1076,7 +1076,7 @@ private fun GestureInputLayer(
                     awaitFirstDown(requireUnconsumed = false)
                     var hasStartedDrag = false
                     var hasStartedTransform = false
-                    var hasTransformedInGesture = false
+                    var hadTransformInCurrentGesture = false
                     var hasPressedChanges: Boolean
                     do {
                         val event = awaitPointerEvent()
@@ -1096,7 +1096,7 @@ private fun GestureInputLayer(
                                     }
                                     if (!hasStartedTransform) {
                                         hasStartedTransform = true
-                                        hasTransformedInGesture = true
+                                        hadTransformInCurrentGesture = true
                                         onTransformStart()
                                     }
                                     onTransform(
@@ -1117,7 +1117,7 @@ private fun GestureInputLayer(
                             canStartSingleFingerDrag(
                                 pressedCount = pressedChanges.size,
                                 hasStartedTransform = hasStartedTransform,
-                                hasTransformedInGesture = hasTransformedInGesture
+                                hadTransformInCurrentGesture = hadTransformInCurrentGesture
                             ) -> {
                                 val change = pressedChanges.first()
                                 val dragAmount = change.positionChange()
@@ -1448,7 +1448,9 @@ private const val MIN_DECORATION_SCALE = 0.5f
 private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
+// Minimum zoom multiplier deviation from 1.0f before a pinch is treated as a transform.
 private const val ZOOM_GESTURE_THRESHOLD = 0.001f
+// Minimum rotation delta in degrees before a two-finger twist is treated as a transform.
 private const val ROTATION_GESTURE_THRESHOLD = 0.1f
 
 /**
@@ -1459,9 +1461,9 @@ private const val ROTATION_GESTURE_THRESHOLD = 0.1f
 private fun canStartSingleFingerDrag(
     pressedCount: Int,
     hasStartedTransform: Boolean,
-    hasTransformedInGesture: Boolean
+    hadTransformInCurrentGesture: Boolean
 ): Boolean {
-    return pressedCount == 1 && !hasStartedTransform && !hasTransformedInGesture
+    return pressedCount == 1 && !hasStartedTransform && !hadTransformInCurrentGesture
 }
 
 @Preview(showBackground = true)
