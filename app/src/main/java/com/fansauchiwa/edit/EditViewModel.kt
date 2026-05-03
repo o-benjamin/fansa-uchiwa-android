@@ -56,7 +56,7 @@ class EditViewModel @Inject constructor(
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
-    private var hasInitializedCompletionTooltip = false
+    private var hasShownCompletionTooltipInSession = false
 
     init {
         observeCompletionTooltip()
@@ -68,10 +68,10 @@ class EditViewModel @Inject constructor(
     private fun observeCompletionTooltip() {
         settingsRepository.getHasSeenEditCompletionTooltipStream()
             .onEach { hasSeen ->
-                if (hasInitializedCompletionTooltip) return@onEach
-                hasInitializedCompletionTooltip = true
-                if (hasSeen) return@onEach
+                // Skip when already persisted, or after this screen instance has already displayed it once.
+                if (hasSeen || hasShownCompletionTooltipInSession) return@onEach
 
+                hasShownCompletionTooltipInSession = true
                 val currentState = uiState.value
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = true)
                 markCompletionTooltipShown()
@@ -859,7 +859,6 @@ class EditViewModel @Inject constructor(
     private fun markCompletionTooltipShown() {
         viewModelScope.launch {
             settingsRepository.setHasSeenEditCompletionTooltip(true)
-            settingsRepository.fetchHasSeenEditCompletionTooltip()
         }
     }
 }
