@@ -1087,8 +1087,8 @@ private fun GestureInputLayer(
                                 val zoomChange = event.calculateZoom()
                                 val rotationChange = event.calculateRotation()
                                 if (
-                                    abs(zoomChange - 1f) > TRANSFORM_GESTURE_THRESHOLD ||
-                                    abs(rotationChange) > TRANSFORM_GESTURE_THRESHOLD
+                                    abs(zoomChange - 1f) > ZOOM_GESTURE_THRESHOLD ||
+                                    abs(rotationChange) > ROTATION_GESTURE_THRESHOLD
                                 ) {
                                     if (hasStartedDrag) {
                                         hasStartedDrag = false
@@ -1448,7 +1448,8 @@ private const val MIN_DECORATION_SCALE = 0.5f
 private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
-private const val TRANSFORM_GESTURE_THRESHOLD = 0.001f
+private const val ZOOM_GESTURE_THRESHOLD = 0.001f
+private const val ROTATION_GESTURE_THRESHOLD = 0.1f
 
 /**
  * Single-finger drag should start only while the gesture is still a pure drag interaction:
