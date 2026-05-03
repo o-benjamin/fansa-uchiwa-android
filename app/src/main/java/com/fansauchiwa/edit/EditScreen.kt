@@ -9,8 +9,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,7 +66,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,6 +82,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -118,11 +119,8 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
-import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -324,9 +322,6 @@ fun EditScreen(
                                 }
                             },
                             onDecorationDragStart = { decorationId ->
-                                viewModel.selectDecoration(decorationId)
-                            },
-                            onDecorationTransformStart = { decorationId ->
                                 viewModel.selectDecoration(decorationId)
                             },
                             onBackgroundTap = {
@@ -582,7 +577,6 @@ fun UchiwaPreview(
     selectedDecorationId: String?,
     onDecorationTap: (String) -> Unit,
     onDecorationDragStart: (String) -> Unit,
-    onDecorationTransformStart: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
@@ -707,14 +701,33 @@ fun UchiwaPreview(
                                 snappedY = false
                             },
                             onTransformStart = {
+                                onDecorationDragStart(decoration.id)
                                 cumulativeOffset = Offset.Zero
                             },
-                            onTransform = { dragAmount ->
-                                val transformation = calculateTransformations(
-                                    cumulativeOffset,
-                                    handleOffset - decoration.offset
-                                )
-                                cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
+                            onTransform = { transformGesture ->
+                                val transformation = when (transformGesture) {
+                                    is TransformGesture.HandleDrag -> {
+                                        val result = calculateTransformations(
+                                            cumulativeOffset,
+                                            handleOffset - decoration.offset
+                                        )
+                                        cumulativeOffset += transformGesture.dragAmount.rotateBy(
+                                            decoration.rotation
+                                        ) * decoration.scale
+                                        result
+                                    }
+
+                                    is TransformGesture.DirectManipulation ->
+                                        accumulateDirectManipulationTransformation(
+                                            initialScale = decoration.scale,
+                                            currentScaleDiff = scaleDiff,
+                                            currentRotationDiff = rotationDiff,
+                                            zoomChange = transformGesture.zoomChange,
+                                            rotationChange = transformGesture.rotationChange,
+                                            minScale = MIN_DECORATION_SCALE,
+                                            maxScale = MAX_TEXT_DECORATION_SCALE
+                                        )
+                                }
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         MIN_DECORATION_SCALE,
@@ -740,42 +753,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
-                                wasRotationSnapped = false
-                            },
-                            onDirectTransformStart = {
-                                onDecorationTransformStart(decoration.id)
-                            },
-                            onDirectTransform = { zoomChange, rotationChange ->
-                                val transformation = accumulateDirectManipulationTransformation(
-                                    initialScale = decoration.scale,
-                                    currentScaleDiff = scaleDiff,
-                                    currentRotationDiff = rotationDiff,
-                                    zoomChange = zoomChange,
-                                    rotationChange = rotationChange,
-                                    minScale = MIN_DECORATION_SCALE,
-                                    maxScale = MAX_TEXT_DECORATION_SCALE
-                                )
-                                scaleDiff = transformation.scaleDiff
-                                val snapResult = applyRotationSnap(
-                                    decoration.rotation + transformation.rotationDiff
-                                )
-                                if (snapResult.isSnapped && !wasRotationSnapped) {
-                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                                }
-                                wasRotationSnapped = snapResult.isSnapped
-                                rotationDiff = snapResult.snappedRotation - decoration.rotation
-                            },
-                            onDirectTransformEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
                                 rawOffsetDiff = Offset.Zero
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
                                 snappedX = false
                                 snappedY = false
                                 wasRotationSnapped = false
@@ -837,14 +815,33 @@ fun UchiwaPreview(
                                 snappedY = false
                             },
                             onTransformStart = {
+                                onDecorationDragStart(decoration.id)
                                 cumulativeOffset = Offset.Zero
                             },
-                            onTransform = { dragAmount ->
-                                val transformation = calculateTransformations(
-                                    cumulativeOffset,
-                                    handleOffset - decoration.offset
-                                )
-                                cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
+                            onTransform = { transformGesture ->
+                                val transformation = when (transformGesture) {
+                                    is TransformGesture.HandleDrag -> {
+                                        val result = calculateTransformations(
+                                            cumulativeOffset,
+                                            handleOffset - decoration.offset
+                                        )
+                                        cumulativeOffset += transformGesture.dragAmount.rotateBy(
+                                            decoration.rotation
+                                        ) * decoration.scale
+                                        result
+                                    }
+
+                                    is TransformGesture.DirectManipulation ->
+                                        accumulateDirectManipulationTransformation(
+                                            initialScale = decoration.scale,
+                                            currentScaleDiff = scaleDiff,
+                                            currentRotationDiff = rotationDiff,
+                                            zoomChange = transformGesture.zoomChange,
+                                            rotationChange = transformGesture.rotationChange,
+                                            minScale = MIN_DECORATION_SCALE,
+                                            maxScale = MAX_STICKER_DECORATION_SCALE
+                                        )
+                                }
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         MIN_DECORATION_SCALE,
@@ -870,42 +867,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
-                                wasRotationSnapped = false
-                            },
-                            onDirectTransformStart = {
-                                onDecorationTransformStart(decoration.id)
-                            },
-                            onDirectTransform = { zoomChange, rotationChange ->
-                                val transformation = accumulateDirectManipulationTransformation(
-                                    initialScale = decoration.scale,
-                                    currentScaleDiff = scaleDiff,
-                                    currentRotationDiff = rotationDiff,
-                                    zoomChange = zoomChange,
-                                    rotationChange = rotationChange,
-                                    minScale = MIN_DECORATION_SCALE,
-                                    maxScale = MAX_STICKER_DECORATION_SCALE
-                                )
-                                scaleDiff = transformation.scaleDiff
-                                val snapResult = applyRotationSnap(
-                                    decoration.rotation + transformation.rotationDiff
-                                )
-                                if (snapResult.isSnapped && !wasRotationSnapped) {
-                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                                }
-                                wasRotationSnapped = snapResult.isSnapped
-                                rotationDiff = snapResult.snappedRotation - decoration.rotation
-                            },
-                            onDirectTransformEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
                                 rawOffsetDiff = Offset.Zero
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
                                 snappedX = false
                                 snappedY = false
                                 wasRotationSnapped = false
@@ -977,14 +939,33 @@ fun UchiwaPreview(
                                 snappedY = false
                             },
                             onTransformStart = {
+                                onDecorationDragStart(decoration.id)
                                 cumulativeOffset = Offset.Zero
                             },
-                            onTransform = { dragAmount ->
-                                val transformation = calculateTransformations(
-                                    cumulativeOffset,
-                                    handleOffset - decoration.offset
-                                )
-                                cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
+                            onTransform = { transformGesture ->
+                                val transformation = when (transformGesture) {
+                                    is TransformGesture.HandleDrag -> {
+                                        val result = calculateTransformations(
+                                            cumulativeOffset,
+                                            handleOffset - decoration.offset
+                                        )
+                                        cumulativeOffset += transformGesture.dragAmount.rotateBy(
+                                            decoration.rotation
+                                        ) * decoration.scale
+                                        result
+                                    }
+
+                                    is TransformGesture.DirectManipulation ->
+                                        accumulateDirectManipulationTransformation(
+                                            initialScale = decoration.scale,
+                                            currentScaleDiff = scaleDiff,
+                                            currentRotationDiff = rotationDiff,
+                                            zoomChange = transformGesture.zoomChange,
+                                            rotationChange = transformGesture.rotationChange,
+                                            minScale = MIN_DECORATION_SCALE,
+                                            maxScale = MAX_IMAGE_DECORATION_SCALE
+                                        )
+                                }
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         MIN_DECORATION_SCALE,
@@ -1010,42 +991,7 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
-                                wasRotationSnapped = false
-                            },
-                            onDirectTransformStart = {
-                                onDecorationTransformStart(decoration.id)
-                            },
-                            onDirectTransform = { zoomChange, rotationChange ->
-                                val transformation = accumulateDirectManipulationTransformation(
-                                    initialScale = decoration.scale,
-                                    currentScaleDiff = scaleDiff,
-                                    currentRotationDiff = rotationDiff,
-                                    zoomChange = zoomChange,
-                                    rotationChange = rotationChange,
-                                    minScale = MIN_DECORATION_SCALE,
-                                    maxScale = MAX_IMAGE_DECORATION_SCALE
-                                )
-                                scaleDiff = transformation.scaleDiff
-                                val snapResult = applyRotationSnap(
-                                    decoration.rotation + transformation.rotationDiff
-                                )
-                                if (snapResult.isSnapped && !wasRotationSnapped) {
-                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                                }
-                                wasRotationSnapped = snapResult.isSnapped
-                                rotationDiff = snapResult.snappedRotation - decoration.rotation
-                            },
-                            onDirectTransformEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
                                 rawOffsetDiff = Offset.Zero
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
                                 snappedX = false
                                 snappedY = false
                                 wasRotationSnapped = false
@@ -1104,19 +1050,11 @@ private fun GestureInputLayer(
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
     onTransformStart: () -> Unit,
-    onTransform: (Offset) -> Unit,
+    onTransform: (TransformGesture) -> Unit,
     onTransformEnd: () -> Unit,
-    onDirectTransformStart: () -> Unit,
-    onDirectTransform: (zoomChange: Float, rotationChange: Float) -> Unit,
-    onDirectTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
 ) {
-    var isDirectTransformActive by remember { mutableStateOf(false) }
-    val currentDirectTransformStart = rememberUpdatedState(onDirectTransformStart)
-    val currentDirectTransform = rememberUpdatedState(onDirectTransform)
-    val currentDirectTransformEnd = rememberUpdatedState(onDirectTransformEnd)
-
     Box(
         modifier = Modifier
             .graphicsLayer {
@@ -1133,48 +1071,54 @@ private fun GestureInputLayer(
                 onClick = onDecorationTap
             )
             .pointerInput(offset, scale, rotation) {
-                detectDragGestures(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(
-                            rotatedDragAmount(
-                                rotation,
-                                scale,
-                                dragAmount
-                            )
-                        )
-                    },
-                    onDragEnd = onDragEnd
-                )
-            }
-            .pointerInput(Unit) {
-                detectTransformGestures { _centroid, _pan, zoomChange, rotationChange ->
-                    // Direct manipulation keeps the pivot at the decoration center, so pan stays
-                    // with the existing one-finger drag path instead of shifting the item here.
-                    if (!isDirectTransformSignificant(zoomChange, rotationChange)) {
-                        return@detectTransformGestures
-                    }
-                    if (!isDirectTransformActive) {
-                        isDirectTransformActive = true
-                        currentDirectTransformStart.value()
-                    }
-                    currentDirectTransform.value(zoomChange, rotationChange)
-                }
-            }
-            .pointerInput(Unit) {
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
-                    var hasPressedPointers: Boolean
+                    var hasStartedDrag = false
+                    var hasStartedTransform = false
+                    var hasPressedChanges: Boolean
                     do {
                         val event = awaitPointerEvent()
-                        hasPressedPointers = event.changes.any { it.pressed }
-                    } while (currentCoroutineContext().isActive && hasPressedPointers)
-                    if (isDirectTransformActive) {
-                        isDirectTransformActive = false
-                        currentDirectTransformEnd.value()
+                        val pressedChanges = event.changes.filter { it.pressed }
+                        hasPressedChanges = event.changes.any { it.pressed }
+                        when {
+                            pressedChanges.size >= 2 -> {
+                                if (!hasStartedTransform) {
+                                    hasStartedTransform = true
+                                    onTransformStart()
+                                }
+                                onTransform(
+                                    TransformGesture.DirectManipulation(
+                                        zoomChange = event.calculateZoom(),
+                                        rotationChange = event.calculateRotation()
+                                    )
+                                )
+                                event.changes.forEach { it.consume() }
+                            }
+
+                            pressedChanges.size == 1 && !hasStartedTransform -> {
+                                val change = pressedChanges.first()
+                                val dragAmount = change.positionChange()
+                                if (dragAmount != Offset.Zero) {
+                                    if (!hasStartedDrag) {
+                                        hasStartedDrag = true
+                                        onDragStart()
+                                    }
+                                    change.consume()
+                                    onDrag(
+                                        rotatedDragAmount(
+                                            rotation,
+                                            scale,
+                                            dragAmount
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    } while (hasPressedChanges)
+                    if (hasStartedTransform) {
+                        onTransformEnd()
+                    } else if (hasStartedDrag) {
+                        onDragEnd()
                     }
                 }
             }
@@ -1340,7 +1284,7 @@ private fun ImageItem(
 @Composable
 private fun GestureInputHandle(
     onTransformStart: () -> Unit,
-    onTransform: (Offset) -> Unit,
+    onTransform: (TransformGesture) -> Unit,
     onTransformEnd: () -> Unit,
     scale: Float,
     modifier: Modifier = Modifier,
@@ -1355,7 +1299,7 @@ private fun GestureInputHandle(
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        onTransform(dragAmount)
+                        onTransform(TransformGesture.HandleDrag(dragAmount))
                     },
                     onDragEnd = onTransformEnd
                 )
@@ -1481,15 +1425,16 @@ private const val MIN_DECORATION_SCALE = 0.5f
 private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
-private const val DIRECT_TRANSFORM_EPSILON = 0.001f
 
-/**
- * Filters out tiny zoom/rotation jitter so a two-finger gesture starts only after a meaningful
- * scale or rotation delta is observed.
- */
-private fun isDirectTransformSignificant(zoomChange: Float, rotationChange: Float): Boolean {
-    return abs(zoomChange - 1f) >= DIRECT_TRANSFORM_EPSILON ||
-            abs(rotationChange) >= DIRECT_TRANSFORM_EPSILON
+private sealed interface TransformGesture {
+    data class HandleDrag(
+        val dragAmount: Offset
+    ) : TransformGesture
+
+    data class DirectManipulation(
+        val zoomChange: Float,
+        val rotationChange: Float
+    ) : TransformGesture
 }
 
 @Preview(showBackground = true)
