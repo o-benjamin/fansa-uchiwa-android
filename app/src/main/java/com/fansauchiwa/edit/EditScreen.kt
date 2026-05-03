@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -731,6 +732,44 @@ fun UchiwaPreview(
                                 rotationDiff = 0f
                                 wasRotationSnapped = false
                             },
+                            onDirectTransformStart = {
+                                onDecorationDragStart(decoration.id)
+                            },
+                            onDirectTransform = { zoomChange, rotationChange ->
+                                val transformation = accumulateDirectManipulationTransformation(
+                                    initialScale = decoration.scale,
+                                    currentScaleDiff = scaleDiff,
+                                    currentRotationDiff = rotationDiff,
+                                    zoomChange = zoomChange,
+                                    rotationChange = rotationChange,
+                                    minScale = 0.5f,
+                                    maxScale = 6f
+                                )
+                                scaleDiff = transformation.scaleDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                }
+                                wasRotationSnapped = snapResult.isSnapped
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
+                            },
+                            onDirectTransformEnd = {
+                                onDecorationDragEnd(
+                                    decoration.id,
+                                    offsetDiff,
+                                    scaleDiff,
+                                    rotationDiff
+                                )
+                                rawOffsetDiff = Offset.Zero
+                                offsetDiff = Offset.Zero
+                                scaleDiff = 0f
+                                rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
+                                wasRotationSnapped = false
+                            },
                             onTapDelete = { onTapDelete(decoration.id) },
                             onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
@@ -821,6 +860,44 @@ fun UchiwaPreview(
                                 offsetDiff = Offset.Zero
                                 scaleDiff = 0f
                                 rotationDiff = 0f
+                                wasRotationSnapped = false
+                            },
+                            onDirectTransformStart = {
+                                onDecorationDragStart(decoration.id)
+                            },
+                            onDirectTransform = { zoomChange, rotationChange ->
+                                val transformation = accumulateDirectManipulationTransformation(
+                                    initialScale = decoration.scale,
+                                    currentScaleDiff = scaleDiff,
+                                    currentRotationDiff = rotationDiff,
+                                    zoomChange = zoomChange,
+                                    rotationChange = rotationChange,
+                                    minScale = 0.5f,
+                                    maxScale = 3f
+                                )
+                                scaleDiff = transformation.scaleDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                }
+                                wasRotationSnapped = snapResult.isSnapped
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
+                            },
+                            onDirectTransformEnd = {
+                                onDecorationDragEnd(
+                                    decoration.id,
+                                    offsetDiff,
+                                    scaleDiff,
+                                    rotationDiff
+                                )
+                                rawOffsetDiff = Offset.Zero
+                                offsetDiff = Offset.Zero
+                                scaleDiff = 0f
+                                rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
                                 wasRotationSnapped = false
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
@@ -925,6 +1002,44 @@ fun UchiwaPreview(
                                 rotationDiff = 0f
                                 wasRotationSnapped = false
                             },
+                            onDirectTransformStart = {
+                                onDecorationDragStart(decoration.id)
+                            },
+                            onDirectTransform = { zoomChange, rotationChange ->
+                                val transformation = accumulateDirectManipulationTransformation(
+                                    initialScale = decoration.scale,
+                                    currentScaleDiff = scaleDiff,
+                                    currentRotationDiff = rotationDiff,
+                                    zoomChange = zoomChange,
+                                    rotationChange = rotationChange,
+                                    minScale = 0.5f,
+                                    maxScale = 5f
+                                )
+                                scaleDiff = transformation.scaleDiff
+                                val snapResult = applyRotationSnap(
+                                    decoration.rotation + transformation.rotationDiff
+                                )
+                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                    hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                }
+                                wasRotationSnapped = snapResult.isSnapped
+                                rotationDiff = snapResult.snappedRotation - decoration.rotation
+                            },
+                            onDirectTransformEnd = {
+                                onDecorationDragEnd(
+                                    decoration.id,
+                                    offsetDiff,
+                                    scaleDiff,
+                                    rotationDiff
+                                )
+                                rawOffsetDiff = Offset.Zero
+                                offsetDiff = Offset.Zero
+                                scaleDiff = 0f
+                                rotationDiff = 0f
+                                snappedX = false
+                                snappedY = false
+                                wasRotationSnapped = false
+                            },
                             onTapDelete = { onTapDelete(decoration.id) },
                             onTapDuplicate = { onTapDuplicate(decoration.id) }
                         )
@@ -981,6 +1096,9 @@ private fun GestureInputLayer(
     onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
+    onDirectTransformStart: () -> Unit,
+    onDirectTransform: (Float, Float) -> Unit,
+    onDirectTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
 ) {
@@ -1017,6 +1135,24 @@ private fun GestureInputLayer(
                     },
                     onDragEnd = onDragEnd
                 )
+            }
+            .pointerInput(offset, scale, rotation) {
+                while (true) {
+                    var hasTransformed = false
+                    detectTransformGestures { _, _, zoomChange, rotationChange ->
+                        if (zoomChange == 1f && rotationChange == 0f) {
+                            return@detectTransformGestures
+                        }
+                        if (!hasTransformed) {
+                            hasTransformed = true
+                            onDirectTransformStart()
+                        }
+                        onDirectTransform(zoomChange, rotationChange)
+                    }
+                    if (hasTransformed) {
+                        onDirectTransformEnd()
+                    }
+                }
             }
     ) {
         if (isSelected) {

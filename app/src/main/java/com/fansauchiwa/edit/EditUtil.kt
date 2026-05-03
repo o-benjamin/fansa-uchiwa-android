@@ -65,6 +65,23 @@ internal fun calculateTransformations(
     return Transformation(scaleDiff, rotationDiff)
 }
 
+internal fun accumulateDirectManipulationTransformation(
+    initialScale: Float,
+    currentScaleDiff: Float,
+    currentRotationDiff: Float,
+    zoomChange: Float,
+    rotationChange: Float,
+    minScale: Float,
+    maxScale: Float
+): Transformation {
+    val currentScale = initialScale + currentScaleDiff
+    val updatedScale = (currentScale * zoomChange).coerceIn(minScale, maxScale)
+    return Transformation(
+        scaleDiff = updatedScale - initialScale,
+        rotationDiff = currentRotationDiff + rotationChange
+    )
+}
+
 
 internal fun calculateHandleOffset(
     baseOffset: Offset,

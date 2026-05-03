@@ -1,5 +1,6 @@
 package com.fansauchiwa.edit
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.TEMPLATE_ID_ARG
@@ -471,6 +472,49 @@ class EditViewModelTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun updateDecorationGraphic_updatesPersistedScaleAndRotation() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            offset = Offset(12f, -8f),
+            rotation = 15f,
+            scale = 1.2f,
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateDecorationGraphic(
+            id = textDecorationId,
+            offset = Offset(8f, 10f),
+            scale = 0.3f,
+            rotation = 25f
+        )
+        advanceUntilIdle()
+
+        val updatedDecoration = viewModel.uiState.value.decorations
+            .filterIsInstance<Decoration.Text>()
+            .first()
+
+        assertEquals(20f, updatedDecoration.offset.x, 0.001f)
+        assertEquals(2f, updatedDecoration.offset.y, 0.001f)
+        assertEquals(1.5f, updatedDecoration.scale, 0.001f)
+        assertEquals(40f, updatedDecoration.rotation, 0.001f)
     }
 
     @Test
