@@ -31,9 +31,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,12 +41,19 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
+import androidx.compose.material3.TooltipState
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -105,6 +112,7 @@ import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
+import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -127,6 +135,7 @@ fun EditScreen(
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
     val hapticManager = rememberFansaHapticManager()
+    val completionTooltipState = rememberTooltipState(isPersistent = true)
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -144,6 +153,14 @@ fun EditScreen(
         uiState.savedPath?.let {
             viewModel.resetIsUchiwaSaved()
             onPreview(URLEncoder.encode(it, "UTF-8"))
+        }
+    }
+
+    LaunchedEffect(uiState.showCompletionTooltip) {
+        if (uiState.showCompletionTooltip) {
+            completionTooltipState.show()
+        } else {
+            completionTooltipState.dismiss()
         }
     }
 
@@ -195,13 +212,14 @@ fun EditScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = @Suppress("DEPRECATION") Icons.Outlined.HelpOutline,
+                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                             contentDescription = stringResource(R.string.help)
                         )
                     }
-                    Button(
+                    CompleteEditButton(
+                        completionTooltipState = completionTooltipState,
+                        onTooltipDismissed = viewModel::onTooltipDismissed,
                         onClick = {
-                            hapticManager.perform(FansaHapticType.CONFIRM)
                             viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
                             viewModel.saveUchiwa { uchiwaId ->
                                 viewModel.resetEditUiState()
@@ -216,21 +234,8 @@ fun EditScreen(
                                     viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
                                 }
                             }
-                        },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.complete),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+                        }
+                    )
                 }
             )
         },
@@ -1255,6 +1260,60 @@ private fun UndoRedoRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompleteEditButton(
+    completionTooltipState: TooltipState,
+    onTooltipDismissed: () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val hapticManager = rememberFansaHapticManager()
+    TooltipBox(
+        positionProvider = rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        state = completionTooltipState,
+        tooltip = {
+            RichTooltip(
+                title = { Text(text = stringResource(R.string.edit_completion_tooltip_title)) },
+                action = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        TextButton(onClick = onTooltipDismissed) {
+                            Text(text = stringResource(R.string.ok))
+                        }
+                    }
+                },
+                caretShape = TooltipDefaults.caretShape()
+            ) {
+                Text(text = stringResource(R.string.edit_completion_tooltip_message))
+            }
+        },
+        modifier = modifier
+    ) {
+        Button(
+            onClick = {
+                hapticManager.perform(FansaHapticType.CONFIRM)
+                onClick()
+            },
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(end = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.complete),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+}
+
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
@@ -1329,6 +1388,21 @@ private fun UndoRedoRowPreview() {
                 canRedo = false,
                 onUndoClick = {},
                 onRedoClick = {}
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+private fun CompleteEditButtonPreview() {
+    FansaUchiwaTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            CompleteEditButton(
+                completionTooltipState = rememberTooltipState(true),
+                onTooltipDismissed = {},
+                onClick = {}
             )
         }
     }

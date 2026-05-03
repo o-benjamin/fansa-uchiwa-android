@@ -33,9 +33,31 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
+    override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP]
+                ?: DEFAULT_HAS_SEEN_EDIT_COMPLETION_TOOLTIP
+        }
+
+    override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP] = hasSeen
+        }
+    }
+
     companion object {
         private val KEY_HAPTIC_FEEDBACK_ENABLED =
             booleanPreferencesKey("haptic_feedback_enabled")
+        private val KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP =
+            booleanPreferencesKey("has_seen_edit_completion_tooltip")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
+        private const val DEFAULT_HAS_SEEN_EDIT_COMPLETION_TOOLTIP = false
     }
 }
