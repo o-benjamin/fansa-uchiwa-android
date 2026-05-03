@@ -56,8 +56,9 @@ class EditViewModel @Inject constructor(
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
-    private var initialEditSnapshot: SavedUchiwa? = null
-    private var hasSeenCompletionTooltip: Boolean? = null
+    private var hasEdited = false
+    private var hasSeenCompletionTooltip = false
+    private var hasLoadedCompletionTooltip = false
 
     init {
         observeCompletionTooltip()
@@ -70,12 +71,12 @@ class EditViewModel @Inject constructor(
         settingsRepository.getHasSeenEditCompletionTooltipStream()
             .onEach { hasSeen ->
                 hasSeenCompletionTooltip = hasSeen
+                hasLoadedCompletionTooltip = true
                 if (hasSeen && uiState.value.showCompletionTooltip) {
                     val currentState = uiState.value
                     savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = false)
-                } else {
-                    showCompletionTooltipIfNeeded()
                 }
+                showCompletionTooltipIfNeeded()
             }
             .launchIn(viewModelScope)
     }
@@ -168,11 +169,6 @@ class EditViewModel @Inject constructor(
                 validImages.any { it.id == existing.id }
             } + validImages
         )
-        initialEditSnapshot = HistorySnapshot(
-            decorations = finalDecorations,
-            uchiwaColor = savedUchiwa.uchiwaColor,
-            backgroundColor = savedUchiwa.backgroundColor
-        )
         showCompletionTooltipIfNeeded()
     }
 
@@ -189,21 +185,11 @@ class EditViewModel @Inject constructor(
                     uchiwaColor = savedUchiwa.uchiwaColor,
                     backgroundColor = savedUchiwa.backgroundColor
                 )
-                initialEditSnapshot = HistorySnapshot(
-                    decorations = savedUchiwa.decorations,
-                    uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
-                )
                 showCompletionTooltipIfNeeded()
                 return
             }
         }
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
-        initialEditSnapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
         showCompletionTooltipIfNeeded()
     }
 
@@ -214,7 +200,7 @@ class EditViewModel @Inject constructor(
                 if (decoration.id == id) transform(decoration) else decoration
             }
         )
-        showCompletionTooltipIfNeeded()
+        markEdited()
     }
 
     fun addDecoration(decoration: Decoration) {
@@ -223,7 +209,7 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations + decoration
         )
-        showCompletionTooltipIfNeeded()
+        markEdited()
 
         when (decoration) {
             is Decoration.Text -> {
@@ -273,7 +259,7 @@ class EditViewModel @Inject constructor(
             decorations = updatedState.decorations + duplicate,
             selectedDecorationId = newId
         )
-        showCompletionTooltipIfNeeded()
+        markEdited()
         val decorationType = when (original) {
             is Decoration.Text -> "text"
             is Decoration.Sticker -> "sticker"
@@ -291,7 +277,7 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations.filter { it.id != id }
         )
-        showCompletionTooltipIfNeeded()
+        markEdited()
     }
 
     /**
@@ -317,7 +303,7 @@ class EditViewModel @Inject constructor(
         mutableList.add(actualToIndex, item)
 
         savedStateHandle[UI_STATE_KEY] = currentState.copy(decorations = mutableList)
-        showCompletionTooltipIfNeeded()
+        markEdited()
     }
 
     fun selectDecoration(id: String) {
@@ -578,7 +564,7 @@ class EditViewModel @Inject constructor(
         )
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaColor = color)
-        showCompletionTooltipIfNeeded()
+        markEdited()
     }
 
     fun updateBackgroundColor(color: Color) {
@@ -589,7 +575,7 @@ class EditViewModel @Inject constructor(
         )
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
-        showCompletionTooltipIfNeeded()
+        markEdited()
     }
 
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
@@ -863,6 +849,7 @@ class EditViewModel @Inject constructor(
         viewModelScope.launch {
             hasSeenCompletionTooltip = true
             settingsRepository.setHasSeenEditCompletionTooltip(true)
+            settingsRepository.fetchHasSeenEditCompletionTooltip()
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = false)
         }
@@ -884,22 +871,25 @@ class EditViewModel @Inject constructor(
                 uchiwaColor = template.savedUchiwa.uchiwaColor,
                 backgroundColor = template.savedUchiwa.backgroundColor
             )
-            showCompletionTooltipIfNeeded()
+            markEdited()
         }
     }
 
+    private fun markEdited() {
+        hasEdited = true
+        showCompletionTooltipIfNeeded()
+    }
+
     private fun showCompletionTooltipIfNeeded() {
-        val hasSeen = hasSeenCompletionTooltip ?: return
-        if (hasSeen || uiState.value.showCompletionTooltip) {
+        if (shouldSuppressCompletionTooltip()) {
             return
         }
-        val initialSnapshot = initialEditSnapshot ?: return
-        val currentState = uiState.value
-        val isChanged = currentState.decorations != initialSnapshot.decorations ||
-            currentState.uchiwaColor != initialSnapshot.uchiwaColor ||
-            currentState.backgroundColor != initialSnapshot.backgroundColor
-        if (isChanged) {
+        if (hasEdited) {
+            val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = true)
         }
     }
+
+    private fun shouldSuppressCompletionTooltip(): Boolean =
+        !hasLoadedCompletionTooltip || hasSeenCompletionTooltip || uiState.value.showCompletionTooltip
 }

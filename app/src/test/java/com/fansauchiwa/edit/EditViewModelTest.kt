@@ -73,7 +73,6 @@ class EditViewModelTest {
 
         override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
             hasSeenEditCompletionTooltip = hasSeen
-            hasSeenEditCompletionTooltipStream.emit(hasSeen)
         }
 
         fun hasSeenEditCompletionTooltip(): Boolean = hasSeenEditCompletionTooltip
@@ -97,8 +96,12 @@ class EditViewModelTest {
 
     private fun createViewModel(
         uchiwaId: String?,
-        templateId: String? = null
+        templateId: String? = null,
+        hasSeenEditCompletionTooltip: Boolean = false
     ): EditViewModel {
+        settingsRepository = FakeSettingsRepository(
+            hasSeenEditCompletionTooltip = hasSeenEditCompletionTooltip
+        )
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
                 set(UCHIWA_ID_ARG, uchiwaId)
@@ -538,11 +541,13 @@ class EditViewModelTest {
 
     @Test
     fun addDecoration_whenTooltipAlreadySeen_doesNotShowCompletionTooltip() = runTest {
-        settingsRepository = FakeSettingsRepository(hasSeenEditCompletionTooltip = true)
         val uchiwaId = "new-uchiwa-id"
         every { localImageRepository.getAllImages() } returns emptyList()
         coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            hasSeenEditCompletionTooltip = true
+        )
         advanceUntilIdle()
 
         viewModel.addDecoration(
@@ -557,4 +562,3 @@ class EditViewModelTest {
         assertFalse(viewModel.uiState.value.showCompletionTooltip)
     }
 }
-

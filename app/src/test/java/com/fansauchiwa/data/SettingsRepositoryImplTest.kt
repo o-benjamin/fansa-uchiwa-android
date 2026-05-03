@@ -7,6 +7,7 @@ import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import org.junit.Before
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -17,13 +18,18 @@ class SettingsRepositoryImplTest {
     @get:Rule
     val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
 
-    private val dataStore: DataStore<Preferences> by lazy {
-        PreferenceDataStoreFactory.create(
+    private lateinit var dataStore: DataStore<Preferences>
+    private lateinit var localSource: SettingsLocalSource
+    private lateinit var repository: SettingsRepositoryImpl
+
+    @Before
+    fun setUp() {
+        dataStore = PreferenceDataStoreFactory.create(
             produceFile = { tmpFolder.newFile("settings.preferences_pb") }
         )
+        localSource = SettingsLocalSource(dataStore)
+        repository = SettingsRepositoryImpl(localSource)
     }
-    private val localSource by lazy { SettingsLocalSource(dataStore) }
-    private val repository by lazy { SettingsRepositoryImpl(localSource) }
 
     @Test
     fun fetchHapticFeedbackEnabled_defaultIsTrue() = runTest {
@@ -35,9 +41,11 @@ class SettingsRepositoryImplTest {
     @Test
     fun setHapticFeedbackEnabled_updatesValue() = runTest {
         repository.setHapticFeedbackEnabled(false)
+        repository.fetchHapticFeedbackEnabled()
         assertFalse(repository.getHapticFeedbackEnabledStream().first())
 
         repository.setHapticFeedbackEnabled(true)
+        repository.fetchHapticFeedbackEnabled()
         assertTrue(repository.getHapticFeedbackEnabledStream().first())
     }
 
@@ -51,6 +59,7 @@ class SettingsRepositoryImplTest {
     @Test
     fun setHasSeenEditCompletionTooltip_updatesValue() = runTest {
         repository.setHasSeenEditCompletionTooltip(true)
+        repository.fetchHasSeenEditCompletionTooltip()
 
         assertTrue(repository.getHasSeenEditCompletionTooltipStream().first())
     }

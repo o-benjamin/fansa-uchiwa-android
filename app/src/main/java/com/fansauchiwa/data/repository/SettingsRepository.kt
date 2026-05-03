@@ -53,7 +53,6 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
         settingsDataSource.setHapticFeedbackEnabled(enabled)
-        _hapticFeedbackEnabledStream.emit(enabled)
     }
 
     override suspend fun fetchHasSeenEditCompletionTooltip() {
@@ -63,6 +62,5 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
         settingsDataSource.setHasSeenEditCompletionTooltip(hasSeen)
-        _hasSeenEditCompletionTooltipStream.emit(hasSeen)
     }
 }

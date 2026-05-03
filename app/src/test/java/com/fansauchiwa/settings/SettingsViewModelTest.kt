@@ -33,7 +33,6 @@ class SettingsViewModelTest {
 
         override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
             hapticEnabled = enabled
-            hapticState.emit(enabled)
         }
 
         override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> = MutableSharedFlow()
@@ -75,4 +74,3 @@ class SettingsViewModelTest {
         assertFalse(fakeRepository.isHapticEnabled())
     }
 }
-
