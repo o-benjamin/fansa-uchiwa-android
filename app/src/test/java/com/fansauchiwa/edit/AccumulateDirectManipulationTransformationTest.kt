@@ -50,6 +50,7 @@ class AccumulateDirectManipulationTransformationTest {
             maxScale = 6f
         )
 
+        // minScale (0.5f) - initialScale (1f) = -0.5f
         assertEquals(-0.5f, result.scaleDiff, FLOAT_DELTA)
         assertEquals(-8f, result.rotationDiff, FLOAT_DELTA)
     }

@@ -37,6 +37,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+private const val FLOAT_DELTA = 0.001f
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditViewModelTest {
 
@@ -511,10 +513,10 @@ class EditViewModelTest {
             .filterIsInstance<Decoration.Text>()
             .first()
 
-        assertEquals(20f, updatedDecoration.offset.x, 0.001f)
-        assertEquals(2f, updatedDecoration.offset.y, 0.001f)
-        assertEquals(1.5f, updatedDecoration.scale, 0.001f)
-        assertEquals(40f, updatedDecoration.rotation, 0.001f)
+        assertEquals(20f, updatedDecoration.offset.x, FLOAT_DELTA) // 12f + 8f
+        assertEquals(2f, updatedDecoration.offset.y, FLOAT_DELTA) // -8f + 10f
+        assertEquals(1.5f, updatedDecoration.scale, FLOAT_DELTA) // 1.2f + 0.3f
+        assertEquals(40f, updatedDecoration.rotation, FLOAT_DELTA) // 15f + 25f
     }
 
     @Test

@@ -7,6 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +65,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1104,11 +1107,15 @@ private fun GestureInputLayer(
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
     onDirectTransformStart: () -> Unit,
-    onDirectTransform: (Float, Float) -> Unit,
+    onDirectTransform: (zoomChange: Float, rotationChange: Float) -> Unit,
     onDirectTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
 ) {
+    var isDirectTransformActive by remember { mutableStateOf(false) }
+    val currentDirectTransformStart = rememberUpdatedState(onDirectTransformStart)
+    val currentDirectTransform = rememberUpdatedState(onDirectTransform)
+    val currentDirectTransformEnd = rememberUpdatedState(onDirectTransformEnd)
 
     Box(
         modifier = Modifier
@@ -1143,26 +1150,31 @@ private fun GestureInputLayer(
                     onDragEnd = onDragEnd
                 )
             }
-            .pointerInput(offset, scale, rotation) {
-                // detectTransformGestures returns after each gesture, so we loop to keep
-                // multi-touch manipulation active across repeated pinch/rotate interactions.
-                while (currentCoroutineContext().isActive) {
-                    var hasTransformed = false
-                    detectTransformGestures { _, _, zoomChange, rotationChange ->
-                        if (
-                            abs(zoomChange - 1f) < DIRECT_TRANSFORM_EPSILON &&
-                            abs(rotationChange) < DIRECT_TRANSFORM_EPSILON
-                        ) {
-                            return@detectTransformGestures
-                        }
-                        if (!hasTransformed) {
-                            hasTransformed = true
-                            onDirectTransformStart()
-                        }
-                        onDirectTransform(zoomChange, rotationChange)
+            .pointerInput(Unit) {
+                detectTransformGestures { _centroid, _pan, zoomChange, rotationChange ->
+                    // Direct manipulation keeps the pivot at the decoration center, so pan stays
+                    // with the existing one-finger drag path instead of shifting the item here.
+                    if (!isDirectTransformSignificant(zoomChange, rotationChange)) {
+                        return@detectTransformGestures
                     }
-                    if (hasTransformed) {
-                        onDirectTransformEnd()
+                    if (!isDirectTransformActive) {
+                        isDirectTransformActive = true
+                        currentDirectTransformStart.value()
+                    }
+                    currentDirectTransform.value(zoomChange, rotationChange)
+                }
+            }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    var hasPressedPointers: Boolean
+                    do {
+                        val event = awaitPointerEvent()
+                        hasPressedPointers = event.changes.any { it.pressed }
+                    } while (currentCoroutineContext().isActive && hasPressedPointers)
+                    if (isDirectTransformActive) {
+                        isDirectTransformActive = false
+                        currentDirectTransformEnd.value()
                     }
                 }
             }
@@ -1470,6 +1482,15 @@ private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
 private const val DIRECT_TRANSFORM_EPSILON = 0.001f
+
+/**
+ * Filters out tiny zoom/rotation jitter so a two-finger gesture starts only after a meaningful
+ * scale or rotation delta is observed.
+ */
+private fun isDirectTransformSignificant(zoomChange: Float, rotationChange: Float): Boolean {
+    return abs(zoomChange - 1f) >= DIRECT_TRANSFORM_EPSILON ||
+            abs(rotationChange) >= DIRECT_TRANSFORM_EPSILON
+}
 
 @Preview(showBackground = true)
 @Composable
