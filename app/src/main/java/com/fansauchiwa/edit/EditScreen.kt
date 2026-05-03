@@ -1082,17 +1082,26 @@ private fun GestureInputLayer(
                         hasPressedChanges = event.changes.any { it.pressed }
                         when {
                             pressedChanges.size >= 2 -> {
-                                if (!hasStartedTransform) {
-                                    hasStartedTransform = true
-                                    onTransformStart()
-                                }
-                                onTransform(
-                                    TransformGesture.DirectManipulation(
-                                        zoomChange = event.calculateZoom(),
-                                        rotationChange = event.calculateRotation()
+                                val zoomChange = event.calculateZoom()
+                                val rotationChange = event.calculateRotation()
+                                if (zoomChange != 1f || rotationChange != 0f) {
+                                    if (!hasStartedTransform) {
+                                        hasStartedTransform = true
+                                        onTransformStart()
+                                    }
+                                    onTransform(
+                                        TransformGesture.DirectManipulation(
+                                            zoomChange = zoomChange,
+                                            rotationChange = rotationChange
+                                        )
                                     )
-                                )
-                                event.changes.forEach { it.consume() }
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+
+                            hasStartedTransform -> {
+                                hasStartedTransform = false
+                                onTransformEnd()
                             }
 
                             pressedChanges.size == 1 && !hasStartedTransform -> {
