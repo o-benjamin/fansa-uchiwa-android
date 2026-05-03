@@ -33,7 +33,6 @@
     <string name="save_success_title">保存成功</string>
     <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
     <string name="ok">OK</string>
-    <string name="edit_completion_tooltip_title">完成したらここをタップ</string>
     <string name="edit_completion_tooltip_message">ここをタップすると、写真フォルダへの保存や、プリントアプリ連携ができます。</string>
     <string name="ad_failed_to_load">広告を読み込めませんでした</string>
     <string name="uchiwa_color">うちわ色</string>

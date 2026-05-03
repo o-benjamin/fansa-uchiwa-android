@@ -497,23 +497,15 @@ class EditViewModelTest {
     }
 
     @Test
-    fun addDecoration_firstEditWhenTooltipNotSeen_showsCompletionTooltip() = runTest {
+    fun initialLoad_whenTooltipNotSeen_showsCompletionTooltipAndPersistsShownFlag() = runTest {
         val uchiwaId = "new-uchiwa-id"
         every { localImageRepository.getAllImages() } returns emptyList()
         coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
         val viewModel = createViewModel(uchiwaId = uchiwaId)
         advanceUntilIdle()
 
-        viewModel.addDecoration(
-            Decoration.Text(
-                id = "text-1",
-                text = "テスト",
-                font = FontFamilies.HACHI_MARU_POP
-            )
-        )
-        advanceUntilIdle()
-
         assertTrue(viewModel.uiState.value.showCompletionTooltip)
+        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
     }
 
     @Test
@@ -522,14 +514,6 @@ class EditViewModelTest {
         every { localImageRepository.getAllImages() } returns emptyList()
         coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
         val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-        viewModel.addDecoration(
-            Decoration.Text(
-                id = "text-1",
-                text = "テスト",
-                font = FontFamilies.HACHI_MARU_POP
-            )
-        )
         advanceUntilIdle()
 
         viewModel.onTooltipDismissed()
@@ -540,22 +524,13 @@ class EditViewModelTest {
     }
 
     @Test
-    fun addDecoration_whenTooltipAlreadySeen_doesNotShowCompletionTooltip() = runTest {
+    fun initialLoad_whenTooltipAlreadySeen_doesNotShowCompletionTooltip() = runTest {
         val uchiwaId = "new-uchiwa-id"
         every { localImageRepository.getAllImages() } returns emptyList()
         coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
         val viewModel = createViewModel(
             uchiwaId = uchiwaId,
             hasSeenEditCompletionTooltip = true
-        )
-        advanceUntilIdle()
-
-        viewModel.addDecoration(
-            Decoration.Text(
-                id = "text-1",
-                text = "テスト",
-                font = FontFamilies.HACHI_MARU_POP
-            )
         )
         advanceUntilIdle()
 

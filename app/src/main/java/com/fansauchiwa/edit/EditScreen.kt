@@ -49,7 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipPositionProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -213,13 +213,10 @@ fun EditScreen(
                         )
                     }
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+                        positionProvider = rememberTooltipPositionProvider(),
                         state = completionTooltipState,
                         tooltip = {
                             RichTooltip(
-                                title = {
-                                    Text(text = stringResource(R.string.edit_completion_tooltip_title))
-                                },
                                 action = {
                                     TextButton(onClick = viewModel::onTooltipDismissed) {
                                         Text(text = stringResource(R.string.ok))
