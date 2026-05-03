@@ -121,6 +121,7 @@ import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1075,6 +1076,7 @@ private fun GestureInputLayer(
                     awaitFirstDown(requireUnconsumed = false)
                     var hasStartedDrag = false
                     var hasStartedTransform = false
+                    var hasTransformedInGesture = false
                     var hasPressedChanges: Boolean
                     do {
                         val event = awaitPointerEvent()
@@ -1084,9 +1086,17 @@ private fun GestureInputLayer(
                             pressedChanges.size >= 2 -> {
                                 val zoomChange = event.calculateZoom()
                                 val rotationChange = event.calculateRotation()
-                                if (zoomChange != 1f || rotationChange != 0f) {
+                                if (
+                                    abs(zoomChange - 1f) > 0.001f ||
+                                    abs(rotationChange) > 0.001f
+                                ) {
+                                    if (hasStartedDrag) {
+                                        hasStartedDrag = false
+                                        onDragEnd()
+                                    }
                                     if (!hasStartedTransform) {
                                         hasStartedTransform = true
+                                        hasTransformedInGesture = true
                                         onTransformStart()
                                     }
                                     onTransform(
@@ -1104,7 +1114,9 @@ private fun GestureInputLayer(
                                 onTransformEnd()
                             }
 
-                            pressedChanges.size == 1 && !hasStartedTransform -> {
+                            pressedChanges.size == 1 &&
+                                    !hasStartedTransform &&
+                                    !hasTransformedInGesture -> {
                                 val change = pressedChanges.first()
                                 val dragAmount = change.positionChange()
                                 if (dragAmount != Offset.Zero) {
