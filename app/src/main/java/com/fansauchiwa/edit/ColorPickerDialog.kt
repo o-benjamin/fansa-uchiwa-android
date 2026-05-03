@@ -16,10 +16,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,17 +45,48 @@ fun ColorPickerDialog(
     onDismiss: () -> Unit,
     onColorSelected: (Color) -> Unit
 ) {
-    val controller = rememberColorPickerController()
-    var selectedColor by remember { mutableStateOf(initialColor) }
-    var selectedColorCode by remember {
-        mutableStateOf(
-            String.format(
-                "#%06X",
-                0xFFFFFF and initialColor.toArgb()
-            )
+    val viewModel = rememberColorPickerDialogViewModel(
+        initialColor = initialColor,
+        onDismiss = onDismiss,
+        onColorSelected = onColorSelected
+    )
+
+    ColorPickerDialogContent(
+        initialColor = initialColor,
+        uiState = viewModel.uiState,
+        onColorChanged = viewModel::onColorChanged,
+        onDismiss = viewModel::onDismissRequested,
+        onConfirm = viewModel::onConfirmRequested
+    )
+}
+
+@Composable
+private fun rememberColorPickerDialogViewModel(
+    initialColor: Color,
+    onDismiss: () -> Unit,
+    onColorSelected: (Color) -> Unit
+): ColorPickerDialogViewModel {
+    val currentOnDismiss = rememberUpdatedState(onDismiss)
+    val currentOnColorSelected = rememberUpdatedState(onColorSelected)
+
+    return remember(initialColor) {
+        ColorPickerDialogViewModel(
+            initialColor = initialColor,
+            onDismiss = { currentOnDismiss.value() },
+            onColorSelected = { color -> currentOnColorSelected.value(color) }
         )
     }
+}
 
+@Composable
+private fun ColorPickerDialogContent(
+    initialColor: Color,
+    uiState: ColorPickerDialogUiState,
+    onColorChanged: (Color) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val controller = rememberColorPickerController()
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -75,12 +108,7 @@ fun ColorPickerDialog(
                         .aspectRatio(1f),
                     controller = controller,
                     onColorChanged = { colorEnvelope ->
-                        selectedColor = colorEnvelope.color
-                        selectedColorCode = String.format(
-                            "#%06X",
-                            0xFFFFFF and colorEnvelope.color.toArgb()
-                        )
-
+                        onColorChanged(colorEnvelope.color)
                     },
                     initialColor = initialColor
                 )
@@ -96,14 +124,14 @@ fun ColorPickerDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = selectedColorCode,
+                        text = uiState.selectedColorCode,
                     )
                     AlphaTile(
                         modifier = Modifier
                             .height(64.dp)
                             .width(104.dp)
                             .clip(RoundedCornerShape(16.dp)),
-                        selectedColor = selectedColor,
+                        selectedColor = uiState.selectedColor,
                     )
                 }
                 Row(
@@ -117,10 +145,7 @@ fun ColorPickerDialog(
                     }
 
                     Button(
-                        onClick = {
-                            onColorSelected(selectedColor)
-                            onDismiss()
-                        },
+                        onClick = onConfirm,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(text = stringResource(R.string.decide))
@@ -129,6 +154,53 @@ fun ColorPickerDialog(
             }
         }
     }
+}
+
+@Immutable
+private data class ColorPickerDialogUiState(
+    val selectedColor: Color,
+    val selectedColorCode: String
+) {
+    companion object {
+        fun create(initialColor: Color): ColorPickerDialogUiState {
+            return ColorPickerDialogUiState(
+                selectedColor = initialColor,
+                selectedColorCode = initialColor.toColorCode()
+            )
+        }
+    }
+}
+
+private class ColorPickerDialogViewModel(
+    initialColor: Color,
+    private val onDismiss: () -> Unit,
+    private val onColorSelected: (Color) -> Unit
+) {
+    var uiState by mutableStateOf(ColorPickerDialogUiState.create(initialColor))
+        private set
+
+    fun onColorChanged(color: Color) {
+        uiState = uiState.copy(
+            selectedColor = color,
+            selectedColorCode = color.toColorCode()
+        )
+    }
+
+    fun onDismissRequested() {
+        onDismiss()
+    }
+
+    fun onConfirmRequested() {
+        onColorSelected(uiState.selectedColor)
+        onDismiss()
+    }
+}
+
+private fun Color.toColorCode(): String {
+    return String.format(
+        "#%06X",
+        0xFFFFFF and toArgb()
+    )
 }
 
 @Preview(showBackground = true)
@@ -142,4 +214,3 @@ fun ColorPickerDialogPreview() {
         )
     }
 }
-
