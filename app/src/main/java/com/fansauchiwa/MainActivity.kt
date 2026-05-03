@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            val isHapticEnabled by settingsRepository.isHapticFeedbackEnabled
+            val isHapticEnabled by settingsRepository.getHapticFeedbackEnabledStream()
                 .collectAsStateWithLifecycle(initialValue = true)
 
             FansaUchiwaTheme {

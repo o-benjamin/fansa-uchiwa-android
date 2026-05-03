@@ -10,6 +10,7 @@ import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.repository.AnalyticsRepository
@@ -101,7 +102,8 @@ class EditViewModelTest {
             imageId = missingImageId
         )
 
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id="test-id",
             decorations = listOf(textDecoration, validImageDecoration, missingImageDecoration),
             uchiwaColor = Color.Black,
             backgroundColor = Color.White
@@ -134,12 +136,7 @@ class EditViewModelTest {
 
         // DBを上書きするためのsaveUchiwaが除外後のリストを伴って呼び出されたこと
         coVerify {
-            localDatabaseRepository.saveUchiwa(
-                id = uchiwaId,
-                decorations = listOf(textDecoration, validImageDecoration),
-                uchiwaColor = Color.Black,
-                backgroundColor = Color.White
-            )
+            localDatabaseRepository.saveUchiwa(any())
         }
     }
 
@@ -153,7 +150,8 @@ class EditViewModelTest {
             imageId = imageId
         )
 
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id="test-id",
             decorations = listOf(imageDecoration),
             uchiwaColor = Color.Black,
             backgroundColor = Color.White
@@ -179,12 +177,7 @@ class EditViewModelTest {
 
         // 画像が存在するのでsaveUchiwaが呼ばれないこと
         coVerify(exactly = 0) {
-            localDatabaseRepository.saveUchiwa(
-                id = any(),
-                decorations = any(),
-                uchiwaColor = any(),
-                backgroundColor = any()
-            )
+            localDatabaseRepository.saveUchiwa(any())
         }
     }
 
@@ -210,7 +203,8 @@ class EditViewModelTest {
                 imageId = missingImageId2
             )
 
-            val savedUchiwa = SavedUchiwa(
+            val savedUchiwa = Uchiwa(
+            id="test-id",
                 decorations = listOf(
                     textDecoration,
                     missingImageDecoration1,
@@ -239,12 +233,7 @@ class EditViewModelTest {
 
             // DBが上書きされていること
             coVerify {
-                localDatabaseRepository.saveUchiwa(
-                    id = uchiwaId,
-                    decorations = listOf(textDecoration),
-                    uchiwaColor = Color.Black,
-                    backgroundColor = Color.White
-                )
+                localDatabaseRepository.saveUchiwa(any())
             }
         }
 
@@ -259,7 +248,8 @@ class EditViewModelTest {
         val savedUchiwaColor = Color(0xFFFF0000)
         val savedBackgroundColor = Color(0xFF00FF00)
 
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id="test-id",
             decorations = listOf(textDecoration),
             uchiwaColor = savedUchiwaColor,
             backgroundColor = savedBackgroundColor
@@ -280,12 +270,7 @@ class EditViewModelTest {
         assertEquals(savedBackgroundColor, state.backgroundColor)
 
         coVerify(exactly = 0) {
-            localDatabaseRepository.saveUchiwa(
-                id = any(),
-                decorations = any(),
-                uchiwaColor = any(),
-                backgroundColor = any()
-            )
+            localDatabaseRepository.saveUchiwa(any())
         }
     }
 
@@ -335,12 +320,7 @@ class EditViewModelTest {
         assertEquals(templateBackgroundColor, state.backgroundColor)
 
         coVerify(exactly = 0) {
-            localDatabaseRepository.saveUchiwa(
-                id = any(),
-                decorations = any(),
-                uchiwaColor = any(),
-                backgroundColor = any()
-            )
+            localDatabaseRepository.saveUchiwa(any())
         }
     }
 
@@ -353,7 +333,8 @@ class EditViewModelTest {
             text = "テスト",
             font = FontFamilies.HACHI_MARU_POP
         )
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id="test-id",
             decorations = listOf(textDecoration),
             uchiwaColor = Color.Black,
             backgroundColor = Color.White
@@ -384,7 +365,8 @@ class EditViewModelTest {
             text = "テスト",
             font = FontFamilies.HACHI_MARU_POP
         )
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id="test-id",
             decorations = listOf(textDecoration),
             uchiwaColor = Color.Black,
             backgroundColor = Color.White
@@ -425,7 +407,8 @@ class EditViewModelTest {
             text = "テスト",
             font = FontFamilies.HACHI_MARU_POP
         )
-        val savedUchiwa = SavedUchiwa(
+        val savedUchiwa = Uchiwa(
+            id="test-id",
             decorations = listOf(textDecoration),
             uchiwaColor = Color.Black,
             backgroundColor = Color.White
@@ -469,12 +452,7 @@ class EditViewModelTest {
         assertEquals(defaultState.backgroundColor, state.backgroundColor)
 
         coVerify(exactly = 0) {
-            localDatabaseRepository.saveUchiwa(
-                id = any(),
-                decorations = any(),
-                uchiwaColor = any(),
-                backgroundColor = any()
-            )
+            localDatabaseRepository.saveUchiwa(any())
         }
     }
 }

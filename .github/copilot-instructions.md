@@ -16,14 +16,10 @@
 - **文字列リソース**:
     - UIテキストは `app/src/main/res/values/strings.xml` を使用し、ハードコーディングを避けてください。
 - **サイズ（dp）定義**:
-    - dp指定をする際は数値を直接ハードコーディングせず、必ず `ui/theme/Dimens.kt`
-      等のKotlinファイルに定義された定数を使用してください。
-    - `Dimens.kt` に適切な値が存在しない場合は、新規に定数を追加してから使用してください。
-    - 複数の箇所で共通化できそうなサイズ（余白やアイコンサイズなど）がある場合は、特定の画面に依存しない汎用的な命名に変更するなどして、積極的に共通化を図ってください。
     - **8-Point Grid Systemの適用**: UIのサイズや余白は、原則として**8の倍数 (8, 16, 24, 32...)**
       で定義してください（テキスト周りなど細かい調整が必要な場合のみ4の倍数を許容します）。
     - 既存のコードや提案するコードにおいて、対象となるサイズが8の倍数になっていない場合（例: `10.dp` や
-      `15.dp` など）は、Copilot自身で最も近い8の倍数（または4の倍数）に修正した上で、定数化および適用を行ってください。
+      `15.dp` など）は、Copilot自身で最も近い8の倍数（または4の倍数）に修正した上で適用を行ってください。
 
 ## 3. アーキテクチャとデータ設計ガイドライン
 
@@ -32,11 +28,33 @@
       ID)」と「参照するリソースのID(Resource ID)」は必ず別のプロパティとして管理してください。
     - 例: 画像オブジェクトは `id: String` (UUID) と `imageId: String` (リソース参照) の両方を持つべきです。
 - **UI状態管理 (State Hoisting)**:
-    - 画面の状態は `UiState` データクラスに集約し、`ViewModel` の `StateFlow` で管理してください。
+    - 画面の状態は `UiState` に集約し、`ViewModel` の `StateFlow` で管理してください。
+    - **Sealed Interfaceによる状態定義:**
+        - 画面のUI状態（UiState）は必ず `sealed interface` を用いて定義すること。
+        - 基本構造として `Loading`, `Success`, `Error` の3つの状態（data class / data object）を持たせること。
+    - **Flowを用いたリアクティブな状態管理:**
+        - ViewModelでの UiState の初期値（デフォルト値）は原則として `Loading` とすること。
+        - `ViewModel` 内の `StateFlow` は `MutableStateFlow` + `asStateFlow()` で公開すること。
+        - `init` ブロックでまず `observe~()` を呼んでから `fetch~()` を呼ぶこと（購読を先に開始してから取得を開始する）。
+        - データ取得は `fetch~()` メソッド、Flow購読は `observe~()` メソッドに分離すること。
+        - `observe~()` では Repository の `get~Stream()` を `.onEach { }.launchIn(viewModelScope)`
+          で購読し、UiState を更新すること。
+        - `fetch~()` では Repository の `fetch~()` を `viewModelScope.launch` で呼び出し、例外発生時は
+          `Error` 状態にすること。
     - `ViewModel` 内では `data class` の `copy()` メソッドを使用して不変性を保ちながら状態を更新してください。
+- **Repository層のFlowパターン:**
+    - Repository の実装クラスは、内部に `MutableSharedFlow(replay = 1)` を保持し、`asSharedFlow()`
+      で外部に公開すること。
+    - Flowを返すメソッドは `get~Stream(): Flow<T>` という命名にすること。
+    - `fetch~()` メソッドは DataSource の `get~Stream().first()` で現在値を1件取得し、内部の
+      `MutableSharedFlow` に `emit` すること。返り値は持たせないこと。
+    - これにより、`fetch~()` 呼び出し → DataSource から値取得 → `emit` → `get~Stream()`
+      購読側に値が流れる、という一方向のデータフローが実現される。
+- **DataSource層のFlowパターン:**
+    - DataSource（インターフェース・実装ともに）はFlowを返す `get~Stream(): Flow<T>` メソッドのみを定義すること。
+    - fetch/observe の分離はRepository以上の責務であり、DataSource層では行わないこと。
 - **状態管理とUIインタラクション**:
-  -
-  UIイベントはすべてViewModelのメソッドに委譲し、Compose側でビジネスロジックを持たないでください (
+  -UIイベントはすべてViewModelのメソッドに委譲し、Compose側でビジネスロジックを持たないでください (
   UDF: Unidirectional Data Flow の徹底)。
 - **Repositoryパターン**:
     - `ViewModel` からは、`~Repository` というファイル内の `~Repository` インターフェースを呼び出してください。

@@ -82,8 +82,6 @@ import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import com.fansauchiwa.ui.theme.HomeItemMinWidth
-import com.fansauchiwa.ui.theme.SelectionFabSpacing
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -101,12 +99,12 @@ private fun HomeFab(
     if (isSelectionMode) {
         Row(
             modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(SelectionFabSpacing)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FansaFloatingActionButton(onClick = onExitSelectionMode) {
                 Text(
                     text = stringResource(R.string.cancel),
-                    modifier = Modifier.padding(horizontal = SelectionFabSpacing)
+                    modifier = Modifier.padding(horizontal = 8.dp)
                 )
             }
             if (selectedCount > 0) {
@@ -117,7 +115,7 @@ private fun HomeFab(
                 ) {
                     Text(
                         text = stringResource(R.string.duplicate),
-                        modifier = Modifier.padding(horizontal = SelectionFabSpacing)
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
                 FansaFloatingActionButton(
@@ -128,7 +126,7 @@ private fun HomeFab(
                 ) {
                     Text(
                         text = stringResource(R.string.delete),
-                        modifier = Modifier.padding(horizontal = SelectionFabSpacing)
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }
             }
@@ -356,7 +354,7 @@ internal fun HomeScreenContent(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(HomeItemMinWidth),
+        columns = GridCells.Adaptive(152.dp),
         state = lazyGridState,
         modifier = modifier
             .fillMaxSize()
@@ -447,7 +445,7 @@ private fun TemplateItem(
 ) {
     Card(
         modifier = modifier
-            .width(HomeItemMinWidth)
+            .width(152.dp)
             .aspectRatio(1.2f),
         onClick = onClick
     ) {

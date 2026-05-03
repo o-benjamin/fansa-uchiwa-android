@@ -18,6 +18,8 @@ import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -73,9 +75,9 @@ class EditViewModel @Inject constructor(
             val uchiwaId: String? = savedStateHandle[UCHIWA_ID_ARG]
             if (uchiwaId != null) {
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
-                val savedUchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
-                if (savedUchiwa != null) {
-                    restoreExistingUchiwa(uchiwaId, savedUchiwa)
+                val uchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
+                if (uchiwa != null) {
+                    restoreExistingUchiwa(uchiwaId, uchiwa)
                 } else {
                     applyNewUchiwaState(uchiwaId)
                 }
@@ -87,7 +89,14 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    private suspend fun restoreExistingUchiwa(uchiwaId: String, savedUchiwa: SavedUchiwa) {
+    private suspend fun restoreExistingUchiwa(uchiwaId: String, savedUchiwa: Uchiwa) {
+        savedStateHandle[UI_STATE_KEY] = uiState.value.copy(
+            uchiwaId = uchiwaId,
+            decorations = savedUchiwa.decorations,
+            uchiwaColor = savedUchiwa.uchiwaColor,
+            backgroundColor = savedUchiwa.backgroundColor
+        )
+
         val imageDecorations =
             savedUchiwa.decorations.filterIsInstance<Decoration.Image>()
         val validImages = mutableListOf<ImageReference>()
@@ -112,10 +121,12 @@ class EditViewModel @Inject constructor(
 
         if (missingImageIds.isNotEmpty()) {
             localDatabaseRepository.saveUchiwa(
-                id = uchiwaId,
-                decorations = finalDecorations,
-                uchiwaColor = savedUchiwa.uchiwaColor,
-                backgroundColor = savedUchiwa.backgroundColor
+                Uchiwa(
+                    id = uchiwaId,
+                    decorations = finalDecorations,
+                    uchiwaColor = savedUchiwa.uchiwaColor,
+                    backgroundColor = savedUchiwa.backgroundColor
+                )
             )
         }
 
@@ -499,6 +510,15 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun updatePuffyEnabled(id: String, isPuffyEnabled: Boolean) {
+        saveSnapshot()
+        updateDecoration(id) { decoration ->
+            if (decoration is Decoration.Text) {
+                decoration.copy(isPuffyEnabled = isPuffyEnabled)
+            } else decoration
+        }
+    }
+
     fun updateUchiwaColor(color: Color) {
         saveSnapshot()
         logEvent(
@@ -731,10 +751,12 @@ class EditViewModel @Inject constructor(
             Log.d("TemplateExport", code)
 
             localDatabaseRepository.saveUchiwa(
-                id = state.uchiwaId,
-                decorations = state.decorations,
-                uchiwaColor = state.uchiwaColor,
-                backgroundColor = state.backgroundColor
+                Uchiwa(
+                    id = state.uchiwaId,
+                    decorations = state.decorations,
+                    uchiwaColor = state.uchiwaColor,
+                    backgroundColor = state.backgroundColor
+                )
             )
             onDecorationSave(state.uchiwaId)
         }
@@ -744,10 +766,12 @@ class EditViewModel @Inject constructor(
         viewModelScope.launch {
             val state = uiState.value
             localDatabaseRepository.saveUchiwa(
-                id = state.uchiwaId,
-                decorations = state.decorations,
-                uchiwaColor = state.uchiwaColor,
-                backgroundColor = state.backgroundColor
+                Uchiwa(
+                    id = state.uchiwaId,
+                    decorations = state.decorations,
+                    uchiwaColor = state.uchiwaColor,
+                    backgroundColor = state.backgroundColor
+                )
             )
             onDecorationSave(state.uchiwaId)
         }
@@ -780,5 +804,24 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             savedPath = null
         )
+    }
+
+    fun resetDataFromTemplate(template: Template) {
+        viewModelScope.launch {
+            val currentState = uiState.value
+            localDatabaseRepository.saveUchiwa(
+                Uchiwa(
+                    id = currentState.uchiwaId,
+                    decorations = template.savedUchiwa.decorations,
+                    uchiwaColor = template.savedUchiwa.uchiwaColor,
+                    backgroundColor = template.savedUchiwa.backgroundColor
+                )
+            )
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                decorations = template.savedUchiwa.decorations,
+                uchiwaColor = template.savedUchiwa.uchiwaColor,
+                backgroundColor = template.savedUchiwa.backgroundColor
+            )
+        }
     }
 }

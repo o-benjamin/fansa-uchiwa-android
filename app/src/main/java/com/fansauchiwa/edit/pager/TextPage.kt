@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -16,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -27,6 +30,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +54,7 @@ fun TextPage(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
+    onPuffyEnabledChanged: (Boolean) -> Unit,
     selectedDecoration: Decoration? = null
 ) {
     FontFamilySelectionGrid(
@@ -61,6 +66,7 @@ fun TextPage(
         onStrokeWeightChanged = onStrokeWeightChanged,
         onSecondBorderColorSelected = onSecondBorderColorSelected,
         onSecondBorderWeightChanged = onSecondBorderWeightChanged,
+        onPuffyEnabledChanged = onPuffyEnabledChanged,
         selectedDecoration = selectedDecoration,
         modifier = Modifier.fillMaxSize()
     )
@@ -74,12 +80,14 @@ fun TextDecorationControls(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
+    onPuffyEnabledChanged: (Boolean) -> Unit,
     textColor: Color,
     textWidth: Int,
     strokeColor: Color,
     strokeWidth: Float,
     secondBorderColor: Color,
-    secondBorderWidth: Float
+    secondBorderWidth: Float,
+    isPuffyEnabled: Boolean
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         ColorAndWeightControl(
@@ -113,6 +121,24 @@ fun TextDecorationControls(
             onColorSelected = onSecondBorderColorSelected,
             onWeightChanged = onSecondBorderWeightChanged
         )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = stringResource(R.string.text_puffy_enabled),
+                fontWeight = FontWeight.Bold,
+            )
+            Switch(
+                checked = isPuffyEnabled,
+                onCheckedChange = onPuffyEnabledChanged,
+
+                )
+        }
     }
 }
 
@@ -126,6 +152,7 @@ fun FontFamilySelectionGrid(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
+    onPuffyEnabledChanged: (Boolean) -> Unit,
     selectedDecoration: Decoration?,
     modifier: Modifier = Modifier
 ) {
@@ -154,12 +181,14 @@ fun FontFamilySelectionGrid(
                     onStrokeWeightChanged = onStrokeWeightChanged,
                     onSecondBorderColorSelected = onSecondBorderColorSelected,
                     onSecondBorderWeightChanged = onSecondBorderWeightChanged,
+                    onPuffyEnabledChanged = onPuffyEnabledChanged,
                     textColor = selectedDecoration.color,
                     strokeColor = selectedDecoration.strokeColor,
                     textWidth = selectedDecoration.width,
                     strokeWidth = selectedDecoration.strokeWidth,
                     secondBorderColor = selectedDecoration.secondBorderColor,
-                    secondBorderWidth = selectedDecoration.secondBorderWidth
+                    secondBorderWidth = selectedDecoration.secondBorderWidth,
+                    isPuffyEnabled = selectedDecoration.isPuffyEnabled
                 )
             }
         }
@@ -169,7 +198,8 @@ fun FontFamilySelectionGrid(
         }
 
         items(FontFamilies.entries.toList()) { fontFamily ->
-            val isSelected = selectedDecoration is Decoration.Text && selectedDecoration.font == fontFamily
+            val isSelected =
+                selectedDecoration is Decoration.Text && selectedDecoration.font == fontFamily
             Box(contentAlignment = Alignment.Center) {
                 FilledTonalButton(
                     onClick = {
@@ -185,7 +215,10 @@ fun FontFamilySelectionGrid(
                         }
                     },
                     shape = RoundedCornerShape(8.dp),
-                    border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                    border = if (isSelected) BorderStroke(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary
+                    ) else null,
                     modifier = Modifier
                         .height(buttonHeight)
                         .testTag(TestTags.FONT_BUTTON_PREFIX + fontFamily.name)
@@ -222,6 +255,7 @@ fun TextPagePreview() {
             onStrokeWeightChanged = {},
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
+            onPuffyEnabledChanged = {},
             selectedDecoration = Decoration.Text(
                 id = "preview-id",
                 font = FontFamilies.HACHI_MARU_POP,
@@ -229,7 +263,8 @@ fun TextPagePreview() {
                 color = Color(0xFF000000),
                 strokeColor = Color(0xFFFFFFFF),
                 width = 700,
-                strokeWidth = 2.5f
+                strokeWidth = 2.5f,
+                isPuffyEnabled = true
             )
         )
     }
@@ -248,6 +283,7 @@ fun FontFamilySelectionGridNarrowPreview() {
             onStrokeWeightChanged = {},
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
+            onPuffyEnabledChanged = {},
             selectedDecoration = null
         )
     }
@@ -266,6 +302,7 @@ fun FontFamilySelectionGridMediumPreview() {
             onStrokeWeightChanged = {},
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
+            onPuffyEnabledChanged = {},
             selectedDecoration = null
         )
     }
@@ -284,6 +321,7 @@ fun FontFamilySelectionGridWidePreview() {
             onStrokeWeightChanged = {},
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
+            onPuffyEnabledChanged = {},
             selectedDecoration = null
         )
     }

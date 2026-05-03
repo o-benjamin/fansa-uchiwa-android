@@ -65,12 +65,7 @@ import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.ui.theme.ButtonIconEndPadding
-import com.fansauchiwa.ui.theme.ButtonTextVerticalPadding
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import com.fansauchiwa.ui.theme.PreviewContentHorizontalPadding
-import com.fansauchiwa.ui.theme.PreviewContentSpacing
-import com.fansauchiwa.ui.theme.PreviewContentVerticalPadding
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -250,17 +245,17 @@ fun UchiwaPreviewContent(
     isPreview: Boolean = false
 ) {
     Column(
-        modifier = modifier.padding(horizontal = PreviewContentHorizontalPadding),
+        modifier = modifier.padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(
-            PreviewContentSpacing,
+            16.dp,
             Alignment.CenterVertically
         )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = PreviewContentVerticalPadding)
+                .padding(vertical = 16.dp)
         ) {
             if (isPreview && imagePath != null) {
                 // Preview用のサンプルBox
@@ -322,12 +317,12 @@ fun UchiwaPreviewContent(
             Icon(
                 imageVector = Icons.Default.Save,
                 contentDescription = null,
-                modifier = Modifier.padding(end = ButtonIconEndPadding)
+                modifier = Modifier.padding(end = 8.dp)
             )
             Text(
                 text = stringResource(R.string.save_as_image),
                 fontSize = 20.sp,
-                modifier = Modifier.padding(vertical = ButtonTextVerticalPadding)
+                modifier = Modifier.padding(vertical = 8.dp)
             )
         }
         Button(
@@ -341,12 +336,12 @@ fun UchiwaPreviewContent(
             Icon(
                 imageVector = Icons.Default.Share,
                 contentDescription = null,
-                modifier = Modifier.padding(end = ButtonIconEndPadding)
+                modifier = Modifier.padding(end = 8.dp)
             )
             Text(
                 text = stringResource(R.string.send_to_print_app),
                 fontSize = 20.sp,
-                modifier = Modifier.padding(vertical = ButtonTextVerticalPadding)
+                modifier = Modifier.padding(vertical = 8.dp)
             )
         }
         TextButton(

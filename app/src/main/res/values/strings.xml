@@ -15,6 +15,7 @@
     <string name="text_color_and_weight">文字色・太さ</string>
     <string name="stroke_color_and_weight">枠線色・太さ</string>
     <string name="second_stroke_color_and_weight">枠線色・太さ2</string>
+    <string name="text_puffy_enabled">ぷくぷく文字（ベータ版）</string>
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
     <string name="snackbar_saved">画像を保存しました</string>
     <string name="delete_images">%d個の写真を削除</string>
@@ -67,6 +68,10 @@
     <string name="official_site">公式サイト</string>
     <string name="badge_ranking">No.%d</string>
     <string name="badge_new">New</string>
+
+    <!-- SelectionCircleIcon -->
+    <string name="selection_circle_icon_selected">Selected</string>
+    <string name="selection_circle_icon_not_selected">Not selected</string>
 
     <!-- Settings -->
     <string name="settings">設定</string>

@@ -1,16 +1,24 @@
 package com.fansauchiwa.edit.decorationitem
 
+import android.graphics.Bitmap
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
@@ -21,17 +29,17 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.toSize
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.FontFamilies
-import com.fansauchiwa.edit.TEXT_ITEM_PADDING
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun TextItemContent(
     decoration: Decoration.Text,
     textSize: TextUnit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPuffyEnabled: Boolean = decoration.isPuffyEnabled
 ) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
@@ -52,38 +60,144 @@ fun TextItemContent(
         )
     }
 
-    val boxSize = with(density) { layoutResult.size.toSize().toDpSize() }
+    val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
+    val boxSize = with(density) {
+        Size(layoutResult.size.width + maxStroke, layoutResult.size.height + maxStroke).toDpSize()
+    }
+
+    var fillSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var strokeSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var secondBorderSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    // ▼ チューニング: 【描画の解像度（綺麗さ）】 ▼
+    // scaleFactor: 画像を何倍のサイズで内部生成して縮小表示するか（スーパーサンプリング）。
+    // - 大きくする(例: 3.0f): 文字の輪郭や影のギザギザがより滑らかになりますが、処理は重くなります。
+    // - 小さくする(例: 1.0f): 処理は軽いですが、画質が荒くなります。
+    val scaleFactor = 3.0f
+
+    val strokeDrawStyle = remember(decoration.strokeWidth) {
+        Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round)
+    }
+
+    val secondBorderDrawStyle = remember(decoration.strokeWidth, decoration.secondBorderWidth) {
+        Stroke(
+            width = decoration.strokeWidth + decoration.secondBorderWidth,
+            join = StrokeJoin.Round
+        )
+    }
+
+    LaunchedEffect(
+        layoutResult,
+        decoration.strokeWidth,
+        decoration.secondBorderWidth,
+        isPuffyEnabled,
+        maxStroke
+    ) {
+        if (isPuffyEnabled) {
+            val fillMaskBitmap =
+                createTextMaskBitmap(layoutResult, density, Fill, scaleFactor, maxStroke)
+            fillSdfBitmap = generateSdfTexture(fillMaskBitmap)
+
+            if (decoration.strokeWidth > 0f) {
+                val strokeMaskBitmap =
+                    createTextMaskBitmap(
+                        layoutResult,
+                        density,
+                        strokeDrawStyle,
+                        scaleFactor,
+                        maxStroke,
+                        clearInner = true
+                    )
+                strokeSdfBitmap = generateSdfTexture(strokeMaskBitmap)
+            } else {
+                strokeSdfBitmap = null
+            }
+
+            if (decoration.secondBorderWidth > 0f) {
+                val secondBorderMaskBitmap =
+                    createTextMaskBitmap(
+                        layoutResult,
+                        density,
+                        secondBorderDrawStyle,
+                        scaleFactor,
+                        maxStroke,
+                        clearInner = true,
+                        clearStroke = strokeDrawStyle
+                    )
+                secondBorderSdfBitmap = generateSdfTexture(secondBorderMaskBitmap)
+            } else {
+                secondBorderSdfBitmap = null
+            }
+        } else {
+            fillSdfBitmap = null
+            strokeSdfBitmap = null
+            secondBorderSdfBitmap = null
+        }
+    }
 
     Box(
-        modifier = modifier
-            .padding(TEXT_ITEM_PADDING)
-            .size(boxSize)
-            .drawBehind {
-                // 二重枠線（最背面）: secondBorderColor で描画（太さ：borderWidth + secondBorderWidth）
+        modifier = modifier.size(boxSize)
+    ) {
+        Canvas(modifier = Modifier.matchParentSize()) {
+            translate(maxStroke / 2f, maxStroke / 2f) {
                 if (secondBorderWidth > 0f) {
+                    if (!isPuffyEnabled || secondBorderSdfBitmap == null) {
+                        drawText(
+                            textLayoutResult = layoutResult,
+                            drawStyle = Stroke(
+                                width = decoration.strokeWidth + secondBorderWidth,
+                                join = StrokeJoin.Round
+                            ),
+                            color = secondBorderColor,
+                        )
+                    }
+                }
+
+                if (!isPuffyEnabled || strokeSdfBitmap == null) {
                     drawText(
                         textLayoutResult = layoutResult,
-                        drawStyle = Stroke(
-                            width = decoration.strokeWidth + secondBorderWidth,
-                            join = StrokeJoin.Round
-                        ),
-                        color = secondBorderColor,
+                        drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
+                        color = strokeColor,
                     )
                 }
-                // 枠線（中間）: strokeColor で描画（太さ：borderWidth）
-                drawText(
-                    textLayoutResult = layoutResult,
-                    drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
-                    color = strokeColor,
-                )
-                // 塗りつぶし（最前面）: color で本体を描画
-                drawText(
-                    textLayoutResult = layoutResult,
-                    drawStyle = Fill,
-                    color = textColor,
+
+                if (!isPuffyEnabled || fillSdfBitmap == null) {
+                    drawText(
+                        textLayoutResult = layoutResult,
+                        drawStyle = Fill,
+                        color = textColor,
+                    )
+                }
+            }
+        }
+
+        if (isPuffyEnabled) {
+            if (secondBorderSdfBitmap != null) {
+                PuffyTextRenderer(
+                    sdfTextureBitmap = secondBorderSdfBitmap!!,
+                    baseColor = secondBorderColor,
+                    scaleFactor = scaleFactor,
+                    modifier = Modifier.matchParentSize()
                 )
             }
-    )
+            if (strokeSdfBitmap != null) {
+                PuffyTextRenderer(
+                    sdfTextureBitmap = strokeSdfBitmap!!,
+                    baseColor = strokeColor,
+                    scaleFactor = scaleFactor,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+            if (fillSdfBitmap != null) {
+                PuffyTextRenderer(
+                    sdfTextureBitmap = fillSdfBitmap!!,
+                    baseColor = textColor,
+                    scaleFactor = scaleFactor,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        }
+    }
 }
 
 // region TextItemContent Previews
@@ -126,4 +240,3 @@ private fun TextItemContentWithSecondBorderPreview() {
 }
 
 // endregion
-

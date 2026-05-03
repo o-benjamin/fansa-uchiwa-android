@@ -22,7 +22,7 @@ fun ShakeDetector(onShake: () -> Unit) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         var lastShakeTime = 0L
-        val shakeThreshold = 12f
+        val shakeThreshold = 50f
         val shakeDebounceMs = 1000L
 
         val listener = object : SensorEventListener {
