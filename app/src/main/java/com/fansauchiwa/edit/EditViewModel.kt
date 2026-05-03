@@ -31,9 +31,9 @@ import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -71,7 +71,6 @@ class EditViewModel @Inject constructor(
                 // Skip when already persisted, or after this screen instance has already displayed it once.
                 if (hasSeen || hasShownCompletionTooltipInSession) return@onEach
 
-                hasShownCompletionTooltipInSession = true
                 val currentState = uiState.value
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = true)
                 markCompletionTooltipShown()
