@@ -15,7 +15,7 @@ import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.LocalImageRepository
+import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
