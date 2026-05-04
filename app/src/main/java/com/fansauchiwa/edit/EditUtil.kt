@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Transformation
 import kotlin.math.PI
 import kotlin.math.abs
@@ -188,4 +189,45 @@ internal fun calculateClampedOffset(
         x = clampedX - currentConfirmedOffset.x,
         y = clampedY - currentConfirmedOffset.y
     )
+}
+
+internal fun resolveDecorationOffset(
+    decorationId: String,
+    selectedDecorationId: String?,
+    baseOffset: Offset,
+    offsetDiff: Offset
+): Offset {
+    if (decorationId != selectedDecorationId) return baseOffset
+    return baseOffset + offsetDiff
+}
+
+internal fun resolveDecorationScale(
+    decorationId: String,
+    selectedDecorationId: String?,
+    baseScale: Float,
+    scaleDiff: Float
+): Float {
+    if (decorationId != selectedDecorationId) return baseScale
+    return baseScale * scaleDiff
+}
+
+internal fun resolveDecorationRotation(
+    decorationId: String,
+    selectedDecorationId: String?,
+    baseRotation: Float,
+    rotationDiff: Float
+): Float {
+    if (decorationId != selectedDecorationId) return baseRotation
+    return baseRotation + rotationDiff
+}
+
+internal fun calculateCommittedScaleDiff(
+    baseScale: Float,
+    scaleDiff: Float
+): Float = baseScale * (scaleDiff - 1f)
+
+internal fun Decoration.scaleRange(): ClosedFloatingPointRange<Float> = when (this) {
+    is Decoration.Text -> 0.5f..6f
+    is Decoration.Sticker -> 0.5f..3f
+    is Decoration.Image -> 0.5f..5f
 }
