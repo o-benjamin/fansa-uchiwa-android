@@ -1,10 +1,1 @@
 package com.fansauchiwa.data
-
-import android.net.Uri
-
-interface ImageDataSource {
-    fun save(uri: Uri, id: String): String?
-    fun load(imageId: String): ImageReference?
-    fun getAllImages(): List<ImageReference>
-    fun deleteImages(imageIds: List<String>): Boolean
-}

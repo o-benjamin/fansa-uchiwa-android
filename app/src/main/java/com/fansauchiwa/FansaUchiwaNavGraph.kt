@@ -23,33 +23,27 @@ import com.fansauchiwa.settings.SettingsScreen
 @Composable
 fun FansaUchiwaNavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = FansaUchiwaDestinations.HOME
+    startDestination: String = HomeDestination.route
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable(FansaUchiwaDestinations.HOME) {
+        composable(HomeDestination.route) {
             HomeScreen(
                 onImageClick = { id, templateId ->
-                    val route = buildString {
-                        append("${FansaUchiwaScreens.EDIT_SCREEN}?$UCHIWA_ID_ARG=$id")
-                        if (templateId != null) {
-                            append("&$TEMPLATE_ID_ARG=$templateId")
-                        }
-                    }
-                    navController.navigate(route)
+                    navController.navigate(EditDestination.createRoute(id, templateId))
                 },
                 onAddClick = {
-                    navController.navigate(FansaUchiwaScreens.EDIT_SCREEN)
+                    navController.navigate(EditDestination.screen)
                 },
                 onNavigateToSettings = {
-                    navController.navigate(FansaUchiwaDestinations.SETTINGS)
+                    navController.navigate(SettingsDestination.route)
                 }
             )
         }
         composable(
-            route = FansaUchiwaDestinations.EDIT,
+            route = EditDestination.route,
             arguments = listOf(
                 navArgument(UCHIWA_ID_ARG) {
                     type = NavType.StringType
@@ -68,18 +62,18 @@ fun FansaUchiwaNavGraph(
                 viewModel = viewModel,
                 onBack = { navController.navigateUp() },
                 onPreview = { path ->
-                    navController.navigate("${FansaUchiwaScreens.PREVIEW_SCREEN}/$path")
+                    navController.navigate(PreviewDestination.createRoute(path))
                 },
                 onNavigateToImagePreview = { uri ->
-                    navController.navigate("${FansaUchiwaScreens.IMAGE_PREVIEW_SCREEN}/$uri")
+                    navController.navigate(ImagePreviewDestination.createRoute(uri))
                 },
                 onNavigateToSettings = {
-                    navController.navigate(FansaUchiwaDestinations.SETTINGS)
+                    navController.navigate(SettingsDestination.route)
                 }
             )
         }
         composable(
-            route = FansaUchiwaDestinations.PREVIEW,
+            route = PreviewDestination.route,
             arguments = listOf(
                 navArgument(IMAGE_PATH_ARG) { type = NavType.StringType }
             )
@@ -90,14 +84,14 @@ fun FansaUchiwaNavGraph(
                 onBack = { navController.navigateUp() },
                 onBackToHome = {
                     navController.popBackStack(
-                        route = FansaUchiwaDestinations.HOME,
+                        route = HomeDestination.route,
                         inclusive = false
                     )
                 }
             )
         }
         composable(
-            route = FansaUchiwaDestinations.IMAGE_PREVIEW,
+            route = ImagePreviewDestination.route,
             arguments = listOf(
                 navArgument(IMAGE_URI_ARG) { type = NavType.StringType }
             ),
@@ -112,7 +106,7 @@ fun FansaUchiwaNavGraph(
             // EditScreenのバックスタックエントリからEditViewModelを取得
             // TODO: もっといいやり方があれば…
             val editBackStackEntry = remember(backStackEntry) {
-                navController.getBackStackEntry(FansaUchiwaDestinations.EDIT)
+                navController.getBackStackEntry(EditDestination.route)
             }
             val editViewModel: EditViewModel = hiltViewModel(editBackStackEntry)
 
@@ -126,7 +120,7 @@ fun FansaUchiwaNavGraph(
                 viewModel = viewModel
             )
         }
-        composable(FansaUchiwaDestinations.SETTINGS) {
+        composable(SettingsDestination.route) {
             SettingsScreen(
                 onBack = { navController.navigateUp() }
             )
