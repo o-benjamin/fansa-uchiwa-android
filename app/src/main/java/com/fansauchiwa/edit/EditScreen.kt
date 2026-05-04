@@ -109,6 +109,8 @@ import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.pager.EditPager
+import com.fansauchiwa.edit.pager.EditPagerActions
+import com.fansauchiwa.edit.pager.EditPagerUiState
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -349,71 +351,78 @@ fun EditScreen(
                     )
                 }
 
+                val selectedDecoration =
+                    uiState.decorations.find { it.id == uiState.selectedDecorationId }
+
                 EditPager(
-                    onStickerClick = viewModel::addDecoration,
-                    onTextClick = viewModel::addDecoration,
-                    onFontChanged = { font ->
-                        uiState.selectedDecorationId?.let { id ->
-                            viewModel.updateFont(id, font)
+                    state = EditPagerUiState(
+                        selectedDecoration = selectedDecoration,
+                        allImages = uiState.allImages,
+                        isDeletingImage = uiState.isDeletingImage,
+                        selectedDeletingImages = uiState.selectedDeletingImages,
+                        uchiwaColor = uiState.uchiwaColor,
+                        backgroundColor = uiState.backgroundColor,
+                        decorations = uiState.decorations,
+                        selectedDecorationId = uiState.selectedDecorationId
+                    ),
+                    actions = EditPagerActions(
+                        onStickerSelected = viewModel::addStickerDecoration,
+                        onAddText = viewModel::addTextDecoration,
+                        onFontChanged = { font ->
+                            uiState.selectedDecorationId?.let { id ->
+                                viewModel.updateFont(id, font)
+                            }
+                        },
+                        onColorSelected = { color ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateColor(decorationId, color)
+                            }
+                        },
+                        onStrokeColorSelected = { color ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateStrokeColor(decorationId, color)
+                            }
+                        },
+                        onSecondBorderColorSelected = { color ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateSecondBorderColor(decorationId, color)
+                            }
+                        },
+                        onTextWeightChanged = { weight ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateWidth(decorationId, weight)
+                            }
+                        },
+                        onStrokeWeightChanged = { weight ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateStrokeWidth(decorationId, weight)
+                            }
+                        },
+                        onSecondBorderWeightChanged = { weight ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateSecondBorderWidth(decorationId, weight)
+                            }
+                        },
+                        onTextPuffyEnabledChanged = { isPuffyEnabled ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
+                            }
+                        },
+                        onImagePicked = { uri ->
+                            val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
+                            onNavigateToImagePreview(encodedUri)
+                        },
+                        onImageSelected = viewModel::addImageDecoration,
+                        onImageLongPress = viewModel::startImageDeletionMode,
+                        onImageToggleSelection = viewModel::toggleImageSelection,
+                        onUchiwaColorSelected = viewModel::updateUchiwaColor,
+                        onBackgroundColorSelected = viewModel::updateBackgroundColor,
+                        onDecorationClick = viewModel::selectDecoration,
+                        onMoveDecoration = { fromIndex, toIndex ->
+                            hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                            viewModel.moveDecoration(fromIndex, toIndex)
                         }
-                    },
-                    onColorSelected = { color ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateColor(decorationId, color)
-                        }
-                    },
-                    onStrokeColorSelected = { color ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateStrokeColor(decorationId, color)
-                        }
-                    },
-                    onSecondBorderColorSelected = { color ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateSecondBorderColor(decorationId, color)
-                        }
-                    },
-                    onTextWeightChanged = { weight ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateWidth(decorationId, weight)
-                        }
-                    },
-                    onStrokeWeightChanged = { weight ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateStrokeWidth(decorationId, weight)
-                        }
-                    },
-                    onSecondBorderWeightChanged = { weight ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateSecondBorderWidth(decorationId, weight)
-                        }
-                    },
-                    onTextPuffyEnabledChanged = { isPuffyEnabled ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
-                        }
-                    },
-                    onImagePicked = { uri ->
-                        val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
-                        onNavigateToImagePreview(encodedUri)
-                    },
-                    onImageClick = viewModel::addDecoration,
-                    onImageLongPress = viewModel::startImageDeletionMode,
-                    onUchiwaColorSelected = viewModel::updateUchiwaColor,
-                    onBackgroundColorSelected = viewModel::updateBackgroundColor,
-                    selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
-                    allImages = uiState.allImages,
-                    isDeletingImage = uiState.isDeletingImage,
-                    selectedDeletingImages = uiState.selectedDeletingImages,
-                    onImageToggleSelection = viewModel::toggleImageSelection,
-                    uchiwaColor = uiState.uchiwaColor,
-                    backgroundColor = uiState.backgroundColor,
-                    decorations = uiState.decorations,
-                    selectedDecorationId = uiState.selectedDecorationId,
-                    onDecorationClick = viewModel::selectDecoration,
-                    onMoveDecoration = { fromIndex, toIndex ->
-                        hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
-                        viewModel.moveDecoration(fromIndex, toIndex)
-                    },
+                    ),
                     modifier = Modifier
                 )
             }

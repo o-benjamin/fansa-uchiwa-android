@@ -27,18 +27,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.fansauchiwa.R
-import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import java.util.UUID
 
 @Composable
 fun ImagePage(
-    onClick: () -> Unit,
+    onAddImageClick: () -> Unit,
     images: List<ImageReference>,
-    onImageClick: (Decoration.Image) -> Unit,
+    onImageSelected: (String) -> Unit,
     onImageLongPress: () -> Unit,
     isDeletingImage: Boolean,
     selectedImages: List<String>,
@@ -53,7 +51,7 @@ fun ImagePage(
         modifier = Modifier.fillMaxSize(),
     ) {
         item {
-            AddImageButton(onClick = onClick)
+            AddImageButton(onClick = onAddImageClick)
         }
         items(images) { image ->
             val isSelected = selectedImages.contains(image.id)
@@ -61,7 +59,7 @@ fun ImagePage(
                 image = image,
                 isSelected = isSelected,
                 isDeletingImage = isDeletingImage,
-                onImageClick = onImageClick,
+                onImageSelected = onImageSelected,
                 onImageLongPress = onImageLongPress,
                 onImageToggleSelection = onImageToggleSelection,
                 isPreview = isPreview
@@ -93,7 +91,7 @@ private fun ImageGridItem(
     image: ImageReference,
     isSelected: Boolean,
     isDeletingImage: Boolean,
-    onImageClick: (Decoration.Image) -> Unit,
+    onImageSelected: (String) -> Unit,
     onImageLongPress: () -> Unit,
     onImageToggleSelection: (String) -> Unit,
     isPreview: Boolean,
@@ -106,7 +104,7 @@ private fun ImageGridItem(
             PreviewImageContent(
                 image = image,
                 isDeletingImage = isDeletingImage,
-                onImageClick = onImageClick,
+                onImageSelected = onImageSelected,
                 onImageLongPress = onImageLongPress,
                 onImageToggleSelection = onImageToggleSelection
             )
@@ -123,12 +121,7 @@ private fun ImageGridItem(
                             if (isDeletingImage) {
                                 onImageToggleSelection(image.id)
                             } else {
-                                onImageClick(
-                                    Decoration.Image(
-                                        id = UUID.randomUUID().toString(),
-                                        imageId = image.id
-                                    )
-                                )
+                                onImageSelected(image.id)
                             }
                         },
                         onLongClick = { onImageLongPress() }
@@ -148,7 +141,7 @@ private fun ImageGridItem(
 private fun PreviewImageContent(
     image: ImageReference,
     isDeletingImage: Boolean,
-    onImageClick: (Decoration.Image) -> Unit,
+    onImageSelected: (String) -> Unit,
     onImageLongPress: () -> Unit,
     onImageToggleSelection: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -163,12 +156,7 @@ private fun PreviewImageContent(
                     if (isDeletingImage) {
                         onImageToggleSelection(image.id)
                     } else {
-                        onImageClick(
-                            Decoration.Image(
-                                id = UUID.randomUUID().toString(),
-                                imageId = image.id
-                            )
-                        )
+                        onImageSelected(image.id)
                     }
                 },
                 onLongClick = { onImageLongPress() }
@@ -188,7 +176,7 @@ private fun PreviewImageContent(
 private fun ImagePagePreview() {
     FansaUchiwaTheme {
         ImagePage(
-            onClick = {},
+            onAddImageClick = {},
             images = listOf(
                 ImageReference(
                     id = "image-1",
@@ -207,7 +195,7 @@ private fun ImagePagePreview() {
                     path = "path/to/image4.jpg"
                 ),
             ),
-            onImageClick = {},
+            onImageSelected = {},
             onImageLongPress = {},
             isDeletingImage = false,
             selectedImages = emptyList(),
@@ -222,7 +210,7 @@ private fun ImagePagePreview() {
 private fun ImagePagePreview_DeletingMode() {
     FansaUchiwaTheme {
         ImagePage(
-            onClick = {},
+            onAddImageClick = {},
             images = listOf(
                 ImageReference(
                     id = "image-1",
@@ -233,7 +221,7 @@ private fun ImagePagePreview_DeletingMode() {
                     path = "path/to/image2.jpg"
                 ),
             ),
-            onImageClick = {},
+            onImageSelected = {},
             onImageLongPress = {},
             isDeletingImage = true,
             selectedImages = listOf("image-1"),
@@ -242,4 +230,3 @@ private fun ImagePagePreview_DeletingMode() {
         )
     }
 }
-

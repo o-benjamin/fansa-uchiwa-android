@@ -2,20 +2,16 @@ package com.fansauchiwa.data
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Shared decoration color definitions used by templates, exported code, and editor UI.
- * Keeping them outside the presentation package prevents lower layers from depending on UI namespaces.
- */
 enum class DecorationColors(
-    private val colorValue: ULong
+    private val colorValue: Long
 ) {
-    CYAN(0xFF000000u),
-    RED(0xFFFF0000u),
-    MAGENTA(0xFFFF00FFu),
-    BLUE(0xFF0000FFu),
-    GREEN(0xFF00FF00u),
-    YELLOW(0xFFFFFF00u),
-    WHITE(0xFFFFFFFFu);
+    CYAN(0xFF000000),
+    RED(0xFFFF0000),
+    MAGENTA(0xFFFF00FF),
+    BLUE(0xFF0000FF),
+    GREEN(0xFF00FF00),
+    YELLOW(0xFFFFFF00),
+    WHITE(0xFFFFFFFF);
 
     val value: Color
         get() = Color(colorValue)

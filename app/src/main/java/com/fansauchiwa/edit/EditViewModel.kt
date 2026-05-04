@@ -28,6 +28,7 @@ import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,6 +49,7 @@ class EditViewModel @Inject constructor(
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val masterpieceRepository: MasterpieceRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val editDecorationRepository: EditDecorationRepository,
     private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
@@ -224,6 +226,18 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    fun addTextDecoration(font: FontFamilies) {
+        addDecoration(editDecorationRepository.createText(font))
+    }
+
+    fun addStickerDecoration(label: String) {
+        addDecoration(editDecorationRepository.createSticker(label))
+    }
+
+    fun addImageDecoration(imageId: String) {
+        addDecoration(editDecorationRepository.createImage(imageId))
+    }
+
     fun duplicateDecoration(id: String) {
         val original = uiState.value.decorations.find { it.id == id } ?: return
         saveSnapshot()
@@ -278,20 +292,16 @@ class EditViewModel @Inject constructor(
      * @param toIndex UI上の移動先インデックス（reversed後）
      */
     fun moveDecoration(fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
         val currentState = uiState.value
-        val decorations = currentState.decorations
-        if (decorations.isEmpty()) return
-
-        // UIでは reversed() で表示しているので、実際のインデックスに変換
-        val actualFromIndex = decorations.lastIndex - fromIndex
-        val actualToIndex = decorations.lastIndex - toIndex
-
-        val mutableList = decorations.toMutableList()
-        val item = mutableList.removeAt(actualFromIndex)
-        mutableList.add(actualToIndex, item)
-
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(decorations = mutableList)
+        val updatedDecorations = editDecorationRepository.moveDecorations(
+            decorations = currentState.decorations,
+            fromIndex = fromIndex,
+            toIndex = toIndex
+        )
+        if (updatedDecorations === currentState.decorations) return
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = updatedDecorations
+        )
     }
 
     fun selectDecoration(id: String) {
@@ -594,10 +604,7 @@ class EditViewModel @Inject constructor(
     fun handleImageResult(resultUri: String) {
         viewModelScope.launch {
             val imageId = UUID.randomUUID().toString()
-            val image = Decoration.Image(
-                id = UUID.randomUUID().toString(),
-                imageId = imageId
-            )
+            val image = editDecorationRepository.createImage(imageId)
             saveImage(resultUri.toUri(), imageId) {
                 addDecoration(image)
             }
