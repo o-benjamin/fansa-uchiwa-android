@@ -1,5 +1,6 @@
 package com.fansauchiwa.edit
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.TEMPLATE_ID_ARG
@@ -539,5 +540,81 @@ class EditViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.showCompletionTooltip)
+    }
+
+    @Test
+    fun updateDecorationGraphic_textDecoration_persistsScaleAndRotationDiff() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val decorationId = "text-1"
+        val decoration = Decoration.Text(
+            id = decorationId,
+            text = "テスト",
+            scale = 1.5f,
+            rotation = 10f,
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(decoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateDecorationGraphic(
+            id = decorationId,
+            offset = Offset.Zero,
+            scale = 0.75f,
+            rotation = 25f
+        )
+
+        val updatedDecoration = viewModel.uiState.value.decorations
+            .filterIsInstance<Decoration.Text>()
+            .first()
+
+        assertEquals(2.25f, updatedDecoration.scale, 0.001f)
+        assertEquals(35f, updatedDecoration.rotation, 0.001f)
+    }
+
+    @Test
+    fun updateDecorationGraphic_imageDecoration_persistsOffsetDiff() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val decorationId = "image-1"
+        val decoration = Decoration.Image(
+            id = decorationId,
+            imageId = "image-ref",
+            offset = Offset(12f, -8f)
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(decoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateDecorationGraphic(
+            id = decorationId,
+            offset = Offset(-4f, 20f),
+            scale = 0f,
+            rotation = 0f
+        )
+
+        val updatedDecoration = viewModel.uiState.value.decorations
+            .filterIsInstance<Decoration.Image>()
+            .first()
+
+        assertEquals(8f, updatedDecoration.offset.x, 0.001f)
+        assertEquals(12f, updatedDecoration.offset.y, 0.001f)
     }
 }

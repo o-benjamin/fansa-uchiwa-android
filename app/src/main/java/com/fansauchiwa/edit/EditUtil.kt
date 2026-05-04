@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Transformation
 import kotlin.math.PI
 import kotlin.math.abs
@@ -129,6 +130,22 @@ internal fun applyRotationSnap(totalRotation: Float): RotationSnapResult {
         return RotationSnapResult(snappedRotation = snappedTotal, isSnapped = true)
     }
     return RotationSnapResult(snappedRotation = totalRotation, isSnapped = false)
+}
+
+internal fun Decoration.scaleRange(): ClosedFloatingPointRange<Float> = when (this) {
+    is Decoration.Text -> 0.5f..6f
+    is Decoration.Sticker -> 0.5f..3f
+    is Decoration.Image -> 0.5f..5f
+}
+
+internal fun calculateScaledDecorationDiff(
+    baseScale: Float,
+    currentScaleDiff: Float,
+    zoomChange: Float,
+    scaleRange: ClosedFloatingPointRange<Float>
+): Float {
+    val scaledValue = ((baseScale + currentScaleDiff) * zoomChange).coerceIn(scaleRange)
+    return scaledValue - baseScale
 }
 
 private val ROTATION_SNAP_POINTS = listOf(0f, 90f, 180f, 270f)

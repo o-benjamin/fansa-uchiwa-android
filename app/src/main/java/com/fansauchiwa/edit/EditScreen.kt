@@ -7,7 +7,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +66,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,6 +78,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
@@ -118,6 +124,7 @@ import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -593,8 +600,60 @@ fun UchiwaPreview(
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
     var snappedX by remember { mutableStateOf(false) }
     var snappedY by remember { mutableStateOf(false) }
+    var isPreviewTransformGestureActive by remember { mutableStateOf(false) }
+    var previewScaleDiff by remember { mutableFloatStateOf(0f) }
+    var previewRotationDiff by remember { mutableFloatStateOf(0f) }
+    var previewWasRotationSnapped by remember { mutableStateOf(false) }
     val snapThreshold = with(LocalDensity.current) { 4.dp.toPx() }
     val hapticManager = rememberFansaHapticManager()
+    val selectedDecoration = decorations.find { it.id == selectedDecorationId }
+    val latestSelectedDecorationId by rememberUpdatedState(selectedDecorationId)
+    val latestPreviewScaleDiff by rememberUpdatedState(previewScaleDiff)
+    val latestPreviewRotationDiff by rememberUpdatedState(previewRotationDiff)
+    val latestOnDecorationDragEnd by rememberUpdatedState(onDecorationDragEnd)
+
+    fun resetPreviewTransformState() {
+        previewScaleDiff = 0f
+        previewRotationDiff = 0f
+        previewWasRotationSnapped = false
+        isPreviewTransformGestureActive = false
+    }
+
+    fun commitPreviewTransformIfNeeded() {
+        val currentSelectedDecorationId = latestSelectedDecorationId ?: return
+        if (abs(latestPreviewScaleDiff) < 0.0001f && abs(latestPreviewRotationDiff) < 0.0001f) {
+            return
+        }
+        latestOnDecorationDragEnd(
+            currentSelectedDecorationId,
+            Offset.Zero,
+            latestPreviewScaleDiff,
+            latestPreviewRotationDiff
+        )
+    }
+
+    LaunchedEffect(selectedDecorationId) {
+        resetPreviewTransformState()
+    }
+
+    val previewTransformableState = rememberTransformableState { zoomChange, _, rotationChange ->
+        val decoration = selectedDecoration ?: return@rememberTransformableState
+        isPreviewTransformGestureActive = true
+        previewScaleDiff = calculateScaledDecorationDiff(
+            baseScale = decoration.scale,
+            currentScaleDiff = previewScaleDiff,
+            zoomChange = zoomChange,
+            scaleRange = decoration.scaleRange()
+        )
+        val snapResult = applyRotationSnap(
+            decoration.rotation + previewRotationDiff + rotationChange
+        )
+        if (snapResult.isSnapped && !previewWasRotationSnapped) {
+            hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+        }
+        previewWasRotationSnapped = snapResult.isSnapped
+        previewRotationDiff = snapResult.snappedRotation - decoration.rotation
+    }
 
     Box(
         modifier = modifier
@@ -602,7 +661,40 @@ fun UchiwaPreview(
             .graphicsLayer {
                 compositingStrategy = CompositingStrategy.Offscreen
             }
+            .pointerInput(selectedDecorationId) {
+                if (selectedDecorationId == null) return@pointerInput
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    var hasActiveTwoFingerGesture = false
+
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val pressedCount = event.changes.count { it.pressed }
+
+                        if (pressedCount >= 2) {
+                            hasActiveTwoFingerGesture = true
+                            isPreviewTransformGestureActive = true
+                        }
+
+                        if (hasActiveTwoFingerGesture && pressedCount < 2) {
+                            commitPreviewTransformIfNeeded()
+                            resetPreviewTransformState()
+                            break
+                        }
+
+                        if (pressedCount == 0) {
+                            resetPreviewTransformState()
+                            break
+                        }
+                    }
+                }
+            }
+            .transformable(
+                state = previewTransformableState,
+                enabled = selectedDecorationId != null
+            )
             .clickable(
+                enabled = !isPreviewTransformGestureActive,
                 interactionSource = null,
                 indication = null
             ) {
@@ -639,6 +731,11 @@ fun UchiwaPreview(
                 var rotationDiff by remember { mutableFloatStateOf(0f) }
                 var wasRotationSnapped by remember { mutableStateOf(false) }
                 val isSelected = decoration.id == selectedDecorationId
+                val previewScaleAdjustment = if (isSelected) previewScaleDiff else 0f
+                val previewRotationAdjustment = if (isSelected) previewRotationDiff else 0f
+                val currentOffset = decoration.offset + offsetDiff
+                val currentScale = decoration.scale + scaleDiff + previewScaleAdjustment
+                val currentRotation = decoration.rotation + rotationDiff + previewRotationAdjustment
                 when (decoration) {
                     is Decoration.Text -> {
                         val textMeasurer = rememberTextMeasurer()
@@ -655,9 +752,9 @@ fun UchiwaPreview(
                         TextItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
+                            currentOffset = currentOffset,
+                            currentScale = currentScale,
+                            currentRotation = currentRotation,
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -667,11 +764,12 @@ fun UchiwaPreview(
                             corner = HandleCorner.BottomRight
                         )
                         GestureInputLayer(
-                            offset = decoration.offset,
-                            scale = decoration.scale,
-                            rotation = decoration.rotation,
+                            offset = currentOffset,
+                            scale = currentScale,
+                            rotation = currentRotation,
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
+                            isPreviewTransformGestureActive = isPreviewTransformGestureActive,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
@@ -759,11 +857,12 @@ fun UchiwaPreview(
                         )
 
                         GestureInputLayer(
-                            offset = decoration.offset,
-                            scale = decoration.scale,
-                            rotation = decoration.rotation,
+                            offset = currentOffset,
+                            scale = currentScale,
+                            rotation = currentRotation,
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
+                            isPreviewTransformGestureActive = isPreviewTransformGestureActive,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
@@ -838,9 +937,9 @@ fun UchiwaPreview(
                         StickerItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
+                            currentOffset = currentOffset,
+                            currentScale = currentScale,
+                            currentRotation = currentRotation,
                         )
                     }
 
@@ -861,11 +960,12 @@ fun UchiwaPreview(
                         )
 
                         GestureInputLayer(
-                            offset = decoration.offset,
-                            scale = decoration.scale,
-                            rotation = decoration.rotation,
+                            offset = currentOffset,
+                            scale = currentScale,
+                            rotation = currentRotation,
                             decorationSize = imageDpSize,
                             isSelected = isSelected,
+                            isPreviewTransformGestureActive = isPreviewTransformGestureActive,
                             onDecorationTap = { onDecorationTap(decoration.id) },
                             onDragStart = { onDecorationDragStart(decoration.id) },
                             onDrag = { dragAmount ->
@@ -940,9 +1040,9 @@ fun UchiwaPreview(
                         ImageItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
+                            currentOffset = currentOffset,
+                            currentScale = currentScale,
+                            currentRotation = currentRotation,
                             imagePath = images.find { it.id == decoration.imageId }?.path,
                         )
                     }
@@ -983,6 +1083,7 @@ private fun GestureInputLayer(
     rotation: Float,
     decorationSize: DpSize,
     isSelected: Boolean,
+    isPreviewTransformGestureActive: Boolean,
     onDecorationTap: () -> Unit,
     onDragStart: () -> Unit,
     onDrag: (Offset) -> Unit,
@@ -1002,14 +1103,17 @@ private fun GestureInputLayer(
                 scaleX = scale
                 scaleY = scale
                 rotationZ = rotation
+                transformOrigin = TransformOrigin.Center
             }
             .size(decorationSize)
             .clickable(
+                enabled = !isPreviewTransformGestureActive,
                 interactionSource = null,
                 indication = null,
                 onClick = onDecorationTap
             )
-            .pointerInput(offset, scale, rotation) {
+            .pointerInput(offset, scale, rotation, isPreviewTransformGestureActive) {
+                if (isPreviewTransformGestureActive) return@pointerInput
                 detectDragGestures(
                     onDragStart = {
                         onDragStart()
@@ -1039,11 +1143,13 @@ private fun GestureInputLayer(
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
                 onTransformEnd = onTransformEnd,
-                scale = scale
+                scale = scale,
+                enabled = !isPreviewTransformGestureActive
             )
             TapInputHandle(
                 onTap = onTapDelete,
                 scale = scale,
+                enabled = !isPreviewTransformGestureActive,
                 modifier = Modifier
                     .graphicsLayer {
                         scaleX = 1 / scale
@@ -1058,6 +1164,7 @@ private fun GestureInputLayer(
             TapInputHandle(
                 onTap = onTapDuplicate,
                 scale = scale,
+                enabled = !isPreviewTransformGestureActive,
                 modifier = Modifier
                     .graphicsLayer {
                         scaleX = 1 / scale
@@ -1096,6 +1203,7 @@ private fun TextItem(
                 scaleX = currentScale
                 scaleY = currentScale
                 rotationZ = currentRotation
+                transformOrigin = TransformOrigin.Center
             }
             .wrapContentSize()
     )
@@ -1133,6 +1241,7 @@ private fun StickerItem(
                 scaleX = currentScale
                 scaleY = currentScale
                 rotationZ = currentRotation
+                transformOrigin = TransformOrigin.Center
             }
             .wrapContentSize()
     )
@@ -1169,6 +1278,7 @@ private fun ImageItem(
                 scaleX = currentScale
                 scaleY = currentScale
                 rotationZ = currentRotation
+                transformOrigin = TransformOrigin.Center
             }
             .wrapContentSize()
     )
@@ -1192,12 +1302,14 @@ private fun GestureInputHandle(
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
     scale: Float,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
             .size(GESTURE_INPUT_HANDLE_SIZE / scale)
-            .pointerInput(onTransform, onTransformStart, onTransformEnd) {
+            .pointerInput(onTransform, onTransformStart, onTransformEnd, enabled) {
+                if (!enabled) return@pointerInput
                 detectDragGestures(
                     onDragStart = {
                         onTransformStart()
@@ -1216,12 +1328,14 @@ private fun GestureInputHandle(
 private fun TapInputHandle(
     onTap: () -> Unit,
     scale: Float,
+    enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .size(GESTURE_INPUT_HANDLE_SIZE / scale)
             .clickable(
+                enabled = enabled,
                 interactionSource = null,
                 indication = null,
                 onClick = onTap
