@@ -7,11 +7,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculateRotation
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +64,8 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,7 +82,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -119,6 +118,8 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import kotlin.math.abs
@@ -1056,6 +1057,38 @@ private fun GestureInputLayer(
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
 ) {
+    val currentOnTransformStart = rememberUpdatedState(onTransformStart)
+    val currentOnTransformEnd = rememberUpdatedState(onTransformEnd)
+    // zoomChange / panChange / rotationChange のうち、位置移動は既存のドラッグ処理に任せるため
+    // panChange は使用せず、拡大率と回転量のみを既存の transform フローへ流す。
+    val transformableState = rememberTransformableState { zoomChange, _, rotationChange ->
+        if (!isDirectTransformGestureSignificant(zoomChange, rotationChange)) {
+            return@rememberTransformableState
+        }
+        onTransform(
+            TransformGesture.DirectManipulation(
+                zoomChange = zoomChange,
+                rotationChange = rotationChange
+            )
+        )
+    }
+
+    // transformable の進行状態を監視し、2 本指操作の開始/終了通知を既存の
+    // onTransformStart / onTransformEnd に統一して伝える。
+    LaunchedEffect(transformableState) {
+        snapshotFlow { transformableState.isTransformInProgress }
+            .distinctUntilChanged()
+            // 初回は false が流れるため、その 1 件目は開始/終了通知の対象から外す。
+            .drop(1)
+            .collect { isTransforming ->
+                if (isTransforming) {
+                    currentOnTransformStart.value()
+                } else {
+                    currentOnTransformEnd.value()
+                }
+            }
+    }
+
     Box(
         modifier = Modifier
             .graphicsLayer {
@@ -1072,79 +1105,24 @@ private fun GestureInputLayer(
                 onClick = onDecorationTap
             )
             .pointerInput(offset, scale, rotation) {
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false)
-                    var hasStartedDrag = false
-                    var hasStartedTransform = false
-                    var hadTransformInCurrentGesture = false
-                    var hasPressedChanges: Boolean
-                    do {
-                        val event = awaitPointerEvent()
-                        val pressedChanges = event.changes.filter { it.pressed }
-                        hasPressedChanges = event.changes.any { it.pressed }
-                        when {
-                            pressedChanges.size >= 2 -> {
-                                val zoomChange = event.calculateZoom()
-                                val rotationChange = event.calculateRotation()
-                                if (
-                                    abs(zoomChange - 1f) > ZOOM_GESTURE_THRESHOLD ||
-                                    abs(rotationChange) > ROTATION_GESTURE_THRESHOLD
-                                ) {
-                                    if (hasStartedDrag) {
-                                        hasStartedDrag = false
-                                        onDragEnd()
-                                    }
-                                    if (!hasStartedTransform) {
-                                        hasStartedTransform = true
-                                        hadTransformInCurrentGesture = true
-                                        onTransformStart()
-                                    }
-                                    onTransform(
-                                        TransformGesture.DirectManipulation(
-                                            zoomChange = zoomChange,
-                                            rotationChange = rotationChange
-                                        )
-                                    )
-                                    event.changes.forEach { it.consume() }
-                                }
-                            }
-
-                            hasStartedTransform -> {
-                                hasStartedTransform = false
-                                onTransformEnd()
-                            }
-
-                            canStartSingleFingerDrag(
-                                pressedCount = pressedChanges.size,
-                                hasStartedTransform = hasStartedTransform,
-                                hadTransformInCurrentGesture = hadTransformInCurrentGesture
-                            ) -> {
-                                val change = pressedChanges.first()
-                                val dragAmount = change.positionChange()
-                                if (dragAmount != Offset.Zero) {
-                                    if (!hasStartedDrag) {
-                                        hasStartedDrag = true
-                                        onDragStart()
-                                    }
-                                    change.consume()
-                                    onDrag(
-                                        rotatedDragAmount(
-                                            rotation,
-                                            scale,
-                                            dragAmount
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    } while (hasPressedChanges)
-                    if (hasStartedTransform) {
-                        onTransformEnd()
-                    } else if (hasStartedDrag) {
-                        onDragEnd()
-                    }
-                }
+                detectDragGestures(
+                    onDragStart = {
+                        onDragStart()
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDrag(
+                            rotatedDragAmount(
+                                rotation,
+                                scale,
+                                dragAmount
+                            )
+                        )
+                    },
+                    onDragEnd = onDragEnd
+                )
             }
+            .transformable(state = transformableState)
     ) {
         if (isSelected) {
             GestureInputHandle(
@@ -1448,22 +1426,17 @@ private const val MIN_DECORATION_SCALE = 0.5f
 private const val MAX_TEXT_DECORATION_SCALE = 6f
 private const val MAX_STICKER_DECORATION_SCALE = 3f
 private const val MAX_IMAGE_DECORATION_SCALE = 5f
-// Minimum zoom multiplier deviation from 1.0f before a pinch is treated as a transform.
+// 1.0f からどれだけ拡大率が変化したらピンチ操作として扱うかを表す閾値
 private const val ZOOM_GESTURE_THRESHOLD = 0.001f
-// Minimum rotation delta in degrees before a two-finger twist is treated as a transform.
+// 何度以上の回転変化で 2 本指回転として扱うかを表す閾値
 private const val ROTATION_GESTURE_THRESHOLD = 0.1f
 
-/**
- * Single-finger drag should start only while the gesture is still a pure drag interaction:
- * one pointer remains pressed, a transform has not started yet, and this touch sequence has
- * not already been used for a two-finger transform.
- */
-private fun canStartSingleFingerDrag(
-    pressedCount: Int,
-    hasStartedTransform: Boolean,
-    hadTransformInCurrentGesture: Boolean
+internal fun isDirectTransformGestureSignificant(
+    zoomChange: Float,
+    rotationChange: Float
 ): Boolean {
-    return pressedCount == 1 && !hasStartedTransform && !hadTransformInCurrentGesture
+    return abs(zoomChange - 1f) > ZOOM_GESTURE_THRESHOLD ||
+        abs(rotationChange) > ROTATION_GESTURE_THRESHOLD
 }
 
 @Preview(showBackground = true)
