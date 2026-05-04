@@ -63,4 +63,14 @@ class DecorationPreviewTransformTest {
 
         assertEquals(1f, scaleDelta, FLOAT_DELTA)
     }
+
+    @Test
+    fun calculateScaleFactor_zeroBaseScale_returnsIdentityFactor() {
+        val scaleFactor = calculateScaleFactor(
+            baseScale = 0f,
+            targetScale = 2f
+        )
+
+        assertEquals(1f, scaleFactor, FLOAT_DELTA)
+    }
 }

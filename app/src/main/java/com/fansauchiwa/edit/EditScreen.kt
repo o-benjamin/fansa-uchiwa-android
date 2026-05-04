@@ -658,7 +658,10 @@ fun UchiwaPreview(
 
                         val targetScale =
                             (decoration.scale * scaleDiff * zoom).coerceIn(decoration.scaleRange())
-                        scaleDiff = targetScale / decoration.scale
+                        scaleDiff = calculateScaleFactor(
+                            baseScale = decoration.scale,
+                            targetScale = targetScale
+                        )
 
                         val rotationResult = applyRotationSnap(
                             decoration.rotation + rotationDiff + rotation
@@ -771,7 +774,10 @@ fun UchiwaPreview(
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         decoration.scaleRange()
                                     )
-                                scaleDiff = targetScale / decoration.scale
+                                scaleDiff = calculateScaleFactor(
+                                    baseScale = decoration.scale,
+                                    targetScale = targetScale
+                                )
                                 val rotationResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
@@ -822,7 +828,10 @@ fun UchiwaPreview(
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         decoration.scaleRange()
                                     )
-                                scaleDiff = targetScale / decoration.scale
+                                scaleDiff = calculateScaleFactor(
+                                    baseScale = decoration.scale,
+                                    targetScale = targetScale
+                                )
                                 val rotationResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
@@ -883,7 +892,10 @@ fun UchiwaPreview(
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
                                         decoration.scaleRange()
                                     )
-                                scaleDiff = targetScale / decoration.scale
+                                scaleDiff = calculateScaleFactor(
+                                    baseScale = decoration.scale,
+                                    targetScale = targetScale
+                                )
                                 val rotationResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )

@@ -221,10 +221,24 @@ internal fun resolveDecorationRotation(
     return baseRotation + rotationDiff
 }
 
+/**
+ * `scaleDiff` を 1f 基準の乗算値として保持しつつ、既存の保存 API が期待する加算差分へ変換する。
+ *
+ * 例: `baseScale = 2f`, `scaleDiff = 1.5f` の場合、表示上の目標スケールは `3f` なので、
+ * ViewModel に保存する加算差分は `3f - 2f = 1f` になる。
+ */
 internal fun calculateCommittedScaleDiff(
     baseScale: Float,
     scaleDiff: Float
 ): Float = baseScale * (scaleDiff - 1f)
+
+internal fun calculateScaleFactor(
+    baseScale: Float,
+    targetScale: Float
+): Float {
+    if (baseScale == 0f) return 1f
+    return targetScale / baseScale
+}
 
 internal fun Decoration.scaleRange(): ClosedFloatingPointRange<Float> = when (this) {
     is Decoration.Text -> 0.5f..6f
