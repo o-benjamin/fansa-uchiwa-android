@@ -1,57 +1,18 @@
 package com.fansauchiwa.data.infra
 
-import android.content.Context
-import android.content.ContextWrapper
 import android.net.Uri
 import com.fansauchiwa.data.ImageReference
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
-import java.io.FileOutputStream
 import javax.inject.Inject
 
 class ImageLocalSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val imageFileStore: ImageFileStore
 ) : ImageDataSource {
 
-    override fun save(uri: Uri, id: String): String? {
-        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
-        val file = File(directory, "$id.png")
+    override fun save(uri: Uri, id: String): String? = imageFileStore.save(uri, id)
 
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                FileOutputStream(file).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-            file.absolutePath
-        } catch (e: Exception) {
-            null
-        }
-    }
+    override fun load(imageId: String): ImageReference? = imageFileStore.load(imageId)
 
-    override fun load(imageId: String): ImageReference? {
-        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
-        val file = File(directory, "$imageId.png")
+    override fun getAllImages(): List<ImageReference> = imageFileStore.getAllImages()
 
-        return if (file.exists()) {
-            ImageReference(imageId, file.absolutePath)
-        } else {
-            null
-        }
-    }
-
-    override fun getAllImages(): List<ImageReference> {
-        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
-        return directory.listFiles()
-            ?.map { file -> ImageReference(file.nameWithoutExtension, file.absolutePath) }
-            ?: emptyList()
-    }
-
-    override fun deleteImages(imageIds: List<String>): Boolean {
-        val directory = ContextWrapper(context).getDir("image", Context.MODE_PRIVATE)
-        return imageIds.all { imageId ->
-            val file = File(directory, "$imageId.png")
-            file.delete()
-        }
-    }
+    override fun deleteImages(imageIds: List<String>): Boolean = imageFileStore.deleteImages(imageIds)
 }
