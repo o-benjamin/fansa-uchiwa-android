@@ -6,9 +6,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -600,6 +600,7 @@ fun UchiwaPreview(
     var wasRotationSnapped by remember { mutableStateOf(false) }
     val snapThreshold = with(LocalDensity.current) { 2.dp.toPx() }
     val hapticManager = rememberFansaHapticManager()
+    val currentOnBackgroundTap by rememberUpdatedState(onBackgroundTap)
     val currentSelectedDecoration by rememberUpdatedState(
         decorations.find { it.id == selectedDecorationId }
     )
@@ -668,11 +669,12 @@ fun UchiwaPreview(
                     }
                 )
             }
-            .clickable(
-                interactionSource = null,
-                indication = null
-            ) {
-                onBackgroundTap()
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        currentOnBackgroundTap()
+                    }
+                )
             }
             .then(
                 if (selectedDecorationId == null) {
@@ -954,6 +956,7 @@ private fun GestureInputLayer(
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
 ) {
+    val currentOnDecorationTap by rememberUpdatedState(onDecorationTap)
 
     Box(
         modifier = Modifier
@@ -965,11 +968,13 @@ private fun GestureInputLayer(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onDecorationTap
-            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        currentOnDecorationTap()
+                    }
+                )
+            }
     ) {
         if (isSelected) {
             GestureInputHandle(
@@ -1168,14 +1173,18 @@ private fun TapInputHandle(
     scale: Float,
     modifier: Modifier = Modifier
 ) {
+    val currentOnTap by rememberUpdatedState(onTap)
+
     Box(
         modifier = modifier
             .size(GESTURE_INPUT_HANDLE_SIZE / scale)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onTap
-            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        currentOnTap()
+                    }
+                )
+            }
     )
 }
 
