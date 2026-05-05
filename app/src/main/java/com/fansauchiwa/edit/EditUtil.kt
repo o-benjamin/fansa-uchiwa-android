@@ -232,6 +232,9 @@ internal fun resolveDecorationRotation(
     return baseRotation + rotationDiff
 }
 
+internal const val DEFAULT_DECORATION_Z_INDEX = 0f
+internal const val SELECTED_DECORATION_Z_INDEX = 1f
+
 internal fun resolveDecorationZIndex(
     decorationId: String,
     selectedDecorationId: String?
@@ -259,9 +262,6 @@ internal fun calculateScaleFactor(
     if (baseScale == 0f) return 1f
     return targetScale / baseScale
 }
-
-internal const val DEFAULT_DECORATION_Z_INDEX = 0f
-internal const val SELECTED_DECORATION_Z_INDEX = 1f
 
 internal fun Decoration.scaleRange(): ClosedFloatingPointRange<Float> = when (this) {
     is Decoration.Text -> 0.5f..6f
