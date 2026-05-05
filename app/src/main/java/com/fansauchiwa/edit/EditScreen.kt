@@ -639,7 +639,7 @@ fun UchiwaPreview(
                     onEnd = {
                         currentSelectedDecoration?.let(::commitDecorationTransform)
                     },
-                    onGesture = { _, pan, zoom, rotation ->
+                    onGesture = { _, pan, zoom, _ ->
                         val decoration =
                             currentSelectedDecoration ?: return@detectTransformGesturesWithEnd
                         rawOffsetDiff = calculateClampedOffset(
@@ -663,15 +663,6 @@ fun UchiwaPreview(
                             baseScale = decoration.scale,
                             targetScale = targetScale
                         )
-
-                        val rotationResult = applyRotationSnap(
-                            decoration.rotation + rotationDiff + rotation
-                        )
-                        if (rotationResult.isSnapped && !wasRotationSnapped) {
-                            hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                        }
-                        wasRotationSnapped = rotationResult.isSnapped
-                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
                     }
                 )
             }
@@ -983,8 +974,8 @@ private fun GestureInputLayer(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_INPUT_SIZE / 2),
-                        (GESTURE_INPUT_HANDLE_INPUT_SIZE / 2)
+                        (GESTURE_INPUT_HANDLE_SIZE / 2),
+                        (GESTURE_INPUT_HANDLE_SIZE / 2)
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
@@ -1146,7 +1137,7 @@ private fun GestureInputHandle(
 ) {
     Box(
         modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_INPUT_SIZE / scale)
+            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
             .pointerInput(onTransform, onTransformStart, onTransformEnd) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -1280,8 +1271,7 @@ fun CompleteEditButton(
     }
 }
 
-internal val GESTURE_INPUT_HANDLE_SIZE = 28.dp
-internal val GESTURE_INPUT_HANDLE_INPUT_SIZE = 48.dp
+internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 
