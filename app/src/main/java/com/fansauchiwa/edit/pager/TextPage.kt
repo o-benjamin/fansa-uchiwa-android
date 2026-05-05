@@ -73,7 +73,7 @@ fun TextPage(
         onSecondBorderWeightChanged = onSecondBorderWeightChanged,
         onPuffyEnabledChanged = onPuffyEnabledChanged,
         onPuffyUnsupportedClick = onPuffyUnsupportedClick,
-        isPukuPukuSupported = isPukuPukuSupported,
+        isPukuPukuSupported = false,
         selectedTextDecoration = selectedTextDecoration,
         modifier = Modifier.fillMaxSize()
     )
@@ -149,7 +149,7 @@ fun TextDecorationControls(
             )
             Switch(
                 checked = isPuffyEnabled,
-                onCheckedChange = onPuffyEnabledChanged,
+                onCheckedChange = if (isPukuPukuSupported) onPuffyEnabledChanged else null,
                 enabled = isPukuPukuSupported,
                 modifier = Modifier.testTag(TestTags.PUFFY_TEXT_SWITCH)
             )
