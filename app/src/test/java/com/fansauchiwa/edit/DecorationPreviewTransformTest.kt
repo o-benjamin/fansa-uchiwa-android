@@ -45,6 +45,36 @@ class DecorationPreviewTransformTest {
     }
 
     @Test
+    fun resolveDecorationZIndex_selectedDecoration_returnsSelectedZIndex() {
+        val resolvedZIndex = resolveDecorationZIndex(
+            decorationId = "selected-id",
+            selectedDecorationId = "selected-id"
+        )
+
+        assertEquals(SELECTED_DECORATION_Z_INDEX, resolvedZIndex, FLOAT_DELTA)
+    }
+
+    @Test
+    fun resolveDecorationZIndex_nonSelectedDecoration_returnsDefaultZIndex() {
+        val resolvedZIndex = resolveDecorationZIndex(
+            decorationId = "other-id",
+            selectedDecorationId = "selected-id"
+        )
+
+        assertEquals(DEFAULT_DECORATION_Z_INDEX, resolvedZIndex, FLOAT_DELTA)
+    }
+
+    @Test
+    fun resolveDecorationZIndex_nullSelectedDecoration_returnsDefaultZIndex() {
+        val resolvedZIndex = resolveDecorationZIndex(
+            decorationId = "any-id",
+            selectedDecorationId = null
+        )
+
+        assertEquals(DEFAULT_DECORATION_Z_INDEX, resolvedZIndex, FLOAT_DELTA)
+    }
+
+    @Test
     fun calculateCommittedScaleDiff_identityScale_returnsZero() {
         val scaleDelta = calculateCommittedScaleDiff(
             baseScale = 2f,

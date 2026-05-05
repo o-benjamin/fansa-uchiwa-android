@@ -232,6 +232,18 @@ internal fun resolveDecorationRotation(
     return baseRotation + rotationDiff
 }
 
+internal const val DEFAULT_DECORATION_Z_INDEX = 0f
+internal const val SELECTED_DECORATION_Z_INDEX = 1f
+
+internal fun resolveDecorationZIndex(
+    decorationId: String,
+    selectedDecorationId: String?
+): Float = if (decorationId == selectedDecorationId) {
+    SELECTED_DECORATION_Z_INDEX
+} else {
+    DEFAULT_DECORATION_Z_INDEX
+}
+
 /**
  * `scaleDiff` を 1f 基準の乗算値として保持しつつ、既存の保存 API が期待する加算差分へ変換する。
  *
