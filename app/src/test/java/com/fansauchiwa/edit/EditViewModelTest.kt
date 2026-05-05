@@ -1,7 +1,9 @@
 package com.fansauchiwa.edit
 
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
@@ -539,5 +541,31 @@ class EditViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.showCompletionTooltip)
+    }
+
+    @Test
+    fun initialState_setsPukuPukuSupportFromCurrentSdk() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        assertEquals(
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+            viewModel.uiState.value.isPukuPukuSupported
+        )
+    }
+
+    @Test
+    fun notifyPukuPukuUnsupported_setsUnsupportedSnackbarMessage() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.notifyPukuPukuUnsupported()
+
+        assertEquals(
+            R.string.snackbar_puku_puku_unsupported,
+            viewModel.uiState.value.userMessage
+        )
     }
 }

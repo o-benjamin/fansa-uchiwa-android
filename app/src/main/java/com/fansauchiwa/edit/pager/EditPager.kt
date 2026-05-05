@@ -82,7 +82,8 @@ data class EditPagerUiState(
     val uchiwaColor: Color,
     val backgroundColor: Color,
     val decorations: List<Decoration> = emptyList(),
-    val selectedDecorationId: String? = null
+    val selectedDecorationId: String? = null,
+    val isPukuPukuSupported: Boolean = false
 )
 
 data class EditPagerActions(
@@ -96,6 +97,7 @@ data class EditPagerActions(
     val onSecondBorderColorSelected: (Color) -> Unit,
     val onSecondBorderWeightChanged: (Float) -> Unit,
     val onTextPuffyEnabledChanged: (Boolean) -> Unit,
+    val onUnsupportedPuffyClick: () -> Unit,
     val onImageSelected: (String) -> Unit,
     val onImageLongPress: () -> Unit,
     val onImagePicked: (Uri) -> Unit,
@@ -164,6 +166,8 @@ fun EditPager(
                         onSecondBorderColorSelected = actions.onSecondBorderColorSelected,
                         onSecondBorderWeightChanged = actions.onSecondBorderWeightChanged,
                         onPuffyEnabledChanged = actions.onTextPuffyEnabledChanged,
+                        onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
+                        isPukuPukuSupported = state.isPukuPukuSupported,
                         selectedTextDecoration = selectedTextDecoration
                     )
                 }

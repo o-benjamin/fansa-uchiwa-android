@@ -17,6 +17,7 @@
     <string name="second_stroke_color_and_weight">枠線色・太さ2</string>
     <string name="text_puffy_enabled">ぷくぷく文字（ベータ版）</string>
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
+    <string name="snackbar_puku_puku_unsupported">このエフェクトはAndroid 13以上の端末でのみご利用いただけます</string>
     <string name="snackbar_saved">画像を保存しました</string>
     <string name="delete_images">%d個の写真を削除</string>
     <string name="delete">削除</string>
