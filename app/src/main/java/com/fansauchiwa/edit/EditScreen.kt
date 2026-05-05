@@ -361,7 +361,8 @@ fun EditScreen(
                         uchiwaColor = uiState.uchiwaColor,
                         backgroundColor = uiState.backgroundColor,
                         decorations = uiState.decorations,
-                        selectedDecorationId = uiState.selectedDecorationId
+                        selectedDecorationId = uiState.selectedDecorationId,
+                        isPukuPukuSupported = uiState.isPukuPukuSupported
                     ),
                     actions = EditPagerActions(
                         onStickerSelected = viewModel::addStickerDecoration,
@@ -406,6 +407,7 @@ fun EditScreen(
                                 viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
                             }
                         },
+                        onUnsupportedPuffyClick = viewModel::notifyPukuPukuUnsupported,
                         onImagePicked = { uri ->
                             val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
                             onNavigateToImagePreview(encodedUri)

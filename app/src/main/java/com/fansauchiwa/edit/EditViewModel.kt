@@ -2,6 +2,7 @@ package com.fansauchiwa.edit
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -54,7 +55,12 @@ class EditViewModel @Inject constructor(
     private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
+    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(
+        UI_STATE_KEY,
+        EditUiState(
+            isPukuPukuSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        )
+    )
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
@@ -377,6 +383,13 @@ class EditViewModel @Inject constructor(
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             userMessage = R.string.snackbar_input_too_short
+        )
+    }
+
+    fun notifyPukuPukuUnsupported() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            userMessage = R.string.snackbar_puku_puku_unsupported
         )
     }
 
