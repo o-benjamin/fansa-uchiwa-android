@@ -96,6 +96,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -716,6 +717,10 @@ fun UchiwaPreview(
                     baseRotation = decoration.rotation,
                     rotationDiff = rotationDiff
                 )
+                val decorationZIndex = resolveDecorationZIndex(
+                    decorationId = decoration.id,
+                    selectedDecorationId = selectedDecorationId
+                )
                 when (decoration) {
                     is Decoration.Text -> {
                         val textMeasurer = rememberTextMeasurer()
@@ -742,6 +747,7 @@ fun UchiwaPreview(
                             currentOffset = currentOffset,
                             currentScale = currentScale,
                             currentRotation = currentRotation,
+                            zIndex = decorationZIndex,
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -787,7 +793,8 @@ fun UchiwaPreview(
                                 commitDecorationTransform(decoration)
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
-                            onTapDuplicate = { onTapDuplicate(decoration.id) }
+                            onTapDuplicate = { onTapDuplicate(decoration.id) },
+                            zIndex = decorationZIndex,
                         )
                     }
 
@@ -841,7 +848,8 @@ fun UchiwaPreview(
                                 commitDecorationTransform(decoration)
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
-                            onTapDuplicate = { onTapDuplicate(decoration.id) }
+                            onTapDuplicate = { onTapDuplicate(decoration.id) },
+                            zIndex = decorationZIndex,
                         )
                         StickerItem(
                             decoration = decoration,
@@ -849,6 +857,7 @@ fun UchiwaPreview(
                             currentOffset = currentOffset,
                             currentScale = currentScale,
                             currentRotation = currentRotation,
+                            zIndex = decorationZIndex,
                         )
                     }
 
@@ -905,7 +914,8 @@ fun UchiwaPreview(
                                 commitDecorationTransform(decoration)
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
-                            onTapDuplicate = { onTapDuplicate(decoration.id) }
+                            onTapDuplicate = { onTapDuplicate(decoration.id) },
+                            zIndex = decorationZIndex,
                         )
                         ImageItem(
                             decoration = decoration,
@@ -914,6 +924,7 @@ fun UchiwaPreview(
                             currentScale = currentScale,
                             currentRotation = currentRotation,
                             imagePath = images.find { it.id == decoration.imageId }?.path,
+                            zIndex = decorationZIndex,
                         )
                     }
                 }
@@ -959,11 +970,13 @@ private fun GestureInputLayer(
     onTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
+    zIndex: Float,
 ) {
     val currentOnDecorationTap by rememberUpdatedState(onDecorationTap)
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = offset.x
                 translationY = offset.y
@@ -1022,6 +1035,7 @@ private fun TextItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    zIndex: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1032,6 +1046,7 @@ private fun TextItem(
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = currentOffset.x
                 translationY = currentOffset.y
@@ -1061,6 +1076,7 @@ private fun StickerItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    zIndex: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1069,6 +1085,7 @@ private fun StickerItem(
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = currentOffset.x
                 translationY = currentOffset.y
@@ -1097,6 +1114,7 @@ private fun ImageItem(
     currentScale: Float,
     currentRotation: Float,
     imagePath: String?,
+    zIndex: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1105,6 +1123,7 @@ private fun ImageItem(
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = currentOffset.x
                 translationY = currentOffset.y
@@ -1304,6 +1323,7 @@ private fun StickerItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
+                zIndex = 1f,
             )
         }
     }
@@ -1331,6 +1351,7 @@ private fun TextItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
+                zIndex = 1f,
             )
         }
     }

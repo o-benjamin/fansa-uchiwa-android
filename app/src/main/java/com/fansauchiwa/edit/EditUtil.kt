@@ -232,6 +232,14 @@ internal fun resolveDecorationRotation(
     return baseRotation + rotationDiff
 }
 
+internal fun resolveDecorationZIndex(
+    decorationId: String,
+    selectedDecorationId: String?
+): Float {
+    if (decorationId != selectedDecorationId) return 0f
+    return 1f
+}
+
 /**
  * `scaleDiff` を 1f 基準の乗算値として保持しつつ、既存の保存 API が期待する加算差分へ変換する。
  *
