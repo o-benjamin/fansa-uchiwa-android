@@ -596,7 +596,7 @@ fun UchiwaPreview(
     var scaleDiff by remember { mutableFloatStateOf(1f) }
     var rotationDiff by remember { mutableFloatStateOf(0f) }
     var wasRotationSnapped by remember { mutableStateOf(false) }
-    val snapThreshold = with(LocalDensity.current) { 4.dp.toPx() }
+    val snapThreshold = with(LocalDensity.current) { 2.dp.toPx() }
     val hapticManager = rememberFansaHapticManager()
     val currentSelectedDecoration by rememberUpdatedState(
         decorations.find { it.id == selectedDecorationId }

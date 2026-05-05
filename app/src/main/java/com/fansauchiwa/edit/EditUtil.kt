@@ -144,7 +144,7 @@ internal fun applyRotationSnap(totalRotation: Float): RotationSnapResult {
 }
 
 private val ROTATION_SNAP_POINTS = listOf(0f, 90f, 180f, 270f)
-private const val ROTATION_SNAP_THRESHOLD_DEGREES = 8f
+private const val ROTATION_SNAP_THRESHOLD_DEGREES = 4f
 
 internal val TextUnit.nonScaledSp: TextUnit
     @Composable
