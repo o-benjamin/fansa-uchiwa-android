@@ -1,6 +1,5 @@
 package com.fansauchiwa.edit
 
-import android.os.Build
 import android.os.Parcelable
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.ColorParceler
@@ -28,5 +27,5 @@ data class EditUiState(
     val canRedo: Boolean = false,
     val showImageDeleteWarningDialog: Boolean = false,
     val showCompletionTooltip: Boolean = false,
-    val isPukuPukuSupported: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val isPukuPukuSupported: Boolean = false
 ) : Parcelable

@@ -45,6 +45,8 @@ import com.fansauchiwa.edit.TestTags
 import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
+private const val UnsupportedPuffyControlAlpha = 0.38f
+
 @Composable
 fun TextPage(
     onAddText: (FontFamilies) -> Unit,
@@ -132,13 +134,11 @@ fun TextDecorationControls(
         val puffyModifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp)
-            .alpha(if (isPukuPukuSupported) 1f else 0.38f)
+            .alpha(if (isPukuPukuSupported) 1f else UnsupportedPuffyControlAlpha)
             .testTag(TestTags.PUFFY_TEXT_ROW)
         Row(
-            modifier = if (isPukuPukuSupported) {
-                puffyModifier
-            } else {
-                puffyModifier.clickable(onClick = onPuffyUnsupportedClick)
+            modifier = puffyModifier.run {
+                if (isPukuPukuSupported) this else clickable(onClick = onPuffyUnsupportedClick)
             },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween

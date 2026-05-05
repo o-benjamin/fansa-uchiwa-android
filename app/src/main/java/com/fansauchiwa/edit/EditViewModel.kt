@@ -55,27 +55,22 @@ class EditViewModel @Inject constructor(
     private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
+    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(
+        UI_STATE_KEY,
+        EditUiState(
+            isPukuPukuSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        )
+    )
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private var hasShownCompletionTooltipInSession = false
 
     init {
-        updatePukuPukuSupport()
         observeCompletionTooltip()
         fetchCompletionTooltip()
         loadExistingDecorations()
         loadAllImages()
-    }
-
-    private fun updatePukuPukuSupport() {
-        val currentState = uiState.value
-        val isSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-        if (currentState.isPukuPukuSupported == isSupported) return
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            isPukuPukuSupported = isSupported
-        )
     }
 
     private fun observeCompletionTooltip() {
