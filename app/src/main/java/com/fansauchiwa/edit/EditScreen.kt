@@ -7,8 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -116,7 +116,6 @@ import com.fansauchiwa.edit.pager.EditPagerUiState
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
-import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -984,8 +983,8 @@ private fun GestureInputLayer(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        (GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (GESTURE_INPUT_HANDLE_INPUT_SIZE / 2),
+                        (GESTURE_INPUT_HANDLE_INPUT_SIZE / 2)
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
@@ -1147,18 +1146,25 @@ private fun GestureInputHandle(
 ) {
     Box(
         modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
+            .size(GESTURE_INPUT_HANDLE_INPUT_SIZE / scale)
             .pointerInput(onTransform, onTransformStart, onTransformEnd) {
-                detectDragGestures(
-                    onDragStart = {
-                        onTransformStart()
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onTransform(dragAmount)
-                    },
-                    onDragEnd = onTransformEnd
-                )
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    down.consume()
+                    onTransformStart()
+                    do {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull()
+                        if (change != null) {
+                            val dragAmount = change.position - change.previousPosition
+                            if (dragAmount != Offset.Zero) {
+                                onTransform(dragAmount)
+                            }
+                            change.consume()
+                        }
+                    } while (change?.pressed == true)
+                    onTransformEnd()
+                }
             }
     )
 }
@@ -1274,7 +1280,8 @@ fun CompleteEditButton(
     }
 }
 
-internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
+internal val GESTURE_INPUT_HANDLE_SIZE = 28.dp
+internal val GESTURE_INPUT_HANDLE_INPUT_SIZE = 48.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 
