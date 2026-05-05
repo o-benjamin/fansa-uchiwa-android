@@ -73,7 +73,7 @@ fun TextPage(
         onSecondBorderWeightChanged = onSecondBorderWeightChanged,
         onPuffyEnabledChanged = onPuffyEnabledChanged,
         onPuffyUnsupportedClick = onPuffyUnsupportedClick,
-        isPukuPukuSupported = false,
+        isPukuPukuSupported = isPukuPukuSupported,
         selectedTextDecoration = selectedTextDecoration,
         modifier = Modifier.fillMaxSize()
     )
