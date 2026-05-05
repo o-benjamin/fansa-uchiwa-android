@@ -325,3 +325,33 @@ suspend fun PointerInputScope.detectTransformGesturesWithEnd(
         onEnd()
     }
 }
+
+suspend fun PointerInputScope.detectNonConsumingTap(onTap: () -> Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+
+        // Composeによるタッチ領域の自動拡張分を無視し、厳密に枠線内か判定
+        val isInside = down.position.x in 0f..size.width.toFloat() &&
+                down.position.y in 0f..size.height.toFloat()
+        if (!isInside) return@awaitEachGesture // 範囲外なら無視
+
+        var isTap = true
+        var upEvent: androidx.compose.ui.input.pointer.PointerInputChange? = null
+        do {
+            val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Main)
+            if (event.changes.size > 1) isTap = false
+            val change = event.changes.firstOrNull { it.id == down.id }
+            if (change != null) {
+                if (change.isConsumed) isTap = false
+                else if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) isTap =
+                    false
+                if (!change.pressed) upEvent = change
+            }
+        } while (event.changes.any { it.pressed })
+
+        if (isTap && upEvent != null) {
+            upEvent.consume()
+            onTap()
+        }
+    }
+}

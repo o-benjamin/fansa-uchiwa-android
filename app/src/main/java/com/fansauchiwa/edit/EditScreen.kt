@@ -6,7 +6,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -90,13 +89,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.toSize
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -600,6 +599,7 @@ fun UchiwaPreview(
     var wasRotationSnapped by remember { mutableStateOf(false) }
     val snapThreshold = with(LocalDensity.current) { 2.dp.toPx() }
     val hapticManager = rememberFansaHapticManager()
+    val currentOnBackgroundTap by rememberUpdatedState(onBackgroundTap)
     val currentSelectedDecoration by rememberUpdatedState(
         decorations.find { it.id == selectedDecorationId }
     )
@@ -668,11 +668,10 @@ fun UchiwaPreview(
                     }
                 )
             }
-            .clickable(
-                interactionSource = null,
-                indication = null
-            ) {
-                onBackgroundTap()
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnBackgroundTap()
+                }
             }
             .then(
                 if (selectedDecorationId == null) {
@@ -720,15 +719,22 @@ fun UchiwaPreview(
                 when (decoration) {
                     is Decoration.Text -> {
                         val textMeasurer = rememberTextMeasurer()
-                        val decorationSize = textMeasurer.measure(
+                        val layoutResult = textMeasurer.measure(
                             decoration.text,
                             TextStyle(
+                                fontFamily = decoration.font.value,
+                                fontWeight = FontWeight(decoration.width),
                                 fontSize = 24.sp.nonScaledSp,
                                 platformStyle = PlatformTextStyle(includeFontPadding = false)
                             )
-                        ).size.toSize()
+                        )
+                        val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
+                        val decorationSize = Size(
+                            layoutResult.size.width + maxStroke,
+                            layoutResult.size.height + maxStroke
+                        )
                         val decorationDpSize = with(LocalDensity.current) {
-                            decorationSize.toDpSize() + DpSize(TEXT_ITEM_PADDING, TEXT_ITEM_PADDING)
+                            decorationSize.toDpSize()
                         }
                         TextItem(
                             decoration = decoration,
@@ -954,6 +960,7 @@ private fun GestureInputLayer(
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
 ) {
+    val currentOnDecorationTap by rememberUpdatedState(onDecorationTap)
 
     Box(
         modifier = Modifier
@@ -965,19 +972,19 @@ private fun GestureInputLayer(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onDecorationTap
-            )
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnDecorationTap()
+                }
+            }
     ) {
         if (isSelected) {
             GestureInputHandle(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        (GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) / scale,
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) / scale
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
@@ -988,28 +995,20 @@ private fun GestureInputLayer(
                 onTap = onTapDelete,
                 scale = scale,
                 modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / scale
-                        scaleY = 1 / scale
-                    }
                     .align(Alignment.TopEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) / scale,
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2) / scale
                     )
             )
             TapInputHandle(
                 onTap = onTapDuplicate,
                 scale = scale,
                 modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / scale
-                        scaleY = 1 / scale
-                    }
                     .align(Alignment.TopStart)
                     .offset(
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2),
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2) / scale,
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2) / scale
                     )
             )
         }
@@ -1128,6 +1127,24 @@ private fun ImageItem(
     }
 }
 
+@Composable
+private fun TapInputHandle(
+    onTap: () -> Unit,
+    scale: Float,
+    modifier: Modifier = Modifier
+) {
+    val currentOnTap by rememberUpdatedState(onTap)
+
+    Box(
+        modifier = modifier
+            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnTap()
+                }
+            }
+    )
+}
 
 @Composable
 private fun GestureInputHandle(
@@ -1143,6 +1160,12 @@ private fun GestureInputHandle(
             .pointerInput(onTransform, onTransformStart, onTransformEnd) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
+
+                    // Composeによるタッチ領域の自動拡張分を無視し、枠線内か判定
+                    val isInside = down.position.x in 0f..size.width.toFloat() &&
+                            down.position.y in 0f..size.height.toFloat()
+                    if (!isInside) return@awaitEachGesture // 範囲外なら無視して次のジェスチャー待ちへ
+
                     down.consume()
                     onTransformStart()
                     do {
@@ -1161,24 +1184,6 @@ private fun GestureInputHandle(
             }
     )
 }
-
-@Composable
-private fun TapInputHandle(
-    onTap: () -> Unit,
-    scale: Float,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onTap
-            )
-    )
-}
-
 
 @Composable
 private fun UndoRedoRow(
