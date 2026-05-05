@@ -51,17 +51,17 @@ class DecorationPreviewTransformTest {
             selectedDecorationId = "selected-id"
         )
 
-        assertEquals(1f, resolvedZIndex, FLOAT_DELTA)
+        assertEquals(SELECTED_DECORATION_Z_INDEX, resolvedZIndex, FLOAT_DELTA)
     }
 
     @Test
-    fun resolveDecorationZIndex_nonSelectedDecoration_keepsDefaultLayer() {
+    fun resolveDecorationZIndex_nonSelectedDecoration_returnsDefaultLayer() {
         val resolvedZIndex = resolveDecorationZIndex(
             decorationId = "other-id",
             selectedDecorationId = "selected-id"
         )
 
-        assertEquals(0f, resolvedZIndex, FLOAT_DELTA)
+        assertEquals(DEFAULT_DECORATION_Z_INDEX, resolvedZIndex, FLOAT_DELTA)
     }
 
     @Test

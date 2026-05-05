@@ -1323,7 +1323,7 @@ private fun StickerItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
-                zIndex = 1f,
+                zIndex = SELECTED_DECORATION_Z_INDEX,
             )
         }
     }
@@ -1351,7 +1351,7 @@ private fun TextItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
-                zIndex = 1f,
+                zIndex = SELECTED_DECORATION_Z_INDEX,
             )
         }
     }
