@@ -636,44 +636,45 @@ fun UchiwaPreview(
             }
             .pointerInput(selectedDecorationId) {
                 if (selectedDecorationId == null) return@pointerInput
-                var hasGlobalTransform = false
-                detectTransformGestures { _, pan, zoom, rotation ->
-                    val decoration = currentSelectedDecoration ?: return@detectTransformGestures
-                    rawOffsetDiff = calculateClampedOffset(
-                        currentConfirmedOffset = decoration.offset,
-                        cumulativeOffset = rawOffsetDiff,
-                        dragAmount = pan,
-                        boundarySize = uchiwaSize
-                    )
-                    val snapResult = applySnapToCenter(
-                        decorationOffset = decoration.offset,
-                        offsetDiff = rawOffsetDiff,
-                        snapThreshold = snapThreshold
-                    )
-                    offsetDiff = snapResult.offsetDiff
-                    snappedX = snapResult.snappedX
-                    snappedY = snapResult.snappedY
+                detectTransformGesturesWithEnd(
+                    onEnd = {
+                        currentSelectedDecoration?.let(::commitDecorationTransform)
+                    },
+                    onGesture = { _, pan, zoom, rotation ->
+                        val decoration =
+                            currentSelectedDecoration ?: return@detectTransformGesturesWithEnd
+                        rawOffsetDiff = calculateClampedOffset(
+                            currentConfirmedOffset = decoration.offset,
+                            cumulativeOffset = rawOffsetDiff,
+                            dragAmount = pan,
+                            boundarySize = uchiwaSize
+                        )
+                        val snapResult = applySnapToCenter(
+                            decorationOffset = decoration.offset,
+                            offsetDiff = rawOffsetDiff,
+                            snapThreshold = snapThreshold
+                        )
+                        offsetDiff = snapResult.offsetDiff
+                        snappedX = snapResult.snappedX
+                        snappedY = snapResult.snappedY
 
-                    val targetScale =
-                        (decoration.scale * scaleDiff * zoom).coerceIn(decoration.scaleRange())
-                    scaleDiff = calculateScaleFactor(
-                        baseScale = decoration.scale,
-                        targetScale = targetScale
-                    )
+                        val targetScale =
+                            (decoration.scale * scaleDiff * zoom).coerceIn(decoration.scaleRange())
+                        scaleDiff = calculateScaleFactor(
+                            baseScale = decoration.scale,
+                            targetScale = targetScale
+                        )
 
-                    val rotationResult = applyRotationSnap(
-                        decoration.rotation + rotationDiff + rotation
-                    )
-                    if (rotationResult.isSnapped && !wasRotationSnapped) {
-                        hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                        val rotationResult = applyRotationSnap(
+                            decoration.rotation + rotationDiff + rotation
+                        )
+                        if (rotationResult.isSnapped && !wasRotationSnapped) {
+                            hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                        }
+                        wasRotationSnapped = rotationResult.isSnapped
+                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
                     }
-                    wasRotationSnapped = rotationResult.isSnapped
-                    rotationDiff = rotationResult.snappedRotation - decoration.rotation
-                    hasGlobalTransform = true
-                }
-                if (hasGlobalTransform) {
-                    currentSelectedDecoration?.let(::commitDecorationTransform)
-                }
+                )
             }
             .clickable(
                 interactionSource = null,
@@ -766,7 +767,6 @@ fun UchiwaPreview(
                                     cumulativeOffset,
                                     handleOffset - decoration.offset
                                 )
-                                footprint("cumulativeOffset = $cumulativeOffset")
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
