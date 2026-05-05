@@ -972,7 +972,6 @@ private fun GestureInputLayer(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .border(1.dp, MaterialTheme.colorScheme.primary)
             .pointerInput(Unit) {
                 detectNonConsumingTap {
                     currentOnDecorationTap()
