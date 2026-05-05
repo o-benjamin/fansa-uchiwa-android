@@ -79,6 +79,9 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -116,6 +119,7 @@ import com.fansauchiwa.edit.pager.EditPagerUiState
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
+import com.morayl.footprint.footprint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -670,11 +674,9 @@ fun UchiwaPreview(
                 )
             }
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        currentOnBackgroundTap()
-                    }
-                )
+                detectNonConsumingTap {
+                    currentOnBackgroundTap()
+                }
             }
             .then(
                 if (selectedDecorationId == null) {
@@ -969,11 +971,9 @@ private fun GestureInputLayer(
             }
             .size(decorationSize)
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        currentOnDecorationTap()
-                    }
-                )
+                detectNonConsumingTap {
+                    currentOnDecorationTap()
+                }
             }
     ) {
         if (isSelected) {
@@ -1133,6 +1133,24 @@ private fun ImageItem(
     }
 }
 
+@Composable
+private fun TapInputHandle(
+    onTap: () -> Unit,
+    scale: Float,
+    modifier: Modifier = Modifier
+) {
+    val currentOnTap by rememberUpdatedState(onTap)
+
+    Box(
+        modifier = modifier
+            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnTap()
+                }
+            }
+    )
+}
 
 @Composable
 private fun GestureInputHandle(
@@ -1166,28 +1184,6 @@ private fun GestureInputHandle(
             }
     )
 }
-
-@Composable
-private fun TapInputHandle(
-    onTap: () -> Unit,
-    scale: Float,
-    modifier: Modifier = Modifier
-) {
-    val currentOnTap by rememberUpdatedState(onTap)
-
-    Box(
-        modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        currentOnTap()
-                    }
-                )
-            }
-    )
-}
-
 
 @Composable
 private fun UndoRedoRow(
