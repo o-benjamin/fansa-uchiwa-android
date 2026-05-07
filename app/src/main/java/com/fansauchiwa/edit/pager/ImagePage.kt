@@ -17,11 +17,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,6 +33,58 @@ import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+
+@Immutable
+private data class ImagePageUiState(
+    val items: List<ImageGridItemUiState>,
+    val isDeletingImage: Boolean,
+    val isPreview: Boolean
+)
+
+@Immutable
+private data class ImageGridItemUiState(
+    val id: String,
+    val path: String,
+    val isSelected: Boolean,
+    val tapMode: ImageTapMode
+)
+
+private enum class ImageTapMode {
+    OPEN_IMAGE,
+    TOGGLE_SELECTION
+}
+
+private sealed interface ImagePageEvent {
+    data object AddImageClicked : ImagePageEvent
+    data object ImageLongPressed : ImagePageEvent
+
+    data class ImageClicked(
+        val imageId: String,
+        val tapMode: ImageTapMode
+    ) : ImagePageEvent
+}
+
+private class ImagePageEventDispatcher(
+    private val onAddImageClick: () -> Unit,
+    private val onImageSelected: (String) -> Unit,
+    private val onImageLongPress: () -> Unit,
+    private val onImageToggleSelection: (String) -> Unit
+) {
+    fun dispatch(event: ImagePageEvent) {
+        when (event) {
+            ImagePageEvent.AddImageClicked -> onAddImageClick()
+            ImagePageEvent.ImageLongPressed -> onImageLongPress()
+            is ImagePageEvent.ImageClicked -> dispatchImageClick(event)
+        }
+    }
+
+    private fun dispatchImageClick(event: ImagePageEvent.ImageClicked) {
+        when (event.tapMode) {
+            ImageTapMode.OPEN_IMAGE -> onImageSelected(event.imageId)
+            ImageTapMode.TOGGLE_SELECTION -> onImageToggleSelection(event.imageId)
+        }
+    }
+}
 
 @Composable
 fun ImagePage(
@@ -43,6 +97,55 @@ fun ImagePage(
     onImageToggleSelection: (String) -> Unit,
     isPreview: Boolean = false
 ) {
+    val uiState = images.toImagePageUiState(
+        selectedImages = selectedImages,
+        isDeletingImage = isDeletingImage,
+        isPreview = isPreview
+    )
+    val eventDispatcher = ImagePageEventDispatcher(
+        onAddImageClick = onAddImageClick,
+        onImageSelected = onImageSelected,
+        onImageLongPress = onImageLongPress,
+        onImageToggleSelection = onImageToggleSelection
+    )
+
+    ImagePageContent(
+        state = uiState,
+        onEvent = eventDispatcher::dispatch
+    )
+}
+
+private fun List<ImageReference>.toImagePageUiState(
+    selectedImages: List<String>,
+    isDeletingImage: Boolean,
+    isPreview: Boolean
+): ImagePageUiState {
+    val selectedImageIds = selectedImages.toSet()
+    val tapMode = if (isDeletingImage) {
+        ImageTapMode.TOGGLE_SELECTION
+    } else {
+        ImageTapMode.OPEN_IMAGE
+    }
+
+    return ImagePageUiState(
+        items = map { image ->
+            ImageGridItemUiState(
+                id = image.id,
+                path = image.path,
+                isSelected = image.id in selectedImageIds,
+                tapMode = tapMode
+            )
+        },
+        isDeletingImage = isDeletingImage,
+        isPreview = isPreview
+    )
+}
+
+@Composable
+private fun ImagePageContent(
+    state: ImagePageUiState,
+    onEvent: (ImagePageEvent) -> Unit
+) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 56.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -51,18 +154,16 @@ fun ImagePage(
         modifier = Modifier.fillMaxSize(),
     ) {
         item {
-            AddImageButton(onClick = onAddImageClick)
+            AddImageButton(
+                onClick = { onEvent(ImagePageEvent.AddImageClicked) }
+            )
         }
-        items(images) { image ->
-            val isSelected = selectedImages.contains(image.id)
+        items(state.items) { item ->
             ImageGridItem(
-                image = image,
-                isSelected = isSelected,
-                isDeletingImage = isDeletingImage,
-                onImageSelected = onImageSelected,
-                onImageLongPress = onImageLongPress,
-                onImageToggleSelection = onImageToggleSelection,
-                isPreview = isPreview
+                item = item,
+                isDeletingImage = state.isDeletingImage,
+                isPreview = state.isPreview,
+                onEvent = onEvent
             )
         }
     }
@@ -81,20 +182,17 @@ private fun AddImageButton(
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Add",
+            contentDescription = stringResource(R.string.add),
         )
     }
 }
 
 @Composable
 private fun ImageGridItem(
-    image: ImageReference,
-    isSelected: Boolean,
+    item: ImageGridItemUiState,
     isDeletingImage: Boolean,
-    onImageSelected: (String) -> Unit,
-    onImageLongPress: () -> Unit,
-    onImageToggleSelection: (String) -> Unit,
     isPreview: Boolean,
+    onEvent: (ImagePageEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -102,48 +200,55 @@ private fun ImageGridItem(
     ) {
         if (isPreview) {
             PreviewImageContent(
-                image = image,
-                isDeletingImage = isDeletingImage,
-                onImageSelected = onImageSelected,
-                onImageLongPress = onImageLongPress,
-                onImageToggleSelection = onImageToggleSelection
+                item = item,
+                onEvent = onEvent
             )
         } else {
             AsyncImage(
-                model = image.path,
+                model = item.path,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(4.dp))
-                    .fansaCombinedClickable(
-                        onClick = {
-                            if (isDeletingImage) {
-                                onImageToggleSelection(image.id)
-                            } else {
-                                onImageSelected(image.id)
-                            }
-                        },
-                        onLongClick = { onImageLongPress() }
+                    .imageItemClickable(
+                        item = item,
+                        onEvent = onEvent
                     )
             )
         }
         if (isDeletingImage) {
             SelectionCircleIcon(
-                isSelected = isSelected,
+                isSelected = item.isSelected,
                 modifier = Modifier.align(Alignment.TopEnd)
             )
         }
     }
 }
 
+private fun Modifier.imageItemClickable(
+    item: ImageGridItemUiState,
+    onEvent: (ImagePageEvent) -> Unit
+): Modifier {
+    return fansaCombinedClickable(
+        onClick = {
+            onEvent(
+                ImagePageEvent.ImageClicked(
+                    imageId = item.id,
+                    tapMode = item.tapMode
+                )
+            )
+        },
+        onLongClick = {
+            onEvent(ImagePageEvent.ImageLongPressed)
+        }
+    )
+}
+
 @Composable
 private fun PreviewImageContent(
-    image: ImageReference,
-    isDeletingImage: Boolean,
-    onImageSelected: (String) -> Unit,
-    onImageLongPress: () -> Unit,
-    onImageToggleSelection: (String) -> Unit,
+    item: ImageGridItemUiState,
+    onEvent: (ImagePageEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -151,20 +256,14 @@ private fun PreviewImageContent(
             .fillMaxSize()
             .clip(RoundedCornerShape(4.dp))
             .background(colorResource(R.color.gray))
-            .fansaCombinedClickable(
-                onClick = {
-                    if (isDeletingImage) {
-                        onImageToggleSelection(image.id)
-                    } else {
-                        onImageSelected(image.id)
-                    }
-                },
-                onLongClick = { onImageLongPress() }
+            .imageItemClickable(
+                item = item,
+                onEvent = onEvent
             ),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Image",
+            text = stringResource(R.string.layer_image),
             color = colorResource(R.color.black),
             fontSize = 12.sp
         )
