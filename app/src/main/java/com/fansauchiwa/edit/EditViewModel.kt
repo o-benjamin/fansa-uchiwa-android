@@ -2,6 +2,7 @@ package com.fansauchiwa.edit
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -15,7 +16,7 @@ import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.LocalImageRepository
+import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
@@ -28,9 +29,13 @@ import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -45,17 +50,46 @@ class EditViewModel @Inject constructor(
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val masterpieceRepository: MasterpieceRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val editDecorationRepository: EditDecorationRepository,
+    private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
-    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(UI_STATE_KEY, EditUiState())
+    val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(
+        UI_STATE_KEY,
+        EditUiState(
+            isPukuPukuSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        )
+    )
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
+    private var hasShownCompletionTooltipInSession = false
 
     init {
+        observeCompletionTooltip()
+        fetchCompletionTooltip()
         loadExistingDecorations()
         loadAllImages()
+    }
+
+    private fun observeCompletionTooltip() {
+        settingsRepository.getHasSeenEditCompletionTooltipStream()
+            .onEach { hasSeen ->
+                // Skip when already persisted, or after this screen instance has already displayed it once.
+                if (hasSeen || hasShownCompletionTooltipInSession) return@onEach
+
+                val currentState = uiState.value
+                savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = true)
+                markCompletionTooltipShown()
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun fetchCompletionTooltip() {
+        viewModelScope.launch {
+            settingsRepository.fetchHasSeenEditCompletionTooltip()
+        }
     }
 
     fun logScreenView() {
@@ -176,7 +210,6 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations + decoration
         )
-
         when (decoration) {
             is Decoration.Text -> {
                 logEvent(
@@ -197,6 +230,18 @@ class EditViewModel @Inject constructor(
                 loadImage(decoration.imageId)
             }
         }
+    }
+
+    fun addTextDecoration(font: FontFamilies) {
+        addDecoration(editDecorationRepository.createText(font))
+    }
+
+    fun addStickerDecoration(label: String) {
+        addDecoration(editDecorationRepository.createSticker(label))
+    }
+
+    fun addImageDecoration(imageId: String) {
+        addDecoration(editDecorationRepository.createImage(imageId))
     }
 
     fun duplicateDecoration(id: String) {
@@ -253,20 +298,16 @@ class EditViewModel @Inject constructor(
      * @param toIndex UI上の移動先インデックス（reversed後）
      */
     fun moveDecoration(fromIndex: Int, toIndex: Int) {
-        if (fromIndex == toIndex) return
         val currentState = uiState.value
-        val decorations = currentState.decorations
-        if (decorations.isEmpty()) return
-
-        // UIでは reversed() で表示しているので、実際のインデックスに変換
-        val actualFromIndex = decorations.lastIndex - fromIndex
-        val actualToIndex = decorations.lastIndex - toIndex
-
-        val mutableList = decorations.toMutableList()
-        val item = mutableList.removeAt(actualFromIndex)
-        mutableList.add(actualToIndex, item)
-
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(decorations = mutableList)
+        val updatedDecorations = editDecorationRepository.moveDecorations(
+            decorations = currentState.decorations,
+            fromIndex = fromIndex,
+            toIndex = toIndex
+        )
+        if (updatedDecorations === currentState.decorations) return
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = updatedDecorations
+        )
     }
 
     fun selectDecoration(id: String) {
@@ -342,6 +383,13 @@ class EditViewModel @Inject constructor(
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             userMessage = R.string.snackbar_input_too_short
+        )
+    }
+
+    fun notifyPukuPukuUnsupported() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            userMessage = R.string.snackbar_puku_puku_unsupported
         )
     }
 
@@ -569,10 +617,7 @@ class EditViewModel @Inject constructor(
     fun handleImageResult(resultUri: String) {
         viewModelScope.launch {
             val imageId = UUID.randomUUID().toString()
-            val image = Decoration.Image(
-                id = UUID.randomUUID().toString(),
-                imageId = imageId
-            )
+            val image = editDecorationRepository.createImage(imageId)
             saveImage(resultUri.toUri(), imageId) {
                 addDecoration(image)
             }
@@ -580,12 +625,7 @@ class EditViewModel @Inject constructor(
     }
 
     private fun saveSnapshot() {
-        val currentState = uiState.value
-        val snapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
+        val snapshot = HistorySnapshot.from(uiState.value)
         undoStack.addLast(snapshot)
         if (undoStack.size > MAX_HISTORY_SIZE) {
             undoStack.removeFirst()
@@ -609,21 +649,11 @@ class EditViewModel @Inject constructor(
             mapOf("actions" to AnalyticsUndoRedoActions.ACTION_UNDO)
         )
         val currentState = uiState.value
-        val currentSnapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
+        val currentSnapshot = HistorySnapshot.from(currentState)
         redoStack.addLast(currentSnapshot)
 
         val previousSnapshot = undoStack.removeLast()
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = previousSnapshot.decorations,
-            uchiwaColor = previousSnapshot.uchiwaColor,
-            backgroundColor = previousSnapshot.backgroundColor,
-            selectedDecorationId = null,
-            editingTextId = null
-        )
+        savedStateHandle[UI_STATE_KEY] = previousSnapshot.restore(currentState)
         updateHistoryAvailability()
     }
 
@@ -634,21 +664,11 @@ class EditViewModel @Inject constructor(
             mapOf("actions" to AnalyticsUndoRedoActions.ACTION_REDO)
         )
         val currentState = uiState.value
-        val currentSnapshot = HistorySnapshot(
-            decorations = currentState.decorations,
-            uchiwaColor = currentState.uchiwaColor,
-            backgroundColor = currentState.backgroundColor
-        )
+        val currentSnapshot = HistorySnapshot.from(currentState)
         undoStack.addLast(currentSnapshot)
 
         val nextSnapshot = redoStack.removeLast()
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = nextSnapshot.decorations,
-            uchiwaColor = nextSnapshot.uchiwaColor,
-            backgroundColor = nextSnapshot.backgroundColor,
-            selectedDecorationId = null,
-            editingTextId = null
-        )
+        savedStateHandle[UI_STATE_KEY] = nextSnapshot.restore(currentState)
         updateHistoryAvailability()
     }
 
@@ -806,6 +826,11 @@ class EditViewModel @Inject constructor(
         )
     }
 
+    fun onTooltipDismissed() {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = false)
+    }
+
     fun resetDataFromTemplate(template: Template) {
         viewModelScope.launch {
             val currentState = uiState.value
@@ -822,6 +847,12 @@ class EditViewModel @Inject constructor(
                 uchiwaColor = template.savedUchiwa.uchiwaColor,
                 backgroundColor = template.savedUchiwa.backgroundColor
             )
+        }
+    }
+
+    private fun markCompletionTooltipShown() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenEditCompletionTooltip(true)
         }
     }
 }

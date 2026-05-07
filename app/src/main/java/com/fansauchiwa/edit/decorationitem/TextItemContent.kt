@@ -2,7 +2,6 @@ package com.fansauchiwa.edit.decorationitem
 
 import android.graphics.Bitmap
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -33,7 +32,10 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+internal fun supportsPukuPukuTextEffect(sdkInt: Int = Build.VERSION.SDK_INT): Boolean {
+    return sdkInt >= Build.VERSION_CODES.TIRAMISU
+}
+
 @Composable
 fun TextItemContent(
     decoration: Decoration.Text,
@@ -41,6 +43,7 @@ fun TextItemContent(
     modifier: Modifier = Modifier,
     isPuffyEnabled: Boolean = decoration.isPuffyEnabled
 ) {
+    val shouldRenderPuffyText = isPuffyEnabled && supportsPukuPukuTextEffect()
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val textColor = decoration.color
@@ -90,10 +93,10 @@ fun TextItemContent(
         layoutResult,
         decoration.strokeWidth,
         decoration.secondBorderWidth,
-        isPuffyEnabled,
+        shouldRenderPuffyText,
         maxStroke
     ) {
-        if (isPuffyEnabled) {
+        if (shouldRenderPuffyText) {
             val fillMaskBitmap =
                 createTextMaskBitmap(layoutResult, density, Fill, scaleFactor, maxStroke)
             fillSdfBitmap = generateSdfTexture(fillMaskBitmap)
@@ -141,7 +144,7 @@ fun TextItemContent(
         Canvas(modifier = Modifier.matchParentSize()) {
             translate(maxStroke / 2f, maxStroke / 2f) {
                 if (secondBorderWidth > 0f) {
-                    if (!isPuffyEnabled || secondBorderSdfBitmap == null) {
+                    if (!shouldRenderPuffyText || secondBorderSdfBitmap == null) {
                         drawText(
                             textLayoutResult = layoutResult,
                             drawStyle = Stroke(
@@ -153,7 +156,7 @@ fun TextItemContent(
                     }
                 }
 
-                if (!isPuffyEnabled || strokeSdfBitmap == null) {
+                if (!shouldRenderPuffyText || strokeSdfBitmap == null) {
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
@@ -161,7 +164,7 @@ fun TextItemContent(
                     )
                 }
 
-                if (!isPuffyEnabled || fillSdfBitmap == null) {
+                if (!shouldRenderPuffyText || fillSdfBitmap == null) {
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Fill,
@@ -171,7 +174,7 @@ fun TextItemContent(
             }
         }
 
-        if (isPuffyEnabled) {
+        if (shouldRenderPuffyText) {
             if (secondBorderSdfBitmap != null) {
                 PuffyTextRenderer(
                     sdfTextureBitmap = secondBorderSdfBitmap!!,

@@ -1,7 +1,9 @@
 package com.fansauchiwa.edit
 
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
@@ -14,6 +16,8 @@ import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -21,6 +25,8 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -42,7 +48,39 @@ class EditViewModelTest {
     private lateinit var localDatabaseRepository: LocalDatabaseRepository
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var editDecorationRepository: EditDecorationRepository
+    private lateinit var settingsRepository: FakeSettingsRepository
     private lateinit var templateRepository: TemplateRepository
+
+    private class FakeSettingsRepository(
+        private var hasSeenEditCompletionTooltip: Boolean = false
+    ) : SettingsRepository {
+        private val hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
+        private val hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
+
+        override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticFeedbackEnabledStream
+
+        override suspend fun fetchHapticFeedbackEnabled() {
+            hapticFeedbackEnabledStream.emit(true)
+        }
+
+        override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
+            hapticFeedbackEnabledStream.emit(enabled)
+        }
+
+        override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> =
+            hasSeenEditCompletionTooltipStream
+
+        override suspend fun fetchHasSeenEditCompletionTooltip() {
+            hasSeenEditCompletionTooltipStream.emit(hasSeenEditCompletionTooltip)
+        }
+
+        override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
+            hasSeenEditCompletionTooltip = hasSeen
+        }
+
+        fun hasSeenEditCompletionTooltip(): Boolean = hasSeenEditCompletionTooltip
+    }
 
     @Before
     fun setUp() {
@@ -51,6 +89,8 @@ class EditViewModelTest {
         localDatabaseRepository = mockk(relaxed = true)
         masterpieceRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        editDecorationRepository = mockk(relaxed = true)
+        settingsRepository = FakeSettingsRepository()
         templateRepository = mockk(relaxed = true)
     }
 
@@ -61,8 +101,12 @@ class EditViewModelTest {
 
     private fun createViewModel(
         uchiwaId: String?,
-        templateId: String? = null
+        templateId: String? = null,
+        hasSeenEditCompletionTooltip: Boolean = false
     ): EditViewModel {
+        settingsRepository = FakeSettingsRepository(
+            hasSeenEditCompletionTooltip = hasSeenEditCompletionTooltip
+        )
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
                 set(UCHIWA_ID_ARG, uchiwaId)
@@ -76,6 +120,8 @@ class EditViewModelTest {
             localDatabaseRepository = localDatabaseRepository,
             masterpieceRepository = masterpieceRepository,
             analyticsRepository = analyticsRepository,
+            editDecorationRepository = editDecorationRepository,
+            settingsRepository = settingsRepository,
             templateRepository = templateRepository,
             savedStateHandle = savedStateHandle
         )
@@ -455,6 +501,71 @@ class EditViewModelTest {
             localDatabaseRepository.saveUchiwa(any())
         }
     }
+
+    @Test
+    fun initialLoad_whenTooltipNotSeen_showsCompletionTooltipAndPersistsShownFlag() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        every { localImageRepository.getAllImages() } returns emptyList()
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showCompletionTooltip)
+        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
+    }
+
+    @Test
+    fun onTooltipDismissed_afterTooltipShown_hidesTooltipAndPersistsFlag() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        every { localImageRepository.getAllImages() } returns emptyList()
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.onTooltipDismissed()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.showCompletionTooltip)
+        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
+    }
+
+    @Test
+    fun initialLoad_whenTooltipAlreadySeen_doesNotShowCompletionTooltip() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        every { localImageRepository.getAllImages() } returns emptyList()
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            hasSeenEditCompletionTooltip = true
+        )
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.showCompletionTooltip)
+    }
+
+    @Test
+    fun initialState_setsPukuPukuSupportFromCurrentSdk() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        assertEquals(
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
+            viewModel.uiState.value.isPukuPukuSupported
+        )
+    }
+
+    @Test
+    fun notifyPukuPukuUnsupported_setsUnsupportedSnackbarMessage() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.notifyPukuPukuUnsupported()
+
+        assertEquals(
+            R.string.snackbar_puku_puku_unsupported,
+            viewModel.uiState.value.userMessage
+        )
+    }
 }
-
-

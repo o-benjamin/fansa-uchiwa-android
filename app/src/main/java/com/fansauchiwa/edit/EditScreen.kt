@@ -6,8 +6,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,9 +31,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,12 +41,19 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
+import androidx.compose.material3.TooltipState
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,6 +62,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,13 +89,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.zIndex
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -102,6 +111,8 @@ import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.pager.EditPager
+import com.fansauchiwa.edit.pager.EditPagerActions
+import com.fansauchiwa.edit.pager.EditPagerUiState
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -127,6 +138,7 @@ fun EditScreen(
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
     val hapticManager = rememberFansaHapticManager()
+    val completionTooltipState = rememberTooltipState(isPersistent = true)
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -144,6 +156,14 @@ fun EditScreen(
         uiState.savedPath?.let {
             viewModel.resetIsUchiwaSaved()
             onPreview(URLEncoder.encode(it, "UTF-8"))
+        }
+    }
+
+    LaunchedEffect(uiState.showCompletionTooltip) {
+        if (uiState.showCompletionTooltip) {
+            completionTooltipState.show()
+        } else {
+            completionTooltipState.dismiss()
         }
     }
 
@@ -195,13 +215,14 @@ fun EditScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = @Suppress("DEPRECATION") Icons.Outlined.HelpOutline,
+                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                             contentDescription = stringResource(R.string.help)
                         )
                     }
-                    Button(
+                    CompleteEditButton(
+                        completionTooltipState = completionTooltipState,
+                        onTooltipDismissed = viewModel::onTooltipDismissed,
                         onClick = {
-                            hapticManager.perform(FansaHapticType.CONFIRM)
                             viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
                             viewModel.saveUchiwa { uchiwaId ->
                                 viewModel.resetEditUiState()
@@ -216,21 +237,8 @@ fun EditScreen(
                                     viewModel.saveUchiwaBitmap(highResBitmap, uchiwaId)
                                 }
                             }
-                        },
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.complete),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+                        }
+                    )
                 }
             )
         },
@@ -311,9 +319,6 @@ fun EditScreen(
                                     viewModel.selectDecoration(decorationId)
                                 }
                             },
-                            onDecorationDragStart = { decorationId ->
-                                viewModel.selectDecoration(decorationId)
-                            },
                             onBackgroundTap = {
                                 viewModel.unSelectDecoration()
                                 viewModel.finishEditingText()
@@ -344,71 +349,80 @@ fun EditScreen(
                     )
                 }
 
+                val selectedDecoration =
+                    uiState.decorations.find { it.id == uiState.selectedDecorationId }
+
                 EditPager(
-                    onStickerClick = viewModel::addDecoration,
-                    onTextClick = viewModel::addDecoration,
-                    onFontChanged = { font ->
-                        uiState.selectedDecorationId?.let { id ->
-                            viewModel.updateFont(id, font)
+                    state = EditPagerUiState(
+                        selectedDecoration = selectedDecoration,
+                        allImages = uiState.allImages,
+                        isDeletingImage = uiState.isDeletingImage,
+                        selectedDeletingImages = uiState.selectedDeletingImages,
+                        uchiwaColor = uiState.uchiwaColor,
+                        backgroundColor = uiState.backgroundColor,
+                        decorations = uiState.decorations,
+                        selectedDecorationId = uiState.selectedDecorationId,
+                        isPukuPukuSupported = uiState.isPukuPukuSupported
+                    ),
+                    actions = EditPagerActions(
+                        onStickerSelected = viewModel::addStickerDecoration,
+                        onAddText = viewModel::addTextDecoration,
+                        onFontChanged = { font ->
+                            uiState.selectedDecorationId?.let { id ->
+                                viewModel.updateFont(id, font)
+                            }
+                        },
+                        onColorSelected = { color ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateColor(decorationId, color)
+                            }
+                        },
+                        onStrokeColorSelected = { color ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateStrokeColor(decorationId, color)
+                            }
+                        },
+                        onSecondBorderColorSelected = { color ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateSecondBorderColor(decorationId, color)
+                            }
+                        },
+                        onTextWeightChanged = { weight ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateWidth(decorationId, weight)
+                            }
+                        },
+                        onStrokeWeightChanged = { weight ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateStrokeWidth(decorationId, weight)
+                            }
+                        },
+                        onSecondBorderWeightChanged = { weight ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updateSecondBorderWidth(decorationId, weight)
+                            }
+                        },
+                        onTextPuffyEnabledChanged = { isPuffyEnabled ->
+                            uiState.selectedDecorationId?.let { decorationId ->
+                                viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
+                            }
+                        },
+                        onUnsupportedPuffyClick = viewModel::notifyPukuPukuUnsupported,
+                        onImagePicked = { uri ->
+                            val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
+                            onNavigateToImagePreview(encodedUri)
+                        },
+                        onImageSelected = viewModel::addImageDecoration,
+                        onImageLongPress = viewModel::startImageDeletionMode,
+                        onImageToggleSelection = viewModel::toggleImageSelection,
+                        onUchiwaColorSelected = viewModel::updateUchiwaColor,
+                        onBackgroundColorSelected = viewModel::updateBackgroundColor,
+                        onDecorationClick = viewModel::selectDecoration,
+                        onMoveDecoration = { fromIndex, toIndex ->
+                            hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
+                            viewModel.moveDecoration(fromIndex, toIndex)
                         }
-                    },
-                    onColorSelected = { color ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateColor(decorationId, color)
-                        }
-                    },
-                    onStrokeColorSelected = { color ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateStrokeColor(decorationId, color)
-                        }
-                    },
-                    onSecondBorderColorSelected = { color ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateSecondBorderColor(decorationId, color)
-                        }
-                    },
-                    onTextWeightChanged = { weight ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateWidth(decorationId, weight)
-                        }
-                    },
-                    onStrokeWeightChanged = { weight ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateStrokeWidth(decorationId, weight)
-                        }
-                    },
-                    onSecondBorderWeightChanged = { weight ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updateSecondBorderWidth(decorationId, weight)
-                        }
-                    },
-                    onTextPuffyEnabledChanged = { isPuffyEnabled ->
-                        uiState.selectedDecorationId?.let { decorationId ->
-                            viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
-                        }
-                    },
-                    onImagePicked = { uri ->
-                        val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
-                        onNavigateToImagePreview(encodedUri)
-                    },
-                    onImageClick = viewModel::addDecoration,
-                    onImageLongPress = viewModel::startImageDeletionMode,
-                    onUchiwaColorSelected = viewModel::updateUchiwaColor,
-                    onBackgroundColorSelected = viewModel::updateBackgroundColor,
-                    selectedDecoration = uiState.decorations.find { it.id == uiState.selectedDecorationId },
-                    allImages = uiState.allImages,
-                    isDeletingImage = uiState.isDeletingImage,
-                    selectedDeletingImages = uiState.selectedDeletingImages,
-                    onImageToggleSelection = viewModel::toggleImageSelection,
-                    uchiwaColor = uiState.uchiwaColor,
-                    backgroundColor = uiState.backgroundColor,
-                    decorations = uiState.decorations,
-                    selectedDecorationId = uiState.selectedDecorationId,
-                    onDecorationClick = viewModel::selectDecoration,
-                    onMoveDecoration = { fromIndex, toIndex ->
-                        hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
-                        viewModel.moveDecoration(fromIndex, toIndex)
-                    },
+                    ),
                     modifier = Modifier
                 )
             }
@@ -566,7 +580,6 @@ fun UchiwaPreview(
     decorations: List<Decoration>,
     selectedDecorationId: String?,
     onDecorationTap: (String) -> Unit,
-    onDecorationDragStart: (String) -> Unit,
     onBackgroundTap: () -> Unit,
     onDecorationDragEnd: (String, Offset, Float, Float) -> Unit,
     onTapDelete: (String) -> Unit,
@@ -579,8 +592,43 @@ fun UchiwaPreview(
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
     var snappedX by remember { mutableStateOf(false) }
     var snappedY by remember { mutableStateOf(false) }
-    val snapThreshold = with(LocalDensity.current) { 4.dp.toPx() }
+    var rawOffsetDiff by remember { mutableStateOf(Offset.Zero) }
+    var offsetDiff by remember { mutableStateOf(Offset.Zero) }
+    var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
+    var scaleDiff by remember { mutableFloatStateOf(1f) }
+    var rotationDiff by remember { mutableFloatStateOf(0f) }
+    var wasRotationSnapped by remember { mutableStateOf(false) }
+    val snapThreshold = with(LocalDensity.current) { 2.dp.toPx() }
     val hapticManager = rememberFansaHapticManager()
+    val currentOnBackgroundTap by rememberUpdatedState(onBackgroundTap)
+    val currentSelectedDecoration by rememberUpdatedState(
+        decorations.find { it.id == selectedDecorationId }
+    )
+
+    fun resetDecorationTransform() {
+        rawOffsetDiff = Offset.Zero
+        offsetDiff = Offset.Zero
+        cumulativeOffset = Offset.Zero
+        scaleDiff = 1f
+        rotationDiff = 0f
+        wasRotationSnapped = false
+        snappedX = false
+        snappedY = false
+    }
+
+    fun commitDecorationTransform(decoration: Decoration) {
+        onDecorationDragEnd(
+            decoration.id,
+            offsetDiff,
+            calculateCommittedScaleDiff(decoration.scale, scaleDiff),
+            rotationDiff
+        )
+        resetDecorationTransform()
+    }
+
+    LaunchedEffect(selectedDecorationId) {
+        resetDecorationTransform()
+    }
 
     Box(
         modifier = modifier
@@ -588,11 +636,43 @@ fun UchiwaPreview(
             .graphicsLayer {
                 compositingStrategy = CompositingStrategy.Offscreen
             }
-            .clickable(
-                interactionSource = null,
-                indication = null
-            ) {
-                onBackgroundTap()
+            .pointerInput(selectedDecorationId) {
+                if (selectedDecorationId == null) return@pointerInput
+                detectTransformGesturesWithEnd(
+                    onEnd = {
+                        currentSelectedDecoration?.let(::commitDecorationTransform)
+                    },
+                    onGesture = { _, pan, zoom, _ ->
+                        val decoration =
+                            currentSelectedDecoration ?: return@detectTransformGesturesWithEnd
+                        rawOffsetDiff = calculateClampedOffset(
+                            currentConfirmedOffset = decoration.offset,
+                            cumulativeOffset = rawOffsetDiff,
+                            dragAmount = pan,
+                            boundarySize = uchiwaSize
+                        )
+                        val snapResult = applySnapToCenter(
+                            decorationOffset = decoration.offset,
+                            offsetDiff = rawOffsetDiff,
+                            snapThreshold = snapThreshold
+                        )
+                        offsetDiff = snapResult.offsetDiff
+                        snappedX = snapResult.snappedX
+                        snappedY = snapResult.snappedY
+
+                        val targetScale =
+                            (decoration.scale * scaleDiff * zoom).coerceIn(decoration.scaleRange())
+                        scaleDiff = calculateScaleFactor(
+                            baseScale = decoration.scale,
+                            targetScale = targetScale
+                        )
+                    }
+                )
+            }
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnBackgroundTap()
+                }
             }
             .then(
                 if (selectedDecorationId == null) {
@@ -618,32 +698,56 @@ fun UchiwaPreview(
             )
         decorations.forEach { decoration ->
             key(decoration.id) {
-                var rawOffsetDiff by remember { mutableStateOf(Offset.Zero) }
-                var offsetDiff by remember { mutableStateOf(Offset.Zero) }
-                var cumulativeOffset by remember { mutableStateOf(Offset.Zero) }
-                var scaleDiff by remember { mutableFloatStateOf(0f) }
-                var rotationDiff by remember { mutableFloatStateOf(0f) }
-                var wasRotationSnapped by remember { mutableStateOf(false) }
                 val isSelected = decoration.id == selectedDecorationId
+                val currentOffset = resolveDecorationOffset(
+                    decorationId = decoration.id,
+                    selectedDecorationId = selectedDecorationId,
+                    baseOffset = decoration.offset,
+                    offsetDiff = offsetDiff
+                )
+                val currentScale = resolveDecorationScale(
+                    decorationId = decoration.id,
+                    selectedDecorationId = selectedDecorationId,
+                    baseScale = decoration.scale,
+                    scaleDiff = scaleDiff
+                )
+                val currentRotation = resolveDecorationRotation(
+                    decorationId = decoration.id,
+                    selectedDecorationId = selectedDecorationId,
+                    baseRotation = decoration.rotation,
+                    rotationDiff = rotationDiff
+                )
+                val decorationZIndex = resolveDecorationZIndex(
+                    decorationId = decoration.id,
+                    selectedDecorationId = selectedDecorationId
+                )
                 when (decoration) {
                     is Decoration.Text -> {
                         val textMeasurer = rememberTextMeasurer()
-                        val decorationSize = textMeasurer.measure(
+                        val layoutResult = textMeasurer.measure(
                             decoration.text,
                             TextStyle(
+                                fontFamily = decoration.font.value,
+                                fontWeight = FontWeight(decoration.width),
                                 fontSize = 24.sp.nonScaledSp,
                                 platformStyle = PlatformTextStyle(includeFontPadding = false)
                             )
-                        ).size.toSize()
+                        )
+                        val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
+                        val decorationSize = Size(
+                            layoutResult.size.width + maxStroke,
+                            layoutResult.size.height + maxStroke
+                        )
                         val decorationDpSize = with(LocalDensity.current) {
-                            decorationSize.toDpSize() + DpSize(TEXT_ITEM_PADDING, TEXT_ITEM_PADDING)
+                            decorationSize.toDpSize()
                         }
                         TextItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
+                            currentOffset = currentOffset,
+                            currentScale = currentScale,
+                            currentRotation = currentRotation,
+                            zIndex = decorationZIndex,
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -659,37 +763,6 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDragStart = { onDecorationDragStart(decoration.id) },
-                            onDrag = { dragAmount ->
-                                rawOffsetDiff = calculateClampedOffset(
-                                    currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = rawOffsetDiff,
-                                    dragAmount = dragAmount,
-                                    boundarySize = uchiwaSize
-                                )
-                                val snapResult = applySnapToCenter(
-                                    decorationOffset = decoration.offset,
-                                    offsetDiff = rawOffsetDiff,
-                                    snapThreshold = snapThreshold
-                                )
-                                offsetDiff = snapResult.offsetDiff
-                                snappedX = snapResult.snappedX
-                                snappedY = snapResult.snappedY
-                            },
-                            onDragEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
-                                rawOffsetDiff = Offset.Zero
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
-                                snappedX = false
-                                snappedY = false
-                            },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
                             },
@@ -701,33 +774,27 @@ fun UchiwaPreview(
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
-                                        0.5f,
-                                        6f
+                                        decoration.scaleRange()
                                     )
-                                scaleDiff = targetScale - decoration.scale
-                                val snapResult = applyRotationSnap(
+                                scaleDiff = calculateScaleFactor(
+                                    baseScale = decoration.scale,
+                                    targetScale = targetScale
+                                )
+                                val rotationResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
-                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                if (rotationResult.isSnapped && !wasRotationSnapped) {
                                     hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                                 }
-                                wasRotationSnapped = snapResult.isSnapped
-                                rotationDiff = snapResult.snappedRotation - decoration.rotation
+                                wasRotationSnapped = rotationResult.isSnapped
+                                rotationDiff = rotationResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
-                                wasRotationSnapped = false
+                                commitDecorationTransform(decoration)
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
-                            onTapDuplicate = { onTapDuplicate(decoration.id) }
+                            onTapDuplicate = { onTapDuplicate(decoration.id) },
+                            zIndex = decorationZIndex,
                         )
                     }
 
@@ -751,37 +818,6 @@ fun UchiwaPreview(
                             decorationSize = decorationDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDragStart = { onDecorationDragStart(decoration.id) },
-                            onDrag = { dragAmount ->
-                                rawOffsetDiff = calculateClampedOffset(
-                                    currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = rawOffsetDiff,
-                                    dragAmount = dragAmount,
-                                    boundarySize = uchiwaSize
-                                )
-                                val snapResult = applySnapToCenter(
-                                    decorationOffset = decoration.offset,
-                                    offsetDiff = rawOffsetDiff,
-                                    snapThreshold = snapThreshold
-                                )
-                                offsetDiff = snapResult.offsetDiff
-                                snappedX = snapResult.snappedX
-                                snappedY = snapResult.snappedY
-                            },
-                            onDragEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
-                                rawOffsetDiff = Offset.Zero
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
-                                snappedX = false
-                                snappedY = false
-                            },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
                             },
@@ -793,40 +829,35 @@ fun UchiwaPreview(
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
-                                        0.5f,
-                                        3f
+                                        decoration.scaleRange()
                                     )
-                                scaleDiff = targetScale - decoration.scale
-                                val snapResult = applyRotationSnap(
+                                scaleDiff = calculateScaleFactor(
+                                    baseScale = decoration.scale,
+                                    targetScale = targetScale
+                                )
+                                val rotationResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
-                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                if (rotationResult.isSnapped && !wasRotationSnapped) {
                                     hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                                 }
-                                wasRotationSnapped = snapResult.isSnapped
-                                rotationDiff = snapResult.snappedRotation - decoration.rotation
+                                wasRotationSnapped = rotationResult.isSnapped
+                                rotationDiff = rotationResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
-                                wasRotationSnapped = false
+                                commitDecorationTransform(decoration)
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
-                            onTapDuplicate = { onTapDuplicate(decoration.id) }
+                            onTapDuplicate = { onTapDuplicate(decoration.id) },
+                            zIndex = decorationZIndex,
                         )
                         StickerItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
+                            currentOffset = currentOffset,
+                            currentScale = currentScale,
+                            currentRotation = currentRotation,
+                            zIndex = decorationZIndex,
                         )
                     }
 
@@ -853,37 +884,6 @@ fun UchiwaPreview(
                             decorationSize = imageDpSize,
                             isSelected = isSelected,
                             onDecorationTap = { onDecorationTap(decoration.id) },
-                            onDragStart = { onDecorationDragStart(decoration.id) },
-                            onDrag = { dragAmount ->
-                                rawOffsetDiff = calculateClampedOffset(
-                                    currentConfirmedOffset = decoration.offset,
-                                    cumulativeOffset = rawOffsetDiff,
-                                    dragAmount = dragAmount,
-                                    boundarySize = uchiwaSize
-                                )
-                                val snapResult = applySnapToCenter(
-                                    decorationOffset = decoration.offset,
-                                    offsetDiff = rawOffsetDiff,
-                                    snapThreshold = snapThreshold
-                                )
-                                offsetDiff = snapResult.offsetDiff
-                                snappedX = snapResult.snappedX
-                                snappedY = snapResult.snappedY
-                            },
-                            onDragEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
-                                rawOffsetDiff = Offset.Zero
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
-                                snappedX = false
-                                snappedY = false
-                            },
                             onTransformStart = {
                                 cumulativeOffset = Offset.Zero
                             },
@@ -895,41 +895,36 @@ fun UchiwaPreview(
                                 cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
                                 val targetScale =
                                     (decoration.scale + transformation.scaleDiff).coerceIn(
-                                        0.5f,
-                                        5f
+                                        decoration.scaleRange()
                                     )
-                                scaleDiff = targetScale - decoration.scale
-                                val snapResult = applyRotationSnap(
+                                scaleDiff = calculateScaleFactor(
+                                    baseScale = decoration.scale,
+                                    targetScale = targetScale
+                                )
+                                val rotationResult = applyRotationSnap(
                                     decoration.rotation + transformation.rotationDiff
                                 )
-                                if (snapResult.isSnapped && !wasRotationSnapped) {
+                                if (rotationResult.isSnapped && !wasRotationSnapped) {
                                     hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                                 }
-                                wasRotationSnapped = snapResult.isSnapped
-                                rotationDiff = snapResult.snappedRotation - decoration.rotation
+                                wasRotationSnapped = rotationResult.isSnapped
+                                rotationDiff = rotationResult.snappedRotation - decoration.rotation
                             },
                             onTransformEnd = {
-                                onDecorationDragEnd(
-                                    decoration.id,
-                                    offsetDiff,
-                                    scaleDiff,
-                                    rotationDiff
-                                )
-                                offsetDiff = Offset.Zero
-                                scaleDiff = 0f
-                                rotationDiff = 0f
-                                wasRotationSnapped = false
+                                commitDecorationTransform(decoration)
                             },
                             onTapDelete = { onTapDelete(decoration.id) },
-                            onTapDuplicate = { onTapDuplicate(decoration.id) }
+                            onTapDuplicate = { onTapDuplicate(decoration.id) },
+                            zIndex = decorationZIndex,
                         )
                         ImageItem(
                             decoration = decoration,
                             isSelected = isSelected,
-                            currentOffset = decoration.offset + offsetDiff,
-                            currentScale = decoration.scale + scaleDiff,
-                            currentRotation = decoration.rotation + rotationDiff,
+                            currentOffset = currentOffset,
+                            currentScale = currentScale,
+                            currentRotation = currentRotation,
                             imagePath = images.find { it.id == decoration.imageId }?.path,
+                            zIndex = decorationZIndex,
                         )
                     }
                 }
@@ -970,18 +965,18 @@ private fun GestureInputLayer(
     decorationSize: DpSize,
     isSelected: Boolean,
     onDecorationTap: () -> Unit,
-    onDragStart: () -> Unit,
-    onDrag: (Offset) -> Unit,
-    onDragEnd: () -> Unit,
     onTransformStart: () -> Unit,
     onTransform: (Offset) -> Unit,
     onTransformEnd: () -> Unit,
     onTapDelete: () -> Unit,
     onTapDuplicate: () -> Unit,
+    zIndex: Float,
 ) {
+    val currentOnDecorationTap by rememberUpdatedState(onDecorationTap)
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = offset.x
                 translationY = offset.y
@@ -990,28 +985,10 @@ private fun GestureInputLayer(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onDecorationTap
-            )
-            .pointerInput(offset, scale, rotation) {
-                detectDragGestures(
-                    onDragStart = {
-                        onDragStart()
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(
-                            rotatedDragAmount(
-                                rotation,
-                                scale,
-                                dragAmount
-                            )
-                        )
-                    },
-                    onDragEnd = onDragEnd
-                )
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnDecorationTap()
+                }
             }
     ) {
         if (isSelected) {
@@ -1019,8 +996,8 @@ private fun GestureInputLayer(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        (GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) / scale,
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) / scale
                     ),
                 onTransformStart = onTransformStart,
                 onTransform = onTransform,
@@ -1031,28 +1008,20 @@ private fun GestureInputLayer(
                 onTap = onTapDelete,
                 scale = scale,
                 modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / scale
-                        scaleY = 1 / scale
-                    }
                     .align(Alignment.TopEnd)
                     .offset(
-                        (GESTURE_INPUT_HANDLE_SIZE / 2),
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                        (GESTURE_INPUT_HANDLE_SIZE / 2) / scale,
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2) / scale
                     )
             )
             TapInputHandle(
                 onTap = onTapDuplicate,
                 scale = scale,
                 modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = 1 / scale
-                        scaleY = 1 / scale
-                    }
                     .align(Alignment.TopStart)
                     .offset(
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2),
-                        -(GESTURE_INPUT_HANDLE_SIZE / 2)
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2) / scale,
+                        -(GESTURE_INPUT_HANDLE_SIZE / 2) / scale
                     )
             )
         }
@@ -1066,6 +1035,7 @@ private fun TextItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    zIndex: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1076,6 +1046,7 @@ private fun TextItem(
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = currentOffset.x
                 translationY = currentOffset.y
@@ -1105,6 +1076,7 @@ private fun StickerItem(
     currentOffset: Offset,
     currentScale: Float,
     currentRotation: Float,
+    zIndex: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1113,6 +1085,7 @@ private fun StickerItem(
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = currentOffset.x
                 translationY = currentOffset.y
@@ -1141,6 +1114,7 @@ private fun ImageItem(
     currentScale: Float,
     currentRotation: Float,
     imagePath: String?,
+    zIndex: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1149,6 +1123,7 @@ private fun ImageItem(
 
     Box(
         modifier = Modifier
+            .zIndex(zIndex)
             .graphicsLayer {
                 translationX = currentOffset.x
                 translationY = currentOffset.y
@@ -1171,6 +1146,24 @@ private fun ImageItem(
     }
 }
 
+@Composable
+private fun TapInputHandle(
+    onTap: () -> Unit,
+    scale: Float,
+    modifier: Modifier = Modifier
+) {
+    val currentOnTap by rememberUpdatedState(onTap)
+
+    Box(
+        modifier = modifier
+            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
+            .pointerInput(Unit) {
+                detectNonConsumingTap {
+                    currentOnTap()
+                }
+            }
+    )
+}
 
 @Composable
 private fun GestureInputHandle(
@@ -1184,37 +1177,32 @@ private fun GestureInputHandle(
         modifier = modifier
             .size(GESTURE_INPUT_HANDLE_SIZE / scale)
             .pointerInput(onTransform, onTransformStart, onTransformEnd) {
-                detectDragGestures(
-                    onDragStart = {
-                        onTransformStart()
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onTransform(dragAmount)
-                    },
-                    onDragEnd = onTransformEnd
-                )
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+
+                    // Composeによるタッチ領域の自動拡張分を無視し、枠線内か判定
+                    val isInside = down.position.x in 0f..size.width.toFloat() &&
+                            down.position.y in 0f..size.height.toFloat()
+                    if (!isInside) return@awaitEachGesture // 範囲外なら無視して次のジェスチャー待ちへ
+
+                    down.consume()
+                    onTransformStart()
+                    do {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull()
+                        if (change != null) {
+                            val dragAmount = change.position - change.previousPosition
+                            if (dragAmount != Offset.Zero) {
+                                onTransform(dragAmount)
+                            }
+                            change.consume()
+                        }
+                    } while (change?.pressed == true)
+                    onTransformEnd()
+                }
             }
     )
 }
-
-@Composable
-private fun TapInputHandle(
-    onTap: () -> Unit,
-    scale: Float,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .size(GESTURE_INPUT_HANDLE_SIZE / scale)
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onTap
-            )
-    )
-}
-
 
 @Composable
 private fun UndoRedoRow(
@@ -1255,6 +1243,60 @@ private fun UndoRedoRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompleteEditButton(
+    completionTooltipState: TooltipState,
+    onTooltipDismissed: () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val hapticManager = rememberFansaHapticManager()
+    TooltipBox(
+        positionProvider = rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        state = completionTooltipState,
+        tooltip = {
+            RichTooltip(
+                title = { Text(text = stringResource(R.string.edit_completion_tooltip_title)) },
+                action = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        TextButton(onClick = onTooltipDismissed) {
+                            Text(text = stringResource(R.string.ok))
+                        }
+                    }
+                },
+                caretShape = TooltipDefaults.caretShape()
+            ) {
+                Text(text = stringResource(R.string.edit_completion_tooltip_message))
+            }
+        },
+        modifier = modifier
+    ) {
+        Button(
+            onClick = {
+                hapticManager.perform(FansaHapticType.CONFIRM)
+                onClick()
+            },
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(end = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.complete),
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+}
+
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
@@ -1281,6 +1323,7 @@ private fun StickerItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
+                zIndex = SELECTED_DECORATION_Z_INDEX,
             )
         }
     }
@@ -1308,6 +1351,7 @@ private fun TextItemPreview() {
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
+                zIndex = SELECTED_DECORATION_Z_INDEX,
             )
         }
     }
@@ -1329,6 +1373,21 @@ private fun UndoRedoRowPreview() {
                 canRedo = false,
                 onUndoClick = {},
                 onRedoClick = {}
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+private fun CompleteEditButtonPreview() {
+    FansaUchiwaTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            CompleteEditButton(
+                completionTooltipState = rememberTooltipState(true),
+                onTooltipDismissed = {},
+                onClick = {}
             )
         }
     }

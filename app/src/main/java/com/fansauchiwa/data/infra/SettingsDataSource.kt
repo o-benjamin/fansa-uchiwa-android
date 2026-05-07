@@ -15,4 +15,8 @@ interface SettingsDataSource {
      * @param enabled 有効にする場合は true
      */
     suspend fun setHapticFeedbackEnabled(enabled: Boolean)
+
+    fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean>
+
+    suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean)
 }

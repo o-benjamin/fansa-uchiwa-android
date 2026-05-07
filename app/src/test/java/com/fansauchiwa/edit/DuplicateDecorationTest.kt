@@ -11,12 +11,16 @@ import com.fansauchiwa.data.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -39,7 +43,35 @@ class DuplicateDecorationTest {
     private lateinit var localDatabaseRepository: LocalDatabaseRepository
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var editDecorationRepository: EditDecorationRepository
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var templateRepository: TemplateRepository
+
+    private class FakeSettingsRepository : SettingsRepository {
+        private val hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
+        private val hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
+
+        override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticFeedbackEnabledStream
+
+        override suspend fun fetchHapticFeedbackEnabled() {
+            hapticFeedbackEnabledStream.emit(true)
+        }
+
+        override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
+            hapticFeedbackEnabledStream.emit(enabled)
+        }
+
+        override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> =
+            hasSeenEditCompletionTooltipStream
+
+        override suspend fun fetchHasSeenEditCompletionTooltip() {
+            hasSeenEditCompletionTooltipStream.emit(false)
+        }
+
+        override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
+            hasSeenEditCompletionTooltipStream.emit(hasSeen)
+        }
+    }
 
     @Before
     fun setUp() {
@@ -48,6 +80,8 @@ class DuplicateDecorationTest {
         localDatabaseRepository = mockk(relaxed = true)
         masterpieceRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        editDecorationRepository = mockk(relaxed = true)
+        settingsRepository = FakeSettingsRepository()
         templateRepository = mockk(relaxed = true)
     }
 
@@ -69,6 +103,8 @@ class DuplicateDecorationTest {
             localDatabaseRepository = localDatabaseRepository,
             masterpieceRepository = masterpieceRepository,
             analyticsRepository = analyticsRepository,
+            editDecorationRepository = editDecorationRepository,
+            settingsRepository = settingsRepository,
             templateRepository = templateRepository,
             savedStateHandle = savedStateHandle
         )

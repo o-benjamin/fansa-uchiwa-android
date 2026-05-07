@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit.pager
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -42,11 +44,12 @@ import com.fansauchiwa.edit.ItemBadge
 import com.fansauchiwa.edit.TestTags
 import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
-import java.util.UUID
+
+private const val UnsupportedPuffyControlAlpha = 0.38f
 
 @Composable
 fun TextPage(
-    onTextClick: (Decoration.Text) -> Unit,
+    onAddText: (FontFamilies) -> Unit,
     onFontChanged: (FontFamilies) -> Unit,
     onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
@@ -55,10 +58,12 @@ fun TextPage(
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
     onPuffyEnabledChanged: (Boolean) -> Unit,
-    selectedDecoration: Decoration? = null
+    onPuffyUnsupportedClick: () -> Unit,
+    isPukuPukuSupported: Boolean,
+    selectedTextDecoration: Decoration.Text? = null
 ) {
     FontFamilySelectionGrid(
-        onTextClick = onTextClick,
+        onAddText = onAddText,
         onFontChanged = onFontChanged,
         onColorSelected = onColorSelected,
         onTextWeightChanged = onTextWeightChanged,
@@ -67,7 +72,9 @@ fun TextPage(
         onSecondBorderColorSelected = onSecondBorderColorSelected,
         onSecondBorderWeightChanged = onSecondBorderWeightChanged,
         onPuffyEnabledChanged = onPuffyEnabledChanged,
-        selectedDecoration = selectedDecoration,
+        onPuffyUnsupportedClick = onPuffyUnsupportedClick,
+        isPukuPukuSupported = isPukuPukuSupported,
+        selectedTextDecoration = selectedTextDecoration,
         modifier = Modifier.fillMaxSize()
     )
 }
@@ -81,13 +88,15 @@ fun TextDecorationControls(
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
     onPuffyEnabledChanged: (Boolean) -> Unit,
+    onPuffyUnsupportedClick: () -> Unit,
     textColor: Color,
     textWidth: Int,
     strokeColor: Color,
     strokeWidth: Float,
     secondBorderColor: Color,
     secondBorderWidth: Float,
-    isPuffyEnabled: Boolean
+    isPuffyEnabled: Boolean,
+    isPukuPukuSupported: Boolean
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         ColorAndWeightControl(
@@ -122,10 +131,15 @@ fun TextDecorationControls(
             onWeightChanged = onSecondBorderWeightChanged
         )
 
+        val puffyModifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .alpha(if (isPukuPukuSupported) 1f else UnsupportedPuffyControlAlpha)
+            .testTag(TestTags.PUFFY_TEXT_ROW)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
+            modifier = puffyModifier.run {
+                if (isPukuPukuSupported) this else clickable(onClick = onPuffyUnsupportedClick)
+            },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -135,16 +149,17 @@ fun TextDecorationControls(
             )
             Switch(
                 checked = isPuffyEnabled,
-                onCheckedChange = onPuffyEnabledChanged,
-
-                )
+                onCheckedChange = if (isPukuPukuSupported) onPuffyEnabledChanged else null,
+                enabled = isPukuPukuSupported,
+                modifier = Modifier.testTag(TestTags.PUFFY_TEXT_SWITCH)
+            )
         }
     }
 }
 
 @Composable
 fun FontFamilySelectionGrid(
-    onTextClick: (Decoration.Text) -> Unit,
+    onAddText: (FontFamilies) -> Unit,
     onFontChanged: (FontFamilies) -> Unit,
     onColorSelected: (Color) -> Unit,
     onTextWeightChanged: (Int) -> Unit,
@@ -153,7 +168,9 @@ fun FontFamilySelectionGrid(
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
     onPuffyEnabledChanged: (Boolean) -> Unit,
-    selectedDecoration: Decoration?,
+    onPuffyUnsupportedClick: () -> Unit,
+    isPukuPukuSupported: Boolean,
+    selectedTextDecoration: Decoration.Text?,
     modifier: Modifier = Modifier
 ) {
     val minButtonWidth = 88.dp
@@ -172,7 +189,7 @@ fun FontFamilySelectionGrid(
         contentPadding = PaddingValues(start = 32.dp, end = 32.dp, bottom = 32.dp),
         modifier = modifier.testTag(TestTags.FONT_FAMILY_GRID)
     ) {
-        if (selectedDecoration is Decoration.Text) {
+        if (selectedTextDecoration != null) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 TextDecorationControls(
                     onColorSelected = onColorSelected,
@@ -182,13 +199,15 @@ fun FontFamilySelectionGrid(
                     onSecondBorderColorSelected = onSecondBorderColorSelected,
                     onSecondBorderWeightChanged = onSecondBorderWeightChanged,
                     onPuffyEnabledChanged = onPuffyEnabledChanged,
-                    textColor = selectedDecoration.color,
-                    strokeColor = selectedDecoration.strokeColor,
-                    textWidth = selectedDecoration.width,
-                    strokeWidth = selectedDecoration.strokeWidth,
-                    secondBorderColor = selectedDecoration.secondBorderColor,
-                    secondBorderWidth = selectedDecoration.secondBorderWidth,
-                    isPuffyEnabled = selectedDecoration.isPuffyEnabled
+                    onPuffyUnsupportedClick = onPuffyUnsupportedClick,
+                    textColor = selectedTextDecoration.color,
+                    strokeColor = selectedTextDecoration.strokeColor,
+                    textWidth = selectedTextDecoration.width,
+                    strokeWidth = selectedTextDecoration.strokeWidth,
+                    secondBorderColor = selectedTextDecoration.secondBorderColor,
+                    secondBorderWidth = selectedTextDecoration.secondBorderWidth,
+                    isPuffyEnabled = selectedTextDecoration.isPuffyEnabled,
+                    isPukuPukuSupported = isPukuPukuSupported
                 )
             }
         }
@@ -198,20 +217,14 @@ fun FontFamilySelectionGrid(
         }
 
         items(FontFamilies.entries.toList()) { fontFamily ->
-            val isSelected =
-                selectedDecoration is Decoration.Text && selectedDecoration.font == fontFamily
+            val isSelected = selectedTextDecoration?.font == fontFamily
             Box(contentAlignment = Alignment.Center) {
                 FilledTonalButton(
                     onClick = {
-                        if (selectedDecoration is Decoration.Text) {
+                        if (selectedTextDecoration != null) {
                             onFontChanged(fontFamily)
                         } else {
-                            onTextClick(
-                                Decoration.Text(
-                                    id = UUID.randomUUID().toString(),
-                                    font = fontFamily
-                                )
-                            )
+                            onAddText(fontFamily)
                         }
                     },
                     shape = RoundedCornerShape(8.dp),
@@ -247,7 +260,7 @@ fun FontFamilySelectionGrid(
 fun TextPagePreview() {
     FansaUchiwaTheme {
         TextPage(
-            onTextClick = {},
+            onAddText = {},
             onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
@@ -256,7 +269,9 @@ fun TextPagePreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onPuffyEnabledChanged = {},
-            selectedDecoration = Decoration.Text(
+            onPuffyUnsupportedClick = {},
+            isPukuPukuSupported = true,
+            selectedTextDecoration = Decoration.Text(
                 id = "preview-id",
                 font = FontFamilies.HACHI_MARU_POP,
                 text = "プレビュー",
@@ -275,7 +290,7 @@ fun TextPagePreview() {
 fun FontFamilySelectionGridNarrowPreview() {
     FansaUchiwaTheme {
         FontFamilySelectionGrid(
-            onTextClick = {},
+            onAddText = {},
             onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
@@ -284,7 +299,9 @@ fun FontFamilySelectionGridNarrowPreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onPuffyEnabledChanged = {},
-            selectedDecoration = null
+            onPuffyUnsupportedClick = {},
+            isPukuPukuSupported = true,
+            selectedTextDecoration = null
         )
     }
 }
@@ -294,7 +311,7 @@ fun FontFamilySelectionGridNarrowPreview() {
 fun FontFamilySelectionGridMediumPreview() {
     FansaUchiwaTheme {
         FontFamilySelectionGrid(
-            onTextClick = {},
+            onAddText = {},
             onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
@@ -303,7 +320,9 @@ fun FontFamilySelectionGridMediumPreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onPuffyEnabledChanged = {},
-            selectedDecoration = null
+            onPuffyUnsupportedClick = {},
+            isPukuPukuSupported = true,
+            selectedTextDecoration = null
         )
     }
 }
@@ -313,7 +332,7 @@ fun FontFamilySelectionGridMediumPreview() {
 fun FontFamilySelectionGridWidePreview() {
     FansaUchiwaTheme {
         FontFamilySelectionGrid(
-            onTextClick = {},
+            onAddText = {},
             onFontChanged = {},
             onColorSelected = {},
             onTextWeightChanged = {},
@@ -322,7 +341,9 @@ fun FontFamilySelectionGridWidePreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onPuffyEnabledChanged = {},
-            selectedDecoration = null
+            onPuffyUnsupportedClick = {},
+            isPukuPukuSupported = true,
+            selectedTextDecoration = null
         )
     }
 }

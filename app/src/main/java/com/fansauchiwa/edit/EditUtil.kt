@@ -1,12 +1,24 @@
 package com.fansauchiwa.edit
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastForEach
+import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Transformation
 import kotlin.math.PI
 import kotlin.math.abs
@@ -132,7 +144,7 @@ internal fun applyRotationSnap(totalRotation: Float): RotationSnapResult {
 }
 
 private val ROTATION_SNAP_POINTS = listOf(0f, 90f, 180f, 270f)
-private const val ROTATION_SNAP_THRESHOLD_DEGREES = 8f
+private const val ROTATION_SNAP_THRESHOLD_DEGREES = 4f
 
 internal val TextUnit.nonScaledSp: TextUnit
     @Composable
@@ -188,4 +200,170 @@ internal fun calculateClampedOffset(
         x = clampedX - currentConfirmedOffset.x,
         y = clampedY - currentConfirmedOffset.y
     )
+}
+
+internal fun resolveDecorationOffset(
+    decorationId: String,
+    selectedDecorationId: String?,
+    baseOffset: Offset,
+    offsetDiff: Offset
+): Offset {
+    if (decorationId != selectedDecorationId) return baseOffset
+    return baseOffset + offsetDiff
+}
+
+internal fun resolveDecorationScale(
+    decorationId: String,
+    selectedDecorationId: String?,
+    baseScale: Float,
+    scaleDiff: Float
+): Float {
+    if (decorationId != selectedDecorationId) return baseScale
+    return baseScale * scaleDiff
+}
+
+internal fun resolveDecorationRotation(
+    decorationId: String,
+    selectedDecorationId: String?,
+    baseRotation: Float,
+    rotationDiff: Float
+): Float {
+    if (decorationId != selectedDecorationId) return baseRotation
+    return baseRotation + rotationDiff
+}
+
+internal const val DEFAULT_DECORATION_Z_INDEX = 0f
+internal const val SELECTED_DECORATION_Z_INDEX = 1f
+
+internal fun resolveDecorationZIndex(
+    decorationId: String,
+    selectedDecorationId: String?
+): Float = if (decorationId == selectedDecorationId) {
+    SELECTED_DECORATION_Z_INDEX
+} else {
+    DEFAULT_DECORATION_Z_INDEX
+}
+
+/**
+ * `scaleDiff` を 1f 基準の乗算値として保持しつつ、既存の保存 API が期待する加算差分へ変換する。
+ *
+ * 例: `baseScale = 2f`, `scaleDiff = 1.5f` の場合、表示上の目標スケールは `3f` なので、
+ * ViewModel に保存する加算差分は `3f - 2f = 1f` になる。
+ */
+internal fun calculateCommittedScaleDiff(
+    baseScale: Float,
+    scaleDiff: Float
+): Float = baseScale * (scaleDiff - 1f)
+
+internal fun calculateScaleFactor(
+    baseScale: Float,
+    targetScale: Float
+): Float {
+    if (baseScale == 0f) return 1f
+    return targetScale / baseScale
+}
+
+internal fun Decoration.scaleRange(): ClosedFloatingPointRange<Float> = when (this) {
+    is Decoration.Text -> 0.5f..6f
+    is Decoration.Sticker -> 0.5f..3f
+    is Decoration.Image -> 0.5f..5f
+}
+
+/**
+ * Compose標準の [androidx.compose.foundation.gestures.detectTransformGestures] に、
+ * 全ての指が画面から離れたことを検知するための [onEnd] コールバックを追加した独自の拡張関数です。
+ * 差分をViewModelのStateに反映させるタイミングを確保するためにカスタムしました。
+ *
+ * また、大きさに絞った微調整を可能にするため、
+ * 1本指での操作時はPan（移動）を許可し、2本指以上での操作時はPanによる移動を無効にする制御を行っています。
+ */
+suspend fun PointerInputScope.detectTransformGesturesWithEnd(
+    panZoomLock: Boolean = false,
+    onEnd: () -> Unit = {},
+    onGesture: (centroid: Offset, pan: Offset, zoom: Float, rotation: Float) -> Unit,
+) {
+    awaitEachGesture {
+        var rotation = 0f
+        var zoom = 1f
+        var pan = Offset.Zero
+        var pastTouchSlop = false
+        val touchSlop = viewConfiguration.touchSlop
+        var lockedToPanZoom = false
+
+        awaitFirstDown(requireUnconsumed = false)
+        do {
+            val event = awaitPointerEvent()
+            val canceled = event.changes.fastAny { it.isConsumed }
+            if (!canceled) {
+                val zoomChange = event.calculateZoom()
+                val rotationChange = event.calculateRotation()
+                val activePointers = event.changes.count { it.pressed }
+                val panChange = if (activePointers >= 2) Offset.Zero else event.calculatePan()
+
+                if (!pastTouchSlop) {
+                    zoom *= zoomChange
+                    rotation += rotationChange
+                    pan += panChange
+
+                    val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                    val zoomMotion = abs(1 - zoom) * centroidSize
+                    val rotationMotion = abs(rotation * PI.toFloat() * centroidSize / 180f)
+                    val panMotion = pan.getDistance()
+
+                    if (
+                        zoomMotion > touchSlop ||
+                        rotationMotion > touchSlop ||
+                        panMotion > touchSlop
+                    ) {
+                        pastTouchSlop = true
+                        lockedToPanZoom = panZoomLock && rotationMotion < touchSlop
+                    }
+                }
+
+                if (pastTouchSlop) {
+                    val centroid = event.calculateCentroid(useCurrent = false)
+                    val effectiveRotation = if (lockedToPanZoom) 0f else rotationChange
+                    if (effectiveRotation != 0f || zoomChange != 1f || panChange != Offset.Zero) {
+                        onGesture(centroid, panChange, zoomChange, effectiveRotation)
+                    }
+                    event.changes.fastForEach {
+                        if (it.positionChanged()) {
+                            it.consume()
+                        }
+                    }
+                }
+            }
+        } while (!canceled && event.changes.fastAny { it.pressed })
+        onEnd()
+    }
+}
+
+suspend fun PointerInputScope.detectNonConsumingTap(onTap: () -> Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+
+        // Composeによるタッチ領域の自動拡張分を無視し、厳密に枠線内か判定
+        val isInside = down.position.x in 0f..size.width.toFloat() &&
+                down.position.y in 0f..size.height.toFloat()
+        if (!isInside) return@awaitEachGesture // 範囲外なら無視
+
+        var isTap = true
+        var upEvent: androidx.compose.ui.input.pointer.PointerInputChange? = null
+        do {
+            val event = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Main)
+            if (event.changes.size > 1) isTap = false
+            val change = event.changes.firstOrNull { it.id == down.id }
+            if (change != null) {
+                if (change.isConsumed) isTap = false
+                else if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) isTap =
+                    false
+                if (!change.pressed) upEvent = change
+            }
+        } while (event.changes.any { it.pressed })
+
+        if (isTap && upEvent != null) {
+            upEvent.consume()
+            onTap()
+        }
+    }
 }

@@ -4,7 +4,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.R
 import com.fansauchiwa.edit.FontFamilies
-import com.fansauchiwa.ui.DecorationColors
 
 val templateList: List<Template> = listOf(
     Template(
@@ -224,4 +223,3 @@ val templateList: List<Template> = listOf(
         )
     )
 )
-

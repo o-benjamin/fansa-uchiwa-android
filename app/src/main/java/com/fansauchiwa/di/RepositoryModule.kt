@@ -6,12 +6,12 @@ import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.AdMobRepositoryImpl
 import com.fansauchiwa.data.GalleryImageDataSource
 import com.fansauchiwa.data.GalleryImageLocalSource
-import com.fansauchiwa.data.ImageDataSource
-import com.fansauchiwa.data.ImageLocalSource
+import com.fansauchiwa.data.infra.ImageDataSource
+import com.fansauchiwa.data.infra.ImageLocalSource
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalDatabaseRepositoryImpl
-import com.fansauchiwa.data.LocalImageRepository
-import com.fansauchiwa.data.LocalImageRepositoryImpl
+import com.fansauchiwa.data.repository.LocalImageRepository
+import com.fansauchiwa.data.repository.LocalImageRepositoryImpl
 import com.fansauchiwa.data.MasterpieceDataSource
 import com.fansauchiwa.data.MasterpieceLocalSource
 import com.fansauchiwa.data.MasterpieceRepository
@@ -21,6 +21,8 @@ import com.fansauchiwa.data.UuidProviderImpl
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
+import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
@@ -85,6 +87,12 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         impl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEditDecorationRepository(
+        impl: EditDecorationRepositoryImpl
+    ): EditDecorationRepository
 }
 
 @Module

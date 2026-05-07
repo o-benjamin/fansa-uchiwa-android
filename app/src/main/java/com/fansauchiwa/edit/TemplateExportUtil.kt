@@ -3,8 +3,8 @@ package com.fansauchiwa.edit
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
-import com.fansauchiwa.ui.DecorationColors
 
 object TemplateExportUtil {
 
@@ -99,4 +99,3 @@ object TemplateExportUtil {
         }
     }
 }
-
