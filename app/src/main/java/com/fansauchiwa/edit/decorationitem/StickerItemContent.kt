@@ -3,9 +3,11 @@ package com.fansauchiwa.edit.decorationitem
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
@@ -25,6 +27,9 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.ui.StickerAsset
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
+private const val MinimumStickerInnerScale = 0.1f
+private const val StickerStrokeScaleFactor = 10f
+
 /**
  * StickerのコンテンツをCanvasを使って描画するComposable
  *
@@ -36,54 +41,165 @@ fun StickerItemContent(
     decoration: Decoration.Sticker,
     modifier: Modifier
 ) {
-    if (decoration.resId == 0) return
-
-    val imageVector = ImageVector.vectorResource(id = decoration.resId)
+    val uiModel = remember(decoration) {
+        decoration.toStickerItemContentUiModel()
+    } ?: return
+    val imageVector = ImageVector.vectorResource(id = uiModel.resId)
     val painter = rememberVectorPainter(image = imageVector)
-    val fillColor = decoration.color
-    val strokeColor = decoration.strokeColor
-    val strokeWidth = decoration.strokeWidth
-    val secondStrokeColor = decoration.secondStrokeColor
-    val secondStrokeWidth = decoration.secondStrokeWidth
+    val renderState = remember(uiModel, imageVector, painter.intrinsicSize) {
+        uiModel.toRenderState(
+            imageVector = imageVector,
+            intrinsicSize = painter.intrinsicSize
+        )
+    }
 
-    // intrinsicSizeを基準に、strokeWidth分を考慮した内部スケールを計算
-    val intrinsicSize = painter.intrinsicSize
-    // 枠線1と枠線2の合計太さを考慮したスケール計算
-    val totalStrokeWidth = strokeWidth + secondStrokeWidth
-    val innerScaleX = if (intrinsicSize.width > totalStrokeWidth * 2) {
-        (intrinsicSize.width - totalStrokeWidth * 10) / intrinsicSize.width
-    } else {
-        0.1f // 最小スケール
-    }
-    val innerScaleY = if (intrinsicSize.height > totalStrokeWidth * 2) {
-        (intrinsicSize.height - totalStrokeWidth * 10) / intrinsicSize.height
-    } else {
-        0.1f // 最小スケール
-    }
-    val innerScale = minOf(innerScaleX, innerScaleY)
+    StickerItemCanvas(
+        renderState = renderState,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun StickerItemCanvas(
+    renderState: StickerItemRenderState,
+    modifier: Modifier
+) {
+    val density = LocalDensity.current
 
     Canvas(
         modifier = modifier
             .size(
-                with(LocalDensity.current) { intrinsicSize.width.toDp() },
-                with(LocalDensity.current) { intrinsicSize.height.toDp() }
+                width = with(density) { renderState.canvasSize.width.toDp() },
+                height = with(density) { renderState.canvasSize.height.toDp() }
             )
             .drawWithCache {
                 onDrawWithContent {
-                    drawStickerWithStrokeScaled(
-                        imageVector = imageVector,
-                        fillColor = fillColor,
-                        strokeColor = strokeColor,
-                        strokeWidth = strokeWidth,
-                        innerScale = innerScale,
-                        secondStrokeColor = secondStrokeColor,
-                        secondStrokeWidth = secondStrokeWidth
-                    )
+                    drawSticker(renderState)
                 }
             }
     ) {
         // 描画はdrawWithCache内で行う
     }
+}
+
+private data class StickerItemContentUiModel(
+    val resId: Int,
+    val fillColor: Color,
+    val primaryStroke: StickerStrokeUiModel,
+    val secondaryStroke: StickerStrokeUiModel
+)
+
+private data class StickerStrokeUiModel(
+    val color: Color,
+    val width: Float
+)
+
+private data class StickerItemRenderState(
+    val canvasSize: Size,
+    val viewportSize: Size,
+    val fillColor: Color,
+    val primaryStroke: StickerStrokeUiModel,
+    val secondaryStroke: StickerStrokeUiModel,
+    val innerScale: Float,
+    val root: StickerVectorGroupNode
+)
+
+private sealed interface StickerVectorNode
+
+private data class StickerVectorGroupNode(
+    val translationX: Float,
+    val translationY: Float,
+    val rotation: Float,
+    val pivotX: Float,
+    val pivotY: Float,
+    val scaleX: Float,
+    val scaleY: Float,
+    val children: List<StickerVectorNode>
+) : StickerVectorNode
+
+private data class StickerVectorPathNode(
+    val path: Path
+) : StickerVectorNode
+
+private fun Decoration.Sticker.toStickerItemContentUiModel(): StickerItemContentUiModel? {
+    if (resId == 0) return null
+
+    return StickerItemContentUiModel(
+        resId = resId,
+        fillColor = color,
+        primaryStroke = StickerStrokeUiModel(
+            color = strokeColor,
+            width = strokeWidth
+        ),
+        secondaryStroke = StickerStrokeUiModel(
+            color = secondStrokeColor,
+            width = secondStrokeWidth
+        )
+    )
+}
+
+private fun StickerItemContentUiModel.toRenderState(
+    imageVector: ImageVector,
+    intrinsicSize: Size
+): StickerItemRenderState {
+    val totalStrokeWidth = primaryStroke.width + secondaryStroke.width
+
+    return StickerItemRenderState(
+        canvasSize = intrinsicSize,
+        viewportSize = Size(imageVector.viewportWidth, imageVector.viewportHeight),
+        fillColor = fillColor,
+        primaryStroke = primaryStroke,
+        secondaryStroke = secondaryStroke,
+        innerScale = calculateStickerInnerScale(
+            intrinsicSize = intrinsicSize,
+            totalStrokeWidth = totalStrokeWidth
+        ),
+        root = imageVector.root.toStickerVectorGroupNode()
+    )
+}
+
+private fun calculateStickerInnerScale(
+    intrinsicSize: Size,
+    totalStrokeWidth: Float
+): Float {
+    val shrinkAmount = totalStrokeWidth * StickerStrokeScaleFactor
+    val innerScaleX = if (intrinsicSize.width > totalStrokeWidth * 2) {
+        (intrinsicSize.width - shrinkAmount) / intrinsicSize.width
+    } else {
+        MinimumStickerInnerScale
+    }
+    val innerScaleY = if (intrinsicSize.height > totalStrokeWidth * 2) {
+        (intrinsicSize.height - shrinkAmount) / intrinsicSize.height
+    } else {
+        MinimumStickerInnerScale
+    }
+
+    return minOf(innerScaleX, innerScaleY)
+}
+
+private fun VectorGroup.toStickerVectorGroupNode(): StickerVectorGroupNode {
+    return StickerVectorGroupNode(
+        translationX = translationX,
+        translationY = translationY,
+        rotation = rotation,
+        pivotX = pivotX,
+        pivotY = pivotY,
+        scaleX = scaleX,
+        scaleY = scaleY,
+        children = List(size) { index ->
+            when (val node = this[index]) {
+                is VectorGroup -> node.toStickerVectorGroupNode()
+                is VectorPath -> node.toStickerVectorPathNode()
+                else -> error("Unsupported vector node: ${node::class.simpleName}")
+            }
+        }
+    )
+}
+
+private fun VectorPath.toStickerVectorPathNode(): StickerVectorPathNode {
+    val vectorPath = Path()
+    PathParser().addPathNodes(pathData).toPath(vectorPath)
+    return StickerVectorPathNode(path = vectorPath)
 }
 
 /**
@@ -96,144 +212,100 @@ private enum class DrawMode { StrokeOnly, FillOnly }
 /**
  * ImageVectorを枠線付きで描画する
  * strokeWidthが大きくなっても外形サイズが変わらないように内部画像を縮小して描画する
- *
- * @param imageVector 描画対象のImageVector
- * @param fillColor 塗りつぶし色
- * @param strokeColor 枠線の色（枠線1）
- * @param strokeWidth 枠線の太さ（枠線1）
- * @param innerScale 内部画像のスケール（0.0〜1.0）
- * @param secondStrokeColor 二つ目の枠線の色（枠線2）
- * @param secondStrokeWidth 二つ目の枠線の太さ（枠線2）
  */
-private fun DrawScope.drawStickerWithStrokeScaled(
-    imageVector: ImageVector,
-    fillColor: Color,
-    strokeColor: Color,
-    strokeWidth: Float,
-    innerScale: Float,
-    secondStrokeColor: Color,
-    secondStrokeWidth: Float
+private fun DrawScope.drawSticker(
+    renderState: StickerItemRenderState
 ) {
-    // viewport と canvas サイズの比率を計算
-    val scaleX = size.width / imageVector.viewportWidth
-    val scaleY = size.height / imageVector.viewportHeight
-
-    // 中心を基点にスケーリングするための平行移動量を計算
+    val scaleX = size.width / renderState.viewportSize.width
+    val scaleY = size.height / renderState.viewportSize.height
     val centerX = size.width / 2f
     val centerY = size.height / 2f
 
     withTransform({
-        // 中心を基点にinnerScaleを適用
         translate(centerX, centerY)
-        scale(innerScale, innerScale, pivot = Offset.Zero)
+        scale(renderState.innerScale, renderState.innerScale, pivot = Offset.Zero)
         translate(-centerX, -centerY)
-        // 元のviewport→canvasスケーリング
         scale(scaleX, scaleY, pivot = Offset.Zero)
     }) {
-        // strokeWidthもinnerScaleに合わせて調整（見た目の太さを維持）
-        val adjustedStrokeWidth = strokeWidth / innerScale
-        val adjustedSecondStrokeWidth = secondStrokeWidth / innerScale
+        val adjustedPrimaryStrokeWidth = renderState.primaryStroke.width / renderState.innerScale
+        val adjustedSecondaryStrokeWidth = renderState.secondaryStroke.width / renderState.innerScale
 
-        // パス1: 枠線2（最背面）- 二つ目の枠線を描画（secondStrokeWidthが0より大きい場合のみ）
-        if (adjustedSecondStrokeWidth > 0f) {
-            val combinedStrokeWidth = adjustedStrokeWidth + adjustedSecondStrokeWidth
-            drawVectorSubtree(
-                imageVector.root,
-                fillColor,
-                secondStrokeColor,
-                combinedStrokeWidth,
-                DrawMode.StrokeOnly
+        if (adjustedSecondaryStrokeWidth > 0f) {
+            drawStickerNode(
+                node = renderState.root,
+                fillColor = renderState.fillColor,
+                strokeColor = renderState.secondaryStroke.color,
+                strokeWidth = adjustedPrimaryStrokeWidth + adjustedSecondaryStrokeWidth,
+                drawMode = DrawMode.StrokeOnly
             )
         }
 
-        // パス2: 枠線1（中間）- 一つ目の枠線を描画（strokeWidthが0より大きい場合のみ）
-        if (adjustedStrokeWidth > 0f) {
-            drawVectorSubtree(
-                imageVector.root,
-                fillColor,
-                strokeColor,
-                adjustedStrokeWidth,
-                DrawMode.StrokeOnly
+        if (adjustedPrimaryStrokeWidth > 0f) {
+            drawStickerNode(
+                node = renderState.root,
+                fillColor = renderState.fillColor,
+                strokeColor = renderState.primaryStroke.color,
+                strokeWidth = adjustedPrimaryStrokeWidth,
+                drawMode = DrawMode.StrokeOnly
             )
         }
 
-        // パス3: 塗りつぶし（最前面）
-        drawVectorSubtree(
-            imageVector.root,
-            fillColor,
-            strokeColor,
-            adjustedStrokeWidth,
-            DrawMode.FillOnly
+        drawStickerNode(
+            node = renderState.root,
+            fillColor = renderState.fillColor,
+            strokeColor = renderState.primaryStroke.color,
+            strokeWidth = adjustedPrimaryStrokeWidth,
+            drawMode = DrawMode.FillOnly
         )
     }
 }
 
-/**
- * VectorGroupを再帰的に走査して描画する
- * @param drawMode 描画モード（枠線のみ、または塗りつぶしのみ）
- */
-private fun DrawScope.drawVectorSubtree(
-    group: VectorGroup,
+private fun DrawScope.drawStickerNode(
+    node: StickerVectorNode,
     fillColor: Color,
     strokeColor: Color,
     strokeWidth: Float,
     drawMode: DrawMode
 ) {
-    withTransform({
-        // VectorGroupのtransformを適用
-        translate(group.translationX, group.translationY)
-        rotate(group.rotation, pivot = Offset(group.pivotX, group.pivotY))
-        scale(group.scaleX, group.scaleY, pivot = Offset(group.pivotX, group.pivotY))
-    }) {
-        // グループ内の各要素を処理
-        for (i in 0 until group.size) {
-            when (val node = group[i]) {
-                is VectorPath -> {
-                    drawVectorPath(node, fillColor, strokeColor, strokeWidth, drawMode)
-                }
-
-                is VectorGroup -> {
-                    drawVectorSubtree(node, fillColor, strokeColor, strokeWidth, drawMode)
+    when (node) {
+        is StickerVectorGroupNode -> {
+            withTransform({
+                translate(node.translationX, node.translationY)
+                rotate(node.rotation, pivot = Offset(node.pivotX, node.pivotY))
+                scale(node.scaleX, node.scaleY, pivot = Offset(node.pivotX, node.pivotY))
+            }) {
+                node.children.forEach { child ->
+                    drawStickerNode(
+                        node = child,
+                        fillColor = fillColor,
+                        strokeColor = strokeColor,
+                        strokeWidth = strokeWidth,
+                        drawMode = drawMode
+                    )
                 }
             }
         }
-    }
-}
 
-/**
- * VectorPathを描画する
- * @param drawMode 描画モード（枠線のみ、または塗りつぶしのみ）
- */
-private fun DrawScope.drawVectorPath(
-    path: VectorPath,
-    fillColor: Color,
-    strokeColor: Color,
-    strokeWidth: Float,
-    drawMode: DrawMode
-) {
-    val pathData = path.pathData
-    val androidPath = Path()
-    PathParser().addPathNodes(pathData).toPath(androidPath)
+        is StickerVectorPathNode -> {
+            when (drawMode) {
+                DrawMode.StrokeOnly -> {
+                    if (strokeWidth > 0f) {
+                        drawPath(
+                            path = node.path,
+                            color = strokeColor,
+                            style = Stroke(width = strokeWidth, join = StrokeJoin.Round)
+                        )
+                    }
+                }
 
-    when (drawMode) {
-        DrawMode.StrokeOnly -> {
-            // 枠線を描画（strokeWidthが0より大きい場合のみ）
-            if (strokeWidth > 0f) {
-                drawPath(
-                    path = androidPath,
-                    color = strokeColor,
-                    style = Stroke(width = strokeWidth, join = StrokeJoin.Round)
-                )
+                DrawMode.FillOnly -> {
+                    drawPath(
+                        path = node.path,
+                        color = fillColor,
+                        style = Fill
+                    )
+                }
             }
-        }
-
-        DrawMode.FillOnly -> {
-            // 塗りつぶしを描画
-            drawPath(
-                path = androidPath,
-                color = fillColor,
-                style = Fill
-            )
         }
     }
 }
@@ -276,4 +348,3 @@ private fun StickerItemContentWithSecondStrokePreview() {
 }
 
 // endregion
-
