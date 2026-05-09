@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import io.mockk.mockk
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -59,6 +60,12 @@ class EventTimelineViewModelTest {
             linkedPairs.add(eventId to uchiwaId)
             fetchEvents()
         }
+
+        override suspend fun replaceEventUchiwas(eventId: String, uchiwaIds: List<String>) {
+            linkedPairs.clear()
+            linkedPairs.addAll(uchiwaIds.map { eventId to it })
+            fetchEvents()
+        }
     }
 
     @Before
@@ -77,7 +84,9 @@ class EventTimelineViewModelTest {
 
         val viewModel = EventTimelineViewModel(
             eventRepository = repository,
+            masterpieceRepository = FakeMasterpieceRepository(),
             uuidProvider = FakeUuidProvider(),
+            context = mockk(relaxed = true),
             savedStateHandle = SavedStateHandle(mapOf(UCHIWA_ID_ARG to "uchiwa-1"))
         )
 
@@ -93,7 +102,9 @@ class EventTimelineViewModelTest {
         val repository = FakeEventRepository()
         val viewModel = EventTimelineViewModel(
             eventRepository = repository,
+            masterpieceRepository = FakeMasterpieceRepository(),
             uuidProvider = FakeUuidProvider(),
+            context = mockk(relaxed = true),
             savedStateHandle = SavedStateHandle(mapOf(UCHIWA_ID_ARG to "uchiwa-1"))
         )
 
@@ -101,7 +112,8 @@ class EventTimelineViewModelTest {
             eventId = null,
             name = "アリーナ公演",
             eventDate = LocalDate.of(2026, 8, 1),
-            linkCurrentUchiwa = true
+            remindEnabled = true,
+            selectedUchiwaIds = setOf("uchiwa-1")
         )
         advanceUntilIdle()
 
@@ -116,12 +128,15 @@ class EventTimelineViewModelTest {
             savedEvents += EventEntity(
                 id = "event-1",
                 name = "フェス",
-                eventDateEpochDay = LocalDate.of(2026, 9, 1).toEpochDay()
+                eventDateEpochDay = LocalDate.of(2026, 9, 1).toEpochDay(),
+                remindEnabled = true
             )
         }
         val viewModel = EventTimelineViewModel(
             eventRepository = repository,
+            masterpieceRepository = FakeMasterpieceRepository(),
             uuidProvider = FakeUuidProvider(),
+            context = mockk(relaxed = true),
             savedStateHandle = SavedStateHandle()
         )
 
@@ -129,5 +144,13 @@ class EventTimelineViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("event-1"), repository.deletedEventIds)
+    }
+
+    private class FakeMasterpieceRepository : com.fansauchiwa.data.MasterpieceRepository {
+        override fun saveMasterpieceBitmap(bitmap: android.graphics.Bitmap, id: String): String? = null
+        override fun saveMasterpieceToGallery(imagePath: String): Boolean = true
+        override fun loadAllMasterpieces(): List<String> = listOf("/tmp/uchiwa-1.png")
+        override fun deleteMasterpiece(filePath: String): Boolean = true
+        override fun duplicateMasterpiece(sourceFilePath: String, newId: String): String? = null
     }
 }

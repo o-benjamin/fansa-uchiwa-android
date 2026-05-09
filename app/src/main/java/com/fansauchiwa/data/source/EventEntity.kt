@@ -11,5 +11,6 @@ import androidx.room.PrimaryKey
 data class EventEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val eventDateEpochDay: Long
+    val eventDateEpochDay: Long,
+    val remindEnabled: Boolean
 )

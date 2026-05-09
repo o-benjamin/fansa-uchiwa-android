@@ -157,4 +157,11 @@ class UchiwaPreviewViewModel @Inject constructor(
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(shareImagePath = null)
     }
+
+    fun getCurrentUchiwaId(): String? {
+        return uiState.value.imagePath
+            ?.substringAfterLast("/")
+            ?.substringBeforeLast(".png")
+            ?.takeIf { it.isNotBlank() }
+    }
 }

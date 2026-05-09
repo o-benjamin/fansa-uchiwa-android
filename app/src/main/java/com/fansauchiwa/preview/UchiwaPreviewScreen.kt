@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.HelpOutline
@@ -188,11 +190,7 @@ fun UchiwaPreviewScreen(
                 onBackToHome()
             },
             onEventTimelineClick = {
-                uiState.imagePath
-                    ?.substringAfterLast("/")
-                    ?.substringBeforeLast(".png")
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let(onNavigateToTimeline)
+                viewModel.getCurrentUchiwaId()?.let(onNavigateToTimeline)
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -319,39 +317,43 @@ fun UchiwaPreviewContent(
                 style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
             )
         }
-        Button(
-            onClick = onSaveClick,
-            enabled = imagePath != null
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Save,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(
-                text = stringResource(R.string.save_as_image),
-                fontSize = 20.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
-        Button(
-            onClick = onShareClick,
-            enabled = imagePath != null,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Share,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(
-                text = stringResource(R.string.send_to_print_app),
-                fontSize = 20.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Button(
+                onClick = onSaveClick,
+                enabled = imagePath != null,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Save,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = stringResource(R.string.save_as_image),
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            IconButton(
+                onClick = onShareClick,
+                enabled = imagePath != null,
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = stringResource(R.string.send_to_print_app),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
         }
         Button(
             onClick = onEventTimelineClick,
@@ -359,17 +361,28 @@ fun UchiwaPreviewContent(
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-            )
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(
+                imageVector = Icons.Default.DateRange,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Text(
                 text = stringResource(R.string.event_timeline_open_from_preview),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
-        TextButton(
+        Button(
             onClick = onBackToHomeClick,
-            enabled = imagePath != null
+            enabled = imagePath != null,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         ) {
             Text(
                 text = stringResource(R.string.back_to_home),

@@ -20,6 +20,8 @@ interface EventRepository {
     suspend fun deleteEvent(eventId: String)
 
     suspend fun linkUchiwaToEvent(eventId: String, uchiwaId: String)
+
+    suspend fun replaceEventUchiwas(eventId: String, uchiwaIds: List<String>)
 }
 
 class EventRepositoryImpl @Inject constructor(
@@ -51,6 +53,19 @@ class EventRepositoryImpl @Inject constructor(
                 eventId = eventId,
                 uchiwaId = uchiwaId
             )
+        )
+        fetchEvents()
+    }
+
+    override suspend fun replaceEventUchiwas(eventId: String, uchiwaIds: List<String>) {
+        eventDataSource.replaceEventUchiwaCrossRefs(
+            eventId = eventId,
+            crossRefs = uchiwaIds.distinct().map { uchiwaId ->
+                EventUchiwaCrossRef(
+                    eventId = eventId,
+                    uchiwaId = uchiwaId
+                )
+            }
         )
         fetchEvents()
     }

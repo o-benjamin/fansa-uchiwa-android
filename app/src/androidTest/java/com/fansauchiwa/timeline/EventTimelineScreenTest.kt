@@ -1,7 +1,5 @@
 package com.fansauchiwa.timeline
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toColorLong
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -10,9 +8,6 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.fansauchiwa.R
-import com.fansauchiwa.data.source.EventEntity
-import com.fansauchiwa.data.source.EventWithUchiwas
-import com.fansauchiwa.data.source.FansaUchiwaEntity
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import org.junit.Rule
 import org.junit.Test
@@ -33,11 +28,14 @@ class EventTimelineScreenTest {
             FansaUchiwaTheme {
                 EventTimelineContent(
                     events = sampleEvents(),
+                    availableUchiwas = sampleEvents().flatMap { it.linkedUchiwas },
                     isSelectionMode = true,
+                    currentUchiwaId = "uchiwa-1",
                     onBack = {},
                     onLinkEvent = {},
-                    onSaveEvent = { _, _, _, _ -> },
-                    onDeleteEvent = {}
+                    onSaveEvent = { _, _, _, _, _ -> },
+                    onDeleteEvent = {},
+                    onSendDebugReminder = {}
                 )
             }
         }
@@ -55,11 +53,14 @@ class EventTimelineScreenTest {
             FansaUchiwaTheme {
                 EventTimelineContent(
                     events = sampleEvents(),
+                    availableUchiwas = sampleEvents().flatMap { it.linkedUchiwas },
                     isSelectionMode = false,
+                    currentUchiwaId = null,
                     onBack = {},
                     onLinkEvent = {},
-                    onSaveEvent = { _, _, _, _ -> },
-                    onDeleteEvent = {}
+                    onSaveEvent = { _, _, _, _, _ -> },
+                    onDeleteEvent = {},
+                    onSendDebugReminder = {}
                 )
             }
         }
@@ -70,33 +71,29 @@ class EventTimelineScreenTest {
         composeTestRule.onNodeWithText(delete).assertIsDisplayed()
     }
 
-    private fun sampleEvents(): List<EventWithUchiwas> {
+    private fun sampleEvents(): List<EventTimelineEventUiModel> {
         return listOf(
-            EventWithUchiwas(
-                event = EventEntity(
-                    id = "event-1",
-                    name = "東京ドーム",
-                    eventDateEpochDay = LocalDate.now().plusDays(3).toEpochDay()
-                ),
-                uchiwas = listOf(sampleUchiwa("uchiwa-1"))
+            EventTimelineEventUiModel(
+                id = "event-1",
+                name = "東京ドーム",
+                eventDate = LocalDate.now().plusDays(3),
+                remindEnabled = true,
+                linkedUchiwas = listOf(sampleUchiwa("uchiwa-1"))
             ),
-            EventWithUchiwas(
-                event = EventEntity(
-                    id = "event-2",
-                    name = "大阪城ホール",
-                    eventDateEpochDay = LocalDate.now().plusDays(8).toEpochDay()
-                ),
-                uchiwas = listOf(sampleUchiwa("uchiwa-2"))
+            EventTimelineEventUiModel(
+                id = "event-2",
+                name = "大阪城ホール",
+                eventDate = LocalDate.now().plusDays(8),
+                remindEnabled = true,
+                linkedUchiwas = listOf(sampleUchiwa("uchiwa-2"))
             )
         )
     }
 
-    private fun sampleUchiwa(id: String): FansaUchiwaEntity {
-        return FansaUchiwaEntity(
+    private fun sampleUchiwa(id: String): EventTimelineUchiwaUiModel {
+        return EventTimelineUchiwaUiModel(
             id = id,
-            decorations = emptyList(),
-            uchiwaColorValue = Color.White.toColorLong(),
-            backgroundColorValue = Color.White.toColorLong()
+            imagePath = null
         )
     }
 }

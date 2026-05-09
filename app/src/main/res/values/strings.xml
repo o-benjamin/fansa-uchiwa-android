@@ -80,8 +80,8 @@
     <string name="settings">設定</string>
     <string name="settings_title">アプリ設定</string>
     <string name="settings_haptic_feedback">触覚フィードバック</string>
-    <string name="event_timeline">イベントタイムライン</string>
-    <string name="event_timeline_open_from_preview">イベントに紐付ける</string>
+    <string name="event_timeline">イベント予定</string>
+    <string name="event_timeline_open_from_preview">イベントカレンダーに追加</string>
     <string name="event_add">イベントを追加</string>
     <string name="event_name">イベント名</string>
     <string name="event_date">開催日</string>
@@ -109,4 +109,13 @@
     <string name="event_reminder_title">%1$sの準備をしよう！</string>
     <string name="event_reminder_today_message">いよいよ今日です！</string>
     <string name="event_reminder_message">%1$sまであと%2$d日！</string>
+    <string name="event_add_uchiwas">持っていくうちわを追加</string>
+    <string name="event_add_uchiwas_dialog_title">マイデザインから選択</string>
+    <string name="event_add_uchiwas_confirm">追加</string>
+    <string name="event_no_available_uchiwa">追加できるうちわがありません</string>
+    <string name="event_reminder_enabled">リマインドを受け取る</string>
+    <string name="event_add_fab">イベント追加</string>
+    <string name="event_debug_send_reminder">デバッグ用にPush送信</string>
+    <string name="event_debug_reminder_sent">デバッグ用Pushを送信しました</string>
+    <string name="event_selected_uchiwa_count">%1$d個選択中</string>
 </resources>

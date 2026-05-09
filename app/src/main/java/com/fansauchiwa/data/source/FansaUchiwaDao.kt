@@ -31,6 +31,12 @@ interface FansaUchiwaDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertEventUchiwaCrossRefs(crossRefs: List<EventUchiwaCrossRef>)
+
+    @Query("DELETE FROM event_uchiwa_cross_refs WHERE eventId = :eventId")
+    suspend fun deleteEventUchiwaCrossRefsByEventId(eventId: String)
+
     @Transaction
     @Query("SELECT * FROM events ORDER BY eventDateEpochDay ASC, name ASC")
     fun getAllEventsWithUchiwasStream(): Flow<List<EventWithUchiwas>>

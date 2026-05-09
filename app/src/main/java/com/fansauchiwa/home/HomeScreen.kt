@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -172,6 +173,12 @@ private fun HomeTopAppBar(
                     contentDescription = stringResource(R.string.settings)
                 )
             }
+            IconButton(onClick = onNavigateToTimeline) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = stringResource(R.string.event_timeline)
+                )
+            }
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
@@ -182,13 +189,6 @@ private fun HomeTopAppBar(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.event_timeline)) },
-                    onClick = {
-                        menuExpanded = false
-                        onNavigateToTimeline()
-                    }
-                )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.official_site)) },
                     onClick = {

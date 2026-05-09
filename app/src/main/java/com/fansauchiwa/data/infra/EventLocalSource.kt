@@ -24,4 +24,14 @@ class EventLocalSource @Inject constructor(
     override suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef) {
         fansaUchiwaDao.insertEventUchiwaCrossRef(crossRef)
     }
+
+    override suspend fun replaceEventUchiwaCrossRefs(
+        eventId: String,
+        crossRefs: List<EventUchiwaCrossRef>
+    ) {
+        fansaUchiwaDao.deleteEventUchiwaCrossRefsByEventId(eventId)
+        if (crossRefs.isNotEmpty()) {
+            fansaUchiwaDao.insertEventUchiwaCrossRefs(crossRefs)
+        }
+    }
 }

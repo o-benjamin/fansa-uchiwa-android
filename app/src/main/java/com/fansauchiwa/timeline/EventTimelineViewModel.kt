@@ -1,13 +1,18 @@
 package com.fansauchiwa.timeline
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.UCHIWA_ID_ARG
+import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.source.EventEntity
+import com.fansauchiwa.data.source.EventWithUchiwas
+import com.fansauchiwa.ui.notification.UchiwaReminderNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,17 +25,22 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class EventTimelineViewModel @Inject constructor(
     private val eventRepository: EventRepository,
+    private val masterpieceRepository: MasterpieceRepository,
     private val uuidProvider: UuidProvider,
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val uchiwaId: String? = savedStateHandle.get<String>(UCHIWA_ID_ARG)
+    private var rawEvents: List<EventWithUchiwas> = emptyList()
+    private var availableUchiwas: List<EventTimelineUchiwaUiModel> = emptyList()
 
     private val _uiState = MutableStateFlow<EventTimelineUiState>(EventTimelineUiState.Loading)
     val uiState: StateFlow<EventTimelineUiState> = _uiState.asStateFlow()
 
     init {
         observeEvents()
+        fetchAvailableUchiwas()
         fetchEvents()
     }
 
@@ -49,19 +59,36 @@ class EventTimelineViewModel @Inject constructor(
     private fun observeEvents() {
         eventRepository.getEventsStream()
             .onEach { events ->
-                _uiState.value = EventTimelineUiState.Success(
-                    events = events,
-                    isSelectionMode = uchiwaId != null
-                )
+                rawEvents = events
+                publishSuccess()
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun fetchAvailableUchiwas() {
+        viewModelScope.launch {
+            runCatching {
+                availableUchiwas = masterpieceRepository.loadAllMasterpieces().map { imagePath ->
+                    EventTimelineUchiwaUiModel(
+                        id = extractUchiwaId(imagePath),
+                        imagePath = imagePath
+                    )
+                }
+                publishSuccess()
+            }.onFailure { error ->
+                _uiState.value = EventTimelineUiState.Error(
+                    error.message ?: "Unknown error"
+                )
+            }
+        }
     }
 
     fun saveEvent(
         eventId: String?,
         name: String,
         eventDate: LocalDate,
-        linkCurrentUchiwa: Boolean
+        remindEnabled: Boolean,
+        selectedUchiwaIds: Set<String>
     ) {
         viewModelScope.launch {
             runCatching {
@@ -70,12 +97,11 @@ class EventTimelineViewModel @Inject constructor(
                     EventEntity(
                         id = resolvedEventId,
                         name = name.trim(),
-                        eventDateEpochDay = eventDate.toEpochDay()
+                        eventDateEpochDay = eventDate.toEpochDay(),
+                        remindEnabled = remindEnabled
                     )
                 )
-                if (linkCurrentUchiwa && uchiwaId != null) {
-                    eventRepository.linkUchiwaToEvent(resolvedEventId, uchiwaId)
-                }
+                eventRepository.replaceEventUchiwas(resolvedEventId, selectedUchiwaIds.toList())
             }.onFailure { error ->
                 _uiState.value = EventTimelineUiState.Error(
                     error.message ?: "Unknown error"
@@ -107,5 +133,42 @@ class EventTimelineViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun sendDebugReminder(event: EventTimelineEventUiModel) {
+        UchiwaReminderNotifier.showReminder(
+            context = context,
+            eventId = event.id,
+            eventName = event.name,
+            eventDate = event.eventDate
+        )
+    }
+
+    private fun publishSuccess() {
+        val availableUchiwasById = availableUchiwas.associateBy { it.id }
+        _uiState.value = EventTimelineUiState.Success(
+            events = rawEvents.map { eventWithUchiwas ->
+                EventTimelineEventUiModel(
+                    id = eventWithUchiwas.event.id,
+                    name = eventWithUchiwas.event.name,
+                    eventDate = LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay),
+                    remindEnabled = eventWithUchiwas.event.remindEnabled,
+                    linkedUchiwas = eventWithUchiwas.uchiwas.map { uchiwa ->
+                        availableUchiwasById[uchiwa.id]
+                            ?: EventTimelineUchiwaUiModel(
+                                id = uchiwa.id,
+                                imagePath = null
+                            )
+                    }
+                )
+            },
+            availableUchiwas = availableUchiwas,
+            isSelectionMode = uchiwaId != null,
+            currentUchiwaId = uchiwaId
+        )
+    }
+
+    private fun extractUchiwaId(imagePath: String): String {
+        return imagePath.substringAfterLast("/").substringBeforeLast(".png")
     }
 }

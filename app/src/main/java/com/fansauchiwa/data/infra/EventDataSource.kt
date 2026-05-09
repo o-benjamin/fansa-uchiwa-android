@@ -13,4 +13,6 @@ interface EventDataSource {
     suspend fun deleteEvent(eventId: String)
 
     suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef)
+
+    suspend fun replaceEventUchiwaCrossRefs(eventId: String, crossRefs: List<EventUchiwaCrossRef>)
 }

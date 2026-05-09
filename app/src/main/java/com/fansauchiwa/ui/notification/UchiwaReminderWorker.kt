@@ -47,12 +47,14 @@ class UchiwaReminderWorker(
         val today = LocalDate.now()
         val reminderTargets = events.filter { eventWithUchiwas ->
             val daysUntil = calculateDaysUntil(today, eventWithUchiwas.event.eventDateEpochDay)
-            eventWithUchiwas.uchiwas.isNotEmpty() && daysUntil in 0..EVENT_REMINDER_DAYS_THRESHOLD
+            eventWithUchiwas.event.remindEnabled &&
+                eventWithUchiwas.uchiwas.isNotEmpty() &&
+                daysUntil in 0..EVENT_REMINDER_DAYS_THRESHOLD
         }
 
         if (reminderTargets.isEmpty()) return Result.success()
 
-        createNotificationChannel()
+        createNotificationChannel(applicationContext)
 
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -67,40 +69,14 @@ class UchiwaReminderWorker(
         val notificationManager = NotificationManagerCompat.from(applicationContext)
         reminderTargets.forEach { eventWithUchiwas ->
             val daysUntil = calculateDaysUntil(today, eventWithUchiwas.event.eventDateEpochDay)
-            val openAppIntent = Intent(applicationContext, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                applicationContext,
-                eventWithUchiwas.event.id.hashCode(),
-                openAppIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            UchiwaReminderNotifier.showReminder(
+                context = applicationContext,
+                eventId = eventWithUchiwas.event.id,
+                eventName = eventWithUchiwas.event.name,
+                eventDate = LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay),
+                daysUntil = daysUntil,
+                notificationManager = notificationManager
             )
-            val contentText = if (daysUntil == 0) {
-                applicationContext.getString(R.string.event_reminder_today_message)
-            } else {
-                applicationContext.getString(
-                    R.string.event_reminder_message,
-                    eventWithUchiwas.event.name,
-                    daysUntil
-                )
-            }
-            val notification = NotificationCompat.Builder(
-                applicationContext,
-                EVENT_REMINDER_CHANNEL_ID
-            )
-                .setSmallIcon(R.mipmap.ic_launcher_round)
-                .setContentTitle(
-                    applicationContext.getString(
-                        R.string.event_reminder_title,
-                        eventWithUchiwas.event.name
-                    )
-                )
-                .setContentText(contentText)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .build()
-            notificationManager.notify(eventWithUchiwas.event.id.hashCode(), notification)
         }
 
         return Result.success()
@@ -111,21 +87,6 @@ class UchiwaReminderWorker(
             today,
             LocalDate.ofEpochDay(eventDateEpochDay)
         ).toInt()
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val notificationManager =
-            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
-            EVENT_REMINDER_CHANNEL_ID,
-            applicationContext.getString(R.string.event_reminder_channel_name),
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-            description =
-                applicationContext.getString(R.string.event_reminder_channel_description)
-        }
-        notificationManager.createNotificationChannel(channel)
     }
 }
 
@@ -153,6 +114,62 @@ object UchiwaReminderScheduler {
     }
 }
 
+object UchiwaReminderNotifier {
+    fun showReminder(
+        context: Context,
+        eventId: String,
+        eventName: String,
+        eventDate: LocalDate,
+        daysUntil: Int = ChronoUnit.DAYS.between(LocalDate.now(), eventDate).toInt(),
+        notificationManager: NotificationManagerCompat = NotificationManagerCompat.from(context)
+    ) {
+        createNotificationChannel(context)
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val openAppIntent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            eventId.hashCode(),
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val contentText = if (daysUntil == 0) {
+            context.getString(R.string.event_reminder_today_message)
+        } else {
+            context.getString(
+                R.string.event_reminder_message,
+                eventName,
+                daysUntil
+            )
+        }
+        val notification = NotificationCompat.Builder(
+            context,
+            EVENT_REMINDER_CHANNEL_ID
+        )
+            .setSmallIcon(R.mipmap.ic_launcher_round)
+            .setContentTitle(
+                context.getString(
+                    R.string.event_reminder_title,
+                    eventName
+                )
+            )
+            .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+        notificationManager.notify(eventId.hashCode(), notification)
+    }
+}
+
 private object EventReminderDatabaseProvider {
     @Volatile
     private var database: FansaUchiwaDatabase? = null
@@ -162,4 +179,18 @@ private object EventReminderDatabaseProvider {
             database ?: FansaUchiwaDatabase.build(context).also { database = it }
         }
     }
+}
+
+private fun createNotificationChannel(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+    val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val channel = NotificationChannel(
+        EVENT_REMINDER_CHANNEL_ID,
+        context.getString(R.string.event_reminder_channel_name),
+        NotificationManager.IMPORTANCE_DEFAULT
+    ).apply {
+        description = context.getString(R.string.event_reminder_channel_description)
+    }
+    notificationManager.createNotificationChannel(channel)
 }
