@@ -85,6 +85,17 @@ fun StickerItemContent(
     // TextItemContentと合わせた解像度スケール
     val scaleFactor = 3.0f
 
+    val stickerShaderParams = remember {
+        PuffyShaderParams(
+            edgeWidthMulti = 30.0f,
+            normalZ = 0.4f,
+            lightDirZ = 3.0f,
+            shininess = 450f,
+            specularIntensity = 0.8f,
+            blurWeightCenter = 0.3f,
+        )
+    }
+
     LaunchedEffect(
         decoration.resId,
         decoration.strokeWidth,
@@ -186,7 +197,8 @@ fun StickerItemContent(
                     sdfTextureBitmap = secondBorderSdfBitmap!!,
                     baseColor = secondStrokeColor,
                     scaleFactor = scaleFactor,
-                    modifier = Modifier.matchParentSize()
+                    modifier = Modifier.matchParentSize(),
+                    shaderParams = stickerShaderParams
                 )
             }
             if (strokeSdfBitmap != null) {
@@ -194,7 +206,8 @@ fun StickerItemContent(
                     sdfTextureBitmap = strokeSdfBitmap!!,
                     baseColor = strokeColor,
                     scaleFactor = scaleFactor,
-                    modifier = Modifier.matchParentSize()
+                    modifier = Modifier.matchParentSize(),
+                    shaderParams = stickerShaderParams
                 )
             }
             if (fillSdfBitmap != null) {
@@ -202,7 +215,8 @@ fun StickerItemContent(
                     sdfTextureBitmap = fillSdfBitmap!!,
                     baseColor = fillColor,
                     scaleFactor = scaleFactor,
-                    modifier = Modifier.matchParentSize()
+                    modifier = Modifier.matchParentSize(),
+                    shaderParams = stickerShaderParams
                 )
             }
         }
