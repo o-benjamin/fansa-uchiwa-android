@@ -86,7 +86,7 @@ class UchiwaReminderWorker(
                 applicationContext,
                 EVENT_REMINDER_CHANNEL_ID
             )
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setContentTitle(
                     applicationContext.getString(
                         R.string.event_reminder_title,

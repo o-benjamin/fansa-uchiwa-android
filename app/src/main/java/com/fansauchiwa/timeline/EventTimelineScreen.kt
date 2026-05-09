@@ -79,6 +79,9 @@ private val TimelineContentPadding = PaddingValues(
     top = 160.dp,
     bottom = 160.dp
 )
+private const val TimelineMaxRotationDegrees = 10f
+private const val TimelineAlphaAttenuation = 0.4f
+private const val TimelineMinAlpha = 0.55f
 
 @Composable
 fun EventTimelineScreen(
@@ -464,15 +467,15 @@ private fun timelineCardRotation(
     itemInfo: LazyListItemInfo?,
     listState: LazyListState
 ): Float {
-    return normalizedTimelineDistance(itemInfo, listState) * 10f
+    return normalizedTimelineDistance(itemInfo, listState) * TimelineMaxRotationDegrees
 }
 
 private fun timelineCardAlpha(
     itemInfo: LazyListItemInfo?,
     listState: LazyListState
 ): Float {
-    val alpha = 1f - abs(normalizedTimelineDistance(itemInfo, listState)) * 0.4f
-    return alpha.coerceIn(0.55f, 1f)
+    val alpha = 1f - abs(normalizedTimelineDistance(itemInfo, listState)) * TimelineAlphaAttenuation
+    return alpha.coerceIn(TimelineMinAlpha, 1f)
 }
 
 private fun normalizedTimelineDistance(
