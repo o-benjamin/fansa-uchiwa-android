@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
@@ -112,15 +114,22 @@ fun EventEditBottomSheet(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-            OutlinedTextField(
-                value = selectedDate.format(EventDateTextFormatter),
-                onValueChange = {},
-                readOnly = true,
-                label = { Text(stringResource(R.string.event_date)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isDatePickerVisible = true }
-            )
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedDate.format(EventDateTextFormatter),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.event_date)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(role = Role.Button) { isDatePickerVisible = true }
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
