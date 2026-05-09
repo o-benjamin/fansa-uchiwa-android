@@ -30,6 +30,7 @@ private const val EVENT_REMINDER_WORK_NAME = "event-reminder-work"
 private const val EVENT_REMINDER_CHANNEL_ID = "event-reminder-channel"
 private const val EVENT_REMINDER_HOUR = 20
 private const val EVENT_REMINDER_MINUTE = 0
+private const val EVENT_REMINDER_DAYS_THRESHOLD = 10
 
 class UchiwaReminderWorker(
     appContext: Context,
@@ -46,7 +47,7 @@ class UchiwaReminderWorker(
         val today = LocalDate.now()
         val reminderTargets = events.filter { eventWithUchiwas ->
             val daysUntil = calculateDaysUntil(today, eventWithUchiwas.event.eventDateEpochDay)
-            eventWithUchiwas.uchiwas.isNotEmpty() && daysUntil in 0..10
+            eventWithUchiwas.uchiwas.isNotEmpty() && daysUntil in 0..EVENT_REMINDER_DAYS_THRESHOLD
         }
 
         if (reminderTargets.isEmpty()) return Result.success()

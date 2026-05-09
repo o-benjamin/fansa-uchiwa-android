@@ -10,7 +10,6 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.fansauchiwa.R
-import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.source.EventEntity
 import com.fansauchiwa.data.source.EventWithUchiwas
 import com.fansauchiwa.data.source.FansaUchiwaEntity
@@ -95,7 +94,7 @@ class EventTimelineScreenTest {
     private fun sampleUchiwa(id: String): FansaUchiwaEntity {
         return FansaUchiwaEntity(
             id = id,
-            decorations = emptyList<Decoration>(),
+            decorations = emptyList(),
             uchiwaColorValue = Color.White.toColorLong(),
             backgroundColorValue = Color.White.toColorLong()
         )
