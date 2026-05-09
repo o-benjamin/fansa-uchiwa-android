@@ -62,6 +62,7 @@ import com.fansauchiwa.edit.DecorationTabType
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.HeaderTitle
 import com.fansauchiwa.edit.ItemBadge
+import com.fansauchiwa.edit.TestTags
 import com.fansauchiwa.edit.buildRankIndexMap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
@@ -317,7 +318,8 @@ fun StickerPage(
                 isChecked = selectedStickerDecoration.isPukupuku,
                 onCheckedChange = onPuffyEnabledChanged,
                 onUnsupportedClick = onPuffyUnsupportedClick,
-                modifier = Modifier
+                modifier = Modifier.testTag(TestTags.PUFFY_STICKER_ROW),
+                switchModifier = Modifier.testTag(TestTags.PUFFY_STICKER_SWITCH)
             )
         }
 

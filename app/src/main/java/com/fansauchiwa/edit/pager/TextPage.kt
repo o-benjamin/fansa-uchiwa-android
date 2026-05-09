@@ -143,6 +143,12 @@ fun TextDecorationControls(
     }
 }
 
+/**
+ * Shared puffy toggle row used by both text and sticker edit controls.
+ *
+ * [isEnabled] represents whether the current device supports the AGSL effect at all,
+ * while [isChecked] represents the current on/off state for the selected decoration.
+ */
 @Composable
 fun PuffyEffectToggleRow(
     label: String,
