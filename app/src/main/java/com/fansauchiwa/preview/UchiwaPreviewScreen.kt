@@ -363,7 +363,7 @@ fun UchiwaPreviewContent(
         ) {
             Text(
                 text = stringResource(R.string.event_timeline_open_from_preview),
-                fontSize = 20.sp,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }

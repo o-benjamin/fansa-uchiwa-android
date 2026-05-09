@@ -73,6 +73,12 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 private val TimelineDateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd (E)", Locale.JAPAN)
+private val TimelineContentPadding = PaddingValues(
+    start = 24.dp,
+    end = 24.dp,
+    top = 160.dp,
+    bottom = 160.dp
+)
 
 @Composable
 fun EventTimelineScreen(
@@ -221,12 +227,7 @@ internal fun EventTimelineContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = PaddingValues(
-                    start = 24.dp,
-                    end = 24.dp,
-                    top = 160.dp,
-                    bottom = 160.dp
-                ),
+                contentPadding = TimelineContentPadding,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 itemsIndexed(
@@ -346,7 +347,7 @@ private fun EventTimelineCard(
     var isMenuExpanded by remember { mutableStateOf(false) }
     val itemInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
     val density = LocalDensity.current
-    val maxTranslationPx = with(density) { 72.dp.toPx() }
+    val maxTranslationPx = with(density) { 64.dp.toPx() }
     val rotation = timelineCardRotation(itemInfo, listState)
     val translationX = timelineCardTranslationX(itemInfo, listState, maxTranslationPx)
     val targetAlpha = timelineCardAlpha(itemInfo, listState)
@@ -355,7 +356,7 @@ private fun EventTimelineCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .widthIn(max = 360.dp)
+            .widthIn(max = 352.dp)
             .graphicsLayer {
                 this.translationX = translationX
                 rotationZ = rotation

@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.first
 
 private const val EVENT_REMINDER_WORK_NAME = "event-reminder-work"
 private const val EVENT_REMINDER_CHANNEL_ID = "event-reminder-channel"
+private const val EVENT_REMINDER_HOUR = 20
+private const val EVENT_REMINDER_MINUTE = 0
 
 class UchiwaReminderWorker(
     appContext: Context,
@@ -137,10 +139,11 @@ object UchiwaReminderScheduler {
     }
 
     private fun calculateInitialDelay(now: LocalDateTime = LocalDateTime.now()): Duration {
-        val nextRunTime = if (now.toLocalTime().isBefore(LocalTime.of(20, 0))) {
-            now.toLocalDate().atTime(20, 0)
+        val reminderTime = LocalTime.of(EVENT_REMINDER_HOUR, EVENT_REMINDER_MINUTE)
+        val nextRunTime = if (now.toLocalTime().isBefore(reminderTime)) {
+            now.toLocalDate().atTime(reminderTime)
         } else {
-            now.toLocalDate().plusDays(1).atTime(20, 0)
+            now.toLocalDate().plusDays(1).atTime(reminderTime)
         }
         return Duration.between(now, nextRunTime)
     }
