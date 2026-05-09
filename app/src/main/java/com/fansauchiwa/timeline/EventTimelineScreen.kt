@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -50,8 +49,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -77,9 +74,6 @@ private val TimelineContentPadding = PaddingValues(
     top = 160.dp,
     bottom = 160.dp
 )
-private const val TimelineMaxRotationDegrees = 10f
-private const val TimelineAlphaAttenuation = 0.4f
-private const val TimelineMinAlpha = 0.55f
 
 private sealed interface TimelineSnackbarMessage {
     data class Linked(val eventName: String) : TimelineSnackbarMessage
@@ -255,8 +249,6 @@ internal fun EventTimelineContent(
                 ) { index, item ->
                     EventTimelineCard(
                         event = item,
-                        listState = listState,
-                        index = index,
                         isSelected = index == selectedEventIndex,
                         onEdit = { editingTarget = item },
                         onDelete = { deleteTarget = item },
@@ -372,8 +364,6 @@ private fun EmptyEventTimeline(
 @Composable
 private fun EventTimelineCard(
     event: EventTimelineEventUiModel,
-    listState: LazyListState,
-    index: Int,
     isSelected: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -381,23 +371,11 @@ private fun EventTimelineCard(
     modifier: Modifier = Modifier
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
-    val itemInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
-    val density = LocalDensity.current
-    val maxTranslationPx = with(density) { 64.dp.toPx() }
-    val rotation = timelineCardRotation(itemInfo, listState)
-    val translationX = timelineCardTranslationX(itemInfo, listState, maxTranslationPx)
-    val targetAlpha = timelineCardAlpha(itemInfo, listState)
-    val animatedAlpha by animateFloatAsState(targetValue = targetAlpha, label = "timelineCardAlpha")
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .widthIn(max = 352.dp)
-            .graphicsLayer {
-                this.translationX = translationX
-                rotationZ = rotation
-                alpha = animatedAlpha
-            },
+            .widthIn(max = 352.dp),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
@@ -505,41 +483,6 @@ private fun calculateCenteredItemIndex(
     return layoutInfo.visibleItemsInfo.minByOrNull { itemInfo ->
         abs(itemInfo.offset + itemInfo.size / 2 - viewportCenter)
     }?.index
-}
-
-private fun timelineCardTranslationX(
-    itemInfo: LazyListItemInfo?,
-    listState: LazyListState,
-    maxTranslationPx: Float
-): Float {
-    return maxTranslationPx * abs(normalizedTimelineDistance(itemInfo, listState))
-}
-
-private fun timelineCardRotation(
-    itemInfo: LazyListItemInfo?,
-    listState: LazyListState
-): Float {
-    return normalizedTimelineDistance(itemInfo, listState) * TimelineMaxRotationDegrees
-}
-
-private fun timelineCardAlpha(
-    itemInfo: LazyListItemInfo?,
-    listState: LazyListState
-): Float {
-    val alpha = 1f - abs(normalizedTimelineDistance(itemInfo, listState)) * TimelineAlphaAttenuation
-    return alpha.coerceIn(TimelineMinAlpha, 1f)
-}
-
-private fun normalizedTimelineDistance(
-    itemInfo: LazyListItemInfo?,
-    listState: LazyListState
-): Float {
-    val layoutInfo = listState.layoutInfo
-    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2f
-    val itemCenter = itemInfo?.let { it.offset + it.size / 2f } ?: viewportCenter
-    val viewportSize = (layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset)
-        .coerceAtLeast(1)
-    return ((itemCenter - viewportCenter) / viewportSize).coerceIn(-1f, 1f)
 }
 
 private fun formatEventDate(eventDate: LocalDate): String {

@@ -32,7 +32,7 @@ internal fun TimelineUchiwaThumbnail(
     ) {
         if (imagePath == null) {
             Image(
-                painter = painterResource(id = R.mipmap.ic_launcher_round),
+                painter = painterResource(id = R.drawable.app_image),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
