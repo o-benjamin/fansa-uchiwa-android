@@ -402,7 +402,7 @@ fun EditScreen(
                                 viewModel.updateSecondBorderWidth(decorationId, weight)
                             }
                         },
-                        onTextPuffyEnabledChanged = { isPuffyEnabled ->
+                        onPuffyEnabledChanged = { isPuffyEnabled ->
                             uiState.selectedDecorationId?.let { decorationId ->
                                 viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
                             }

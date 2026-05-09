@@ -8,4 +8,6 @@ object TestTags {
     const val FONT_BUTTON_PREFIX = "font_button_"
     const val PUFFY_TEXT_ROW = "puffy_text_row"
     const val PUFFY_TEXT_SWITCH = "puffy_text_switch"
+    const val PUFFY_STICKER_ROW = "puffy_sticker_row"
+    const val PUFFY_STICKER_SWITCH = "puffy_sticker_switch"
 }

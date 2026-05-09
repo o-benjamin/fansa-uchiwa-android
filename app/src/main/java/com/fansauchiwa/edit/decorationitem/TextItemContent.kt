@@ -1,7 +1,6 @@
 package com.fansauchiwa.edit.decorationitem
 
 import android.graphics.Bitmap
-import android.os.Build
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -32,10 +31,6 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
-internal fun supportsPukuPukuTextEffect(sdkInt: Int = Build.VERSION.SDK_INT): Boolean {
-    return sdkInt >= Build.VERSION_CODES.TIRAMISU
-}
-
 @Composable
 fun TextItemContent(
     decoration: Decoration.Text,
@@ -43,7 +38,7 @@ fun TextItemContent(
     modifier: Modifier = Modifier,
     isPuffyEnabled: Boolean = decoration.isPuffyEnabled
 ) {
-    val shouldRenderPuffyText = isPuffyEnabled && supportsPukuPukuTextEffect()
+    val shouldRenderPuffyText = isPuffyEnabled && supportsPukuPukuEffect()
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val textColor = decoration.color

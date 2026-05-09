@@ -75,6 +75,7 @@ sealed interface Decoration : Parcelable {
         @Serializable(with = ColorSerializer::class)
         val secondStrokeColor: Color = DecorationColors.WHITE.value,
         val secondStrokeWidth: Float = 0f,
+        val isPukupuku: Boolean = false,
     ) : Decoration {
         @IgnoredOnParcel
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
