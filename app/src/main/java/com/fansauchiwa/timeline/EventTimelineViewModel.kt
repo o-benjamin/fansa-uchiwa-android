@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.source.EventEntity
 import com.fansauchiwa.data.source.EventWithUchiwas
@@ -14,6 +15,7 @@ import com.fansauchiwa.ui.notification.UchiwaReminderNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,7 +72,7 @@ class EventTimelineViewModel @Inject constructor(
             runCatching {
                 availableUchiwas = masterpieceRepository.loadAllMasterpieces().map { imagePath ->
                     EventTimelineUchiwaUiModel(
-                        id = extractUchiwaId(imagePath),
+                        id = extractUchiwaIdFromImagePath(imagePath),
                         imagePath = imagePath
                     )
                 }
@@ -140,7 +142,8 @@ class EventTimelineViewModel @Inject constructor(
             context = context,
             eventId = event.id,
             eventName = event.name,
-            eventDate = event.eventDate
+            eventDate = event.eventDate,
+            daysUntil = ChronoUnit.DAYS.between(LocalDate.now(), event.eventDate).toInt()
         )
     }
 
@@ -168,7 +171,4 @@ class EventTimelineViewModel @Inject constructor(
         )
     }
 
-    private fun extractUchiwaId(imagePath: String): String {
-        return imagePath.substringAfterLast("/").substringBeforeLast(".png")
-    }
 }

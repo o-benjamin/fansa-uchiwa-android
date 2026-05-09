@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -160,8 +161,7 @@ class UchiwaPreviewViewModel @Inject constructor(
 
     fun getCurrentUchiwaId(): String? {
         return uiState.value.imagePath
-            ?.substringAfterLast("/")
-            ?.substringBeforeLast(".png")
+            ?.let(::extractUchiwaIdFromImagePath)
             ?.takeIf { it.isNotBlank() }
     }
 }

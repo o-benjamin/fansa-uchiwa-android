@@ -205,7 +205,7 @@ internal fun EventTimelineContent(
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 TimelineActionFab(
                     text = stringResource(R.string.event_add_fab),

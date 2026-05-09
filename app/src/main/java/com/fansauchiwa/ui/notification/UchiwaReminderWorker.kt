@@ -120,7 +120,7 @@ object UchiwaReminderNotifier {
         eventId: String,
         eventName: String,
         eventDate: LocalDate,
-        daysUntil: Int = ChronoUnit.DAYS.between(LocalDate.now(), eventDate).toInt(),
+        daysUntil: Int,
         notificationManager: NotificationManagerCompat = NotificationManagerCompat.from(context)
     ) {
         createNotificationChannel(context)

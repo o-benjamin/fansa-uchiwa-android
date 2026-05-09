@@ -230,7 +230,7 @@ private fun SelectUchiwasDialog(
                 Text(text = stringResource(R.string.event_no_available_uchiwa))
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(120.dp),
+                    columns = GridCells.Adaptive(128.dp),
                     modifier = Modifier.height(280.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
