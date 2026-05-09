@@ -131,29 +131,49 @@ fun TextDecorationControls(
             onWeightChanged = onSecondBorderWeightChanged
         )
 
-        val puffyModifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp)
-            .alpha(if (isPukuPukuSupported) 1f else UnsupportedPuffyControlAlpha)
-            .testTag(TestTags.PUFFY_TEXT_ROW)
-        Row(
-            modifier = puffyModifier.run {
-                if (isPukuPukuSupported) this else clickable(onClick = onPuffyUnsupportedClick)
-            },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = stringResource(R.string.text_puffy_enabled),
-                fontWeight = FontWeight.Bold,
-            )
-            Switch(
-                checked = isPuffyEnabled,
-                onCheckedChange = if (isPukuPukuSupported) onPuffyEnabledChanged else null,
-                enabled = isPukuPukuSupported,
-                modifier = Modifier.testTag(TestTags.PUFFY_TEXT_SWITCH)
-            )
-        }
+        PuffyEffectToggleRow(
+            label = stringResource(R.string.text_puffy_enabled),
+            isEnabled = isPukuPukuSupported,
+            isChecked = isPuffyEnabled,
+            onCheckedChange = onPuffyEnabledChanged,
+            onUnsupportedClick = onPuffyUnsupportedClick,
+            modifier = Modifier.testTag(TestTags.PUFFY_TEXT_ROW),
+            switchModifier = Modifier.testTag(TestTags.PUFFY_TEXT_SWITCH)
+        )
+    }
+}
+
+@Composable
+fun PuffyEffectToggleRow(
+    label: String,
+    isEnabled: Boolean,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onUnsupportedClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    switchModifier: Modifier = Modifier
+) {
+    val puffyModifier = modifier
+        .fillMaxWidth()
+        .padding(top = 16.dp)
+        .alpha(if (isEnabled) 1f else UnsupportedPuffyControlAlpha)
+    Row(
+        modifier = puffyModifier.run {
+            if (isEnabled) this else clickable(onClick = onUnsupportedClick)
+        },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontWeight = FontWeight.Bold,
+        )
+        Switch(
+            checked = isChecked,
+            onCheckedChange = if (isEnabled) onCheckedChange else null,
+            enabled = isEnabled,
+            modifier = switchModifier
+        )
     }
 }
 

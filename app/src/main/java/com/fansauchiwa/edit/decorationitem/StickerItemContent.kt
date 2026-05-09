@@ -68,6 +68,7 @@ fun StickerItemContent(
                 with(LocalDensity.current) { intrinsicSize.width.toDp() },
                 with(LocalDensity.current) { intrinsicSize.height.toDp() }
             )
+            .pukupukuEffect(decoration.isPukupuku)
             .drawWithCache {
                 onDrawWithContent {
                     drawStickerWithStrokeScaled(
@@ -267,6 +268,7 @@ private fun StickerItemContentWithSecondStrokePreview() {
     FansaUchiwaTheme {
         StickerItemContent(
             decoration = previewStickerDecoration.copy(
+                isPukupuku = true,
                 secondStrokeColor = Color.Cyan,
                 secondStrokeWidth = 6f,
             ),
@@ -276,4 +278,3 @@ private fun StickerItemContentWithSecondStrokePreview() {
 }
 
 // endregion
-

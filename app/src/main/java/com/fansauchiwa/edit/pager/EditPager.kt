@@ -96,7 +96,7 @@ data class EditPagerActions(
     val onStrokeWeightChanged: (Float) -> Unit,
     val onSecondBorderColorSelected: (Color) -> Unit,
     val onSecondBorderWeightChanged: (Float) -> Unit,
-    val onTextPuffyEnabledChanged: (Boolean) -> Unit,
+    val onPuffyEnabledChanged: (Boolean) -> Unit,
     val onUnsupportedPuffyClick: () -> Unit,
     val onImageSelected: (String) -> Unit,
     val onImageLongPress: () -> Unit,
@@ -165,7 +165,7 @@ fun EditPager(
                         onStrokeWeightChanged = actions.onStrokeWeightChanged,
                         onSecondBorderColorSelected = actions.onSecondBorderColorSelected,
                         onSecondBorderWeightChanged = actions.onSecondBorderWeightChanged,
-                        onPuffyEnabledChanged = actions.onTextPuffyEnabledChanged,
+                        onPuffyEnabledChanged = actions.onPuffyEnabledChanged,
                         onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
                         isPukuPukuSupported = state.isPukuPukuSupported,
                         selectedTextDecoration = selectedTextDecoration
@@ -194,6 +194,9 @@ fun EditPager(
                         onStrokeWeightChanged = actions.onStrokeWeightChanged,
                         onSecondStrokeColorSelected = actions.onSecondBorderColorSelected,
                         onSecondStrokeWeightChanged = actions.onSecondBorderWeightChanged,
+                        onPuffyEnabledChanged = actions.onPuffyEnabledChanged,
+                        onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
+                        isPukuPukuSupported = state.isPukuPukuSupported,
                         selectedStickerDecoration = selectedStickerDecoration
                     )
                 }
@@ -259,6 +262,9 @@ fun StickerPage(
     onStrokeWeightChanged: (Float) -> Unit,
     onSecondStrokeColorSelected: (Color) -> Unit,
     onSecondStrokeWeightChanged: (Float) -> Unit,
+    onPuffyEnabledChanged: (Boolean) -> Unit,
+    onPuffyUnsupportedClick: () -> Unit,
+    isPukuPukuSupported: Boolean,
     modifier: Modifier = Modifier,
     selectedStickerDecoration: Decoration.Sticker? = null,
 ) {
@@ -303,6 +309,15 @@ fun StickerPage(
                 steps = 7,
                 onColorSelected = onSecondStrokeColorSelected,
                 onWeightChanged = onSecondStrokeWeightChanged
+            )
+
+            PuffyEffectToggleRow(
+                label = stringResource(R.string.sticker_puffy_enabled),
+                isEnabled = isPukuPukuSupported,
+                isChecked = selectedStickerDecoration.isPukupuku,
+                onCheckedChange = onPuffyEnabledChanged,
+                onUnsupportedClick = onPuffyUnsupportedClick,
+                modifier = Modifier
             )
         }
 
@@ -503,6 +518,9 @@ fun StickerPagePreview() {
             onStrokeWeightChanged = {},
             onSecondStrokeColorSelected = {},
             onSecondStrokeWeightChanged = {},
+            onPuffyEnabledChanged = {},
+            onPuffyUnsupportedClick = {},
+            isPukuPukuSupported = true,
             selectedStickerDecoration = Decoration.Sticker(
                 id = "preview-id",
                 label = "star",
