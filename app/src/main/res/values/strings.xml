@@ -81,7 +81,7 @@
     <string name="settings_title">アプリ設定</string>
     <string name="settings_haptic_feedback">触覚フィードバック</string>
     <string name="event_timeline">イベント予定</string>
-    <string name="event_timeline_open_from_preview">イベントカレンダーに追加</string>
+    <string name="event_timeline_open_from_preview">イベント予定に追加</string>
     <string name="event_add">イベントを追加</string>
     <string name="event_name">イベント名</string>
     <string name="event_date">開催日</string>
