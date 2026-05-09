@@ -113,6 +113,8 @@
     <string name="event_add_uchiwas">持っていくうちわを追加</string>
     <string name="event_add_uchiwas_dialog_title">マイデザインから選択</string>
     <string name="event_add_uchiwas_confirm">追加</string>
+    <string name="event_select_thumbnail_title">サムネイルを選択</string>
+    <string name="event_select_thumbnail_confirm">決定</string>>
     <string name="event_no_available_uchiwa">追加できるうちわがありません</string>
     <string name="event_reminder_enabled">リマインドを受け取る</string>
     <string name="event_add_fab">イベント追加</string>

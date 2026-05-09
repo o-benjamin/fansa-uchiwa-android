@@ -34,4 +34,8 @@ class EventLocalSource @Inject constructor(
             fansaUchiwaDao.insertEventUchiwaCrossRefs(crossRefs)
         }
     }
+
+    override suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?) {
+        fansaUchiwaDao.updateEventThumbnail(eventId, thumbnailImagePath)
+    }
 }

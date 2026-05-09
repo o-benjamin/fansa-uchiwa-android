@@ -12,5 +12,6 @@ data class EventEntity(
     @PrimaryKey val id: String,
     val name: String,
     val eventDateEpochDay: Long,
-    val remindEnabled: Boolean
+    val remindEnabled: Boolean,
+    val thumbnailImagePath: String? = null
 )

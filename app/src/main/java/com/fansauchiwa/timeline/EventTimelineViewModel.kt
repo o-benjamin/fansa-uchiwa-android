@@ -124,6 +124,18 @@ class EventTimelineViewModel @Inject constructor(
         }
     }
 
+    fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?) {
+        viewModelScope.launch {
+            runCatching {
+                eventRepository.updateEventThumbnail(eventId, thumbnailImagePath)
+            }.onFailure { error ->
+                _uiState.value = EventTimelineUiState.Error(
+                    error.message ?: "Unknown error"
+                )
+            }
+        }
+    }
+
     fun linkUchiwaToEvent(eventId: String) {
         val currentUchiwaId = uchiwaId ?: return
         viewModelScope.launch {
@@ -162,7 +174,8 @@ class EventTimelineViewModel @Inject constructor(
                                 id = uchiwa.id,
                                 imagePath = null
                             )
-                    }
+                    },
+                    thumbnailImagePath = eventWithUchiwas.event.thumbnailImagePath
                 )
             },
             availableUchiwas = availableUchiwas,

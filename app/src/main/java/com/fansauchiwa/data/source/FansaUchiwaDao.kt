@@ -28,6 +28,9 @@ interface FansaUchiwaDao {
     @Query("DELETE FROM events WHERE id = :id")
     suspend fun deleteEventById(id: String)
 
+    @Query("UPDATE events SET thumbnailImagePath = :thumbnailImagePath WHERE id = :eventId")
+    suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef)
 

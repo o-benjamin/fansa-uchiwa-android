@@ -9,19 +9,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -54,7 +49,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
-import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -276,66 +270,6 @@ fun EventEditBottomSheet(
             }
         )
     }
-}
-
-@Composable
-private fun SelectUchiwasDialog(
-    availableUchiwas: List<EventTimelineUchiwaUiModel>,
-    selectedUchiwaIds: Set<String>,
-    onDismiss: () -> Unit,
-    onConfirm: (Set<String>) -> Unit
-) {
-    var currentSelection by remember(selectedUchiwaIds) { mutableStateOf(selectedUchiwaIds) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.event_add_uchiwas_dialog_title)) },
-        text = {
-            if (availableUchiwas.isEmpty()) {
-                Text(text = stringResource(R.string.event_no_available_uchiwa))
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(128.dp),
-                    modifier = Modifier.height(280.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(availableUchiwas, key = { it.id }) { uchiwa ->
-                        Box(
-                            modifier = Modifier.clickable {
-                                currentSelection = if (uchiwa.id in currentSelection) {
-                                    currentSelection - uchiwa.id
-                                } else {
-                                    currentSelection + uchiwa.id
-                                }
-                            }
-                        ) {
-                            TimelineUchiwaThumbnail(
-                                imagePath = uchiwa.imagePath,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(112.dp)
-                            )
-                            SelectionCircleIcon(
-                                isSelected = uchiwa.id in currentSelection,
-                                modifier = Modifier.align(Alignment.TopEnd)
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(currentSelection) }) {
-                Text(text = stringResource(R.string.event_add_uchiwas_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.cancel))
-            }
-        }
-    )
 }
 
 @Preview(showBackground = true)

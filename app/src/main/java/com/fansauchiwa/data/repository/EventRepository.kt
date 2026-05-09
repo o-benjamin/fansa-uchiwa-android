@@ -22,6 +22,8 @@ interface EventRepository {
     suspend fun linkUchiwaToEvent(eventId: String, uchiwaId: String)
 
     suspend fun replaceEventUchiwas(eventId: String, uchiwaIds: List<String>)
+
+    suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?)
 }
 
 class EventRepositoryImpl @Inject constructor(
@@ -67,6 +69,11 @@ class EventRepositoryImpl @Inject constructor(
                 )
             }
         )
+        fetchEvents()
+    }
+
+    override suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?) {
+        eventDataSource.updateEventThumbnail(eventId, thumbnailImagePath)
         fetchEvents()
     }
 }

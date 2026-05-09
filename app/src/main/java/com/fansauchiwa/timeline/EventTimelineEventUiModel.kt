@@ -7,5 +7,6 @@ data class EventTimelineEventUiModel(
     val name: String,
     val eventDate: LocalDate,
     val remindEnabled: Boolean,
-    val linkedUchiwas: List<EventTimelineUchiwaUiModel>
+    val linkedUchiwas: List<EventTimelineUchiwaUiModel>,
+    val thumbnailImagePath: String? = null
 )

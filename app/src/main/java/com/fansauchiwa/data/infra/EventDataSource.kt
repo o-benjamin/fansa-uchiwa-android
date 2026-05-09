@@ -15,4 +15,6 @@ interface EventDataSource {
     suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef)
 
     suspend fun replaceEventUchiwaCrossRefs(eventId: String, crossRefs: List<EventUchiwaCrossRef>)
+
+    suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?)
 }

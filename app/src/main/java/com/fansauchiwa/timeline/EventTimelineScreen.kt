@@ -1,19 +1,18 @@
 package com.fansauchiwa.timeline
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -67,7 +66,6 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
-import com.morayl.footprint.footprint
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -126,6 +124,7 @@ fun EventTimelineScreen(
                 onSaveEvent = viewModel::saveEvent,
                 onDeleteEvent = viewModel::deleteEvent,
                 onSendDebugReminder = viewModel::sendDebugReminder,
+                onUpdateEventThumbnail = viewModel::updateEventThumbnail,
                 modifier = modifier
             )
         }
@@ -144,6 +143,7 @@ internal fun EventTimelineContent(
     onSaveEvent: (String?, String, LocalDate, Boolean, Set<String>) -> Unit,
     onDeleteEvent: (String) -> Unit,
     onSendDebugReminder: (EventTimelineEventUiModel) -> Unit,
+    onUpdateEventThumbnail: (String, String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -305,6 +305,9 @@ internal fun EventTimelineContent(
                         onSendDebugReminder = {
                             onSendDebugReminder(item)
                             snackbarMessage = TimelineSnackbarMessage.DebugReminderSent
+                        },
+                        onUpdateThumbnail = { imagePath ->
+                            onUpdateEventThumbnail(item.id, imagePath)
                         }
                     )
                 }
@@ -417,9 +420,14 @@ private fun EventTimelineCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onSendDebugReminder: () -> Unit,
+    onUpdateThumbnail: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
+    var isSelectDialogVisible by remember { mutableStateOf(false) }
+
+    val selectedImagePath = event.thumbnailImagePath
+        ?: event.linkedUchiwas.firstOrNull()?.imagePath
 
     Card(
         modifier = modifier
@@ -443,10 +451,20 @@ private fun EventTimelineCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TimelineUchiwaThumbnail(
-                imagePath = event.linkedUchiwas.firstOrNull()?.imagePath,
-                modifier = Modifier.size(96.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(96.dp)
+                    .clickable {
+                        if (event.linkedUchiwas.isNotEmpty()) {
+                            isSelectDialogVisible = true
+                        }
+                    }
+            ) {
+                TimelineUchiwaThumbnail(
+                    imagePath = selectedImagePath,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             Row(
                 verticalAlignment = Alignment.Top,
             ) {
@@ -515,6 +533,26 @@ private fun EventTimelineCard(
             }
         }
     }
+
+    if (isSelectDialogVisible) {
+        val selectedUchiwaId =
+            event.linkedUchiwas.find { it.imagePath == event.thumbnailImagePath }?.id
+                ?: event.linkedUchiwas.firstOrNull()?.id
+        SelectUchiwasDialog(
+            availableUchiwas = event.linkedUchiwas,
+            selectedUchiwaIds = setOfNotNull(selectedUchiwaId),
+            onDismiss = { isSelectDialogVisible = false },
+            onConfirm = { ids ->
+                val selectedId = ids.firstOrNull()
+                val imagePath = event.linkedUchiwas.find { it.id == selectedId }?.imagePath
+                onUpdateThumbnail(imagePath)
+                isSelectDialogVisible = false
+            },
+            maxSelectionCount = 1,
+            titleResId = R.string.event_select_thumbnail_title,
+            confirmButtonResId = R.string.event_select_thumbnail_confirm
+        )
+    }
 }
 
 private fun calculateCenteredItemIndex(
@@ -560,7 +598,8 @@ private fun EventTimelineContentPreview() {
             onLinkEvent = {},
             onSaveEvent = { _, _, _, _, _ -> },
             onDeleteEvent = {},
-            onSendDebugReminder = {}
+            onSendDebugReminder = {},
+            onUpdateEventThumbnail = { _, _ -> }
         )
     }
 }
