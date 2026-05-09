@@ -1,0 +1,147 @@
+package com.fansauchiwa.ui.notification
+
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkerParameters
+import androidx.work.WorkManager
+import com.fansauchiwa.MainActivity
+import com.fansauchiwa.R
+import com.fansauchiwa.data.source.FansaUchiwaDatabase
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+
+private const val EVENT_REMINDER_WORK_NAME = "event-reminder-work"
+private const val EVENT_REMINDER_CHANNEL_ID = "event-reminder-channel"
+
+class UchiwaReminderWorker(
+    appContext: Context,
+    params: WorkerParameters
+) : CoroutineWorker(appContext, params) {
+
+    override suspend fun doWork(): Result {
+        val database = FansaUchiwaDatabase.build(applicationContext)
+        val events = database.uchiwaDao().getAllEventsWithUchiwasStream().first()
+        database.close()
+
+        val today = LocalDate.now()
+        val reminderTargets = events.filter { eventWithUchiwas ->
+            val daysUntil = ChronoUnit.DAYS.between(
+                today,
+                LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay)
+            ).toInt()
+            eventWithUchiwas.uchiwas.isNotEmpty() && daysUntil in 0..10
+        }
+
+        if (reminderTargets.isEmpty()) return Result.success()
+
+        createNotificationChannel()
+
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                applicationContext,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return Result.success()
+        }
+
+        val notificationManager = NotificationManagerCompat.from(applicationContext)
+        reminderTargets.forEach { eventWithUchiwas ->
+            val daysUntil = ChronoUnit.DAYS.between(
+                today,
+                LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay)
+            ).toInt()
+            val openAppIntent = Intent(applicationContext, MainActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext,
+                eventWithUchiwas.event.id.hashCode(),
+                openAppIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val contentText = if (daysUntil == 0) {
+                applicationContext.getString(R.string.event_reminder_today_message)
+            } else {
+                applicationContext.getString(
+                    R.string.event_reminder_message,
+                    eventWithUchiwas.event.name,
+                    daysUntil
+                )
+            }
+            val notification = NotificationCompat.Builder(
+                applicationContext,
+                EVENT_REMINDER_CHANNEL_ID
+            )
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(
+                    applicationContext.getString(
+                        R.string.event_reminder_title,
+                        eventWithUchiwas.event.name
+                    )
+                )
+                .setContentText(contentText)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build()
+            notificationManager.notify(eventWithUchiwas.event.id.hashCode(), notification)
+        }
+
+        return Result.success()
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val notificationManager =
+            applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channel = NotificationChannel(
+            EVENT_REMINDER_CHANNEL_ID,
+            applicationContext.getString(R.string.event_reminder_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description =
+                applicationContext.getString(R.string.event_reminder_channel_description)
+        }
+        notificationManager.createNotificationChannel(channel)
+    }
+}
+
+object UchiwaReminderScheduler {
+    fun schedule(context: Context) {
+        val initialDelay = calculateInitialDelay()
+        val request = PeriodicWorkRequestBuilder<UchiwaReminderWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(initialDelay.toMillis(), TimeUnit.MILLISECONDS)
+            .build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            EVENT_REMINDER_WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
+    }
+
+    private fun calculateInitialDelay(now: LocalDateTime = LocalDateTime.now()): Duration {
+        val nextRunTime = if (now.toLocalTime().isBefore(LocalTime.of(20, 0))) {
+            now.toLocalDate().atTime(20, 0)
+        } else {
+            now.toLocalDate().plusDays(1).atTime(20, 0)
+        }
+        return Duration.between(now, nextRunTime)
+    }
+}

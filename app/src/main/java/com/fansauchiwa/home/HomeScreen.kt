@@ -156,6 +156,7 @@ private fun HomeFab(
 @Composable
 private fun HomeTopAppBar(
     onNavigateToSettings: () -> Unit,
+    onNavigateToTimeline: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenFeedback: () -> Unit,
     onOpenOfficialSite: () -> Unit
@@ -181,6 +182,13 @@ private fun HomeTopAppBar(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.event_timeline)) },
+                    onClick = {
+                        menuExpanded = false
+                        onNavigateToTimeline()
+                    }
+                )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.official_site)) },
                     onClick = {
@@ -214,7 +222,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onImageClick: (String, String?) -> Unit = { _, _ -> },
     onAddClick: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToTimeline: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -240,6 +249,7 @@ fun HomeScreen(
             val uriHandler = LocalUriHandler.current
             HomeTopAppBar(
                 onNavigateToSettings = onNavigateToSettings,
+                onNavigateToTimeline = onNavigateToTimeline,
                 onOpenPrivacyPolicy = {
                     val url =
                         "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
@@ -723,4 +733,3 @@ private fun HomeFabPreview_SelectionMode_WithSelection() {
 }
 
 // endregion
-

@@ -74,7 +74,8 @@ fun UchiwaPreviewScreen(
     modifier: Modifier = Modifier,
     viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
-    onBackToHome: () -> Unit = {}
+    onBackToHome: () -> Unit = {},
+    onNavigateToTimeline: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -186,6 +187,13 @@ fun UchiwaPreviewScreen(
                 viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_GO_HOME)
                 onBackToHome()
             },
+            onEventTimelineClick = {
+                uiState.imagePath
+                    ?.substringAfterLast("/")
+                    ?.substringBeforeLast(".png")
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let(onNavigateToTimeline)
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -241,6 +249,7 @@ fun UchiwaPreviewContent(
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
     onBackToHomeClick: () -> Unit,
+    onEventTimelineClick: () -> Unit,
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
 ) {
@@ -344,6 +353,20 @@ fun UchiwaPreviewContent(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
+        Button(
+            onClick = onEventTimelineClick,
+            enabled = imagePath != null,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+        ) {
+            Text(
+                text = stringResource(R.string.event_timeline_open_from_preview),
+                fontSize = 20.sp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
         TextButton(
             onClick = onBackToHomeClick,
             enabled = imagePath != null
@@ -365,6 +388,7 @@ private fun UchiwaPreviewContentLoadingAdPreview() {
             onSaveClick = {},
             onShareClick = {},
             onBackToHomeClick = {},
+            onEventTimelineClick = {},
             modifier = Modifier
                 .padding(16.dp),
             isPreview = true

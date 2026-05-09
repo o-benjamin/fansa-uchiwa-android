@@ -11,6 +11,7 @@ object FansaUchiwaScreens {
     const val PREVIEW_SCREEN = "preview"
     const val IMAGE_PREVIEW_SCREEN = "image_preview"
     const val SETTINGS_SCREEN = "settings"
+    const val TIMELINE_SCREEN = "timeline"
 }
 
 const val UCHIWA_ID_ARG = "uchiwaId"
@@ -56,6 +57,17 @@ data object ImagePreviewDestination : FansaUchiwaNavigationDestination {
 data object SettingsDestination : FansaUchiwaNavigationDestination {
     override val screen: String = FansaUchiwaScreens.SETTINGS_SCREEN
     override val route: String = screen
+}
+
+data object EventTimelineDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.TIMELINE_SCREEN
+    override val route: String = "$screen?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}"
+
+    fun createRoute(uchiwaId: String?): String =
+        buildQueryRoute(
+            screen = screen,
+            arguments = arrayOf(UCHIWA_ID_ARG to uchiwaId)
+        )
 }
 
 private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"
