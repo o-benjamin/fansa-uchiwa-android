@@ -374,7 +374,7 @@ private fun EventTimelineCard(
             }
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 8.dp else 2.dp
+            defaultElevation = if (isSelected) 8.dp else 4.dp
         )
     ) {
         Column(
