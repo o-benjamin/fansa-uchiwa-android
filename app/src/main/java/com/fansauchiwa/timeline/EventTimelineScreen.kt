@@ -1,18 +1,20 @@
 package com.fansauchiwa.timeline
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -20,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -49,6 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,9 +63,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.R
+import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
+import com.morayl.footprint.footprint
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -68,12 +75,6 @@ import java.util.Locale
 import kotlin.math.abs
 
 private val TimelineDateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd (E)", Locale.JAPAN)
-private val TimelineContentPadding = PaddingValues(
-    start = 24.dp,
-    end = 24.dp,
-    top = 160.dp,
-    bottom = 160.dp
-)
 
 private sealed interface TimelineSnackbarMessage {
     data class Linked(val eventName: String) : TimelineSnackbarMessage
@@ -153,6 +154,24 @@ internal fun EventTimelineContent(
     var editingTarget by remember { mutableStateOf<EventTimelineEventUiModel?>(null) }
     var isCreateSheetVisible by remember { mutableStateOf(false) }
     var snackbarMessage by remember { mutableStateOf<TimelineSnackbarMessage?>(null) }
+    var hasScrolledToInitialItem by remember { mutableStateOf(false) }
+
+    val density = LocalDensity.current
+    val verticalPadding by remember(listState) {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val viewportHeight = layoutInfo.viewportSize.height
+            val itemSize = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
+            if (viewportHeight > 0 && itemSize > 0) {
+                with(density) {
+                    ((viewportHeight - itemSize) / 2).coerceAtLeast(0).toDp()
+                }
+            } else {
+                0.dp
+            }
+        }
+    }
+
     val selectedEventIndex by remember(listState, events) {
         derivedStateOf { calculateCenteredItemIndex(listState, events.size) }
     }
@@ -162,10 +181,26 @@ internal fun EventTimelineContent(
             R.string.event_linked_snackbar,
             currentMessage.eventName
         )
+
         TimelineSnackbarMessage.Saved -> stringResource(R.string.event_saved_snackbar)
         TimelineSnackbarMessage.Deleted -> stringResource(R.string.event_deleted_snackbar)
         TimelineSnackbarMessage.DebugReminderSent -> stringResource(R.string.event_debug_reminder_sent)
         null -> null
+    }
+
+    LaunchedEffect(events, listState.layoutInfo.viewportSize.height, verticalPadding) {
+        if (!hasScrolledToInitialItem && events.isNotEmpty() && listState.layoutInfo.viewportSize.height > 0 && verticalPadding > 0.dp) {
+            val today = LocalDate.now()
+            val closestFutureIndex = events
+                .mapIndexed { index, event -> index to event.eventDate }
+                .filter { (_, date) -> !date.isBefore(today) }
+                .minByOrNull { (_, date) -> ChronoUnit.DAYS.between(today, date) }
+                ?.first
+                ?: 0
+
+            listState.animateScrollToItem(closestFutureIndex)
+            hasScrolledToInitialItem = true
+        }
     }
 
     LaunchedEffect(selectedEventIndex) {
@@ -196,15 +231,25 @@ internal fun EventTimelineContent(
                 }
             )
         },
+        bottomBar = {
+            BannerAd(
+                LocalContext.current,
+                modifier.windowInsetsPadding(WindowInsets.navigationBars)
+            )
+        },
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                TimelineActionFab(
-                    text = stringResource(R.string.event_add_fab),
+                FloatingActionButton(
                     onClick = { isCreateSheetVisible = true }
-                )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add)
+                    )
+                }
                 if (isSelectionMode && selectedEvent != null) {
                     TimelineActionFab(
                         text = stringResource(
@@ -240,7 +285,12 @@ internal fun EventTimelineContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = TimelineContentPadding,
+                contentPadding = PaddingValues(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = verticalPadding,
+                    bottom = verticalPadding
+                ),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 itemsIndexed(
@@ -324,7 +374,6 @@ private fun TimelineActionFab(
     FloatingActionButton(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(32.dp),
         containerColor = containerColor ?: MaterialTheme.colorScheme.secondaryContainer,
         contentColor = contentColor ?: MaterialTheme.colorScheme.onSecondaryContainer
     ) {
@@ -374,8 +423,7 @@ private fun EventTimelineCard(
 
     Card(
         modifier = modifier
-            .fillMaxWidth()
-            .widthIn(max = 352.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
@@ -399,13 +447,11 @@ private fun EventTimelineCard(
                 imagePath = event.linkedUchiwas.firstOrNull()?.imagePath,
                 modifier = Modifier.size(96.dp)
             )
-            Box(
-                modifier = Modifier.weight(1f)
+            Row(
+                verticalAlignment = Alignment.Top,
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 40.dp),
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -432,7 +478,6 @@ private fun EventTimelineCard(
                 }
                 IconButton(
                     onClick = { isMenuExpanded = true },
-                    modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
