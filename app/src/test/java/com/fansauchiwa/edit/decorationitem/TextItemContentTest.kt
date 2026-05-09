@@ -7,12 +7,12 @@ import org.junit.Test
 class TextItemContentTest {
 
     @Test
-    fun supportsPukuPukuTextEffect_whenSdkIsBelowAndroid13_returnsFalse() {
-        assertFalse(supportsPukuPukuTextEffect(32))
+    fun supportsPukuPukuEffect_whenSdkIsBelowAndroid13_returnsFalse() {
+        assertFalse(supportsPukuPukuEffect(32))
     }
 
     @Test
-    fun supportsPukuPukuTextEffect_whenSdkIsAndroid13OrAbove_returnsTrue() {
-        assertTrue(supportsPukuPukuTextEffect(33))
+    fun supportsPukuPukuEffect_whenSdkIsAndroid13OrAbove_returnsTrue() {
+        assertTrue(supportsPukuPukuEffect(33))
     }
 }

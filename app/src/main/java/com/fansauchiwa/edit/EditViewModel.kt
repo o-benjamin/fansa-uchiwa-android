@@ -561,9 +561,11 @@ class EditViewModel @Inject constructor(
     fun updatePuffyEnabled(id: String, isPuffyEnabled: Boolean) {
         saveSnapshot()
         updateDecoration(id) { decoration ->
-            if (decoration is Decoration.Text) {
-                decoration.copy(isPuffyEnabled = isPuffyEnabled)
-            } else decoration
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(isPuffyEnabled = isPuffyEnabled)
+                is Decoration.Sticker -> decoration.copy(isPukupuku = isPuffyEnabled)
+                else -> decoration
+            }
         }
     }
 
