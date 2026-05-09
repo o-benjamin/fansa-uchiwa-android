@@ -1,27 +1,41 @@
 package com.fansauchiwa.timeline
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,8 +44,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
@@ -73,22 +92,33 @@ fun EventEditBottomSheet(
     var nameError by remember { mutableStateOf<Int?>(null) }
     var isDatePickerVisible by remember { mutableStateOf(false) }
     var isUchiwaDialogVisible by remember { mutableStateOf(false) }
-    val datePickerState = androidx.compose.material3.rememberDatePickerState(
+    val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate
             .atStartOfDay(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
     )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         modifier = modifier
     ) {
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                    })
+                },
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = stringResource(
@@ -108,9 +138,15 @@ fun EventEditBottomSheet(
                 },
                 label = { Text(stringResource(R.string.event_name)) },
                 isError = nameError != null,
+                singleLine = true,
                 supportingText = {
                     nameError?.let { Text(text = stringResource(it)) }
                 },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }),
                 modifier = Modifier.fillMaxWidth()
             )
             Box(
@@ -129,6 +165,43 @@ fun EventEditBottomSheet(
                         .clickable(role = Role.Button) { isDatePickerVisible = true }
                 )
             }
+            Text(
+                text = stringResource(R.string.event_bring_uchiwas),
+                style = MaterialTheme.typography.titleMedium
+            )
+            val scrollState = rememberScrollState()
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                selectedUchiwaIds.forEach { id ->
+                    val uchiwa = availableUchiwas.find { it.id == id }
+                    if (uchiwa != null) {
+                        TimelineUchiwaThumbnail(
+                            imagePath = uchiwa.imagePath,
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+                }
+                Surface(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .clickable { isUchiwaDialogVisible = true },
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = CircleShape
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(R.string.event_add_uchiwas),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -143,16 +216,6 @@ fun EventEditBottomSheet(
                     onCheckedChange = { remindEnabled = it }
                 )
             }
-            Button(
-                onClick = { isUchiwaDialogVisible = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = stringResource(R.string.event_add_uchiwas))
-            }
-            Text(
-                text = stringResource(R.string.event_selected_uchiwa_count, selectedUchiwaIds.size),
-                style = MaterialTheme.typography.bodyMedium
-            )
             Button(
                 onClick = {
                     val trimmedName = name.trim()
@@ -170,12 +233,6 @@ fun EventEditBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(R.string.save))
-            }
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = stringResource(R.string.cancel))
             }
         }
     }

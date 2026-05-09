@@ -109,6 +109,7 @@
     <string name="event_reminder_title">%1$sの準備をしよう！</string>
     <string name="event_reminder_today_message">いよいよ今日です！</string>
     <string name="event_reminder_message">%1$sまであと%2$d日！</string>
+    <string name="event_bring_uchiwas">持っていくうちわ</string>
     <string name="event_add_uchiwas">持っていくうちわを追加</string>
     <string name="event_add_uchiwas_dialog_title">マイデザインから選択</string>
     <string name="event_add_uchiwas_confirm">追加</string>
