@@ -37,16 +37,15 @@ class UchiwaReminderWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val database = FansaUchiwaDatabase.build(applicationContext)
-        val events = database.uchiwaDao().getAllEventsWithUchiwasStream().first()
-        database.close()
+        val events = EventReminderDatabaseProvider
+            .get(applicationContext)
+            .uchiwaDao()
+            .getAllEventsWithUchiwasStream()
+            .first()
 
         val today = LocalDate.now()
         val reminderTargets = events.filter { eventWithUchiwas ->
-            val daysUntil = ChronoUnit.DAYS.between(
-                today,
-                LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay)
-            ).toInt()
+            val daysUntil = calculateDaysUntil(today, eventWithUchiwas.event.eventDateEpochDay)
             eventWithUchiwas.uchiwas.isNotEmpty() && daysUntil in 0..10
         }
 
@@ -66,10 +65,7 @@ class UchiwaReminderWorker(
 
         val notificationManager = NotificationManagerCompat.from(applicationContext)
         reminderTargets.forEach { eventWithUchiwas ->
-            val daysUntil = ChronoUnit.DAYS.between(
-                today,
-                LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay)
-            ).toInt()
+            val daysUntil = calculateDaysUntil(today, eventWithUchiwas.event.eventDateEpochDay)
             val openAppIntent = Intent(applicationContext, MainActivity::class.java)
             val pendingIntent = PendingIntent.getActivity(
                 applicationContext,
@@ -109,6 +105,13 @@ class UchiwaReminderWorker(
         return Result.success()
     }
 
+    private fun calculateDaysUntil(today: LocalDate, eventDateEpochDay: Long): Int {
+        return ChronoUnit.DAYS.between(
+            today,
+            LocalDate.ofEpochDay(eventDateEpochDay)
+        ).toInt()
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val notificationManager =
@@ -146,5 +149,16 @@ object UchiwaReminderScheduler {
             now.toLocalDate().plusDays(1).atTime(reminderTime)
         }
         return Duration.between(now, nextRunTime)
+    }
+}
+
+private object EventReminderDatabaseProvider {
+    @Volatile
+    private var database: FansaUchiwaDatabase? = null
+
+    fun get(context: Context): FansaUchiwaDatabase {
+        return database ?: synchronized(this) {
+            database ?: FansaUchiwaDatabase.build(context).also { database = it }
+        }
     }
 }
