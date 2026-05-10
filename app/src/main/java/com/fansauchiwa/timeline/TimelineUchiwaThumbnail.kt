@@ -31,7 +31,7 @@ internal fun TimelineUchiwaThumbnail(
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .size(28.dp),
+                .size(32.dp),
             color = Color.Black.copy(alpha = 0.45f),
             shape = CircleShape
         ) {
