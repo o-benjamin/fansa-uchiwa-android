@@ -35,7 +35,8 @@ class EventTimelineScreenTest {
                     onLinkEvent = {},
                     onSaveEvent = { _, _, _, _, _ -> },
                     onDeleteEvent = {},
-                    onSendDebugReminder = {}
+                    onSendDebugReminder = {},
+                    onUpdateEventThumbnail = { _, _ -> }
                 )
             }
         }
@@ -60,7 +61,8 @@ class EventTimelineScreenTest {
                     onLinkEvent = {},
                     onSaveEvent = { _, _, _, _, _ -> },
                     onDeleteEvent = {},
-                    onSendDebugReminder = {}
+                    onSendDebugReminder = {},
+                    onUpdateEventThumbnail = { _, _ -> }
                 )
             }
         }

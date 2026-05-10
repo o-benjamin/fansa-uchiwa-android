@@ -107,19 +107,21 @@
     <string name="notification_permission_description">通知</string>
     <string name="event_reminder_channel_name">イベントリマインド</string>
     <string name="event_reminder_channel_description">近づいたイベントを毎晩お知らせします</string>
-    <string name="event_reminder_title">%1$sの準備をしよう！</string>
-    <string name="event_reminder_today_message">いよいよ今日です！</string>
-    <string name="event_reminder_message">%1$sまであと%2$d日！</string>
+    <string name="event_reminder_title">あと%1$d日！</string>
+    <string name="event_reminder_message">%1$sまであと%2$d日です！</string>
     <string name="event_bring_uchiwas">持っていくうちわ</string>
     <string name="event_add_uchiwas">持っていくうちわを追加</string>
     <string name="event_add_uchiwas_dialog_title">マイデザインから選択</string>
     <string name="event_add_uchiwas_confirm">追加</string>
     <string name="event_select_thumbnail_title">サムネイルを選択</string>
-    <string name="event_select_thumbnail_confirm">決定</string>>
+    <string name="event_select_thumbnail_confirm">決定</string>
     <string name="event_no_available_uchiwa">追加できるうちわがありません</string>
     <string name="event_reminder_enabled">リマインドを受け取る</string>
     <string name="event_add_fab">イベント追加</string>
     <string name="event_debug_send_reminder">デバッグ用にPush送信</string>
     <string name="event_debug_reminder_sent">デバッグ用Pushを送信しました</string>
     <string name="event_selected_uchiwa_count">%1$d個選択中</string>
+    <string name="event_discard_dialog_title">イベント予定を閉じますか？</string>
+    <string name="event_discard_dialog_message">保存せずに閉じると、入力内容は破棄されます。</string>
+    <string name="event_discard_dialog_confirm">作成をやめる</string>
 </resources>

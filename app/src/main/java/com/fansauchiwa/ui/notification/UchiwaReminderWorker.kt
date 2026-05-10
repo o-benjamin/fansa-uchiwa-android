@@ -73,7 +73,6 @@ class UchiwaReminderWorker(
                 context = applicationContext,
                 eventId = eventWithUchiwas.event.id,
                 eventName = eventWithUchiwas.event.name,
-                eventDate = LocalDate.ofEpochDay(eventWithUchiwas.event.eventDateEpochDay),
                 daysUntil = daysUntil,
                 notificationManager = notificationManager
             )
@@ -119,7 +118,6 @@ object UchiwaReminderNotifier {
         context: Context,
         eventId: String,
         eventName: String,
-        eventDate: LocalDate,
         daysUntil: Int,
         notificationManager: NotificationManagerCompat = NotificationManagerCompat.from(context)
     ) {
@@ -140,15 +138,11 @@ object UchiwaReminderNotifier {
             openAppIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val contentText = if (daysUntil == 0) {
-            context.getString(R.string.event_reminder_today_message)
-        } else {
-            context.getString(
-                R.string.event_reminder_message,
-                eventName,
-                daysUntil
-            )
-        }
+        val contentText = context.getString(
+            R.string.event_reminder_message,
+            eventName,
+            daysUntil
+        )
         val notification = NotificationCompat.Builder(
             context,
             EVENT_REMINDER_CHANNEL_ID
@@ -157,7 +151,7 @@ object UchiwaReminderNotifier {
             .setContentTitle(
                 context.getString(
                     R.string.event_reminder_title,
-                    eventName
+                    daysUntil
                 )
             )
             .setContentText(contentText)

@@ -75,7 +75,6 @@ import kotlin.math.abs
 private val TimelineDateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd (E)", Locale.JAPAN)
 
 private sealed interface TimelineSnackbarMessage {
-    data class Linked(val eventName: String) : TimelineSnackbarMessage
     data object Saved : TimelineSnackbarMessage
     data object Deleted : TimelineSnackbarMessage
     data object DebugReminderSent : TimelineSnackbarMessage
@@ -176,12 +175,7 @@ internal fun EventTimelineContent(
         derivedStateOf { calculateCenteredItemIndex(listState, events.size) }
     }
     val selectedEvent = selectedEventIndex?.let(events::getOrNull)
-    val snackbarText = when (val currentMessage = snackbarMessage) {
-        is TimelineSnackbarMessage.Linked -> stringResource(
-            R.string.event_linked_snackbar,
-            currentMessage.eventName
-        )
-
+    val snackbarText = when (snackbarMessage) {
         TimelineSnackbarMessage.Saved -> stringResource(R.string.event_saved_snackbar)
         TimelineSnackbarMessage.Deleted -> stringResource(R.string.event_deleted_snackbar)
         TimelineSnackbarMessage.DebugReminderSent -> stringResource(R.string.event_debug_reminder_sent)
@@ -256,11 +250,11 @@ internal fun EventTimelineContent(
                             R.string.event_link_fab,
                             selectedEvent.name
                         ),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         onClick = {
                             onLinkEvent(selectedEvent.id)
-                            snackbarMessage = TimelineSnackbarMessage.Linked(selectedEvent.name)
+                            onBack()
                         }
                     )
                 }

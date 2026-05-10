@@ -66,6 +66,17 @@ class EventTimelineViewModelTest {
             linkedPairs.addAll(uchiwaIds.map { eventId to it })
             fetchEvents()
         }
+
+        override suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?) {
+            savedEvents.replaceAll { event ->
+                if (event.id == eventId) {
+                    event.copy(thumbnailImagePath = thumbnailImagePath)
+                } else {
+                    event
+                }
+            }
+            fetchEvents()
+        }
     }
 
     @Before

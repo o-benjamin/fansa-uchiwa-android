@@ -62,7 +62,7 @@ fun SelectUchiwasDialog(
                                 }
                             }
                         ) {
-                            TimelineUchiwaThumbnail(
+                            UchiwaImage(
                                 imagePath = uchiwa.imagePath,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -92,4 +92,3 @@ fun SelectUchiwasDialog(
         }
     )
 }
-

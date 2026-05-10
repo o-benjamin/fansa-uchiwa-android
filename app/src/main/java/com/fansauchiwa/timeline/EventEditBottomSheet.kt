@@ -1,5 +1,10 @@
 package com.fansauchiwa.timeline
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -9,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -41,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -55,6 +63,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.core.content.ContextCompat
 
 private val EventDateTextFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN)
 
@@ -68,6 +77,7 @@ fun EventEditBottomSheet(
     onSave: (String?, String, LocalDate, Boolean, Set<String>) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var name by rememberSaveable(event?.id) { mutableStateOf(event?.name.orEmpty()) }
     var selectedDateEpochDay by rememberSaveable(event?.id) {
         mutableStateOf((event?.eventDate ?: LocalDate.now()).toEpochDay())
@@ -86,16 +96,25 @@ fun EventEditBottomSheet(
     var nameError by remember { mutableStateOf<Int?>(null) }
     var isDatePickerVisible by remember { mutableStateOf(false) }
     var isUchiwaDialogVisible by remember { mutableStateOf(false) }
+    var isDiscardDialogVisible by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate
             .atStartOfDay(ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
     )
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        remindEnabled = isGranted
+    }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { targetValue -> targetValue != SheetValue.Hidden }
+    )
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { isDiscardDialogVisible = true },
         sheetState = sheetState,
         modifier = modifier
     ) {
@@ -173,7 +192,7 @@ fun EventEditBottomSheet(
                 selectedUchiwaIds.forEach { id ->
                     val uchiwa = availableUchiwas.find { it.id == id }
                     if (uchiwa != null) {
-                        TimelineUchiwaThumbnail(
+                        UchiwaImage(
                             imagePath = uchiwa.imagePath,
                             modifier = Modifier.size(64.dp)
                         )
@@ -207,7 +226,22 @@ fun EventEditBottomSheet(
                 )
                 Switch(
                     checked = remindEnabled,
-                    onCheckedChange = { remindEnabled = it }
+                    onCheckedChange = { isChecked ->
+                        if (!isChecked) {
+                            remindEnabled = false
+                        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            remindEnabled = true
+                        } else if (
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            remindEnabled = true
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
                 )
             }
             Button(
@@ -267,6 +301,29 @@ fun EventEditBottomSheet(
             onConfirm = {
                 selectedUchiwaIds = it
                 isUchiwaDialogVisible = false
+            }
+        )
+    }
+
+    if (isDiscardDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isDiscardDialogVisible = false },
+            title = { Text(text = stringResource(R.string.event_discard_dialog_title)) },
+            text = { Text(text = stringResource(R.string.event_discard_dialog_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isDiscardDialogVisible = false
+                        onDismiss()
+                    }
+                ) {
+                    Text(text = stringResource(R.string.event_discard_dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isDiscardDialogVisible = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
             }
         )
     }

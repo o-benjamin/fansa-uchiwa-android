@@ -154,7 +154,6 @@ class EventTimelineViewModel @Inject constructor(
             context = context,
             eventId = event.id,
             eventName = event.name,
-            eventDate = event.eventDate,
             daysUntil = ChronoUnit.DAYS.between(LocalDate.now(), event.eventDate).toInt()
         )
     }
