@@ -10,32 +10,70 @@ import javax.inject.Inject
 class EventLocalSource @Inject constructor(
     private val fansaUchiwaDao: FansaUchiwaDao
 ) : EventDataSource {
-    override fun getEventsStream(): Flow<List<EventWithUchiwas>> =
-        fansaUchiwaDao.getAllEventsWithUchiwasStream()
+    override fun getEventsStream(): Flow<List<EventWithUchiwas>> = observeEvents()
 
     override suspend fun upsertEvent(event: EventEntity) {
-        fansaUchiwaDao.upsertEvent(event)
+        persistEvent(event)
     }
 
     override suspend fun deleteEvent(eventId: String) {
-        fansaUchiwaDao.deleteEventById(eventId)
+        deletePersistedEvent(eventId)
     }
 
     override suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef) {
-        fansaUchiwaDao.insertEventUchiwaCrossRef(crossRef)
+        persistEventUchiwaCrossRef(crossRef)
     }
 
     override suspend fun replaceEventUchiwaCrossRefs(
         eventId: String,
         crossRefs: List<EventUchiwaCrossRef>
     ) {
-        fansaUchiwaDao.deleteEventUchiwaCrossRefsByEventId(eventId)
-        if (crossRefs.isNotEmpty()) {
-            fansaUchiwaDao.insertEventUchiwaCrossRefs(crossRefs)
-        }
+        replacePersistedEventUchiwaCrossRefs(
+            eventId = eventId,
+            crossRefs = crossRefs
+        )
     }
 
     override suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?) {
+        updatePersistedEventThumbnail(
+            eventId = eventId,
+            thumbnailImagePath = thumbnailImagePath
+        )
+    }
+
+    private fun observeEvents(): Flow<List<EventWithUchiwas>> =
+        fansaUchiwaDao.getAllEventsWithUchiwasStream()
+
+    private suspend fun persistEvent(event: EventEntity) {
+        fansaUchiwaDao.upsertEvent(event)
+    }
+
+    private suspend fun deletePersistedEvent(eventId: String) {
+        fansaUchiwaDao.deleteEventById(eventId)
+    }
+
+    private suspend fun persistEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef) {
+        fansaUchiwaDao.insertEventUchiwaCrossRef(crossRef)
+    }
+
+    private suspend fun replacePersistedEventUchiwaCrossRefs(
+        eventId: String,
+        crossRefs: List<EventUchiwaCrossRef>
+    ) {
+        fansaUchiwaDao.deleteEventUchiwaCrossRefsByEventId(eventId)
+
+        val normalizedCrossRefs = crossRefs.distinct()
+        if (normalizedCrossRefs.isEmpty()) {
+            return
+        }
+
+        fansaUchiwaDao.insertEventUchiwaCrossRefs(normalizedCrossRefs)
+    }
+
+    private suspend fun updatePersistedEventThumbnail(
+        eventId: String,
+        thumbnailImagePath: String?
+    ) {
         fansaUchiwaDao.updateEventThumbnail(eventId, thumbnailImagePath)
     }
 }
