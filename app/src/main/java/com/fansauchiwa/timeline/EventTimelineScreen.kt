@@ -371,7 +371,7 @@ private fun TimelineActionFab(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier.widthIn(max = 232.dp),
+        modifier = modifier.widthIn(max = 240.dp),
         containerColor = containerColor ?: MaterialTheme.colorScheme.secondaryContainer,
         contentColor = contentColor ?: MaterialTheme.colorScheme.onSecondaryContainer
     ) {
@@ -380,7 +380,7 @@ private fun TimelineActionFab(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
     }
 }
