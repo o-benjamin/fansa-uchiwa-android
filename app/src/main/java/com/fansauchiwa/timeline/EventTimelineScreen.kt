@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.widthIn
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.BuildConfig
@@ -370,7 +371,7 @@ private fun TimelineActionFab(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.widthIn(max = 232.dp),
         containerColor = containerColor ?: MaterialTheme.colorScheme.secondaryContainer,
         contentColor = contentColor ?: MaterialTheme.colorScheme.onSecondaryContainer
     ) {
@@ -378,7 +379,8 @@ private fun TimelineActionFab(
             text = text,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
         )
     }
 }

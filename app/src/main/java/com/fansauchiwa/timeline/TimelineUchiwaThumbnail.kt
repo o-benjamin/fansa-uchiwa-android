@@ -2,9 +2,9 @@ package com.fansauchiwa.timeline
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
@@ -33,7 +33,7 @@ internal fun TimelineUchiwaThumbnail(
                 .align(Alignment.BottomEnd)
                 .size(32.dp),
             color = Color.Black.copy(alpha = 0.45f),
-            shape = CircleShape
+            shape = RoundedCornerShape(24.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(

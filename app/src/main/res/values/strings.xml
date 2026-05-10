@@ -121,7 +121,9 @@
     <string name="event_debug_send_reminder">デバッグ用にPush送信</string>
     <string name="event_debug_reminder_sent">デバッグ用Pushを送信しました</string>
     <string name="event_selected_uchiwa_count">%1$d個選択中</string>
-    <string name="event_discard_dialog_title">イベント予定を閉じますか？</string>
+    <string name="event_create_discard_dialog_title">作成を中止しますか？</string>
+    <string name="event_edit_discard_dialog_title">編集を中止しますか？</string>
     <string name="event_discard_dialog_message">保存せずに閉じると、入力内容は破棄されます。</string>
-    <string name="event_discard_dialog_confirm">作成をやめる</string>
+    <string name="event_create_discard_dialog_confirm">作成をやめる</string>
+    <string name="event_edit_discard_dialog_confirm">編集をやめる</string>
 </resources>

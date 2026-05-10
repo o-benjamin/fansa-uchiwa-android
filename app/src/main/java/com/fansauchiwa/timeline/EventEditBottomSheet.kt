@@ -78,6 +78,7 @@ fun EventEditBottomSheet(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val isEditMode = event != null
     var name by rememberSaveable(event?.id) { mutableStateOf(event?.name.orEmpty()) }
     var selectedDateEpochDay by rememberSaveable(event?.id) {
         mutableStateOf((event?.eventDate ?: LocalDate.now()).toEpochDay())
@@ -315,7 +316,17 @@ fun EventEditBottomSheet(
     if (isDiscardDialogVisible) {
         AlertDialog(
             onDismissRequest = { isDiscardDialogVisible = false },
-            title = { Text(text = stringResource(R.string.event_discard_dialog_title)) },
+            title = {
+                Text(
+                    text = stringResource(
+                        if (isEditMode) {
+                            R.string.event_edit_discard_dialog_title
+                        } else {
+                            R.string.event_create_discard_dialog_title
+                        }
+                    )
+                )
+            },
             text = { Text(text = stringResource(R.string.event_discard_dialog_message)) },
             confirmButton = {
                 TextButton(
@@ -324,7 +335,15 @@ fun EventEditBottomSheet(
                         onDismiss()
                     }
                 ) {
-                    Text(text = stringResource(R.string.event_discard_dialog_confirm))
+                    Text(
+                        text = stringResource(
+                            if (isEditMode) {
+                                R.string.event_edit_discard_dialog_confirm
+                            } else {
+                                R.string.event_create_discard_dialog_confirm
+                            }
+                        )
+                    )
                 }
             },
             dismissButton = {
