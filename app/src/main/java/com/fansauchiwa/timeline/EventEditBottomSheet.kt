@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.fansauchiwa.R
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.time.Instant
@@ -63,7 +64,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import androidx.core.content.ContextCompat
 
 private val EventDateTextFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN)
 
@@ -110,7 +110,14 @@ fun EventEditBottomSheet(
     }
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { targetValue -> targetValue != SheetValue.Hidden }
+        confirmValueChange = { targetValue ->
+            if (targetValue == SheetValue.Hidden) {
+                isDiscardDialogVisible = true
+                false
+            } else {
+                true
+            }
+        }
     )
 
     ModalBottomSheet(
