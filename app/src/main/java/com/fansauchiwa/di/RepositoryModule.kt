@@ -1,7 +1,6 @@
 package com.fansauchiwa.di
 
 import android.content.Context
-import androidx.room.Room
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.AdMobRepositoryImpl
 import com.fansauchiwa.data.GalleryImageDataSource
@@ -23,6 +22,8 @@ import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
+import com.fansauchiwa.data.repository.EventRepository
+import com.fansauchiwa.data.repository.EventRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
@@ -93,6 +94,12 @@ abstract class RepositoryModule {
     abstract fun bindEditDecorationRepository(
         impl: EditDecorationRepositoryImpl
     ): EditDecorationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEventRepository(
+        impl: EventRepositoryImpl
+    ): EventRepository
 }
 
 @Module
@@ -125,15 +132,11 @@ object DatabaseModule {
     @Singleton
     @Provides
     fun provideDataBase(@ApplicationContext context: Context): FansaUchiwaDatabase {
-        return Room.databaseBuilder(
-            context.applicationContext,
-            FansaUchiwaDatabase::class.java,
-            "uchiwaData.db"
-        ).build()
+        return FansaUchiwaDatabase.build(context)
     }
 
     @Provides
-    fun provideTaskDao(database: FansaUchiwaDatabase): FansaUchiwaDao {
+    fun provideFansaUchiwaDao(database: FansaUchiwaDatabase): FansaUchiwaDao {
         return database.uchiwaDao()
     }
 }

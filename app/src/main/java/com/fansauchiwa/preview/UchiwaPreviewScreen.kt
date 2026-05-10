@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.HelpOutline
@@ -29,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -74,7 +77,8 @@ fun UchiwaPreviewScreen(
     modifier: Modifier = Modifier,
     viewModel: UchiwaPreviewViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
-    onBackToHome: () -> Unit = {}
+    onBackToHome: () -> Unit = {},
+    onNavigateToTimeline: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -186,6 +190,9 @@ fun UchiwaPreviewScreen(
                 viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_GO_HOME)
                 onBackToHome()
             },
+            onEventTimelineClick = {
+                viewModel.getCurrentUchiwaId()?.let(onNavigateToTimeline)
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
@@ -241,6 +248,7 @@ fun UchiwaPreviewContent(
     onSaveClick: () -> Unit,
     onShareClick: () -> Unit,
     onBackToHomeClick: () -> Unit,
+    onEventTimelineClick: () -> Unit,
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
 ) {
@@ -310,43 +318,71 @@ fun UchiwaPreviewContent(
                 style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
             )
         }
-        Button(
-            onClick = onSaveClick,
-            enabled = imagePath != null
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Save,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(
-                text = stringResource(R.string.save_as_image),
-                fontSize = 20.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Button(
+                onClick = onSaveClick,
+                enabled = imagePath != null,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Save,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = stringResource(R.string.save_as_image),
+                    fontSize = 20.sp,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            IconButton(
+                onClick = onShareClick,
+                enabled = imagePath != null,
+                colors = IconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f)
+                ),
+                modifier = Modifier
+                    .size(56.dp),
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = stringResource(R.string.send_to_print_app),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
         }
         Button(
-            onClick = onShareClick,
+            onClick = onEventTimelineClick,
             enabled = imagePath != null,
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                imageVector = Icons.Default.Share,
+                imageVector = Icons.Default.DateRange,
                 contentDescription = null,
                 modifier = Modifier.padding(end = 8.dp)
             )
             Text(
-                text = stringResource(R.string.send_to_print_app),
-                fontSize = 20.sp,
+                text = stringResource(R.string.event_timeline_open_from_preview),
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
         TextButton(
             onClick = onBackToHomeClick,
-            enabled = imagePath != null
+            enabled = imagePath != null,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = stringResource(R.string.back_to_home),
@@ -365,6 +401,7 @@ private fun UchiwaPreviewContentLoadingAdPreview() {
             onSaveClick = {},
             onShareClick = {},
             onBackToHomeClick = {},
+            onEventTimelineClick = {},
             modifier = Modifier
                 .padding(16.dp),
             isPreview = true

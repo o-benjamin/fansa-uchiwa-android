@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.AdMobRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -156,5 +157,11 @@ class UchiwaPreviewViewModel @Inject constructor(
     fun clearShareImage() {
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(shareImagePath = null)
+    }
+
+    fun getCurrentUchiwaId(): String? {
+        return uiState.value.imagePath
+            ?.let(::extractUchiwaIdFromImagePath)
+            ?.takeIf { it.isNotBlank() }
     }
 }
