@@ -12,8 +12,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+
+private val TimelineThumbnailEditBadgeShape = RoundedCornerShape(24.dp)
 
 @Composable
 internal fun TimelineUchiwaThumbnail(
@@ -33,7 +35,7 @@ internal fun TimelineUchiwaThumbnail(
                 .align(Alignment.BottomEnd)
                 .size(32.dp),
             color = Color.Black.copy(alpha = 0.45f),
-            shape = RoundedCornerShape(24.dp)
+            shape = TimelineThumbnailEditBadgeShape
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(

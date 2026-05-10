@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -58,7 +59,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.widthIn
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.BuildConfig
@@ -74,6 +74,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 private val TimelineDateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd (E)", Locale.JAPAN)
+private val TimelineActionFabMaxWidth = 240.dp
 
 private sealed interface TimelineSnackbarMessage {
     data object Saved : TimelineSnackbarMessage
@@ -371,7 +372,7 @@ private fun TimelineActionFab(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier.widthIn(max = 240.dp),
+        modifier = modifier.widthIn(max = TimelineActionFabMaxWidth),
         containerColor = containerColor ?: MaterialTheme.colorScheme.secondaryContainer,
         contentColor = contentColor ?: MaterialTheme.colorScheme.onSecondaryContainer
     ) {
