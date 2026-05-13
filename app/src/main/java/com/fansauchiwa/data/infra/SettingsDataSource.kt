@@ -19,4 +19,14 @@ interface SettingsDataSource {
     fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean>
 
     suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean)
+
+    /**
+     * バージョンアップ後初回起動のお詫びダイアログを見たかどうかのFlowを返す
+     */
+    fun getHasSeenApologyDialogStream(): Flow<Boolean>
+
+    /**
+     * バージョンアップ後初回起動のお詫びダイアログを見たかどうかを設定する
+     */
+    suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
 }

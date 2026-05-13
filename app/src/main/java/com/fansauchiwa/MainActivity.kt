@@ -13,6 +13,9 @@ import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.LocalHapticFeedbackEnabled
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -26,6 +29,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        initializeApologyDialogState()
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
                 android.graphics.Color.TRANSPARENT,
@@ -48,6 +54,21 @@ class MainActivity : ComponentActivity() {
                     FansaUchiwaNavGraph()
                 }
             }
+        }
+    }
+
+    private fun initializeApologyDialogState() {
+        try {
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            val isFreshInstall = packageInfo.firstInstallTime == packageInfo.lastUpdateTime
+            if (isFreshInstall) {
+                // 新規インストールの場合はお詫びダイアログを表示しないようにする
+                CoroutineScope(Dispatchers.IO).launch {
+                    settingsRepository.setHasSeenApologyDialog(true)
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore
         }
     }
 }
