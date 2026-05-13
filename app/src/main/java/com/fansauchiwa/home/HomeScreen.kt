@@ -57,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.fansauchiwa.ui.util.FansaHapticType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -84,6 +83,7 @@ import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.util.FansaHapticType
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -258,7 +258,7 @@ fun HomeScreen(
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissApologyDialog() }) {
-                    Text(text = stringResource(R.string.ok))
+                    Text(text = "閉じる")
                 }
             }
         )
