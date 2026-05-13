@@ -1,0 +1,386 @@
+package com.fansauchiwa.timeline
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.fansauchiwa.R
+import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val EventDateTextFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EventEditBottomSheet(
+    event: EventTimelineEventUiModel?,
+    availableUchiwas: List<EventTimelineUchiwaUiModel>,
+    defaultSelectedUchiwaId: String?,
+    onDismiss: () -> Unit,
+    onSave: (String?, String, LocalDate, Boolean, Set<String>) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val isEditMode = event != null
+    var name by rememberSaveable(event?.id) { mutableStateOf(event?.name.orEmpty()) }
+    var selectedDateEpochDay by rememberSaveable(event?.id) {
+        mutableStateOf((event?.eventDate ?: LocalDate.now()).toEpochDay())
+    }
+    var remindEnabled by rememberSaveable(event?.id) {
+        mutableStateOf(event?.remindEnabled ?: true)
+    }
+    var selectedUchiwaIds by remember(event?.id) {
+        mutableStateOf(
+            event?.linkedUchiwas?.map { it.id }?.toSet()
+                ?: defaultSelectedUchiwaId?.let(::setOf)
+                ?: emptySet()
+        )
+    }
+    val selectedDate = LocalDate.ofEpochDay(selectedDateEpochDay)
+    var nameError by remember { mutableStateOf<Int?>(null) }
+    var isDatePickerVisible by remember { mutableStateOf(false) }
+    var isUchiwaDialogVisible by remember { mutableStateOf(false) }
+    var isDiscardDialogVisible by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    )
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        remindEnabled = isGranted
+    }
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { targetValue ->
+            if (targetValue == SheetValue.Hidden) {
+                isDiscardDialogVisible = true
+                false
+            } else {
+                true
+            }
+        }
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = { isDiscardDialogVisible = true },
+        sheetState = sheetState,
+        modifier = modifier
+    ) {
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
+                    })
+                },
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    if (event == null) {
+                        R.string.event_create_title
+                    } else {
+                        R.string.event_edit_title
+                    }
+                ),
+                style = MaterialTheme.typography.titleLarge
+            )
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    name = it
+                    nameError = null
+                },
+                label = { Text(stringResource(R.string.event_name)) },
+                isError = nameError != null,
+                singleLine = true,
+                supportingText = {
+                    nameError?.let { Text(text = stringResource(it)) }
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = selectedDate.format(EventDateTextFormatter),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.event_date)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable(role = Role.Button) { isDatePickerVisible = true }
+                )
+            }
+            Text(
+                text = stringResource(R.string.event_bring_uchiwas),
+                style = MaterialTheme.typography.titleMedium
+            )
+            val scrollState = rememberScrollState()
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                selectedUchiwaIds.forEach { id ->
+                    val uchiwa = availableUchiwas.find { it.id == id }
+                    if (uchiwa != null) {
+                        UchiwaImage(
+                            imagePath = uchiwa.imagePath,
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
+                }
+                Surface(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .clickable { isUchiwaDialogVisible = true },
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = CircleShape
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(R.string.event_add_uchiwas),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.event_reminder_enabled),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = remindEnabled,
+                    onCheckedChange = { isChecked ->
+                        if (!isChecked) {
+                            remindEnabled = false
+                        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                            remindEnabled = true
+                        } else if (
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+                        ) {
+                            remindEnabled = true
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                )
+            }
+            Button(
+                onClick = {
+                    val trimmedName = name.trim()
+                    nameError = if (trimmedName.isBlank()) R.string.event_invalid_name else null
+                    if (nameError == null) {
+                        onSave(
+                            event?.id,
+                            trimmedName,
+                            selectedDate,
+                            remindEnabled,
+                            selectedUchiwaIds
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = stringResource(R.string.save))
+            }
+        }
+    }
+
+    if (isDatePickerVisible) {
+        DatePickerDialog(
+            onDismissRequest = { isDatePickerVisible = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            selectedDateEpochDay = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                                .toEpochDay()
+                        }
+                        isDatePickerVisible = false
+                    }
+                ) {
+                    Text(text = stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isDatePickerVisible = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (isUchiwaDialogVisible) {
+        SelectUchiwasDialog(
+            availableUchiwas = availableUchiwas,
+            selectedUchiwaIds = selectedUchiwaIds,
+            onDismiss = { isUchiwaDialogVisible = false },
+            onConfirm = {
+                selectedUchiwaIds = it
+                isUchiwaDialogVisible = false
+            }
+        )
+    }
+
+    if (isDiscardDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isDiscardDialogVisible = false },
+            title = {
+                Text(
+                    text = stringResource(
+                        if (isEditMode) {
+                            R.string.event_edit_discard_dialog_title
+                        } else {
+                            R.string.event_create_discard_dialog_title
+                        }
+                    )
+                )
+            },
+            text = { Text(text = stringResource(R.string.event_discard_dialog_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isDiscardDialogVisible = false
+                        onDismiss()
+                    }
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (isEditMode) {
+                                R.string.event_edit_discard_dialog_confirm
+                            } else {
+                                R.string.event_create_discard_dialog_confirm
+                            }
+                        )
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isDiscardDialogVisible = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun EventEditBottomSheetPreview() {
+    FansaUchiwaTheme {
+        EventEditBottomSheet(
+            event = EventTimelineEventUiModel(
+                id = "event-1",
+                name = "ライブツアー",
+                eventDate = LocalDate.of(2026, 7, 1),
+                remindEnabled = true,
+                linkedUchiwas = listOf(
+                    EventTimelineUchiwaUiModel(
+                        id = "uchiwa-1",
+                        imagePath = null
+                    )
+                )
+            ),
+            availableUchiwas = listOf(
+                EventTimelineUchiwaUiModel(
+                    id = "uchiwa-1",
+                    imagePath = null
+                )
+            ),
+            defaultSelectedUchiwaId = "uchiwa-1",
+            onDismiss = {},
+            onSave = { _, _, _, _, _ -> }
+        )
+    }
+}

@@ -19,6 +19,7 @@ import com.fansauchiwa.home.HomeScreen
 import com.fansauchiwa.preview.UchiwaPreviewScreen
 import com.fansauchiwa.preview.UchiwaPreviewViewModel
 import com.fansauchiwa.settings.SettingsScreen
+import com.fansauchiwa.timeline.EventTimelineScreen
 
 @Composable
 fun FansaUchiwaNavGraph(
@@ -39,6 +40,9 @@ fun FansaUchiwaNavGraph(
                 },
                 onNavigateToSettings = {
                     navController.navigate(SettingsDestination.route)
+                },
+                onNavigateToTimeline = {
+                    navController.navigate(EventTimelineDestination.screen)
                 }
             )
         }
@@ -87,6 +91,9 @@ fun FansaUchiwaNavGraph(
                         route = HomeDestination.route,
                         inclusive = false
                     )
+                },
+                onNavigateToTimeline = { uchiwaId ->
+                    navController.navigate(EventTimelineDestination.createRoute(uchiwaId))
                 }
             )
         }
@@ -122,6 +129,20 @@ fun FansaUchiwaNavGraph(
         }
         composable(SettingsDestination.route) {
             SettingsScreen(
+                onBack = { navController.navigateUp() }
+            )
+        }
+        composable(
+            route = EventTimelineDestination.route,
+            arguments = listOf(
+                navArgument(UCHIWA_ID_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
+            EventTimelineScreen(
                 onBack = { navController.navigateUp() }
             )
         }

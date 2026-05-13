@@ -47,6 +47,45 @@ import kotlin.coroutines.resume
 import androidx.compose.ui.graphics.Canvas as ComposeCanvas
 
 // ==========================================
+// シェーダーパラメータ定義
+// ==========================================
+
+data class PuffyShaderParams(
+    /** フチの斜面の幅（丸み）。小さくすると平らな面積が広く急な斜面に、大きくするとかまぼこ型に丸みを帯びる */
+    val edgeWidthMulti: Float = 4.0f,
+    /** 影の滑らかさ（法線計算のサンプリング距離）。大きくすると滑らかになるがディテールがぼやける */
+    val stepMulti: Float = 2.5f,
+    /** 立体の高さ（面の傾斜の強さ）。小さくすると傾斜が急になり影が落ちやすく、大きくすると明るくなる */
+    val normalZ: Float = 2.0f,
+    /** 光源のX方向の位置（右が+、左が-） */
+    val lightDirX: Float = 0.5f,
+    /** 光源のY方向の位置（下が+、上が- ※AndroidのY軸方向） */
+    val lightDirY: Float = -0.5f,
+    /** 光源のZ方向の位置（光の手前具合） */
+    val lightDirZ: Float = 1.5f,
+    /** 影の濃さ。0.0に近づけると影が濃く（漆黒に）、大きくすると影が薄く明るくなる */
+    val shadowDarkness: Float = 0.0f,
+    /** 反射の鋭さ。大きくすると鋭く光り（ガラス状）、小さくすると広くぼやける（ゴム状） */
+    val shininess: Float = 300.0f,
+    /** ハイライト（白飛び）の強さ。大きくするとより強烈に白飛びする */
+    val specularIntensity: Float = 1.2f,
+
+    // ▼ 頂点の尖りを防ぐぼかし（ぼかし半径） ▼
+    /** 斜面幅に対してどの程度の割合（距離）を計算に含めるか */
+    val blurRadiusMulti: Float = 0.4f,
+    /** ぼかしの最大ピクセル半径。広すぎる範囲を参照して破綻するのを防ぐための上限値 */
+    val blurMaxPix: Float = 15.0f,
+
+    // ▼ ぼかしの重み付け（シャープ芯の強さ vs 全体の滑らかさ） ▼
+    /** 中央（ピーク）の重み。大きくすると芯がエッジとして残りやすい */
+    val blurWeightCenter: Float = 4.0f,
+    /** 上下左右の重み */
+    val blurWeightCross: Float = 2.0f,
+    /** 斜め方向の重み */
+    val blurWeightDiag: Float = 1.0f
+)
+
+// ==========================================
 // シェーダー定義
 // ==========================================
 
@@ -112,18 +151,47 @@ const val PUFFY_RENDER_SHADER = """
     uniform half3 baseColor;
     uniform float scaleFactor;
     
-    float getHeight(float2 coord) {
+    uniform float p_edgeWidthMulti;
+    uniform float p_stepMulti;
+    uniform float p_normalZ;
+    uniform float3 p_lightDir;
+    uniform float p_shadowDarkness;
+    uniform float p_shininess;
+    uniform float p_specularIntensity;
+    
+    uniform float p_blurRadiusMulti;
+    uniform float p_blurMaxPix;
+    uniform float p_blurWeightCenter;
+    uniform float p_blurWeightCross;
+    uniform float p_blurWeightDiag;
+    
+    float getSignedDist(float2 coord) {
         half4 data = sdfTexture.eval(coord);
-        if (data.a <= 0.0) return 0.0;
+        float d = distance(coord, data.rg * size);
+        return data.a > 0.0 ? d : -d;
+    }
+
+    float getHeight(float2 coord) {
+        float edgeWidth = p_edgeWidthMulti * scaleFactor; 
         
-        float2 closestEdge = data.rg * size;
-        float dist = distance(coord, closestEdge);
+        float blur = min(edgeWidth * p_blurRadiusMulti, p_blurMaxPix * scaleFactor); 
         
-        // ▼ チューニング: 【フチの斜面の幅（丸み）】 ▼
-        // edgeWidth: 縁から平らな面（本来の色）に到達するまでの距離。
-        // - 小さくする(例: 2.0): 平らな面積が広がり、斜面が急になります。
-        // - 大きくする(例: 8.0): 文字全体が丸みを帯び、かまぼこ型になります。
-        float edgeWidth = 4.0 * scaleFactor; 
+        float d0 = getSignedDist(coord);
+        float d1 = getSignedDist(coord + float2(-blur, 0.0));
+        float d2 = getSignedDist(coord + float2(blur, 0.0));
+        float d3 = getSignedDist(coord + float2(0.0, -blur));
+        float d4 = getSignedDist(coord + float2(0.0, blur));
+        
+        float blur2 = blur * 0.707106; // 45度方向のオフセット(1/√2)
+        float d5 = getSignedDist(coord + float2(-blur2, -blur2));
+        float d6 = getSignedDist(coord + float2(blur2, -blur2));
+        float d7 = getSignedDist(coord + float2(-blur2, blur2));
+        float d8 = getSignedDist(coord + float2(blur2, blur2));
+        
+        float totalWeight = p_blurWeightCenter + 4.0 * p_blurWeightCross + 4.0 * p_blurWeightDiag;
+        float dist = (d0 * p_blurWeightCenter + (d1 + d2 + d3 + d4) * p_blurWeightCross + (d5 + d6 + d7 + d8) * p_blurWeightDiag) / totalWeight;
+        dist = max(dist, 0.0);
+        
         float sdf = clamp(dist / edgeWidth, 0.0, 1.0);
         
         return sin(sdf * 1.5707963);
@@ -136,56 +204,27 @@ const val PUFFY_RENDER_SHADER = """
         
         if (alpha <= 0.0) return half4(0.0);
         
-        // ▼ チューニング: 【影のギザギザ軽減（滑らかさ）】 ▼
-        // step: 法線を計算する際のサンプリング距離。
-        // - 大きくする(例: 3.5): ギザギザが滑らかになりますが、ディテールが少しぼやけます。
-        // - 小さくする(例: 1.0): ディテールはクッキリしますが、影がジャギジャギになりやすいです。
-        float step = 2.5 * scaleFactor; 
+        float step = p_stepMulti * scaleFactor; 
         
         float hL = getHeight(texCoord + float2(-step, 0.0)); 
         float hR = getHeight(texCoord + float2(step, 0.0));  
         float hT = getHeight(texCoord + float2(0.0, -step)); 
         float hB = getHeight(texCoord + float2(0.0, step));  
         
-        // ▼ チューニング: 【立体の高さ（影の落ちやすさ）】 ▼
-        // normalizeのZ値(ここでは 2.0): 面の傾斜の強さを決めます。
-        // - 小さくする(例: 1.0): 傾斜が急になり、影がくっきり落ちやすくなります。
-        // - 大きくする(例: 4.0): 傾斜がなだらかになり、全体的に明るくなります。
-        float3 normal = normalize(float3(hL - hR, hT - hB, 2.0));
+        float3 normal = normalize(float3(hL - hR, hT - hB, p_normalZ));
         
-        // ▼ チューニング: 【光の当たる方角】 ▼
-        // lightDir: (X, Y, Z) で光源の位置を指定します。
-        // - X: 右(+) / 左(-)
-        // - Y: 下(+) / 上(-) ※AndroidのY軸は下向き
-        // - Z: 光の手前具合 (大きくすると正面から当たるようになる)
-        float3 lightDir = normalize(float3(0.5, -0.5, 1.5)); 
+        float3 lightDirVec = normalize(p_lightDir); 
         
-        float flatDiffuse = lightDir.z; 
-        float currentDiffuse = max(0.0, dot(normal, lightDir));
+        float flatDiffuse = lightDirVec.z; 
+        float currentDiffuse = max(0.0, dot(normal, lightDirVec));
         
-        // ▼ チューニング: 【影の濃さ】 ▼
-        // shadowDarkness: 光が全く当たらない斜面の最も暗い部分の明るさ。
-        // - 0.0に近づける: 影が漆黒（真っ黒）になります。
-        // - 0.2など大きくする: 影が薄くなり、全体的に明るくなります。
-        float shadowDarkness = 0.0;
+        float brightness = p_shadowDarkness + currentDiffuse * ((1.0 - p_shadowDarkness) / flatDiffuse);
         
-        // 面の明るさを計算（平らな面は1.0、斜面はshadowDarknessまで落ちる）
-        float brightness = shadowDarkness + currentDiffuse * ((1.0 - shadowDarkness) / flatDiffuse);
-        
-        // ▼ チューニング: 【ハイライト（白飛び）の鋭さと強さ】 ▼
         float3 viewDir = float3(0.0, 0.0, 1.0); 
-        float3 halfDir = normalize(lightDir + viewDir);
+        float3 halfDir = normalize(lightDirVec + viewDir);
 
-        // shininess: 反射の鋭さ。
-        // - 大きくする(例: 150.0): ジェルやガラスのように、点が鋭く光ります。
-        // - 小さくする(例: 20.0): ゴム素材のように、ハイライトが広くぼやけます。
-        float shininess = 300.0;
-
-        // specularの係数(* 1.2): ハイライトの「白さ」の強さ。
-        // - 大きくする(例: 1.5): より強烈に白飛びします。
-        float specular = pow(max(0.0, dot(normal, halfDir)), shininess) * 1.2;
+        float specular = pow(max(0.0, dot(normal, halfDir)), p_shininess) * p_specularIntensity;
         
-        // 最終合成：ベースカラー × 計算した明るさ ＋ ハイライト
         half3 finalRGB = baseColor * brightness + half3(specular);
         
         return half4(finalRGB * alpha, alpha);
@@ -300,9 +339,10 @@ fun PuffyTextRenderer(
     sdfTextureBitmap: Bitmap,
     baseColor: Color,
     scaleFactor: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    shaderParams: PuffyShaderParams = PuffyShaderParams()
 ) {
-    val paint = remember(sdfTextureBitmap, baseColor, scaleFactor) {
+    val paint = remember(sdfTextureBitmap, baseColor, scaleFactor, shaderParams) {
         val shader = RuntimeShader(PUFFY_RENDER_SHADER).apply {
             setInputBuffer(
                 "sdfTexture",
@@ -315,6 +355,25 @@ fun PuffyTextRenderer(
             )
             setFloatUniform("baseColor", baseColor.red, baseColor.green, baseColor.blue)
             setFloatUniform("scaleFactor", scaleFactor)
+
+            setFloatUniform("p_edgeWidthMulti", shaderParams.edgeWidthMulti)
+            setFloatUniform("p_stepMulti", shaderParams.stepMulti)
+            setFloatUniform("p_normalZ", shaderParams.normalZ)
+            setFloatUniform(
+                "p_lightDir",
+                shaderParams.lightDirX,
+                shaderParams.lightDirY,
+                shaderParams.lightDirZ
+            )
+            setFloatUniform("p_shadowDarkness", shaderParams.shadowDarkness)
+            setFloatUniform("p_shininess", shaderParams.shininess)
+            setFloatUniform("p_specularIntensity", shaderParams.specularIntensity)
+
+            setFloatUniform("p_blurRadiusMulti", shaderParams.blurRadiusMulti)
+            setFloatUniform("p_blurMaxPix", shaderParams.blurMaxPix)
+            setFloatUniform("p_blurWeightCenter", shaderParams.blurWeightCenter)
+            setFloatUniform("p_blurWeightCross", shaderParams.blurWeightCross)
+            setFloatUniform("p_blurWeightDiag", shaderParams.blurWeightDiag)
         }
 
         val nativePaint = Paint().apply {

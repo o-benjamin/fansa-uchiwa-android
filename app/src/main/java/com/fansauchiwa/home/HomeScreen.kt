@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -156,6 +157,7 @@ private fun HomeFab(
 @Composable
 private fun HomeTopAppBar(
     onNavigateToSettings: () -> Unit,
+    onNavigateToTimeline: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit,
     onOpenFeedback: () -> Unit,
     onOpenOfficialSite: () -> Unit
@@ -169,6 +171,12 @@ private fun HomeTopAppBar(
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = stringResource(R.string.settings)
+                )
+            }
+            IconButton(onClick = onNavigateToTimeline) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = stringResource(R.string.event_timeline)
                 )
             }
             IconButton(onClick = { menuExpanded = true }) {
@@ -214,7 +222,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onImageClick: (String, String?) -> Unit = { _, _ -> },
     onAddClick: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToTimeline: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -240,6 +249,7 @@ fun HomeScreen(
             val uriHandler = LocalUriHandler.current
             HomeTopAppBar(
                 onNavigateToSettings = onNavigateToSettings,
+                onNavigateToTimeline = onNavigateToTimeline,
                 onOpenPrivacyPolicy = {
                     val url =
                         "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
@@ -723,4 +733,3 @@ private fun HomeFabPreview_SelectionMode_WithSelection() {
 }
 
 // endregion
-

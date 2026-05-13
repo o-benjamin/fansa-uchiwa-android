@@ -11,6 +11,7 @@ import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import com.fansauchiwa.data.Uchiwa
+import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,8 +71,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun extractUchiwaId(path: String): String {
-        // ファイルパスからuchiwaId（ファイル名から.pngを除いた部分）を抽出
-        return path.substringAfterLast("/").substringBeforeLast(".png")
+        return extractUchiwaIdFromImagePath(path)
     }
 
     fun enterSelectionMode() {

@@ -1,7 +1,10 @@
 package com.fansauchiwa.data.source
 
 import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -18,4 +21,26 @@ interface FansaUchiwaDao {
 
     @Query("SELECT * FROM fansa_uchiwa_data")
     fun getAllUchiwasStream(): Flow<List<FansaUchiwaEntity>>
+
+    @Upsert
+    suspend fun upsertEvent(event: EventEntity)
+
+    @Query("DELETE FROM events WHERE id = :id")
+    suspend fun deleteEventById(id: String)
+
+    @Query("UPDATE events SET thumbnailImagePath = :thumbnailImagePath WHERE id = :eventId")
+    suspend fun updateEventThumbnail(eventId: String, thumbnailImagePath: String?)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertEventUchiwaCrossRef(crossRef: EventUchiwaCrossRef)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertEventUchiwaCrossRefs(crossRefs: List<EventUchiwaCrossRef>)
+
+    @Query("DELETE FROM event_uchiwa_cross_refs WHERE eventId = :eventId")
+    suspend fun deleteEventUchiwaCrossRefsByEventId(eventId: String)
+
+    @Transaction
+    @Query("SELECT * FROM events ORDER BY eventDateEpochDay ASC, name ASC")
+    fun getAllEventsWithUchiwasStream(): Flow<List<EventWithUchiwas>>
 }
