@@ -43,7 +43,13 @@ class SettingsViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    fun toggleHapticFeedback(enabled: Boolean) {
+    fun onAction(action: SettingsAction) {
+        when (action) {
+            is SettingsAction.ToggleHapticFeedback -> toggleHapticFeedback(action.enabled)
+        }
+    }
+
+    private fun toggleHapticFeedback(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setHapticFeedbackEnabled(enabled)
             settingsRepository.fetchHapticFeedbackEnabled()

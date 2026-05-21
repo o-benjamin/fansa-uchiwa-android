@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -32,20 +33,41 @@ fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val screenState = remember(uiState) { uiState.toScreenState() }
 
     SettingsContent(
-        uiState = uiState,
+        screenState = screenState,
         onBack = onBack,
-        onToggleHapticFeedback = { viewModel.toggleHapticFeedback(it) }
+        onAction = viewModel::onAction
     )
 }
+
+private fun SettingsUiState.toScreenState(): SettingsScreenState = when (this) {
+    SettingsUiState.Loading -> SettingsScreenState(
+        isHapticFeedbackEnabled = false,
+        isHapticFeedbackSwitchEnabled = false
+    )
+    is SettingsUiState.Success -> SettingsScreenState(
+        isHapticFeedbackEnabled = isHapticFeedbackEnabled,
+        isHapticFeedbackSwitchEnabled = true
+    )
+    is SettingsUiState.Error -> SettingsScreenState(
+        isHapticFeedbackEnabled = false,
+        isHapticFeedbackSwitchEnabled = true
+    )
+}
+
+private class SettingsScreenState(
+    val isHapticFeedbackEnabled: Boolean,
+    val isHapticFeedbackSwitchEnabled: Boolean
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsContent(
-    uiState: SettingsUiState,
+    screenState: SettingsScreenState,
     onBack: () -> Unit,
-    onToggleHapticFeedback: (Boolean) -> Unit
+    onAction: (SettingsAction) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -66,33 +88,19 @@ private fun SettingsContent(
             )
         }
     ) { innerPadding ->
-        when (uiState) {
-            is SettingsUiState.Loading -> HapticFeedbackSettingRow(
-                isEnabled = false,
-                isLoading = true,
-                onToggle = onToggleHapticFeedback,
-                modifier = Modifier.padding(innerPadding)
-            )
-            is SettingsUiState.Success -> HapticFeedbackSettingRow(
-                isEnabled = uiState.isHapticFeedbackEnabled,
-                isLoading = false,
-                onToggle = onToggleHapticFeedback,
-                modifier = Modifier.padding(innerPadding)
-            )
-            is SettingsUiState.Error -> HapticFeedbackSettingRow(
-                isEnabled = false,
-                isLoading = false,
-                onToggle = onToggleHapticFeedback,
-                modifier = Modifier.padding(innerPadding)
-            )
-        }
+        HapticFeedbackSettingRow(
+            isEnabled = screenState.isHapticFeedbackEnabled,
+            isSwitchEnabled = screenState.isHapticFeedbackSwitchEnabled,
+            onToggle = { enabled -> onAction(SettingsAction.ToggleHapticFeedback(enabled)) },
+            modifier = Modifier.padding(innerPadding)
+        )
     }
 }
 
 @Composable
 private fun HapticFeedbackSettingRow(
     isEnabled: Boolean,
-    isLoading: Boolean,
+    isSwitchEnabled: Boolean,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -113,7 +121,7 @@ private fun HapticFeedbackSettingRow(
         Switch(
             checked = isEnabled,
             onCheckedChange = onToggle,
-            enabled = !isLoading
+            enabled = isSwitchEnabled
         )
     }
 }
@@ -123,9 +131,12 @@ private fun HapticFeedbackSettingRow(
 private fun SettingsScreenPreview_HapticEnabled() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState.Success(isHapticFeedbackEnabled = true),
+            screenState = SettingsScreenState(
+                isHapticFeedbackEnabled = true,
+                isHapticFeedbackSwitchEnabled = true
+            ),
             onBack = {},
-            onToggleHapticFeedback = {}
+            onAction = {}
         )
     }
 }
@@ -135,9 +146,12 @@ private fun SettingsScreenPreview_HapticEnabled() {
 private fun SettingsScreenPreview_HapticDisabled() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState.Success(isHapticFeedbackEnabled = false),
+            screenState = SettingsScreenState(
+                isHapticFeedbackEnabled = false,
+                isHapticFeedbackSwitchEnabled = true
+            ),
             onBack = {},
-            onToggleHapticFeedback = {}
+            onAction = {}
         )
     }
 }
@@ -147,10 +161,12 @@ private fun SettingsScreenPreview_HapticDisabled() {
 private fun SettingsScreenPreview_Loading() {
     FansaUchiwaTheme {
         SettingsContent(
-            uiState = SettingsUiState.Loading,
+            screenState = SettingsScreenState(
+                isHapticFeedbackEnabled = false,
+                isHapticFeedbackSwitchEnabled = false
+            ),
             onBack = {},
-            onToggleHapticFeedback = {}
+            onAction = {}
         )
     }
 }
-
