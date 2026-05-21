@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -56,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.fansauchiwa.ui.util.FansaHapticType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -83,6 +83,7 @@ import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.util.FansaHapticType
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -242,6 +243,25 @@ fun HomeScreen(
         // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
         viewModel.loadAllMasterpieces()
         viewModel.loadTemplates()
+        viewModel.observeApologyDialogState()
+        viewModel.fetchApologyDialogState()
+    }
+
+    if (uiState.showApologyDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissApologyDialog() },
+            title = {
+                Text(text = stringResource(R.string.apology_dialog_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.apology_dialog_message))
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissApologyDialog() }) {
+                    Text(text = "閉じる")
+                }
+            }
+        )
     }
 
     Scaffold(

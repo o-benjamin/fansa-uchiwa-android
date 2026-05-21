@@ -10,5 +10,6 @@ data class HomeUiState(
     val masterpiecePathList: List<String> = emptyList(),
     val isSelectionMode: Boolean = false,
     val selectedPaths: List<String> = emptyList(),
-    val templates: @RawValue List<Template> = emptyList()
+    val templates: @RawValue List<Template> = emptyList(),
+    val showApologyDialog: Boolean = false
 ) : Parcelable

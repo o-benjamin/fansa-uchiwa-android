@@ -15,7 +15,7 @@ import com.fansauchiwa.data.Converters
         EventEntity::class,
         EventUchiwaCrossRef::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -66,13 +66,21 @@ abstract class FansaUchiwaDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `events` ADD COLUMN `thumbnailImagePath` TEXT"
+                )
+            }
+        }
+
         fun build(context: Context): FansaUchiwaDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
                 FansaUchiwaDatabase::class.java,
                 "uchiwaData.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
     }

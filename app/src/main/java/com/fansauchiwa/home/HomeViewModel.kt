@@ -10,6 +10,7 @@ import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ class HomeViewModel @Inject constructor(
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val templateRepository: TemplateRepository,
+    private val settingsRepository: SettingsRepository,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
 
@@ -67,6 +69,27 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val templates = templateRepository.getTemplates()
             _uiState.update { it.copy(templates = templates) }
+        }
+    }
+
+    fun observeApologyDialogState() {
+        viewModelScope.launch {
+            settingsRepository.getHasSeenApologyDialogStream().collect { hasSeen ->
+                _uiState.update { it.copy(showApologyDialog = !hasSeen) }
+            }
+        }
+    }
+
+    fun fetchApologyDialogState() {
+        viewModelScope.launch {
+            settingsRepository.fetchHasSeenApologyDialog()
+        }
+    }
+
+    fun dismissApologyDialog() {
+        viewModelScope.launch {
+            settingsRepository.setHasSeenApologyDialog(true)
+            _uiState.update { it.copy(showApologyDialog = false) }
         }
     }
 

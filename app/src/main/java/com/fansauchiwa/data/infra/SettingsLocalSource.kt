@@ -52,12 +52,33 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
+    override fun getHasSeenApologyDialogStream(): Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[KEY_HAS_SEEN_APOLOGY_DIALOG] ?: DEFAULT_HAS_SEEN_APOLOGY_DIALOG
+        }
+
+    override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[KEY_HAS_SEEN_APOLOGY_DIALOG] = hasSeen
+        }
+    }
+
     companion object {
         private val KEY_HAPTIC_FEEDBACK_ENABLED =
             booleanPreferencesKey("haptic_feedback_enabled")
         private val KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP =
             booleanPreferencesKey("has_seen_edit_completion_tooltip")
+        private val KEY_HAS_SEEN_APOLOGY_DIALOG =
+            booleanPreferencesKey("has_seen_apology_dialog")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
         private const val DEFAULT_HAS_SEEN_EDIT_COMPLETION_TOOLTIP = false
+        private const val DEFAULT_HAS_SEEN_APOLOGY_DIALOG = false
     }
 }
