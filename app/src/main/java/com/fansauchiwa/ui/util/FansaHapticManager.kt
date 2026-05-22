@@ -15,39 +15,54 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 val LocalHapticFeedbackEnabled = compositionLocalOf { true }
 
 /**
+ * [FansaHapticType] を実行するための出力ポート。
+ *
+ * Presentation層の詳細は実装側に閉じ込め、呼び出し側はアプリ独自の型だけを扱う。
+ */
+private fun interface FansaHapticPerformer {
+    fun perform(type: FansaHapticType)
+}
+
+/**
  * アプリ内の触覚フィードバックを一元管理するクラス。
  *
- * [FansaHapticType] を受け取り、Compose標準の [HapticFeedbackType] にマッピングして実行する。
- * [isEnabled] が false の場合、触覚フィードバックは実行されない。
- * 将来的に独自のVibrator実装へ切り替える場合はこのクラスの内部実装を変更するだけでよい。
+ * 有効/無効の判定とイベントディスパッチのみを担当し、
+ * 実際のUIプラットフォーム依存処理は [FansaHapticPerformer] に委譲する。
  *
  * インスタンスの取得には [rememberFansaHapticManager] を使用すること。
  */
 class FansaHapticManager(
-    private val hapticFeedback: HapticFeedback,
-    private val isEnabled: Boolean
+    private val isEnabled: Boolean,
+    private val performer: FansaHapticPerformer
 ) {
-
     fun perform(type: FansaHapticType) {
         if (!isEnabled) return
-
-        val hapticFeedbackType = when (type) {
-            FansaHapticType.CONFIRM -> HapticFeedbackType.Confirm
-            FansaHapticType.CONTEXT_CLICK -> HapticFeedbackType.ContextClick
-            FansaHapticType.GESTURE_END -> HapticFeedbackType.GestureEnd
-            FansaHapticType.GESTURE_THRESHOLD_ACTIVATE -> HapticFeedbackType.GestureThresholdActivate
-            FansaHapticType.KEYBOARD_TAP -> HapticFeedbackType.KeyboardTap
-            FansaHapticType.LONG_PRESS -> HapticFeedbackType.LongPress
-            FansaHapticType.REJECT -> HapticFeedbackType.Reject
-            FansaHapticType.SEGMENT_FREQUENT_TICK -> HapticFeedbackType.SegmentFrequentTick
-            FansaHapticType.SEGMENT_TICK -> HapticFeedbackType.SegmentTick
-            FansaHapticType.TEXT_HANDLE_MOVE -> HapticFeedbackType.TextHandleMove
-            FansaHapticType.TOGGLE_OFF -> HapticFeedbackType.ToggleOff
-            FansaHapticType.TOGGLE_ON -> HapticFeedbackType.ToggleOn
-            FansaHapticType.VIRTUAL_KEY -> HapticFeedbackType.VirtualKey
-        }
-        hapticFeedback.performHapticFeedback(hapticFeedbackType)
+        performer.perform(type)
     }
+}
+
+private class ComposeFansaHapticPerformer(
+    private val hapticFeedback: HapticFeedback
+) : FansaHapticPerformer {
+    override fun perform(type: FansaHapticType) {
+        hapticFeedback.performHapticFeedback(type.toComposeHapticFeedbackType())
+    }
+}
+
+private fun FansaHapticType.toComposeHapticFeedbackType(): HapticFeedbackType = when (this) {
+    FansaHapticType.CONFIRM -> HapticFeedbackType.Confirm
+    FansaHapticType.CONTEXT_CLICK -> HapticFeedbackType.ContextClick
+    FansaHapticType.GESTURE_END -> HapticFeedbackType.GestureEnd
+    FansaHapticType.GESTURE_THRESHOLD_ACTIVATE -> HapticFeedbackType.GestureThresholdActivate
+    FansaHapticType.KEYBOARD_TAP -> HapticFeedbackType.KeyboardTap
+    FansaHapticType.LONG_PRESS -> HapticFeedbackType.LongPress
+    FansaHapticType.REJECT -> HapticFeedbackType.Reject
+    FansaHapticType.SEGMENT_FREQUENT_TICK -> HapticFeedbackType.SegmentFrequentTick
+    FansaHapticType.SEGMENT_TICK -> HapticFeedbackType.SegmentTick
+    FansaHapticType.TEXT_HANDLE_MOVE -> HapticFeedbackType.TextHandleMove
+    FansaHapticType.TOGGLE_OFF -> HapticFeedbackType.ToggleOff
+    FansaHapticType.TOGGLE_ON -> HapticFeedbackType.ToggleOn
+    FansaHapticType.VIRTUAL_KEY -> HapticFeedbackType.VirtualKey
 }
 
 /**
@@ -65,6 +80,9 @@ fun rememberFansaHapticManager(): FansaHapticManager {
     val hapticFeedback = LocalHapticFeedback.current
     val isEnabled = LocalHapticFeedbackEnabled.current
     return remember(hapticFeedback, isEnabled) {
-        FansaHapticManager(hapticFeedback, isEnabled)
+        FansaHapticManager(
+            isEnabled = isEnabled,
+            performer = ComposeFansaHapticPerformer(hapticFeedback)
+        )
     }
 }
