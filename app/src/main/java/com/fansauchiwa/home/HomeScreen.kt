@@ -1,7 +1,6 @@
 package com.fansauchiwa.home
 
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,6 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -57,15 +57,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
@@ -89,7 +86,6 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.edit.FontFamilies
-import com.fansauchiwa.edit.UchiwaShape
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.nonScaledSp
@@ -392,7 +388,7 @@ internal fun HomeScreenContent(
     templates: List<Template>,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
-    lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState = rememberLazyGridState(),
+    lazyGridState: LazyGridState = rememberLazyGridState(),
     onImageClick: (String) -> Unit,
     onTemplateClick: (String) -> Unit,
     onImageLongPress: () -> Unit,
@@ -540,19 +536,9 @@ private fun ComponentTemplateItem(
                     scaleX = scale
                     scaleY = scale
                 }
-                .clip(UchiwaShape())
-                .background(savedUchiwa.backgroundColor, UchiwaShape())
                 .semantics(mergeDescendants = true) {},
             contentAlignment = Alignment.Center
         ) {
-            androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.uchiwa_shape),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(savedUchiwa.uchiwaColor),
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .aspectRatio(1.414f)
-            )
             savedUchiwa.decorations.forEach { decoration ->
                 when (decoration) {
                     is Decoration.Text -> TemplateTextItem(decoration)
