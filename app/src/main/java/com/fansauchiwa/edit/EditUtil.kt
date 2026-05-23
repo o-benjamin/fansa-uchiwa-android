@@ -85,13 +85,7 @@ internal fun calculateHandleOffset(
     decorationSize: Size,
     corner: HandleCorner,
 ): Offset {
-    val cornerOffset = when (corner) {
-        HandleCorner.TopLeft -> Offset(-decorationSize.width / 2f, -decorationSize.height / 2f)
-        HandleCorner.TopRight -> Offset(decorationSize.width / 2f, -decorationSize.height / 2f)
-        HandleCorner.BottomLeft -> Offset(-decorationSize.width / 2f, decorationSize.height / 2f)
-        HandleCorner.BottomRight -> Offset(decorationSize.width / 2f, decorationSize.height / 2f)
-    }
-    val scaledCornerOffset = cornerOffset * scale
+    val scaledCornerOffset = corner.toOffset(decorationSize) * scale
     return baseOffset + scaledCornerOffset.rotateBy(rotation)
 }
 
