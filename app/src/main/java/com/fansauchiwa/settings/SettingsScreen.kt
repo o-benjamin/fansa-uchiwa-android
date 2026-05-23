@@ -79,7 +79,7 @@ private fun SettingsContent(
             },
             dismissButton = {
                 TextButton(onClick = onDismissLicenseDialog) {
-                    Text(text = "閉じる")
+                    Text(text = stringResource(R.string.settings_license_close))
                 }
             }
         )
