@@ -371,6 +371,73 @@ class EditViewModelTest {
     }
 
     @Test
+    fun addTextDecoration_selectsNewlyAddedTextDecoration() = runTest {
+        val newDecoration = Decoration.Text(
+            id = "text-1",
+            text = "テスト",
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createText(FontFamilies.HACHI_MARU_POP) } returns newDecoration
+
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.addTextDecoration(FontFamilies.HACHI_MARU_POP)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.decorations.contains(newDecoration))
+        assertEquals(newDecoration.id, state.selectedDecorationId)
+    }
+
+    @Test
+    fun addStickerDecoration_selectsNewlyAddedStickerDecoration() = runTest {
+        val newDecoration = Decoration.Sticker(
+            id = "sticker-1",
+            label = "heart"
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createSticker("heart") } returns newDecoration
+
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.addStickerDecoration("heart")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.decorations.contains(newDecoration))
+        assertEquals(newDecoration.id, state.selectedDecorationId)
+    }
+
+    @Test
+    fun addImageDecoration_selectsNewlyAddedImageDecoration() = runTest {
+        val imageId = "image-1"
+        val newDecoration = Decoration.Image(
+            id = "image-decoration-1",
+            imageId = imageId
+        )
+        val imageReference = ImageReference(
+            id = imageId,
+            path = "/path/to/image.png"
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createImage(imageId) } returns newDecoration
+        every { localImageRepository.loadImage(imageId) } returns imageReference
+
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.addImageDecoration(imageId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.decorations.contains(newDecoration))
+        assertEquals(newDecoration.id, state.selectedDecorationId)
+    }
+
+    @Test
     fun updateFont_existingTextDecoration_fontPropertyUpdated() = runTest {
         val uchiwaId = "test-uchiwa-id"
         val textDecorationId = "text-1"

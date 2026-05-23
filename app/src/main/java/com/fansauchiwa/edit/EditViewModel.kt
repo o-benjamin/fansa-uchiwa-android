@@ -208,7 +208,8 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = currentState.decorations + decoration
+            decorations = currentState.decorations + decoration,
+            selectedDecorationId = decoration.id
         )
         when (decoration) {
             is Decoration.Text -> {
