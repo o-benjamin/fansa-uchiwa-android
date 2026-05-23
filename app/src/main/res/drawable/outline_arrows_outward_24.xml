@@ -2,16 +2,16 @@
     android:width="24dp"
     android:height="24dp"
     android:tint="#000000"
-    android:viewportWidth="960"
-    android:viewportHeight="960">
+    android:viewportWidth="24"
+    android:viewportHeight="24">
 
     <group
-        android:pivotX="480"
-        android:pivotY="480"
+        android:pivotX="12"
+        android:pivotY="12"
         android:rotation="45">
         <path
             android:fillColor="@android:color/white"
-            android:pathData="M680,680L624,624L727,520L520,520L520,440L727,440L624,336L680,280L880,480L680,680ZM280,680L80,480L280,280L336,336L233,440L440,440L440,520L233,520L336,624L280,680Z" />
+            android:pathData="M17,17L15.6,15.6L18.175,13L13,13L13,11L18.175,11L15.6,8.4L17,7L22,12L17,17ZM7,17L2,12L7,7L8.4,8.4L5.825,11L11,11L11,13L5.825,13L8.4,15.6L7,17Z" />
 
     </group>
 
