@@ -81,6 +81,10 @@
     <string name="settings">設定</string>
     <string name="settings_title">アプリ設定</string>
     <string name="settings_haptic_feedback">触覚フィードバック</string>
+    <string name="settings_license_title">素材のライセンス</string>
+    <string name="settings_license_message">ステッカーとして提供している一部の素材は、Apache License 2.0に基づいて配布されています。</string>
+    <string name="settings_license_open_in_browser">ブラウザで開く</string>
+    <string name="settings_license_close">閉じる</string>
     <string name="event_timeline">イベント予定</string>
     <string name="event_timeline_open_from_preview">イベント予定に追加</string>
     <string name="event_add">イベントを追加</string>

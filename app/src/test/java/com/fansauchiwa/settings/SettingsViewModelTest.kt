@@ -41,6 +41,12 @@ class SettingsViewModelTest {
 
         override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) = Unit
 
+        override fun getHasSeenApologyDialogStream(): Flow<Boolean> = MutableSharedFlow()
+
+        override suspend fun fetchHasSeenApologyDialog() = Unit
+
+        override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) = Unit
+
         fun isHapticEnabled(): Boolean = hapticEnabled
     }
 
@@ -72,5 +78,26 @@ class SettingsViewModelTest {
         assertTrue(stateAfterToggle is SettingsUiState.Success)
         assertFalse((stateAfterToggle as SettingsUiState.Success).isHapticFeedbackEnabled)
         assertFalse(fakeRepository.isHapticEnabled())
+    }
+
+    @Test
+    fun showAndDismissLicenseDialog_updatesUiState() = runTest {
+        val viewModel = SettingsViewModel(FakeSettingsRepository())
+
+        advanceUntilIdle()
+
+        val initialState = viewModel.uiState.value
+        assertTrue(initialState is SettingsUiState.Success)
+        assertFalse(initialState.showLicenseDialog)
+
+        viewModel.showLicenseDialog()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showLicenseDialog)
+
+        viewModel.dismissLicenseDialog()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.showLicenseDialog)
     }
 }
