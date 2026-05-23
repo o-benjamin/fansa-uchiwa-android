@@ -86,7 +86,9 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onNameConfirmed() {
-        dismissNameDialog()
+        _uiState.update {
+            it.copy(isNameDialogShown = false)
+        }
     }
 
     fun loadAllMasterpieces() {

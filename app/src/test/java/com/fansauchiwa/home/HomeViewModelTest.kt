@@ -68,6 +68,16 @@ class HomeViewModelTest {
         )
     }
 
+    private fun createTemplate(): Template = Template(
+        id = "template-id",
+        previewImageResId = 0,
+        savedUchiwa = SavedUchiwa(
+            decorations = emptyList(),
+            uchiwaColor = Color.White,
+            backgroundColor = Color.Black
+        )
+    )
+
     @Test
     fun onTabSelected_updatesSelectedTab() = runTest {
         val viewModel = createViewModel()
@@ -89,15 +99,7 @@ class HomeViewModelTest {
     @Test
     fun showNameDialog_setsDialogVisibleAndTargetTemplate() = runTest {
         val viewModel = createViewModel()
-        val template = Template(
-            id = "template-id",
-            previewImageResId = 0,
-            savedUchiwa = SavedUchiwa(
-                decorations = emptyList(),
-                uchiwaColor = Color.White,
-                backgroundColor = Color.Black
-            )
-        )
+        val template = createTemplate()
 
         viewModel.showNameDialog(template)
 
@@ -108,15 +110,7 @@ class HomeViewModelTest {
     @Test
     fun dismissNameDialog_hidesDialogAndClearsTargetTemplate() = runTest {
         val viewModel = createViewModel()
-        val template = Template(
-            id = "template-id",
-            previewImageResId = 0,
-            savedUchiwa = SavedUchiwa(
-                decorations = emptyList(),
-                uchiwaColor = Color.White,
-                backgroundColor = Color.Black
-            )
-        )
+        val template = createTemplate()
 
         viewModel.showNameDialog(template)
         viewModel.dismissNameDialog()
@@ -126,23 +120,15 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun onNameConfirmed_hidesDialogAndClearsTargetTemplate() = runTest {
+    fun onNameConfirmed_hidesDialogAndKeepsTargetTemplate() = runTest {
         val viewModel = createViewModel()
-        val template = Template(
-            id = "template-id",
-            previewImageResId = 0,
-            savedUchiwa = SavedUchiwa(
-                decorations = emptyList(),
-                uchiwaColor = Color.White,
-                backgroundColor = Color.Black
-            )
-        )
+        val template = createTemplate()
 
         viewModel.showNameDialog(template)
         viewModel.onNameConfirmed()
 
         assertFalse(viewModel.uiState.value.isNameDialogShown)
-        assertEquals(null, viewModel.uiState.value.selectedTargetTemplate)
+        assertEquals(template, viewModel.uiState.value.selectedTargetTemplate)
     }
 
     // region duplicateSelectedMasterpieces
