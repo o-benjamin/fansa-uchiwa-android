@@ -1,10 +1,10 @@
 package com.fansauchiwa.home
 
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -57,11 +59,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -77,8 +84,13 @@ import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.decorationitem.StickerItemContent
+import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
@@ -86,6 +98,22 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.math.min
+
+internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
+internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
+
+internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
+    append(
+        savedUchiwa.decorations
+            .filterIsInstance<Decoration.Text>()
+            .joinToString(separator = "|") { it.text }
+    )
+    append(";background=")
+    append(savedUchiwa.backgroundColor.value.toString())
+    append(";uchiwa=")
+    append(savedUchiwa.uchiwaColor.value.toString())
+}
 
 @Composable
 private fun HomeFab(
@@ -362,7 +390,7 @@ internal fun HomeScreenContent(
     templates: List<Template>,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
-    lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState = rememberLazyGridState(),
+    lazyGridState: LazyGridState = rememberLazyGridState(),
     onImageClick: (String) -> Unit,
     onTemplateClick: (String) -> Unit,
     onImageLongPress: () -> Unit,
@@ -479,25 +507,90 @@ private fun TemplateItem(
             .aspectRatio(1.2f),
         onClick = onClick
     ) {
-        if (isPreview) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = template.id,
-                    style = MaterialTheme.typography.bodySmall
-                )
+        ComponentTemplateItem(
+            template = template,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+private fun ComponentTemplateItem(
+    template: Template,
+    modifier: Modifier = Modifier
+) {
+    val savedUchiwa = template.savedUchiwa
+
+    BoxWithConstraints(
+        modifier = modifier
+            .padding(8.dp)
+            .testTag("template-preview-${template.id}"),
+        contentAlignment = Alignment.Center
+    ) {
+        val referenceWidth = 360.dp
+        val referenceHeight = referenceWidth / 1.414f
+        val scale = min(maxWidth / referenceWidth, maxHeight / referenceHeight)
+
+        Box(
+            modifier = Modifier
+                .requiredSize(referenceWidth, referenceHeight)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .semantics(mergeDescendants = true) {},
+            contentAlignment = Alignment.Center
+        ) {
+            savedUchiwa.decorations.forEach { decoration ->
+                when (decoration) {
+                    is Decoration.Text -> TemplateTextItem(decoration)
+                    is Decoration.Sticker -> TemplateStickerItem(decoration)
+                    is Decoration.Image -> Unit
+                }
             }
-        } else {
-            Image(
-                painter = painterResource(template.previewImageResId),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillHeight
-            )
         }
+    }
+}
+
+@Composable
+private fun TemplateTextItem(
+    decoration: Decoration.Text,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.graphicsLayer {
+            translationX = decoration.offset.x
+            translationY = decoration.offset.y
+            scaleX = decoration.scale
+            scaleY = decoration.scale
+            rotationZ = decoration.rotation
+        }
+    ) {
+        TextItemContent(
+            decoration = decoration,
+            textSize = 24.sp.nonScaledSp,
+        )
+    }
+}
+
+@Composable
+private fun TemplateStickerItem(
+    decoration: Decoration.Sticker,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.graphicsLayer {
+            translationX = decoration.offset.x
+            translationY = decoration.offset.y
+            scaleX = decoration.scale
+            scaleY = decoration.scale
+            rotationZ = decoration.rotation
+        }
+    ) {
+        StickerItemContent(
+            decoration = decoration,
+            modifier = Modifier
+        )
     }
 }
 
@@ -610,9 +703,19 @@ private fun previewTemplates(): List<Template> {
             id = "template_$index",
             previewImageResId = R.drawable.uchiwa_shape,
             savedUchiwa = SavedUchiwa(
-                decorations = emptyList(),
-                uchiwaColor = Color.White,
-                backgroundColor = Color.White
+                decorations = listOf(
+                    Decoration.Text(
+                        id = "preview_text_$index",
+                        text = "サンプル$index",
+                        color = Color.White,
+                        strokeColor = Color(0xFF65E8FF),
+                        strokeWidth = 24f,
+                        width = FontWeight.W900.weight,
+                        font = FontFamilies.M_PLUS_ROUNDED_1C
+                    )
+                ),
+                uchiwaColor = Color(0xFFF6D6FF),
+                backgroundColor = Color(0x11000000)
             )
         )
     }
