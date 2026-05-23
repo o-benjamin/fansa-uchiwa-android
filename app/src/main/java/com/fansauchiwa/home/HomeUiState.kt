@@ -6,8 +6,6 @@ import com.fansauchiwa.data.Template
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
-typealias DecorationColor = DecorationColors
-
 enum class HomeTab {
     CREATE,
     MY_WORK
@@ -16,7 +14,7 @@ enum class HomeTab {
 @Parcelize
 data class HomeUiState(
     val selectedTab: HomeTab = HomeTab.CREATE,
-    val selectedDefaultColor: DecorationColor? = null,
+    val selectedDefaultColor: DecorationColors? = null,
     val isNameDialogShown: Boolean = false,
     val selectedTargetTemplate: @RawValue Template? = null,
     val masterpiecePathList: List<String> = emptyList(),
