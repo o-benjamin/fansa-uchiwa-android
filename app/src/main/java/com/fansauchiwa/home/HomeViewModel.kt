@@ -67,7 +67,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedDefaultColor = color) }
     }
 
-    fun showNameDialog(targetTemplate: Template? = null) {
+    fun showNameDialog(targetTemplate: Template?) {
         _uiState.update {
             it.copy(
                 isNameDialogShown = true,
