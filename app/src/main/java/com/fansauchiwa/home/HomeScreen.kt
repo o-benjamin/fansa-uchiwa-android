@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
@@ -523,15 +522,11 @@ private fun ComponentTemplateItem(
     modifier: Modifier = Modifier
 ) {
     val savedUchiwa = template.savedUchiwa
-    val templatePreviewSummary = buildTemplatePreviewSummary(savedUchiwa)
 
     BoxWithConstraints(
         modifier = modifier
             .padding(8.dp)
-            .testTag("template-preview-${template.id}")
-            .semantics {
-                templatePreviewSummary = templatePreviewSummary
-            },
+            .testTag("template-preview-${template.id}"),
         contentAlignment = Alignment.Center
     ) {
         val referenceWidth = 360.dp
