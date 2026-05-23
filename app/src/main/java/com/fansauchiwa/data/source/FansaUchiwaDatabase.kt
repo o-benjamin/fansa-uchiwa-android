@@ -68,9 +68,49 @@ abstract class FansaUchiwaDatabase : RoomDatabase() {
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
+                var hasThumbnail = false
+                val cursor = database.query("PRAGMA table_info(`events`)")
+                try {
+                    while (cursor.moveToNext()) {
+                        val nameIndex = cursor.getColumnIndex("name")
+                        if (nameIndex != -1) {
+                            if (cursor.getString(nameIndex) == "thumbnailImagePath") {
+                                hasThumbnail = true
+                                break
+                            }
+                        }
+                    }
+                } finally {
+                    cursor.close()
+                }
+
+                // テーブルを再作成してスキーマを正規化する
                 database.execSQL(
-                    "ALTER TABLE `events` ADD COLUMN `thumbnailImagePath` TEXT"
+                    """
+                    CREATE TABLE IF NOT EXISTS `events_new` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `eventDateEpochDay` INTEGER NOT NULL,
+                        `remindEnabled` INTEGER NOT NULL DEFAULT 1,
+                        `thumbnailImagePath` TEXT,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
                 )
+
+                if (hasThumbnail) {
+                    database.execSQL(
+                        "INSERT INTO `events_new` (`id`, `name`, `eventDateEpochDay`, `remindEnabled`, `thumbnailImagePath`) SELECT `id`, `name`, `eventDateEpochDay`, `remindEnabled`, `thumbnailImagePath` FROM `events`"
+                    )
+                } else {
+                    database.execSQL(
+                        "INSERT INTO `events_new` (`id`, `name`, `eventDateEpochDay`, `remindEnabled`) SELECT `id`, `name`, `eventDateEpochDay`, `remindEnabled` FROM `events`"
+                    )
+                }
+
+                database.execSQL("DROP TABLE `events`")
+                database.execSQL("ALTER TABLE `events_new` RENAME TO `events`")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_events_eventDateEpochDay` ON `events` (`eventDateEpochDay`)")
             }
         }
 
