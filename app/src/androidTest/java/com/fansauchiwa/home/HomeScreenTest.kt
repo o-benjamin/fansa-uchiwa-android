@@ -54,10 +54,11 @@ class HomeScreenTest {
 
     @Test
     fun templatesAndMasterpieces_displaysBothSections() {
+        val templates = previewTemplates()
         composeTestRule.setContent {
             HomeScreenContent(
                 masterpiecePathList = sampleMasterpieces,
-                templates = previewTemplates(),
+                templates = templates,
                 isSelectionMode = false,
                 selectedPaths = emptyList(),
                 onImageClick = {},
@@ -81,7 +82,7 @@ class HomeScreenTest {
         composeTestRule.onNode(
             SemanticsMatcher.expectValue(
                 TemplatePreviewSummaryKey,
-                "サンプル1;background=285212672;uchiwa=4294366975"
+                buildTemplatePreviewSummary(templates.first().savedUchiwa)
             )
         ).assertIsDisplayed()
     }

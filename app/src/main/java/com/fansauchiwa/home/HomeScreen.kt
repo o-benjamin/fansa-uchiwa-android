@@ -106,6 +106,18 @@ import kotlin.math.min
 internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
 internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
 
+internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
+    append(
+        savedUchiwa.decorations
+            .filterIsInstance<Decoration.Text>()
+            .joinToString(separator = "|") { it.text }
+    )
+    append(";background=")
+    append(savedUchiwa.backgroundColor.value.toString())
+    append(";uchiwa=")
+    append(savedUchiwa.uchiwaColor.value.toString())
+}
+
 @Composable
 private fun HomeFab(
     isSelectionMode: Boolean,
@@ -511,17 +523,7 @@ private fun ComponentTemplateItem(
     modifier: Modifier = Modifier
 ) {
     val savedUchiwa = template.savedUchiwa
-    val templatePreviewSummary = buildString {
-        append(
-            savedUchiwa.decorations
-                .filterIsInstance<Decoration.Text>()
-                .joinToString(separator = "|") { it.text }
-        )
-        append(";background=")
-        append(savedUchiwa.backgroundColor.value.toString())
-        append(";uchiwa=")
-        append(savedUchiwa.uchiwaColor.value.toString())
-    }
+    val templatePreviewSummary = buildTemplatePreviewSummary(savedUchiwa)
 
     BoxWithConstraints(
         modifier = modifier
