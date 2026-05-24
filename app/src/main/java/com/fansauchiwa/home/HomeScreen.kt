@@ -32,6 +32,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -42,6 +43,8 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -59,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -114,6 +118,25 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
     append(";uchiwa=")
     append(savedUchiwa.uchiwaColor.value.toString())
 }
+
+private data class HomeNavigationDestination(
+    val tab: HomeTab,
+    val icon: ImageVector,
+    val labelResId: Int
+)
+
+private val homeNavigationDestinations = listOf(
+    HomeNavigationDestination(
+        tab = HomeTab.CREATE,
+        icon = Icons.Default.Add,
+        labelResId = R.string.create
+    ),
+    HomeNavigationDestination(
+        tab = HomeTab.ALBUM,
+        icon = Icons.Default.PhotoLibrary,
+        labelResId = R.string.album
+    )
+)
 
 @Composable
 private fun HomeFab(
@@ -244,6 +267,32 @@ private fun HomeTopAppBar(
     )
 }
 
+@Composable
+internal fun HomeNavigationBar(
+    selectedTab: HomeTab,
+    onTabSelected: (HomeTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NavigationBar(modifier = modifier) {
+        homeNavigationDestinations.forEach { destination ->
+            val label = stringResource(destination.labelResId)
+            NavigationBarItem(
+                selected = selectedTab == destination.tab,
+                onClick = { onTabSelected(destination.tab) },
+                icon = {
+                    Icon(
+                        imageVector = destination.icon,
+                        contentDescription = label
+                    )
+                },
+                label = {
+                    Text(text = label)
+                }
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -315,10 +364,14 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            BannerAd(
-                LocalContext.current,
-                modifier.windowInsetsPadding(WindowInsets.navigationBars)
-            )
+            Column {
+                BannerAd(LocalContext.current, modifier = Modifier.fillMaxWidth())
+                HomeNavigationBar(
+                    selectedTab = uiState.selectedTab,
+                    onTabSelected = viewModel::onTabSelected,
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                )
+            }
         },
         floatingActionButton = {
             HomeFab(
@@ -351,10 +404,11 @@ fun HomeScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        HomeScreenContent(
+        HomeTabContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = innerPadding.calculateBottomPadding()),
+            selectedTab = uiState.selectedTab,
             masterpiecePathList = uiState.masterpiecePathList,
             templates = uiState.templates,
             isSelectionMode = uiState.isSelectionMode,
@@ -381,6 +435,36 @@ fun HomeScreen(
         )
 
     }
+}
+
+@Composable
+internal fun HomeTabContent(
+    selectedTab: HomeTab,
+    masterpiecePathList: List<String>,
+    templates: List<Template>,
+    isSelectionMode: Boolean,
+    selectedPaths: List<String>,
+    lazyGridState: LazyGridState = rememberLazyGridState(),
+    onImageClick: (String) -> Unit,
+    onTemplateClick: (String) -> Unit,
+    onImageLongPress: () -> Unit,
+    statusBarPadding: Dp,
+    modifier: Modifier = Modifier,
+    isPreview: Boolean = false
+) {
+    HomeScreenContent(
+        modifier = modifier,
+        masterpiecePathList = if (selectedTab == HomeTab.ALBUM) masterpiecePathList else emptyList(),
+        templates = if (selectedTab == HomeTab.CREATE) templates else emptyList(),
+        isSelectionMode = isSelectionMode,
+        selectedPaths = selectedPaths,
+        lazyGridState = lazyGridState,
+        onImageClick = onImageClick,
+        onTemplateClick = onTemplateClick,
+        onImageLongPress = onImageLongPress,
+        statusBarPadding = statusBarPadding,
+        isPreview = isPreview
+    )
 }
 
 @Composable

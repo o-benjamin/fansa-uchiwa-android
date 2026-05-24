@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -51,6 +52,55 @@ class HomeScreenTest {
     }
 
     private val sampleMasterpieces = (1..6).map { "masterpiece_$it" }
+
+    @Test
+    fun homeNavigationBar_switchesVisibleContentByTab() {
+        val templates = previewTemplates()
+        composeTestRule.setContent {
+            val selectedTabState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(HomeTab.CREATE)
+            }
+
+            androidx.compose.foundation.layout.Column {
+                HomeNavigationBar(
+                    selectedTab = selectedTabState.value,
+                    onTabSelected = { selectedTabState.value = it }
+                )
+                HomeTabContent(
+                    selectedTab = selectedTabState.value,
+                    masterpiecePathList = sampleMasterpieces,
+                    templates = templates,
+                    isSelectionMode = false,
+                    selectedPaths = emptyList(),
+                    onImageClick = {},
+                    onTemplateClick = {},
+                    onImageLongPress = {},
+                    statusBarPadding = 0.dp,
+                    isPreview = true
+                )
+            }
+        }
+
+        val context = getContext()
+        val createTabLabel = context.getString(R.string.create)
+        val albumTabLabel = context.getString(R.string.album)
+        val templateSectionTitle = context.getString(R.string.template_section_title)
+        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
+
+        composeTestRule.onNodeWithText(createTabLabel).assertIsDisplayed()
+        composeTestRule.onNodeWithText(albumTabLabel).assertIsDisplayed()
+        composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
+        composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
+        composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
+
+        composeTestRule.onNodeWithText(albumTabLabel).performClick()
+
+        composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
+        composeTestRule.onNodeWithTag("template-preview-template_1").assertDoesNotExist()
+        composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
+    }
 
     @Test
     fun templatesAndMasterpieces_displaysBothSections() {

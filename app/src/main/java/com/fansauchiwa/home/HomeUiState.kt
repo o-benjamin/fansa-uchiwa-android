@@ -8,7 +8,7 @@ import kotlinx.parcelize.RawValue
 
 enum class HomeTab {
     CREATE,
-    MY_WORK
+    ALBUM
 }
 
 @Parcelize

@@ -2,6 +2,7 @@
     <string name="app_name">ファンサ</string>
 
     <string name="home">ホーム</string>
+    <string name="create">作成</string>
     <string name="album">アルバム</string>
     <string name="add">新規作成</string>
     <string name="back">戻る</string>
