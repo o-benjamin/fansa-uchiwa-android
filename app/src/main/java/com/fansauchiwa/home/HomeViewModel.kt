@@ -2,8 +2,10 @@ package com.fansauchiwa.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
@@ -56,6 +58,38 @@ class HomeViewModel @Inject constructor(
 
     fun logTemplateTap(templateId: String) {
         logEvent(AnalyticsActions.TAP_HOME_TEMPLATE, mapOf("template_id" to templateId))
+    }
+
+    fun onTabSelected(tab: HomeTab) {
+        _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    fun onColorSelected(color: DecorationColors?) {
+        _uiState.update { it.copy(selectedDefaultColor = color) }
+    }
+
+    fun showNameDialog(targetTemplate: Template?) {
+        _uiState.update {
+            it.copy(
+                isNameDialogShown = true,
+                selectedTargetTemplate = targetTemplate
+            )
+        }
+    }
+
+    fun dismissNameDialog() {
+        _uiState.update {
+            it.copy(
+                isNameDialogShown = false,
+                selectedTargetTemplate = null
+            )
+        }
+    }
+
+    fun onNameConfirmed() {
+        _uiState.update {
+            it.copy(isNameDialogShown = false)
+        }
     }
 
     fun loadAllMasterpieces() {

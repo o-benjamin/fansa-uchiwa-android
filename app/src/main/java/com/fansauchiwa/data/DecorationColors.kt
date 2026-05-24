@@ -5,13 +5,18 @@ import androidx.compose.ui.graphics.Color
 enum class DecorationColors(
     private val colorValue: Long
 ) {
-    CYAN(0xFF000000),
     RED(0xFFFF0000),
-    MAGENTA(0xFFFF00FF),
-    BLUE(0xFF0000FF),
-    GREEN(0xFF00FF00),
-    YELLOW(0xFFFFFF00),
-    WHITE(0xFFFFFFFF);
+    PINK(0xFFFF3399),
+    ORANGE(0xFFFF6600),
+    YELLOW(0xFFFFCC00),
+    LIGHT_GREEN(0xFF66FF00),
+    GREEN(0xFF00CC44),
+    LIGHT_BLUE(0xFF33CCFF),
+    BLUE(0xFF0044FF),
+    PURPLE(0xFF9900FF),
+    GRAY(0xFF999999),
+    WHITE(0xFFFFFFFF),
+    BLACK(0xFF000000);
 
     val value: Color
         get() = Color(colorValue)

@@ -1,11 +1,15 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
+import com.fansauchiwa.data.SavedUchiwa
+import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -21,6 +25,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -33,6 +38,7 @@ class HomeViewModelTest {
     private lateinit var localDatabaseRepository: LocalDatabaseRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var templateRepository: TemplateRepository
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var uuidProvider: UuidProvider
 
     @Before
@@ -42,6 +48,7 @@ class HomeViewModelTest {
         localDatabaseRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
         templateRepository = mockk(relaxed = true)
+        settingsRepository = mockk(relaxed = true)
         uuidProvider = mockk(relaxed = true)
     }
 
@@ -56,8 +63,72 @@ class HomeViewModelTest {
             localDatabaseRepository = localDatabaseRepository,
             analyticsRepository = analyticsRepository,
             templateRepository = templateRepository,
+            settingsRepository = settingsRepository,
             uuidProvider = uuidProvider
         )
+    }
+
+    private fun createTemplate(): Template = Template(
+        id = "template-id",
+        previewImageResId = 0,
+        savedUchiwa = SavedUchiwa(
+            decorations = emptyList(),
+            uchiwaColor = Color.White,
+            backgroundColor = Color.Black
+        )
+    )
+
+    @Test
+    fun onTabSelected_updatesSelectedTab() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.onTabSelected(HomeTab.MY_WORK)
+
+        assertEquals(HomeTab.MY_WORK, viewModel.uiState.value.selectedTab)
+    }
+
+    @Test
+    fun onColorSelected_updatesSelectedDefaultColor() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.onColorSelected(DecorationColors.MAGENTA)
+
+        assertEquals(DecorationColors.MAGENTA, viewModel.uiState.value.selectedDefaultColor)
+    }
+
+    @Test
+    fun showNameDialog_setsDialogVisibleAndTargetTemplate() = runTest {
+        val viewModel = createViewModel()
+        val template = createTemplate()
+
+        viewModel.showNameDialog(template)
+
+        assertTrue(viewModel.uiState.value.isNameDialogShown)
+        assertEquals(template, viewModel.uiState.value.selectedTargetTemplate)
+    }
+
+    @Test
+    fun dismissNameDialog_hidesDialogAndClearsTargetTemplate() = runTest {
+        val viewModel = createViewModel()
+        val template = createTemplate()
+
+        viewModel.showNameDialog(template)
+        viewModel.dismissNameDialog()
+
+        assertFalse(viewModel.uiState.value.isNameDialogShown)
+        assertEquals(null, viewModel.uiState.value.selectedTargetTemplate)
+    }
+
+    @Test
+    fun onNameConfirmed_hidesDialogAndKeepsTargetTemplate() = runTest {
+        val viewModel = createViewModel()
+        val template = createTemplate()
+
+        viewModel.showNameDialog(template)
+        viewModel.onNameConfirmed()
+
+        assertFalse(viewModel.uiState.value.isNameDialogShown)
+        assertEquals(template, viewModel.uiState.value.selectedTargetTemplate)
     }
 
     // region duplicateSelectedMasterpieces
