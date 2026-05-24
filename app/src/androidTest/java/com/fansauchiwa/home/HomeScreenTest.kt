@@ -58,7 +58,7 @@ class HomeScreenTest {
         val templates = previewTemplates()
         composeTestRule.setContent {
             val selectedTabState = androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(HomeTab.CREATE)
+                androidx.compose.runtime.mutableStateOf(HomeTab.HOME)
             }
 
             androidx.compose.foundation.layout.Column {
@@ -82,19 +82,19 @@ class HomeScreenTest {
         }
 
         val context = getContext()
-        val createTabLabel = context.getString(R.string.create)
-        val albumTabLabel = context.getString(R.string.album)
+        val homeTabLabel = context.getString(R.string.home)
+        val myDesignTabLabel = context.getString(R.string.my_design)
         val templateSectionTitle = context.getString(R.string.template_section_title)
         val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
 
-        composeTestRule.onNodeWithText(createTabLabel).assertIsDisplayed()
-        composeTestRule.onNodeWithText(albumTabLabel).assertIsDisplayed()
+        composeTestRule.onNodeWithText(homeTabLabel).assertIsDisplayed()
+        composeTestRule.onNodeWithText(myDesignTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
         composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
         composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
 
-        composeTestRule.onNodeWithText(albumTabLabel).performClick()
+        composeTestRule.onNodeWithText(myDesignTabLabel).performClick()
 
         composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
         composeTestRule.onNodeWithTag("template-preview-template_1").assertDoesNotExist()

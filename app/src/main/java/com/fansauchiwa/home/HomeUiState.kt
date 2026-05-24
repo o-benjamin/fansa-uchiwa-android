@@ -7,13 +7,13 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
 enum class HomeTab {
-    CREATE,
-    ALBUM
+    HOME,
+    MY_DESIGN
 }
 
 @Parcelize
 data class HomeUiState(
-    val selectedTab: HomeTab = HomeTab.CREATE,
+    val selectedTab: HomeTab = HomeTab.HOME,
     val selectedDefaultColor: DecorationColors? = null,
     val isNameDialogShown: Boolean = false,
     val selectedTargetTemplate: @RawValue Template? = null,

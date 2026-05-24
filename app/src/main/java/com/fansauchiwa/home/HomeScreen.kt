@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
@@ -119,16 +120,16 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
     append(savedUchiwa.uchiwaColor.value.toString())
 }
 
-private val homeNavigationTabs = listOf(HomeTab.CREATE, HomeTab.ALBUM)
+private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
 private fun HomeTab.icon(): ImageVector = when (this) {
-    HomeTab.CREATE -> Icons.Default.Add
-    HomeTab.ALBUM -> Icons.Default.PhotoLibrary
+    HomeTab.HOME -> Icons.Default.Home
+    HomeTab.MY_DESIGN -> Icons.Default.PhotoLibrary
 }
 
 private fun HomeTab.labelResId(): Int = when (this) {
-    HomeTab.CREATE -> R.string.create
-    HomeTab.ALBUM -> R.string.album
+    HomeTab.HOME -> R.string.home
+    HomeTab.MY_DESIGN -> R.string.my_design
 }
 
 @Composable
@@ -358,11 +359,16 @@ fun HomeScreen(
         },
         bottomBar = {
             Column {
-                BannerAd(LocalContext.current, modifier = Modifier.fillMaxWidth())
                 HomeNavigationBar(
                     selectedTab = uiState.selectedTab,
                     onTabSelected = viewModel::onTabSelected,
-                    modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                    modifier = Modifier.fillMaxWidth()
+                )
+                BannerAd(
+                    LocalContext.current,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
                 )
             }
         },
@@ -445,19 +451,27 @@ internal fun HomeTabContent(
     lazyGridState: LazyGridState = rememberLazyGridState(),
     isPreview: Boolean = false
 ) {
-    HomeScreenContent(
-        modifier = modifier,
-        masterpiecePathList = if (selectedTab == HomeTab.ALBUM) masterpiecePathList else emptyList(),
-        templates = if (selectedTab == HomeTab.CREATE) templates else emptyList(),
-        isSelectionMode = isSelectionMode,
-        selectedPaths = selectedPaths,
-        lazyGridState = lazyGridState,
-        onImageClick = onImageClick,
-        onTemplateClick = onTemplateClick,
-        onImageLongPress = onImageLongPress,
-        statusBarPadding = statusBarPadding,
-        isPreview = isPreview
-    )
+    when (selectedTab) {
+        HomeTab.HOME -> HomeTabHomeContent(
+            templates = templates,
+            onTemplateClick = onTemplateClick,
+            statusBarPadding = statusBarPadding,
+            modifier = modifier,
+            isPreview = isPreview
+        )
+
+        HomeTab.MY_DESIGN -> HomeTabMyDesignContent(
+            masterpiecePathList = masterpiecePathList,
+            isSelectionMode = isSelectionMode,
+            selectedPaths = selectedPaths,
+            lazyGridState = lazyGridState,
+            onImageClick = onImageClick,
+            onImageLongPress = onImageLongPress,
+            statusBarPadding = statusBarPadding,
+            modifier = modifier,
+            isPreview = isPreview
+        )
+    }
 }
 
 @Composable
@@ -535,6 +549,98 @@ internal fun HomeScreenContent(
                         .padding(top = 64.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeTabHomeContent(
+    templates: List<Template>,
+    onTemplateClick: (String) -> Unit,
+    statusBarPadding: Dp,
+    modifier: Modifier = Modifier,
+    isPreview: Boolean = false
+) {
+    if (templates.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(top = statusBarPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            EmptyMasterpieceMessage()
+        }
+        return
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(152.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(top = statusBarPadding),
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            TemplateSectionHeader()
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            TemplateRow(
+                templates = templates,
+                onTemplateClick = onTemplateClick,
+                isPreview = isPreview
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeTabMyDesignContent(
+    masterpiecePathList: List<String>,
+    isSelectionMode: Boolean,
+    selectedPaths: List<String>,
+    lazyGridState: LazyGridState,
+    onImageClick: (String) -> Unit,
+    onImageLongPress: () -> Unit,
+    statusBarPadding: Dp,
+    modifier: Modifier = Modifier,
+    isPreview: Boolean = false
+) {
+    if (masterpiecePathList.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(top = statusBarPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            EmptyMasterpieceMessage()
+        }
+        return
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(152.dp),
+        state = lazyGridState,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(top = statusBarPadding),
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            MyDesignSectionHeader()
+        }
+        items(masterpiecePathList) { path ->
+            MasterpieceItem(
+                imagePath = path,
+                isSelected = selectedPaths.contains(path),
+                isSelectionMode = isSelectionMode,
+                onClick = { onImageClick(path) },
+                onLongClick = onImageLongPress,
+                isPreview = isPreview
+            )
         }
     }
 }

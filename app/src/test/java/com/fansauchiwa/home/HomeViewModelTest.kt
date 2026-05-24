@@ -82,9 +82,9 @@ class HomeViewModelTest {
     fun onTabSelected_updatesSelectedTab() = runTest {
         val viewModel = createViewModel()
 
-        viewModel.onTabSelected(HomeTab.ALBUM)
+        viewModel.onTabSelected(HomeTab.MY_DESIGN)
 
-        assertEquals(HomeTab.ALBUM, viewModel.uiState.value.selectedTab)
+        assertEquals(HomeTab.MY_DESIGN, viewModel.uiState.value.selectedTab)
     }
 
     @Test
