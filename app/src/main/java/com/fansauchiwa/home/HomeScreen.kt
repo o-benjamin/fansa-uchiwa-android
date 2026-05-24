@@ -119,24 +119,17 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
     append(savedUchiwa.uchiwaColor.value.toString())
 }
 
-private data class HomeNavigationDestination(
-    val tab: HomeTab,
-    val icon: ImageVector,
-    val labelResId: Int
-)
+private val homeNavigationTabs = listOf(HomeTab.CREATE, HomeTab.ALBUM)
 
-private val homeNavigationDestinations = listOf(
-    HomeNavigationDestination(
-        tab = HomeTab.CREATE,
-        icon = Icons.Default.Add,
-        labelResId = R.string.create
-    ),
-    HomeNavigationDestination(
-        tab = HomeTab.ALBUM,
-        icon = Icons.Default.PhotoLibrary,
-        labelResId = R.string.album
-    )
-)
+private fun HomeTab.icon(): ImageVector = when (this) {
+    HomeTab.CREATE -> Icons.Default.Add
+    HomeTab.ALBUM -> Icons.Default.PhotoLibrary
+}
+
+private fun HomeTab.labelResId(): Int = when (this) {
+    HomeTab.CREATE -> R.string.create
+    HomeTab.ALBUM -> R.string.album
+}
 
 @Composable
 private fun HomeFab(
@@ -274,14 +267,14 @@ internal fun HomeNavigationBar(
     modifier: Modifier = Modifier
 ) {
     NavigationBar(modifier = modifier) {
-        homeNavigationDestinations.forEach { destination ->
-            val label = stringResource(destination.labelResId)
+        homeNavigationTabs.forEach { tab ->
+            val label = stringResource(tab.labelResId())
             NavigationBarItem(
-                selected = selectedTab == destination.tab,
-                onClick = { onTabSelected(destination.tab) },
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) },
                 icon = {
                     Icon(
-                        imageVector = destination.icon,
+                        imageVector = tab.icon(),
                         contentDescription = label
                     )
                 },
@@ -444,12 +437,12 @@ internal fun HomeTabContent(
     templates: List<Template>,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
-    lazyGridState: LazyGridState = rememberLazyGridState(),
     onImageClick: (String) -> Unit,
     onTemplateClick: (String) -> Unit,
     onImageLongPress: () -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
+    lazyGridState: LazyGridState = rememberLazyGridState(),
     isPreview: Boolean = false
 ) {
     HomeScreenContent(
