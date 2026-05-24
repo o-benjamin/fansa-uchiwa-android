@@ -46,7 +46,7 @@ sealed interface Decoration : Parcelable {
         @Serializable(with = ColorSerializer::class)
         override val color: Color = DecorationColors.WHITE.value,
         @Serializable(with = ColorSerializer::class)
-        override val strokeColor: Color = DecorationColors.MAGENTA.value,
+        override val strokeColor: Color = DecorationColors.PINK.value,
         override val strokeWidth: Float = 30f,
         @Serializable(with = ColorSerializer::class)
         val secondBorderColor: Color = DecorationColors.WHITE.value,
@@ -68,7 +68,7 @@ sealed interface Decoration : Parcelable {
         override val rotation: Float = 0f,
         override val scale: Float = 1f,
         @Serializable(with = ColorSerializer::class)
-        override val color: Color = DecorationColors.MAGENTA.value,
+        override val color: Color = DecorationColors.PINK.value,
         @Serializable(with = ColorSerializer::class)
         override val strokeColor: Color = DecorationColors.WHITE.value,
         override val strokeWidth: Float = 3f,
@@ -95,7 +95,7 @@ sealed interface Decoration : Parcelable {
         @Serializable(with = ColorSerializer::class)
         override val color: Color = DecorationColors.WHITE.value,
         @Serializable(with = ColorSerializer::class)
-        override val strokeColor: Color = DecorationColors.CYAN.value,
+        override val strokeColor: Color = DecorationColors.PINK.value,
         override val strokeWidth: Float = 30f,
     ) : Decoration
 }
