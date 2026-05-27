@@ -73,23 +73,6 @@ import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
 
-private enum class RewardConsentAction(
-    val titleResId: Int,
-    val messageResId: Int,
-    val confirmResId: Int
-) {
-    Save(
-        titleResId = R.string.rewarded_save_dialog_title,
-        messageResId = R.string.rewarded_save_dialog_message,
-        confirmResId = R.string.rewarded_save_dialog_confirm
-    ),
-    Share(
-        titleResId = R.string.rewarded_share_dialog_title,
-        messageResId = R.string.rewarded_share_dialog_message,
-        confirmResId = R.string.rewarded_share_dialog_confirm
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UchiwaPreviewScreen(
@@ -281,29 +264,6 @@ fun UchiwaPreviewScreen(
             }
         )
     }
-}
-
-@Composable
-private fun RewardConsentDialog(
-    action: RewardConsentAction,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(action.titleResId)) },
-        text = { Text(text = stringResource(action.messageResId)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(text = stringResource(action.confirmResId))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.cancel))
-            }
-        }
-    )
 }
 
 @Composable
