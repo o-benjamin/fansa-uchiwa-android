@@ -42,7 +42,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -71,6 +73,23 @@ import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
 
+private enum class RewardConsentAction(
+    val titleResId: Int,
+    val messageResId: Int,
+    val confirmResId: Int
+) {
+    Save(
+        titleResId = R.string.rewarded_save_dialog_title,
+        messageResId = R.string.rewarded_save_dialog_message,
+        confirmResId = R.string.rewarded_save_dialog_confirm
+    ),
+    Share(
+        titleResId = R.string.rewarded_share_dialog_title,
+        messageResId = R.string.rewarded_share_dialog_message,
+        confirmResId = R.string.rewarded_share_dialog_confirm
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UchiwaPreviewScreen(
@@ -83,6 +102,15 @@ fun UchiwaPreviewScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    var pendingRewardConsentAction by remember { mutableStateOf<RewardConsentAction?>(null) }
+
+    fun performRewardedAction(action: RewardConsentAction) {
+        val activity = context as? Activity ?: return
+        when (action) {
+            RewardConsentAction.Save -> viewModel.showRewardedAdAndSave(activity)
+            RewardConsentAction.Share -> viewModel.showRewardedAdAndShare(activity)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -175,15 +203,17 @@ fun UchiwaPreviewScreen(
         UchiwaPreviewContent(
             imagePath = uiState.imagePath,
             onSaveClick = {
-                val activity = context as? Activity
-                if (activity != null) {
-                    viewModel.showRewardedAdAndSave(activity)
+                if (viewModel.hasEarnedReward) {
+                    performRewardedAction(RewardConsentAction.Save)
+                } else {
+                    pendingRewardConsentAction = RewardConsentAction.Save
                 }
             },
             onShareClick = {
-                val activity = context as? Activity
-                if (activity != null) {
-                    viewModel.showRewardedAdAndShare(activity)
+                if (viewModel.hasEarnedReward) {
+                    performRewardedAction(RewardConsentAction.Share)
+                } else {
+                    pendingRewardConsentAction = RewardConsentAction.Share
                 }
             },
             onBackToHomeClick = {
@@ -196,6 +226,17 @@ fun UchiwaPreviewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+        )
+    }
+
+    pendingRewardConsentAction?.let { action ->
+        RewardConsentDialog(
+            action = action,
+            onDismiss = { pendingRewardConsentAction = null },
+            onConfirm = {
+                pendingRewardConsentAction = null
+                performRewardedAction(action)
+            }
         )
     }
 
@@ -240,6 +281,29 @@ fun UchiwaPreviewScreen(
             }
         )
     }
+}
+
+@Composable
+private fun RewardConsentDialog(
+    action: RewardConsentAction,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(action.titleResId)) },
+        text = { Text(text = stringResource(action.messageResId)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(action.confirmResId))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable

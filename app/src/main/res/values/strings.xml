@@ -44,6 +44,12 @@
     <string name="custom_color_picker_title">カスタム色を選択</string>
     <string name="decide">決定</string>
     <string name="save_after_ad">広告のあとに保存されます</string>
+    <string name="rewarded_save_dialog_title">デザインの保存</string>
+    <string name="rewarded_save_dialog_message">広告の後にデザインが保存されます</string>
+    <string name="rewarded_save_dialog_confirm">保存する</string>
+    <string name="rewarded_share_dialog_title">デザインの共有</string>
+    <string name="rewarded_share_dialog_message">広告の後に共有できます</string>
+    <string name="rewarded_share_dialog_confirm">共有する</string>
     <string name="design_saved">デザインを保存しました！</string>
     <string name="print_instructions">実際にうちわを作るときは、画像として端末に保存しA3サイズで印刷してください</string>
     <string name="empty_masterpiece_title">あなただけの\nファンサうちわを\n作ろう！</string>
