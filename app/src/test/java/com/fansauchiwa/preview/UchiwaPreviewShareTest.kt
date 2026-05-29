@@ -10,6 +10,7 @@ import com.fansauchiwa.data.repository.AnalyticsRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,9 +90,12 @@ class UchiwaPreviewShareTest {
                 onAdDismissedSlot.captured.invoke()
             }
 
+            assertEquals(false, viewModel.hasEarnedReward)
+
             viewModel.showRewardedAdAndShare(activity)
             advanceUntilIdle()
 
+            assertEquals(true, viewModel.hasEarnedReward)
             assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
         }
 
@@ -221,6 +225,16 @@ class UchiwaPreviewShareTest {
         advanceUntilIdle()
 
         assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
+        verify(exactly = 1) {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = any(),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = any()
+            )
+        }
     }
 
     // endregion
