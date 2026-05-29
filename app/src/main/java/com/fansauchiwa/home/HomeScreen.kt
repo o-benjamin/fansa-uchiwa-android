@@ -16,16 +16,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
@@ -508,10 +505,10 @@ private fun HomeTabHomeContent(
         item(span = { GridItemSpan(maxLineSpan) }) {
             TemplateSectionHeader()
         }
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            TemplateRow(
-                templates = templates,
-                onTemplateClick = onTemplateClick,
+        items(templates, key = { it.id }) { template ->
+            TemplateItem(
+                template = template,
+                onClick = { onTemplateClick(template.id) },
                 isPreview = isPreview
             )
         }
@@ -579,28 +576,6 @@ private fun TemplateSectionHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TemplateRow(
-    templates: List<Template>,
-    onTemplateClick: (String) -> Unit,
-    isPreview: Boolean,
-    modifier: Modifier = Modifier
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(templates, key = { it.id }) { template ->
-            TemplateItem(
-                template = template,
-                onClick = { onTemplateClick(template.id) },
-                isPreview = isPreview
-            )
-        }
-    }
-}
-
-@Composable
 private fun TemplateItem(
     template: Template,
     onClick: () -> Unit,
@@ -609,7 +584,7 @@ private fun TemplateItem(
 ) {
     Card(
         modifier = modifier
-            .width(152.dp)
+            .fillMaxWidth()
             .aspectRatio(1.2f),
         onClick = onClick
     ) {
