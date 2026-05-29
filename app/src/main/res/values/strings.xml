@@ -3,6 +3,7 @@
 
     <string name="home">ホーム</string>
     <string name="album">アルバム</string>
+    <string name="my_design">マイデザイン</string>
     <string name="add">新規作成</string>
     <string name="back">戻る</string>
     <string name="undo">元に戻す</string>
@@ -53,6 +54,7 @@
     <string name="design_saved">デザインを保存しました！</string>
     <string name="print_instructions">実際にうちわを作るときは、画像として端末に保存しA3サイズで印刷してください</string>
     <string name="empty_masterpiece_title">あなただけの\nファンサうちわを\n作ろう！</string>
+    <string name="empty_template_title">テンプレートは\n準備中です</string>
     <string name="privacy_policy">プライバシーポリシー</string>
     <string name="more_options">その他のオプション</string>
     <string name="feedback">ご意見はこちら</string>

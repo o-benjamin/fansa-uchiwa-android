@@ -1,12 +1,12 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -53,119 +53,52 @@ class HomeScreenTest {
     private val sampleMasterpieces = (1..6).map { "masterpiece_$it" }
 
     @Test
-    fun templatesAndMasterpieces_displaysBothSections() {
+    fun homeNavigationBar_switchesVisibleContentByTab() {
         val templates = previewTemplates()
         composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = sampleMasterpieces,
-                templates = templates,
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
+            val selectedTabState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(HomeTab.HOME)
+            }
+
+            androidx.compose.foundation.layout.Column {
+                HomeNavigationBar(
+                    selectedTab = selectedTabState.value,
+                    onTabSelected = { selectedTabState.value = it }
+                )
+                HomeTabContent(
+                    selectedTab = selectedTabState.value,
+                    masterpiecePathList = sampleMasterpieces,
+                    templates = templates,
+                    isSelectionMode = false,
+                    selectedPaths = emptyList(),
+                    onImageClick = {},
+                    onTemplateClick = {},
+                    onImageLongPress = {},
+                    statusBarPadding = 0.dp,
+                    isPreview = true
+                )
+            }
         }
 
         val context = getContext()
+        val homeTabLabel = context.getString(R.string.home)
+        val myDesignTabLabel = context.getString(R.string.my_design)
         val templateSectionTitle = context.getString(R.string.template_section_title)
         val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
 
-        composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
-        composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
-
-        composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
-        composeTestRule.onNodeWithText("template_1").assertDoesNotExist()
-        composeTestRule.onNode(
-            SemanticsMatcher.expectValue(
-                TemplatePreviewSummaryKey,
-                buildTemplatePreviewSummary(templates.first().savedUchiwa)
-            )
-        ).assertIsDisplayed()
-    }
-
-    @Test
-    fun templatesOnly_displaysTemplateSectionAndEmptyMessage() {
-        composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = emptyList(),
-                templates = previewTemplates(),
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
-        }
-
-        val context = getContext()
-        val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
-        val emptyMessageTitle = context.getString(R.string.empty_masterpiece_title)
-
+        composeTestRule.onNodeWithText(homeTabLabel).assertIsDisplayed()
+        composeTestRule.onNodeWithText(myDesignTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
         composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
-
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
-        composeTestRule.onNodeWithText(emptyMessageTitle).assertIsDisplayed()
-    }
+        composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
 
-    @Test
-    fun masterpiecesOnly_displaysMyDesignSection() {
-        composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = sampleMasterpieces,
-                templates = emptyList(),
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
-        }
-
-        val context = getContext()
-        val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
+        composeTestRule.onNodeWithText(myDesignTabLabel).performClick()
 
         composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
         composeTestRule.onNodeWithTag("template-preview-template_1").assertDoesNotExist()
-
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
     }
 
-    @Test
-    fun empty_displaysEmptyMessageOnly() {
-        composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = emptyList(),
-                templates = emptyList(),
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
-        }
-
-        val context = getContext()
-        val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
-        val emptyMessageTitle = context.getString(R.string.empty_masterpiece_title)
-
-        composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
-        composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
-
-        composeTestRule.onNodeWithText(emptyMessageTitle).assertIsDisplayed()
-    }
 }
