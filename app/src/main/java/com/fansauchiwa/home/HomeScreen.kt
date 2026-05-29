@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -523,11 +524,10 @@ private fun HomeTabHomeContent(
         return
     }
 
-    var selectedMemberColor by remember(templates) {
-        mutableStateOf(
-            templates.firstOrNull()?.savedUchiwa?.uchiwaColor ?: availableMemberColors.first()
-        )
-    }
+    var selectedMemberColor by remember { mutableStateOf<Color?>(null) }
+    val effectiveMemberColor = selectedMemberColor
+        ?: templates.firstOrNull()?.savedUchiwa?.uchiwaColor
+        ?: availableMemberColors.first()
 
     LazyColumn(
         modifier = modifier
@@ -538,14 +538,17 @@ private fun HomeTabHomeContent(
     ) {
         item {
             MemberColorSelector(
-                selectedColor = selectedMemberColor,
+                selectedColor = effectiveMemberColor,
                 onColorSelected = { selectedMemberColor = it }
             )
         }
         item {
             TemplateSectionHeader()
         }
-        items(templates.chunked(2), key = { row -> row.firstOrNull()?.id ?: "template-row" }) { row ->
+        itemsIndexed(
+            items = templates.chunked(2),
+            key = { index, row -> row.firstOrNull()?.id ?: "template-row-$index" }
+        ) { _, row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -555,7 +558,7 @@ private fun HomeTabHomeContent(
                 row.forEach { template ->
                     TemplateItem(
                         template = template,
-                        memberColor = selectedMemberColor,
+                        memberColor = effectiveMemberColor,
                         onClick = { onTemplateClick(template.id) },
                         isPreview = isPreview,
                         modifier = Modifier.weight(1f)
@@ -617,7 +620,7 @@ private fun MemberColorSelector(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        tint = if (memberColor.luminance() > 0.7f) Color.Black else Color.White
+                        tint = if (memberColor.luminance() > 0.5f) Color.Black else Color.White
                     )
                 }
             }
