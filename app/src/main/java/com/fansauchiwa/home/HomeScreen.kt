@@ -524,7 +524,9 @@ private fun HomeTabHomeContent(
     }
 
     var selectedMemberColor by remember(templates) {
-        mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+        mutableStateOf(
+            templates.firstOrNull()?.savedUchiwa?.uchiwaColor ?: availableMemberColors.first()
+        )
     }
 
     LazyColumn(
@@ -543,7 +545,7 @@ private fun HomeTabHomeContent(
         item {
             TemplateSectionHeader()
         }
-        items(templates.chunked(2), key = { row -> row.first().id }) { row ->
+        items(templates.chunked(2), key = { row -> row.firstOrNull()?.id ?: "template-row" }) { row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
