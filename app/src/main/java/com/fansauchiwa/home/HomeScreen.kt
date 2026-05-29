@@ -267,7 +267,10 @@ internal fun HomeNavigationBar(
     onTabSelected: (HomeTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    NavigationBar(modifier = modifier) {
+    NavigationBar(
+        modifier = modifier,
+        windowInsets = WindowInsets()
+    ) {
         homeNavigationTabs.forEach { tab ->
             val label = stringResource(tab.labelResId())
             NavigationBarItem(
