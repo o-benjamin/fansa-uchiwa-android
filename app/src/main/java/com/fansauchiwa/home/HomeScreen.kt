@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -478,85 +477,6 @@ internal fun HomeTabContent(
 }
 
 @Composable
-internal fun HomeScreenContent(
-    modifier: Modifier = Modifier,
-    masterpiecePathList: List<String>,
-    templates: List<Template>,
-    isSelectionMode: Boolean,
-    selectedPaths: List<String>,
-    lazyGridState: LazyGridState = rememberLazyGridState(),
-    onImageClick: (String) -> Unit,
-    onTemplateClick: (String) -> Unit,
-    onImageLongPress: () -> Unit,
-    statusBarPadding: Dp,
-    isPreview: Boolean = false
-) {
-    val isEmpty = templates.isEmpty() && masterpiecePathList.isEmpty()
-
-    if (isEmpty) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(top = statusBarPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            EmptyMasterpieceMessage()
-        }
-        return
-    }
-
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(152.dp),
-        state = lazyGridState,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(top = statusBarPadding),
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        if (templates.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                TemplateSectionHeader()
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                TemplateRow(
-                    templates = templates,
-                    onTemplateClick = onTemplateClick,
-                    isPreview = isPreview
-                )
-            }
-        }
-
-        if (masterpiecePathList.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                MyDesignSectionHeader()
-            }
-            items(masterpiecePathList) { path ->
-                MasterpieceItem(
-                    imagePath = path,
-                    isSelected = selectedPaths.contains(path),
-                    isSelectionMode = isSelectionMode,
-                    onClick = { onImageClick(path) },
-                    onLongClick = onImageLongPress,
-                    isPreview = isPreview
-                )
-            }
-        }
-
-        if (masterpiecePathList.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                EmptyMasterpieceMessage(
-                    modifier = Modifier
-                        .defaultMinSize(minHeight = 300.dp)
-                        .padding(top = 64.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun HomeTabHomeContent(
     templates: List<Template>,
     onTemplateClick: (String) -> Unit,
@@ -571,7 +491,7 @@ private fun HomeTabHomeContent(
                 .padding(top = statusBarPadding),
             contentAlignment = Alignment.Center
         ) {
-            EmptyMasterpieceMessage()
+            EmptyTemplateMessage()
         }
         return
     }
@@ -791,7 +711,26 @@ private fun MyDesignSectionHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun EmptyTemplateMessage(modifier: Modifier = Modifier) {
+    EmptyStateMessage(
+        title = stringResource(R.string.empty_template_title),
+        modifier = modifier
+    )
+}
+
+@Composable
 private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
+    EmptyStateMessage(
+        title = stringResource(R.string.empty_masterpiece_title),
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun EmptyStateMessage(
+    title: String,
+    modifier: Modifier = Modifier
+) {
     val uriHandler = LocalUriHandler.current
     Box(
         modifier = modifier,
@@ -802,7 +741,7 @@ private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = stringResource(R.string.empty_masterpiece_title),
+                text = title,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.displaySmall,
                 textAlign = TextAlign.Center
@@ -907,68 +846,28 @@ private fun previewTemplates(): List<Template> {
     }
 }
 
-@Preview(showBackground = true, name = "テンプレートあり・マスターピースあり")
+@Preview(showBackground = true, name = "ホームタブ")
 @Composable
-private fun HomeScreenPreview_TemplatesAndMasterpieces() {
-    HomeScreenContent(
+private fun HomeTabHomeContentPreview() {
+    HomeTabHomeContent(
+        modifier = Modifier.fillMaxSize(),
+        templates = previewTemplates(),
+        onTemplateClick = {},
+        statusBarPadding = 0.dp,
+        isPreview = true
+    )
+}
+
+@Preview(showBackground = true, name = "マイデザインタブ")
+@Composable
+private fun HomeTabMyDesignContentPreview() {
+    HomeTabMyDesignContent(
         modifier = Modifier.fillMaxSize(),
         masterpiecePathList = (1..6).map { "masterpiece_$it" },
-        templates = previewTemplates(),
         isSelectionMode = false,
         selectedPaths = emptyList(),
+        lazyGridState = rememberLazyGridState(),
         onImageClick = {},
-        onTemplateClick = {},
-        onImageLongPress = {},
-        statusBarPadding = 0.dp,
-        isPreview = true
-    )
-}
-
-@Preview(showBackground = true, name = "テンプレートあり・マスターピースなし")
-@Composable
-private fun HomeScreenPreview_TemplatesOnly() {
-    HomeScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        masterpiecePathList = emptyList(),
-        templates = previewTemplates(),
-        isSelectionMode = false,
-        selectedPaths = emptyList(),
-        onImageClick = {},
-        onTemplateClick = {},
-        onImageLongPress = {},
-        statusBarPadding = 0.dp,
-        isPreview = true
-    )
-}
-
-@Preview(showBackground = true, name = "テンプレートなし・マスターピースあり")
-@Composable
-private fun HomeScreenPreview_MasterpiecesOnly() {
-    HomeScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        masterpiecePathList = (1..6).map { "masterpiece_$it" },
-        templates = emptyList(),
-        isSelectionMode = false,
-        selectedPaths = emptyList(),
-        onImageClick = {},
-        onTemplateClick = {},
-        onImageLongPress = {},
-        statusBarPadding = 0.dp,
-        isPreview = true
-    )
-}
-
-@Preview(showBackground = true, name = "テンプレートなし・マスターピースなし")
-@Composable
-private fun HomeScreenPreview_Empty() {
-    HomeScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        masterpiecePathList = emptyList(),
-        templates = emptyList(),
-        isSelectionMode = false,
-        selectedPaths = emptyList(),
-        onImageClick = {},
-        onTemplateClick = {},
         onImageLongPress = {},
         statusBarPadding = 0.dp,
         isPreview = true
