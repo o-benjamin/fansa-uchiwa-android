@@ -32,7 +32,10 @@ class UchiwaPreviewViewModel @Inject constructor(
         savedStateHandle.getStateFlow(UI_STATE_KEY, UchiwaPreviewUiState())
 
     /** この画面のセッション中にリワード広告を既に視聴済みかどうか */
-    private var hasEarnedReward = false
+    private var hasEarnedRewardInSession = false
+
+    val hasEarnedReward: Boolean
+        get() = hasEarnedRewardInSession
 
     init {
         adMobRepository.loadRewardedAd()
@@ -77,7 +80,7 @@ class UchiwaPreviewViewModel @Inject constructor(
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
 
-        if (hasEarnedReward) {
+        if (hasEarnedRewardInSession) {
             saveToGallery()
             return
         }
@@ -87,7 +90,7 @@ class UchiwaPreviewViewModel @Inject constructor(
             placement = AnalyticsScreens.PREVIEW_SCREEN,
             waitForLoad = true,
             onUserEarnedReward = {
-                hasEarnedReward = true
+                hasEarnedRewardInSession = true
                 saveToGallery()
             },
             onAdFailedOrSkipped = {
@@ -125,7 +128,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     fun showRewardedAdAndShare(activity: Activity) {
         logEvent(AnalyticsActions.TAP_PREVIEW_SHARE)
 
-        if (hasEarnedReward) {
+        if (hasEarnedRewardInSession) {
             setShareImagePath()
             return
         }
@@ -135,7 +138,7 @@ class UchiwaPreviewViewModel @Inject constructor(
             placement = AnalyticsScreens.PREVIEW_SCREEN,
             waitForLoad = true,
             onUserEarnedReward = {
-                hasEarnedReward = true
+                hasEarnedRewardInSession = true
             },
             onAdFailedOrSkipped = {
                 // 広告が表示されなかった場合は onAdDismissed が来ないためここで共有を実行
