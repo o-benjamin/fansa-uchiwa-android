@@ -137,6 +137,15 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
 
 internal fun memberColorChipTag(color: Color): String = "member-color-chip-${color.toArgb()}"
 
+private val availableMemberColors = DecorationColors.entries
+    .filterNot { it == DecorationColors.GRAY }
+    .map { it.value }
+
+private val memberColorChipSize = 40.dp
+private val memberColorChipSpacing = 16.dp
+private const val templateCardBackgroundAlpha = 0.16f
+private const val templateCardBorderAlpha = 0.72f
+
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
 private fun HomeTab.icon(): ImageVector = when (this) {
@@ -534,7 +543,7 @@ private fun HomeTabHomeContent(
         item {
             TemplateSectionHeader()
         }
-        items(templates.chunked(2), key = { row -> row.joinToString(separator = "-") { it.id } }) { row ->
+        items(templates.chunked(2), key = { row -> row.first().id }) { row ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -564,16 +573,12 @@ private fun MemberColorSelector(
     onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val memberColors = remember {
-        DecorationColors.entries.filterNot { it == DecorationColors.GRAY }.map { it.value }
-    }
-
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(memberColorChipSpacing)
     ) {
-        items(memberColors, key = { it.toArgb() }) { memberColor ->
+        items(availableMemberColors, key = { it.toArgb() }) { memberColor ->
             val isSelected = memberColor == selectedColor
             val scale by animateFloatAsState(
                 targetValue = if (isSelected) 1.15f else 1f,
@@ -582,7 +587,7 @@ private fun MemberColorSelector(
 
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(memberColorChipSize)
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
@@ -691,9 +696,9 @@ private fun TemplateItem(
             .fillMaxWidth()
             .aspectRatio(1.2f),
         colors = CardDefaults.cardColors(
-            containerColor = memberColor.copy(alpha = 0.16f)
+            containerColor = memberColor.copy(alpha = templateCardBackgroundAlpha)
         ),
-        border = BorderStroke(2.dp, memberColor.copy(alpha = 0.72f)),
+        border = BorderStroke(2.dp, memberColor.copy(alpha = templateCardBorderAlpha)),
         onClick = onClick
     ) {
         ComponentTemplateItem(
