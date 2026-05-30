@@ -3,7 +3,6 @@ package com.fansauchiwa.edit
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
-import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
@@ -15,6 +14,7 @@ import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -22,7 +22,7 @@ import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.applyQuickTemplateStyle
+import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -45,7 +45,6 @@ import javax.inject.Inject
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"
 private const val MAX_HISTORY_SIZE = 50
-private const val LOG_TAG = "EditViewModel"
 
 @HiltViewModel
 class EditViewModel @Inject constructor(
@@ -186,7 +185,7 @@ class EditViewModel @Inject constructor(
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
                 val templateMainColor = resolveTemplateMainColor()
-                val savedUchiwa = templateMainColor?.let { template.savedUchiwa.applyQuickTemplateStyle(it) }
+                val savedUchiwa = templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
                     ?: template.savedUchiwa
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
@@ -201,11 +200,7 @@ class EditViewModel @Inject constructor(
     }
 
     private fun resolveTemplateMainColor(): Color? {
-        val rawColorValue = savedStateHandle.get<String>(TEMPLATE_MAIN_COLOR_ARG) ?: return null
-        return rawColorValue.toULongOrNull()?.let { Color(it) } ?: run {
-            Log.w(LOG_TAG, "Invalid template main color: $rawColorValue")
-            null
-        }
+        return savedStateHandle.get<DecorationColors>(TEMPLATE_MAIN_COLOR_ARG)?.value
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {

@@ -8,7 +8,7 @@ import org.junit.Test
 class TemplateListTest {
 
     @Test
-    fun applyQuickTemplateStyle_updatesTemplateColorsAndFixedBorders() {
+    fun applyTemplateMainColor_updatesTextColorsOnly() {
         val selectedMainColor = DecorationColors.GREEN.value
         val savedUchiwa = SavedUchiwa(
             decorations = listOf(
@@ -16,7 +16,7 @@ class TemplateListTest {
                     id = "text-1",
                     text = "推し",
                     color = DecorationColors.PINK.value,
-                    strokeColor = DecorationColors.MAGENTA.value,
+                    strokeColor = DecorationColors.PURPLE.value,
                     strokeWidth = 12f,
                     secondBorderColor = DecorationColors.WHITE.value,
                     secondBorderWidth = 0f,
@@ -26,7 +26,7 @@ class TemplateListTest {
                     label = "heart",
                     id = "sticker-1",
                     color = DecorationColors.BLUE.value,
-                    strokeColor = DecorationColors.MAGENTA.value,
+                    strokeColor = DecorationColors.PURPLE.value,
                     strokeWidth = 3f,
                     secondStrokeColor = DecorationColors.WHITE.value,
                     secondStrokeWidth = 0f
@@ -41,19 +41,19 @@ class TemplateListTest {
             backgroundColor = Color.Black
         )
 
-        val styled = savedUchiwa.applyQuickTemplateStyle(selectedMainColor)
+        val styled = savedUchiwa.applyTemplateMainColor(selectedMainColor)
         val text = styled.decorations.filterIsInstance<Decoration.Text>().single()
         val sticker = styled.decorations.filterIsInstance<Decoration.Sticker>().single()
         val image = styled.decorations.filterIsInstance<Decoration.Image>().single()
 
         assertEquals(selectedMainColor, text.color)
-        assertEquals(DecorationColors.WHITE.value, text.strokeColor)
-        assertEquals(DecorationColors.BLACK.value, text.secondBorderColor)
-        assertEquals(12f, text.secondBorderWidth)
-        assertEquals(selectedMainColor, sticker.color)
-        assertEquals(DecorationColors.WHITE.value, sticker.strokeColor)
-        assertEquals(DecorationColors.BLACK.value, sticker.secondStrokeColor)
-        assertEquals(3f, sticker.secondStrokeWidth)
+        assertEquals(DecorationColors.PURPLE.value, text.strokeColor)
+        assertEquals(DecorationColors.WHITE.value, text.secondBorderColor)
+        assertEquals(0f, text.secondBorderWidth)
+        assertEquals(DecorationColors.BLUE.value, sticker.color)
+        assertEquals(DecorationColors.PURPLE.value, sticker.strokeColor)
+        assertEquals(DecorationColors.WHITE.value, sticker.secondStrokeColor)
+        assertEquals(0f, sticker.secondStrokeWidth)
         assertEquals(Color.White, image.color)
     }
 }

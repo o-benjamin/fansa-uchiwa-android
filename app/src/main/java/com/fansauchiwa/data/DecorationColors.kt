@@ -1,10 +1,11 @@
 package com.fansauchiwa.data
 
 import androidx.compose.ui.graphics.Color
+import java.io.Serializable
 
 enum class DecorationColors(
     private val colorValue: Long
-) {
+) : Serializable {
     RED(0xFFFF0000),
     PINK(0xFFFF3399),
     ORANGE(0xFFFF6600),

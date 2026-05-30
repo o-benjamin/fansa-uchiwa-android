@@ -30,17 +30,13 @@ data object EditDestination : FansaUchiwaNavigationDestination {
     override val route: String =
         "$screen?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}&$TEMPLATE_MAIN_COLOR_ARG={$TEMPLATE_MAIN_COLOR_ARG}"
 
-    fun createRoute(
-        uchiwaId: String,
-        templateId: String?,
-        templateMainColor: String? = null
-    ): String =
+    fun createRoute(inputArg: EditScreenInputArg): String =
         buildQueryRoute(
             screen = screen,
             arguments = arrayOf(
-                UCHIWA_ID_ARG to uchiwaId,
-                TEMPLATE_ID_ARG to templateId,
-                TEMPLATE_MAIN_COLOR_ARG to templateMainColor
+                UCHIWA_ID_ARG to inputArg.uchiwaId,
+                TEMPLATE_ID_ARG to inputArg.templateId,
+                TEMPLATE_MAIN_COLOR_ARG to inputArg.templateMainColor
             )
         )
 }
@@ -78,13 +74,18 @@ data object EventTimelineDestination : FansaUchiwaNavigationDestination {
 
 private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"
 
-private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String?>>): String {
+private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, Any?>>): String {
     val query = arguments.mapNotNull { (key, value) ->
-        value?.let { "$key=$it" }
+        value?.let { "$key=${serializeRouteArgumentValue(it)}" }
     }
     return if (query.isEmpty()) {
         screen
     } else {
         "$screen?${query.joinToString("&")}"
     }
+}
+
+private fun serializeRouteArgumentValue(value: Any): String = when (value) {
+    is Enum<*> -> value.name
+    else -> value.toString()
 }

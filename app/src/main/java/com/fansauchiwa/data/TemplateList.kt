@@ -20,8 +20,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.PINK.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 3.0f,
-                    secondStrokeColor = DecorationColors.WHITE.value,
-                    secondStrokeWidth = 0.0f
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 3.0f
                 ),
                 Decoration.Text(
                     text = "プロポーズ",
@@ -32,7 +32,7 @@ val templateList: List<Template> = listOf(
                     color = Color(0xFFFF8AF0),
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 16.363636f,
-                    secondBorderColor = DecorationColors.WHITE.value,
+                    secondBorderColor = DecorationColors.BLACK.value,
                     secondBorderWidth = 16.363636f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
@@ -46,8 +46,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.PINK.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 3.0f,
-                    secondStrokeColor = DecorationColors.WHITE.value,
-                    secondStrokeWidth = 0.0f
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 3.0f
                 ),
                 Decoration.Sticker(
                     label = "heart",
@@ -58,8 +58,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.PINK.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 3.0f,
-                    secondStrokeColor = DecorationColors.WHITE.value,
-                    secondStrokeWidth = 0.0f
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 3.0f
                 ),
                 Decoration.Text(
                     text = "〇〇くん",
@@ -68,10 +68,10 @@ val templateList: List<Template> = listOf(
                     rotation = 0.23916245f,
                     scale = 1.8064443f,
                     color = DecorationColors.WHITE.value,
-                    strokeColor = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 30.0f,
-                    secondBorderColor = DecorationColors.WHITE.value,
-                    secondBorderWidth = 0.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
@@ -84,8 +84,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.WHITE.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 30.0f,
-                    secondBorderColor = DecorationColors.WHITE.value,
-                    secondBorderWidth = 0.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 )
@@ -108,7 +108,7 @@ val templateList: List<Template> = listOf(
                     color = Color(0xFFFD95FF),
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 16.363636f,
-                    secondBorderColor = DecorationColors.WHITE.value,
+                    secondBorderColor = DecorationColors.BLACK.value,
                     secondBorderWidth = 8.181818f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
@@ -122,8 +122,8 @@ val templateList: List<Template> = listOf(
                     color = Color(0xFF65E8FF),
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 3.0f,
-                    secondStrokeColor = DecorationColors.WHITE.value,
-                    secondStrokeWidth = 0.0f
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 3.0f
                 ),
                 Decoration.Sticker(
                     label = "star_rounded",
@@ -134,8 +134,8 @@ val templateList: List<Template> = listOf(
                     color = Color(0xFF69E2FF),
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 3.0f,
-                    secondStrokeColor = DecorationColors.WHITE.value,
-                    secondStrokeWidth = 0.0f
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 3.0f
                 ),
                 Decoration.Text(
                     text = "して！",
@@ -146,8 +146,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.WHITE.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 30.0f,
-                    secondBorderColor = DecorationColors.WHITE.value,
-                    secondBorderWidth = 0.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
@@ -160,8 +160,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.WHITE.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 30.0f,
-                    secondBorderColor = DecorationColors.WHITE.value,
-                    secondBorderWidth = 0.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 )
@@ -184,7 +184,7 @@ val templateList: List<Template> = listOf(
                     color = Color(0xFFFF9EFB),
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 16.363636f,
-                    secondBorderColor = DecorationColors.WHITE.value,
+                    secondBorderColor = DecorationColors.BLACK.value,
                     secondBorderWidth = 16.363636f,
                     width = 500,
                     font = FontFamilies.DELA_GOTHIC_ONE
@@ -198,8 +198,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.WHITE.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 24.545456f,
-                    secondBorderColor = DecorationColors.WHITE.value,
-                    secondBorderWidth = 0.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 24.545456f,
                     width = 900,
                     font = FontFamilies.DELA_GOTHIC_ONE
                 ),
@@ -212,8 +212,8 @@ val templateList: List<Template> = listOf(
                     color = DecorationColors.WHITE.value,
                     strokeColor = DecorationColors.WHITE.value,
                     strokeWidth = 24.545456f,
-                    secondBorderColor = DecorationColors.WHITE.value,
-                    secondBorderWidth = 0.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 24.545456f,
                     width = 900,
                     font = FontFamilies.DELA_GOTHIC_ONE
                 )
@@ -224,28 +224,14 @@ val templateList: List<Template> = listOf(
     )
 )
 
-private val quickTemplateStrokeColor = DecorationColors.WHITE.value
-private val quickTemplateSecondBorderColor = DecorationColors.BLACK.value
-
-internal fun SavedUchiwa.applyQuickTemplateStyle(mainColor: Color): SavedUchiwa = copy(
+internal fun SavedUchiwa.applyTemplateMainColor(mainColor: Color): SavedUchiwa = copy(
     decorations = decorations.map { decoration ->
         when (decoration) {
             is Decoration.Text -> decoration.copy(
-                color = mainColor,
-                strokeColor = quickTemplateStrokeColor,
-                secondBorderColor = quickTemplateSecondBorderColor,
-                secondBorderWidth = decoration.secondBorderWidth.takeIf { it > 0f }
-                    ?: decoration.strokeWidth
+                color = mainColor
             )
 
-            is Decoration.Sticker -> decoration.copy(
-                color = mainColor,
-                strokeColor = quickTemplateStrokeColor,
-                secondStrokeColor = quickTemplateSecondBorderColor,
-                secondStrokeWidth = decoration.secondStrokeWidth.takeIf { it > 0f }
-                    ?: decoration.strokeWidth
-            )
-
+            is Decoration.Sticker,
             is Decoration.Image -> decoration
         }
     }

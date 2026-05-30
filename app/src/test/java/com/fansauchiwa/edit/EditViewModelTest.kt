@@ -104,7 +104,7 @@ class EditViewModelTest {
     private fun createViewModel(
         uchiwaId: String?,
         templateId: String? = null,
-        templateMainColor: Color? = null,
+        templateMainColor: DecorationColors? = null,
         hasSeenEditCompletionTooltip: Boolean = false
     ): EditViewModel {
         settingsRepository = FakeSettingsRepository(
@@ -118,7 +118,7 @@ class EditViewModelTest {
                 set(TEMPLATE_ID_ARG, templateId)
             }
             if (templateMainColor != null) {
-                set(TEMPLATE_MAIN_COLOR_ARG, templateMainColor.value.toString())
+                set(TEMPLATE_MAIN_COLOR_ARG, templateMainColor)
             }
         }
         return EditViewModel(
@@ -327,10 +327,10 @@ class EditViewModelTest {
     }
 
     @Test
-    fun applyNewUchiwaState_templateIdAndMainColorSpecified_appliesQuickTemplateStyle() = runTest {
+    fun applyNewUchiwaState_templateIdAndMainColorSpecified_appliesTemplateMainColor() = runTest {
         val uchiwaId = "new-uchiwa-id"
         val templateId = "template_1"
-        val selectedMainColor = DecorationColors.BLUE.value
+        val selectedMainColor = DecorationColors.BLUE
         val templateUchiwaColor = Color(0xFFFF69B4)
         val templateBackgroundColor = Color(0xFFFFFFFF)
 
@@ -338,20 +338,20 @@ class EditViewModelTest {
             text = "推し",
             id = "template_1_text_1",
             color = DecorationColors.PINK.value,
-            strokeColor = DecorationColors.MAGENTA.value,
+            strokeColor = DecorationColors.WHITE.value,
             strokeWidth = 18f,
-            secondBorderColor = DecorationColors.WHITE.value,
-            secondBorderWidth = 0f,
+            secondBorderColor = DecorationColors.BLACK.value,
+            secondBorderWidth = 18f,
             font = FontFamilies.DELA_GOTHIC_ONE
         )
         val templateStickerDecoration = Decoration.Sticker(
             label = "heart",
             id = "template_1_sticker_1",
             color = DecorationColors.PINK.value,
-            strokeColor = DecorationColors.MAGENTA.value,
+            strokeColor = DecorationColors.WHITE.value,
             strokeWidth = 4f,
-            secondStrokeColor = DecorationColors.WHITE.value,
-            secondStrokeWidth = 0f
+            secondStrokeColor = DecorationColors.BLACK.value,
+            secondStrokeWidth = 4f
         )
 
         val templateSavedUchiwa = SavedUchiwa(
@@ -384,12 +384,12 @@ class EditViewModelTest {
         assertEquals(uchiwaId, state.uchiwaId)
         assertEquals(2, state.decorations.size)
         assertEquals("template_1_text_1", textDecoration.id)
-        assertEquals(selectedMainColor, textDecoration.color)
+        assertEquals(selectedMainColor.value, textDecoration.color)
         assertEquals(DecorationColors.WHITE.value, textDecoration.strokeColor)
         assertEquals(DecorationColors.BLACK.value, textDecoration.secondBorderColor)
         assertEquals(18f, textDecoration.secondBorderWidth)
         assertEquals("template_1_sticker_1", stickerDecoration.id)
-        assertEquals(selectedMainColor, stickerDecoration.color)
+        assertEquals(DecorationColors.PINK.value, stickerDecoration.color)
         assertEquals(DecorationColors.WHITE.value, stickerDecoration.strokeColor)
         assertEquals(DecorationColors.BLACK.value, stickerDecoration.secondStrokeColor)
         assertEquals(4f, stickerDecoration.secondStrokeWidth)

@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fansauchiwa.EditScreenInputArg
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
@@ -89,7 +90,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
-import com.fansauchiwa.data.applyQuickTemplateStyle
+import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
@@ -296,7 +297,7 @@ internal fun HomeNavigationBar(
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
-    onImageClick: (String, String?, String?) -> Unit = { _, _, _ -> },
+    onImageClick: (EditScreenInputArg) -> Unit = {},
     onAddClick: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {}
@@ -425,13 +426,21 @@ fun HomeScreen(
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
                     viewModel.logItemEditTap()
-                    onImageClick(uchiwaId, null, null)
+                    onImageClick(EditScreenInputArg(uchiwaId = uchiwaId))
                 }
             },
             onTemplateClick = { templateId ->
                 viewModel.logTemplateTap(templateId)
                 val newUchiwaId = UUID.randomUUID().toString()
-                onImageClick(newUchiwaId, templateId, uiState.selectedMainColor.value.toString())
+                onImageClick(
+                    EditScreenInputArg(
+                        uchiwaId = newUchiwaId,
+                        templateId = templateId,
+                        templateMainColor = DecorationColors.entries.firstOrNull {
+                            it.value == uiState.selectedMainColor
+                        }
+                    )
+                )
             },
             onImageLongPress = {
                 viewModel.enterSelectionMode()
@@ -660,7 +669,7 @@ private fun ComponentTemplateItem(
     modifier: Modifier = Modifier
 ) {
     val savedUchiwa = remember(template, mainColor) {
-        template.savedUchiwa.applyQuickTemplateStyle(mainColor)
+        template.savedUchiwa.applyTemplateMainColor(mainColor)
     }
 
     BoxWithConstraints(
