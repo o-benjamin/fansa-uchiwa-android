@@ -24,5 +24,5 @@ class SerializableEnumNavType<T>(
         bundle.putSerializable(key, value)
     }
 
-    override fun serializeAsValue(value: T?): String = value?.name.orEmpty()
+    override fun serializeAsValue(value: T?): String = requireNotNull(value).name
 }

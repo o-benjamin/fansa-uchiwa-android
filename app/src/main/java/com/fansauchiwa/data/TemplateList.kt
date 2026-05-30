@@ -231,7 +231,7 @@ internal fun SavedUchiwa.applyTemplateMainColor(mainColor: Color): SavedUchiwa =
                 color = mainColor
             )
 
-            is Decoration.Sticker,
+            is Decoration.Sticker -> decoration
             is Decoration.Image -> decoration
         }
     }
