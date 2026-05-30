@@ -3,6 +3,7 @@ package com.fansauchiwa.home
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -12,6 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.edit.FontFamilies
@@ -65,10 +67,16 @@ class HomeScreenTest {
                     selectedTab = selectedTabState.value,
                     onTabSelected = { selectedTabState.value = it }
                 )
+                val selectedMemberColorState = androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+                }
+
                 HomeTabContent(
                     selectedTab = selectedTabState.value,
                     masterpiecePathList = sampleMasterpieces,
                     templates = templates,
+                    selectedMemberColor = selectedMemberColorState.value,
+                    onMemberColorSelected = { selectedMemberColorState.value = it },
                     isSelectionMode = false,
                     selectedPaths = emptyList(),
                     onImageClick = {},
@@ -99,6 +107,36 @@ class HomeScreenTest {
         composeTestRule.onNodeWithTag("template-preview-template_1").assertDoesNotExist()
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
+    }
+
+    @Test
+    fun createTabColorSelector_updatesSelectedChipState() {
+        val templates = previewTemplates()
+        val targetColor = DecorationColors.BLUE.value
+
+        composeTestRule.setContent {
+            val selectedMemberColorState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+            }
+
+            HomeTabContent(
+                selectedTab = HomeTab.HOME,
+                masterpiecePathList = emptyList(),
+                templates = templates,
+                selectedMemberColor = selectedMemberColorState.value,
+                onMemberColorSelected = { selectedMemberColorState.value = it },
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
+                onImageClick = {},
+                onTemplateClick = {},
+                onImageLongPress = {},
+                statusBarPadding = 0.dp,
+                isPreview = true
+            )
+        }
+
+        composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).performClick()
+        composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).assertIsSelected()
     }
 
 }

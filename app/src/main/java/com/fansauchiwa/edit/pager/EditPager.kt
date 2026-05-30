@@ -58,7 +58,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.edit.ColorAndWeightControl
-import com.fansauchiwa.edit.ColorPickerRow
+import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.edit.DecorationTabType
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.HeaderTitle

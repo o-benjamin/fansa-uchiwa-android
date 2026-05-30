@@ -1,6 +1,7 @@
 package com.fansauchiwa.home
 
 import android.os.Parcelable
+import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
 import kotlinx.parcelize.Parcelize
@@ -14,7 +15,7 @@ enum class HomeTab {
 @Parcelize
 data class HomeUiState(
     val selectedTab: HomeTab = HomeTab.HOME,
-    val selectedDefaultColor: DecorationColors? = null,
+    val selectedMainColor: @RawValue Color = DecorationColors.PINK.value,
     val isNameDialogShown: Boolean = false,
     val selectedTargetTemplate: @RawValue Template? = null,
     val masterpiecePathList: List<String> = emptyList(),

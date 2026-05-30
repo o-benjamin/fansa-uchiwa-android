@@ -1,7 +1,6 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
-import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
@@ -88,12 +87,42 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun onColorSelected_updatesSelectedDefaultColor() = runTest {
+    fun onMemberColorSelected_updatesSelectedMemberColor() = runTest {
+        val viewModel = createViewModel()
+        val selectedColor = Color.Magenta
+
+        viewModel.onMemberColorSelected(selectedColor)
+
+        assertEquals(selectedColor, viewModel.uiState.value.selectedMemberColor)
+    }
+
+    @Test
+    fun loadTemplates_initializesSelectedMemberColorFromFirstTemplate() = runTest {
+        val template = createTemplate().copy(
+            savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = Color.Cyan)
+        )
+        coEvery { templateRepository.getTemplates() } returns listOf(template)
         val viewModel = createViewModel()
 
-        viewModel.onColorSelected(DecorationColors.MAGENTA)
+        viewModel.loadTemplates()
+        advanceUntilIdle()
 
-        assertEquals(DecorationColors.MAGENTA, viewModel.uiState.value.selectedDefaultColor)
+        assertEquals(Color.Cyan, viewModel.uiState.value.selectedMemberColor)
+    }
+
+    @Test
+    fun loadTemplates_preservesSelectedMemberColorAfterUserSelection() = runTest {
+        val template = createTemplate().copy(
+            savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = Color.Cyan)
+        )
+        coEvery { templateRepository.getTemplates() } returns listOf(template)
+        val viewModel = createViewModel()
+
+        viewModel.onMemberColorSelected(Color.Yellow)
+        viewModel.loadTemplates()
+        advanceUntilIdle()
+
+        assertEquals(Color.Yellow, viewModel.uiState.value.selectedMemberColor)
     }
 
     @Test

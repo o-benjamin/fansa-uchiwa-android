@@ -59,13 +59,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
@@ -86,12 +86,14 @@ import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
@@ -115,6 +117,8 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
     append(";uchiwa=")
     append(savedUchiwa.uchiwaColor.value.toString())
 }
+
+internal fun mainColorChipTag(color: Color): String = "main-color-chip-${color.toArgb()}"
 
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
@@ -409,6 +413,8 @@ fun HomeScreen(
             selectedTab = uiState.selectedTab,
             masterpiecePathList = uiState.masterpiecePathList,
             templates = uiState.templates,
+            selectedMainColor = uiState.selectedMainColor,
+            onMainColorSelected = viewModel::onMainColorSelected,
             isSelectionMode = uiState.isSelectionMode,
             selectedPaths = uiState.selectedPaths,
             lazyGridState = lazyGridState,
@@ -440,6 +446,8 @@ internal fun HomeTabContent(
     selectedTab: HomeTab,
     masterpiecePathList: List<String>,
     templates: List<Template>,
+    selectedMainColor: Color,
+    onMainColorSelected: (Color) -> Unit,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
     onImageClick: (String) -> Unit,
@@ -453,6 +461,8 @@ internal fun HomeTabContent(
     when (selectedTab) {
         HomeTab.HOME -> HomeTabHomeContent(
             templates = templates,
+            selectedMainColor = selectedMainColor,
+            onMainColorSelected = onMainColorSelected,
             onTemplateClick = onTemplateClick,
             statusBarPadding = statusBarPadding,
             modifier = modifier,
@@ -476,6 +486,8 @@ internal fun HomeTabContent(
 @Composable
 private fun HomeTabHomeContent(
     templates: List<Template>,
+    selectedMainColor: Color,
+    onMainColorSelected: (Color) -> Unit,
     onTemplateClick: (String) -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
@@ -503,7 +515,23 @@ private fun HomeTabHomeContent(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            TemplateSectionHeader()
+            SectionHeader(
+                title = stringResource(R.string.main_color_section_title),
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            MainColorSelector(
+                selectedColor = selectedMainColor,
+                onColorSelected = onMainColorSelected,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(
+                title = stringResource(R.string.template_section_title),
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
         items(templates, key = { it.id }) { template ->
             TemplateItem(
@@ -513,6 +541,26 @@ private fun HomeTabHomeContent(
             )
         }
     }
+}
+
+@Composable
+private fun MainColorSelector(
+    selectedColor: Color,
+    onColorSelected: (Color) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ColorPickerRow(
+        currentColor = selectedColor,
+        onColorSelected = onColorSelected,
+        modifier = modifier,
+        colors = DecorationColors.entries.map { it.value },
+        includeCustomColorPicker = false,
+        chipSize = 40.dp,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        applySelectedSemantics = true,
+        testTagProvider = ::mainColorChipTag
+    )
 }
 
 @Composable
@@ -550,7 +598,10 @@ private fun HomeTabMyDesignContent(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            MyDesignSectionHeader()
+            SectionHeader(
+                title = stringResource(R.string.my_design_section_title),
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
         items(masterpiecePathList) { path ->
             MasterpieceItem(
@@ -566,12 +617,15 @@ private fun HomeTabMyDesignContent(
 }
 
 @Composable
-private fun TemplateSectionHeader(modifier: Modifier = Modifier) {
+private fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier
+) {
     Text(
-        text = stringResource(R.string.template_section_title),
+        text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        modifier = modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+        modifier = modifier.padding(start = 16.dp, bottom = 8.dp)
     )
 }
 
@@ -619,7 +673,9 @@ private fun ComponentTemplateItem(
                     scaleX = scale
                     scaleY = scale
                 }
-                .semantics(mergeDescendants = true) {},
+                .semantics(mergeDescendants = true) {
+                    templatePreviewSummary = buildTemplatePreviewSummary(savedUchiwa)
+                },
             contentAlignment = Alignment.Center
         ) {
             savedUchiwa.decorations.forEach { decoration ->
@@ -827,6 +883,8 @@ private fun HomeTabHomeContentPreview() {
     HomeTabHomeContent(
         modifier = Modifier.fillMaxSize(),
         templates = previewTemplates(),
+        selectedMainColor = previewTemplates().first().savedUchiwa.uchiwaColor,
+        onMainColorSelected = {},
         onTemplateClick = {},
         statusBarPadding = 0.dp,
         isPreview = true
