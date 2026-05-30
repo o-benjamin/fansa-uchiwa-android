@@ -89,6 +89,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.applyQuickTemplateStyle
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
@@ -295,7 +296,7 @@ internal fun HomeNavigationBar(
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
-    onImageClick: (String, String?) -> Unit = { _, _ -> },
+    onImageClick: (String, String?, String?) -> Unit = { _, _, _ -> },
     onAddClick: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {}
@@ -424,13 +425,13 @@ fun HomeScreen(
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
                     viewModel.logItemEditTap()
-                    onImageClick(uchiwaId, null)
+                    onImageClick(uchiwaId, null, null)
                 }
             },
             onTemplateClick = { templateId ->
                 viewModel.logTemplateTap(templateId)
                 val newUchiwaId = UUID.randomUUID().toString()
-                onImageClick(newUchiwaId, templateId)
+                onImageClick(newUchiwaId, templateId, uiState.selectedMainColor.value.toString())
             },
             onImageLongPress = {
                 viewModel.enterSelectionMode()
@@ -536,6 +537,7 @@ private fun HomeTabHomeContent(
         items(templates, key = { it.id }) { template ->
             TemplateItem(
                 template = template,
+                mainColor = selectedMainColor,
                 onClick = { onTemplateClick(template.id) },
                 isPreview = isPreview
             )
@@ -632,6 +634,7 @@ private fun SectionHeader(
 @Composable
 private fun TemplateItem(
     template: Template,
+    mainColor: Color,
     onClick: () -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
@@ -644,6 +647,7 @@ private fun TemplateItem(
     ) {
         ComponentTemplateItem(
             template = template,
+            mainColor = mainColor,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -652,9 +656,12 @@ private fun TemplateItem(
 @Composable
 private fun ComponentTemplateItem(
     template: Template,
+    mainColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val savedUchiwa = template.savedUchiwa
+    val savedUchiwa = remember(template, mainColor) {
+        template.savedUchiwa.applyQuickTemplateStyle(mainColor)
+    }
 
     BoxWithConstraints(
         modifier = modifier

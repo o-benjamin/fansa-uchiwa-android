@@ -222,4 +222,35 @@ val templateList: List<Template> = listOf(
             backgroundColor = Color(0x11000000)
         )
     )
+
+    private val quickTemplateStrokeColor = DecorationColors.WHITE.value
+    private val quickTemplateSecondBorderColor = DecorationColors.BLACK.value
+
+    internal fun Template.applyQuickTemplateStyle(mainColor: Color): Template = copy(
+        savedUchiwa = savedUchiwa.applyQuickTemplateStyle(mainColor)
+    )
+
+    internal fun SavedUchiwa.applyQuickTemplateStyle(mainColor: Color): SavedUchiwa = copy(
+        decorations = decorations.map { decoration ->
+            when (decoration) {
+                is Decoration.Text -> decoration.copy(
+                    color = mainColor,
+                    strokeColor = quickTemplateStrokeColor,
+                    secondBorderColor = quickTemplateSecondBorderColor,
+                    secondBorderWidth = decoration.secondBorderWidth.takeIf { it > 0f }
+                        ?: decoration.strokeWidth
+                )
+
+                is Decoration.Sticker -> decoration.copy(
+                    color = mainColor,
+                    strokeColor = quickTemplateStrokeColor,
+                    secondStrokeColor = quickTemplateSecondBorderColor,
+                    secondStrokeWidth = decoration.secondStrokeWidth.takeIf { it > 0f }
+                        ?: decoration.strokeWidth
+                )
+
+                is Decoration.Image -> decoration
+            }
+        }
+    )
 )

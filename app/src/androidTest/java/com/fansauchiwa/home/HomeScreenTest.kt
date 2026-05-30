@@ -75,8 +75,8 @@ class HomeScreenTest {
                     selectedTab = selectedTabState.value,
                     masterpiecePathList = sampleMasterpieces,
                     templates = templates,
-                    selectedMemberColor = selectedMemberColorState.value,
-                    onMemberColorSelected = { selectedMemberColorState.value = it },
+                    selectedMainColor = selectedMemberColorState.value,
+                    onMainColorSelected = { selectedMemberColorState.value = it },
                     isSelectionMode = false,
                     selectedPaths = emptyList(),
                     onImageClick = {},
@@ -123,8 +123,8 @@ class HomeScreenTest {
                 selectedTab = HomeTab.HOME,
                 masterpiecePathList = emptyList(),
                 templates = templates,
-                selectedMemberColor = selectedMemberColorState.value,
-                onMemberColorSelected = { selectedMemberColorState.value = it },
+                selectedMainColor = selectedMemberColorState.value,
+                onMainColorSelected = { selectedMemberColorState.value = it },
                 isSelectionMode = false,
                 selectedPaths = emptyList(),
                 onImageClick = {},
@@ -135,8 +135,8 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).performClick()
-        composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).assertIsSelected()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor)).performClick()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor)).assertIsSelected()
     }
 
 }

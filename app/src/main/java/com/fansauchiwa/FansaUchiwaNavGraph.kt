@@ -32,8 +32,10 @@ fun FansaUchiwaNavGraph(
     ) {
         composable(HomeDestination.route) {
             HomeScreen(
-                onImageClick = { id, templateId ->
-                    navController.navigate(EditDestination.createRoute(id, templateId))
+                onImageClick = { id, templateId, templateMainColor ->
+                    navController.navigate(
+                        EditDestination.createRoute(id, templateId, templateMainColor)
+                    )
                 },
                 onAddClick = {
                     navController.navigate(EditDestination.screen)
@@ -55,6 +57,11 @@ fun FansaUchiwaNavGraph(
                     defaultValue = null
                 },
                 navArgument(TEMPLATE_ID_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(TEMPLATE_MAIN_COLOR_ARG) {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null

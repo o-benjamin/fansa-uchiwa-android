@@ -11,6 +11,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.R
+import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
@@ -21,6 +22,7 @@ import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
+import com.fansauchiwa.data.applyQuickTemplateStyle
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -182,7 +184,11 @@ class EditViewModel @Inject constructor(
         if (templateId != null) {
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
-                val savedUchiwa = template.savedUchiwa
+                val templateMainColor = savedStateHandle.get<String>(TEMPLATE_MAIN_COLOR_ARG)
+                    ?.toULongOrNull()
+                    ?.let { Color(it) }
+                val savedUchiwa = templateMainColor?.let { template.savedUchiwa.applyQuickTemplateStyle(it) }
+                    ?: template.savedUchiwa
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
                     decorations = savedUchiwa.decorations,
