@@ -63,9 +63,9 @@ fun FansaUchiwaNavGraph(
                     defaultValue = null
                 },
                 navArgument(TEMPLATE_MAIN_COLOR_ARG) {
-                    type = SerializableEnumNavType(DecorationColors::class.java)
-                    nullable = true
-                    defaultValue = null
+                    type = NavType.EnumType(DecorationColors::class.java)
+                    nullable = false
+                    defaultValue = DecorationColors.PINK
                 }
             )
         ) {

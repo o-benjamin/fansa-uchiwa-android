@@ -3,6 +3,7 @@ package com.fansauchiwa.edit
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.core.net.toUri
@@ -10,19 +11,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.R
-import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.TEMPLATE_ID_ARG
+import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
@@ -30,10 +29,13 @@ import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
+import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -185,8 +187,10 @@ class EditViewModel @Inject constructor(
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
                 val templateMainColor = resolveTemplateMainColor()
-                val savedUchiwa = templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
-                    ?: template.savedUchiwa
+                footprint(templateMainColor)
+                val savedUchiwa =
+                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
+                        ?: template.savedUchiwa
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
                     decorations = savedUchiwa.decorations,

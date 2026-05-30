@@ -15,7 +15,7 @@ enum class HomeTab {
 @Parcelize
 data class HomeUiState(
     val selectedTab: HomeTab = HomeTab.HOME,
-    val selectedMainColor: @RawValue Color = DecorationColors.PINK.value,
+    val selectedMainColor: DecorationColors = DecorationColors.PINK,
     val isNameDialogShown: Boolean = false,
     val selectedTargetTemplate: @RawValue Template? = null,
     val masterpiecePathList: List<String> = emptyList(),

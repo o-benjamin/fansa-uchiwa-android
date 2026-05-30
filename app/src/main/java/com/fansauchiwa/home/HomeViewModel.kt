@@ -1,8 +1,8 @@
 package com.fansauchiwa.home
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.Template
@@ -64,7 +64,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
-    fun onMainColorSelected(color: Color) {
+    fun onMainColorSelected(color: DecorationColors) {
         _uiState.update { it.copy(selectedMainColor = color) }
     }
 

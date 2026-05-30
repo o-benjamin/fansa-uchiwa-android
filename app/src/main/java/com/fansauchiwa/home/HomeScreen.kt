@@ -107,8 +107,6 @@ import kotlin.math.min
 
 internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
 internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
-private val mainColorToDecorationColor = DecorationColors.entries.associateBy { it.value }
-
 internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
     append(
         savedUchiwa.decorations
@@ -437,7 +435,7 @@ fun HomeScreen(
                     EditScreenInputArg(
                         uchiwaId = newUchiwaId,
                         templateId = templateId,
-                        templateMainColor = mainColorToDecorationColor[uiState.selectedMainColor]
+                        templateMainColor = uiState.selectedMainColor
                     )
                 )
             },
@@ -455,8 +453,8 @@ internal fun HomeTabContent(
     selectedTab: HomeTab,
     masterpiecePathList: List<String>,
     templates: List<Template>,
-    selectedMainColor: Color,
-    onMainColorSelected: (Color) -> Unit,
+    selectedMainColor: DecorationColors,
+    onMainColorSelected: (DecorationColors) -> Unit,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
     onImageClick: (String) -> Unit,
@@ -495,8 +493,8 @@ internal fun HomeTabContent(
 @Composable
 private fun HomeTabHomeContent(
     templates: List<Template>,
-    selectedMainColor: Color,
-    onMainColorSelected: (Color) -> Unit,
+    selectedMainColor: DecorationColors,
+    onMainColorSelected: (DecorationColors) -> Unit,
     onTemplateClick: (String) -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
@@ -555,13 +553,16 @@ private fun HomeTabHomeContent(
 
 @Composable
 private fun MainColorSelector(
-    selectedColor: Color,
-    onColorSelected: (Color) -> Unit,
+    selectedColor: DecorationColors,
+    onColorSelected: (DecorationColors) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ColorPickerRow(
-        currentColor = selectedColor,
-        onColorSelected = onColorSelected,
+        currentColor = selectedColor.value,
+        onColorSelected = { color ->
+            val decorationColor = DecorationColors.entries.find { it.value == color } ?: DecorationColors.PINK
+            onColorSelected(decorationColor)
+        },
         modifier = modifier,
         colors = DecorationColors.entries.map { it.value },
         includeCustomColorPicker = false,
@@ -642,7 +643,7 @@ private fun SectionHeader(
 @Composable
 private fun TemplateItem(
     template: Template,
-    mainColor: Color,
+    mainColor: DecorationColors,
     onClick: () -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
@@ -655,7 +656,7 @@ private fun TemplateItem(
     ) {
         ComponentTemplateItem(
             template = template,
-            mainColor = mainColor,
+            mainColor = mainColor.value,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -898,7 +899,7 @@ private fun HomeTabHomeContentPreview() {
     HomeTabHomeContent(
         modifier = Modifier.fillMaxSize(),
         templates = previewTemplates(),
-        selectedMainColor = previewTemplates().first().savedUchiwa.uchiwaColor,
+        selectedMainColor = DecorationColors.PINK,
         onMainColorSelected = {},
         onTemplateClick = {},
         statusBarPadding = 0.dp,

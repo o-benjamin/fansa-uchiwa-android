@@ -1,7 +1,6 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -68,7 +67,7 @@ class HomeScreenTest {
                     onTabSelected = { selectedTabState.value = it }
                 )
                 val selectedMemberColorState = androidx.compose.runtime.remember {
-                    androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+                    androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
                 }
 
                 HomeTabContent(
@@ -112,11 +111,11 @@ class HomeScreenTest {
     @Test
     fun createTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
-        val targetColor = DecorationColors.BLUE.value
+        val targetColor = DecorationColors.BLUE
 
         composeTestRule.setContent {
             val selectedMemberColorState = androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+                androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
             }
 
             HomeTabContent(
@@ -135,8 +134,8 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor)).performClick()
-        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor)).assertIsSelected()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).performClick()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).assertIsSelected()
     }
 
 }

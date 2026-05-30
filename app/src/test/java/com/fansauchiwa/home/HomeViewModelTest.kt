@@ -1,6 +1,7 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
@@ -87,19 +88,19 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun onMemberColorSelected_updatesSelectedMemberColor() = runTest {
+    fun onMainColorSelected_updatesSelectedMainColor() = runTest {
         val viewModel = createViewModel()
-        val selectedColor = Color.Magenta
+        val selectedColor = DecorationColors.GREEN
 
-        viewModel.onMemberColorSelected(selectedColor)
+        viewModel.onMainColorSelected(selectedColor)
 
-        assertEquals(selectedColor, viewModel.uiState.value.selectedMemberColor)
+        assertEquals(selectedColor, viewModel.uiState.value.selectedMainColor)
     }
 
     @Test
     fun loadTemplates_initializesSelectedMemberColorFromFirstTemplate() = runTest {
         val template = createTemplate().copy(
-            savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = Color.Cyan)
+            savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = DecorationColors.BLUE.value)
         )
         coEvery { templateRepository.getTemplates() } returns listOf(template)
         val viewModel = createViewModel()
@@ -107,22 +108,22 @@ class HomeViewModelTest {
         viewModel.loadTemplates()
         advanceUntilIdle()
 
-        assertEquals(Color.Cyan, viewModel.uiState.value.selectedMemberColor)
+        assertEquals(DecorationColors.BLUE, viewModel.uiState.value.selectedMainColor)
     }
 
     @Test
     fun loadTemplates_preservesSelectedMemberColorAfterUserSelection() = runTest {
         val template = createTemplate().copy(
-            savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = Color.Cyan)
+            savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = DecorationColors.BLUE.value)
         )
         coEvery { templateRepository.getTemplates() } returns listOf(template)
         val viewModel = createViewModel()
 
-        viewModel.onMemberColorSelected(Color.Yellow)
+        viewModel.onMainColorSelected(DecorationColors.YELLOW)
         viewModel.loadTemplates()
         advanceUntilIdle()
 
-        assertEquals(Color.Yellow, viewModel.uiState.value.selectedMemberColor)
+        assertEquals(DecorationColors.YELLOW, viewModel.uiState.value.selectedMainColor)
     }
 
     @Test
