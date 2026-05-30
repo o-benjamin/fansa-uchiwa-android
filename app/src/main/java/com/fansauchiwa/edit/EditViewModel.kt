@@ -250,9 +250,7 @@ class EditViewModel @Inject constructor(
             return emptyList()
         }
 
-        val partWidths = validParts.map { (_, text) ->
-            maxOf(text.length * NAME_TEMPLATE_CHARACTER_SPACING, NAME_TEMPLATE_CHARACTER_SPACING)
-        }
+        val partWidths = validParts.map { (_, text) -> text.length * NAME_TEMPLATE_CHARACTER_SPACING }
         val totalWidth = partWidths.sum() + NAME_TEMPLATE_PART_GAP * (validParts.size - 1)
         var cursorX = prototype.offset.x - (totalWidth / 2f)
 
