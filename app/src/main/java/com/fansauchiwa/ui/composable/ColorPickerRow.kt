@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.semantics.selected
@@ -45,14 +47,10 @@ fun ColorPickerRow(
     modifier: Modifier = Modifier,
     colors: List<Color> = DecorationColors.entries.map { it.value },
     includeCustomColorPicker: Boolean = true,
-    chipSize: Dp = 24.dp,
+    chipSize: Dp = 32.dp,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceBetween,
-    selectedScale: Float = 1f,
-    selectedBorderWidth: Dp = 1.dp,
-    unselectedBorderWidth: Dp = 1.dp,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(8.dp),
     applySelectedSemantics: Boolean = false,
-    chipBorderColor: @Composable (Color, Boolean) -> Color = { _, _ -> colorResource(R.color.gray) },
     testTagProvider: ((Color) -> String)? = null
 ) {
     var showColorPickerDialog by remember { mutableStateOf(false) }
@@ -70,7 +68,7 @@ fun ColorPickerRow(
                     modifier = Modifier
                         .size(chipSize)
                         .clip(CircleShape)
-                        .border(1.dp, colorResource(R.color.gray), CircleShape)
+                        .border(1.dp, colorResource(R.color.white), CircleShape)
                         .background(
                             brush = Brush.sweepGradient(
                                 colors = listOf(
@@ -92,7 +90,7 @@ fun ColorPickerRow(
         items(colors) { color ->
             val isSelected = color == currentColor
             val scale by animateFloatAsState(
-                targetValue = if (isSelected) selectedScale else 1f,
+                targetValue = if (isSelected) 1.15f else 1f,
                 label = "colorPickerChipScale"
             )
 
@@ -104,8 +102,12 @@ fun ColorPickerRow(
                 }
                 .clip(CircleShape)
                 .border(
-                    width = if (isSelected) selectedBorderWidth else unselectedBorderWidth,
-                    color = chipBorderColor(color, isSelected),
+                    width = if (isSelected) 3.dp else 1.dp,
+                    color = if (color == Color.White) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        colorResource(R.color.white)
+                    },
                     shape = CircleShape
                 )
                 .background(color)

@@ -79,7 +79,7 @@ fun ColorAndWeightControl(
                     onClick = {
                         isColorPickerOpen.value = false
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ExpandLess,
@@ -93,7 +93,7 @@ fun ColorAndWeightControl(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(32.dp)
                             .clip(CircleShape)
                             .border(1.dp, colorResource(R.color.gray), CircleShape)
                             .background(color = color)

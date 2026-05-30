@@ -3,19 +3,18 @@ package com.fansauchiwa.home
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.repository.AnalyticsRepository
-import com.fansauchiwa.data.repository.TemplateRepository
-import com.fansauchiwa.data.repository.SettingsRepository
-import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.SettingsRepository
+import com.fansauchiwa.data.repository.TemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-private val defaultHomeMemberColor = DecorationColors.entries.first { it != DecorationColors.GRAY }.value
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -67,8 +64,8 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
-    fun onMemberColorSelected(color: Color) {
-        _uiState.update { it.copy(selectedMemberColor = color) }
+    fun onMainColorSelected(color: Color) {
+        _uiState.update { it.copy(selectedMainColor = color) }
     }
 
     fun showNameDialog(targetTemplate: Template?) {
@@ -108,11 +105,7 @@ class HomeViewModel @Inject constructor(
             _uiState.update { currentState ->
                 currentState.copy(
                     templates = templates,
-                    selectedMemberColor = if (currentState.selectedMemberColor != Color.Unspecified) {
-                        currentState.selectedMemberColor
-                    } else {
-                        templates.firstOrNull()?.savedUchiwa?.uchiwaColor ?: defaultHomeMemberColor
-                    }
+                    selectedMainColor = currentState.selectedMainColor
                 )
             }
         }
