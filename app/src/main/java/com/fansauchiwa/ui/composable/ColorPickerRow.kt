@@ -7,10 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -49,7 +49,6 @@ fun ColorPickerRow(
     contentPadding: PaddingValues = PaddingValues(0.dp),
     horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceBetween,
     selectedScale: Float = 1f,
-    showSelectionIndicator: Boolean = false,
     selectedBorderWidth: Dp = 1.dp,
     unselectedBorderWidth: Dp = 1.dp,
     applySelectedSemantics: Boolean = false,
@@ -58,37 +57,39 @@ fun ColorPickerRow(
 ) {
     var showColorPickerDialog by remember { mutableStateOf(false) }
 
-    Row(
+    LazyRow(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(contentPadding),
+            .fillMaxWidth(),
+        contentPadding = contentPadding,
         horizontalArrangement = horizontalArrangement,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (includeCustomColorPicker) {
-            Box(
-                modifier = Modifier
-                    .size(chipSize)
-                    .clip(CircleShape)
-                    .border(1.dp, colorResource(R.color.gray), CircleShape)
-                    .background(
-                        brush = Brush.sweepGradient(
-                            colors = listOf(
-                                Color.Red,
-                                Color.Yellow,
-                                Color.Green,
-                                Color.Cyan,
-                                Color.Blue,
-                                Color.Magenta,
-                                Color.Red
+            item {
+                Box(
+                    modifier = Modifier
+                        .size(chipSize)
+                        .clip(CircleShape)
+                        .border(1.dp, colorResource(R.color.gray), CircleShape)
+                        .background(
+                            brush = Brush.sweepGradient(
+                                colors = listOf(
+                                    Color.Red,
+                                    Color.Yellow,
+                                    Color.Green,
+                                    Color.Cyan,
+                                    Color.Blue,
+                                    Color.Magenta,
+                                    Color.Red
+                                )
                             )
                         )
-                    )
-                    .clickable { showColorPickerDialog = true }
-            )
+                        .clickable { showColorPickerDialog = true }
+                )
+            }
         }
 
-        colors.forEach { color ->
+        items(colors) { color ->
             val isSelected = color == currentColor
             val scale by animateFloatAsState(
                 targetValue = if (isSelected) selectedScale else 1f,
@@ -121,7 +122,7 @@ fun ColorPickerRow(
                 modifier = chipModifier,
                 contentAlignment = Alignment.Center
             ) {
-                if (showSelectionIndicator && isSelected) {
+                if (isSelected) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,

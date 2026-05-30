@@ -559,7 +559,6 @@ private fun MemberColorSelector(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         selectedScale = 1.15f,
-        showSelectionIndicator = true,
         selectedBorderWidth = 3.dp,
         applySelectedSemantics = true,
         chipBorderColor = { memberColor, _ ->
