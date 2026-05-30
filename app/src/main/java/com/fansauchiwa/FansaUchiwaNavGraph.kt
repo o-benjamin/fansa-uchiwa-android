@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.edit.EditScreen
 import com.fansauchiwa.edit.EditViewModel
 import com.fansauchiwa.edit.imagepreview.ImagePreviewScreen
@@ -32,8 +33,10 @@ fun FansaUchiwaNavGraph(
     ) {
         composable(HomeDestination.route) {
             HomeScreen(
-                onImageClick = { id, templateId ->
-                    navController.navigate(EditDestination.createRoute(id, templateId))
+                onImageClick = { inputArg ->
+                    navController.navigate(
+                        EditDestination.createRoute(inputArg)
+                    )
                 },
                 onAddClick = {
                     navController.navigate(EditDestination.screen)
@@ -58,6 +61,11 @@ fun FansaUchiwaNavGraph(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
+                },
+                navArgument(TEMPLATE_MAIN_COLOR_ARG) {
+                    type = NavType.EnumType(DecorationColors::class.java)
+                    nullable = false
+                    defaultValue = DecorationColors.PINK
                 }
             )
         ) {

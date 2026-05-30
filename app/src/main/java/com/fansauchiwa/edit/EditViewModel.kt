@@ -12,11 +12,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
+import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
@@ -28,10 +29,13 @@ import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
+import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -182,7 +186,11 @@ class EditViewModel @Inject constructor(
         if (templateId != null) {
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
-                val savedUchiwa = template.savedUchiwa
+                val templateMainColor = resolveTemplateMainColor()
+                footprint(templateMainColor)
+                val savedUchiwa =
+                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
+                        ?: template.savedUchiwa
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
                     decorations = savedUchiwa.decorations,
@@ -193,6 +201,10 @@ class EditViewModel @Inject constructor(
             }
         }
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
+    }
+
+    private fun resolveTemplateMainColor(): Color? {
+        return savedStateHandle.get<DecorationColors>(TEMPLATE_MAIN_COLOR_ARG)?.value
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {

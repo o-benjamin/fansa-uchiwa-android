@@ -4,9 +4,11 @@ import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.R
+import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
@@ -102,6 +104,7 @@ class EditViewModelTest {
     private fun createViewModel(
         uchiwaId: String?,
         templateId: String? = null,
+        templateMainColor: DecorationColors? = null,
         hasSeenEditCompletionTooltip: Boolean = false
     ): EditViewModel {
         settingsRepository = FakeSettingsRepository(
@@ -113,6 +116,9 @@ class EditViewModelTest {
             }
             if (templateId != null) {
                 set(TEMPLATE_ID_ARG, templateId)
+            }
+            if (templateMainColor != null) {
+                set(TEMPLATE_MAIN_COLOR_ARG, templateMainColor)
             }
         }
         return EditViewModel(
@@ -321,20 +327,31 @@ class EditViewModelTest {
     }
 
     @Test
-    fun applyNewUchiwaState_templateIdSpecified_templateDataAppliedToState() = runTest {
+    fun applyNewUchiwaState_templateIdAndMainColorSpecified_appliesTemplateMainColor() = runTest {
         val uchiwaId = "new-uchiwa-id"
         val templateId = "template_1"
+        val selectedMainColor = DecorationColors.BLUE
         val templateUchiwaColor = Color(0xFFFF69B4)
         val templateBackgroundColor = Color(0xFFFFFFFF)
 
         val templateTextDecoration = Decoration.Text(
             text = "推し",
             id = "template_1_text_1",
+            color = DecorationColors.PINK.value,
+            strokeColor = DecorationColors.WHITE.value,
+            strokeWidth = 18f,
+            secondBorderColor = DecorationColors.BLACK.value,
+            secondBorderWidth = 18f,
             font = FontFamilies.DELA_GOTHIC_ONE
         )
         val templateStickerDecoration = Decoration.Sticker(
             label = "heart",
-            id = "template_1_sticker_1"
+            id = "template_1_sticker_1",
+            color = DecorationColors.PINK.value,
+            strokeColor = DecorationColors.WHITE.value,
+            strokeWidth = 4f,
+            secondStrokeColor = DecorationColors.BLACK.value,
+            secondStrokeWidth = 4f
         )
 
         val templateSavedUchiwa = SavedUchiwa(
@@ -353,15 +370,29 @@ class EditViewModelTest {
         coEvery { templateRepository.getTemplateById(templateId) } returns template
         every { localImageRepository.getAllImages() } returns emptyList()
 
-        val viewModel = createViewModel(uchiwaId = uchiwaId, templateId = templateId)
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            templateId = templateId,
+            templateMainColor = selectedMainColor
+        )
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
+        val textDecoration = state.decorations.filterIsInstance<Decoration.Text>().single()
+        val stickerDecoration = state.decorations.filterIsInstance<Decoration.Sticker>().single()
 
         assertEquals(uchiwaId, state.uchiwaId)
         assertEquals(2, state.decorations.size)
-        assertTrue(state.decorations.any { it.id == "template_1_text_1" })
-        assertTrue(state.decorations.any { it.id == "template_1_sticker_1" })
+        assertEquals("template_1_text_1", textDecoration.id)
+        assertEquals(selectedMainColor.value, textDecoration.color)
+        assertEquals(DecorationColors.WHITE.value, textDecoration.strokeColor)
+        assertEquals(DecorationColors.BLACK.value, textDecoration.secondBorderColor)
+        assertEquals(18f, textDecoration.secondBorderWidth)
+        assertEquals("template_1_sticker_1", stickerDecoration.id)
+        assertEquals(DecorationColors.PINK.value, stickerDecoration.color)
+        assertEquals(DecorationColors.WHITE.value, stickerDecoration.strokeColor)
+        assertEquals(DecorationColors.BLACK.value, stickerDecoration.secondStrokeColor)
+        assertEquals(4f, stickerDecoration.secondStrokeWidth)
         assertEquals(templateUchiwaColor, state.uchiwaColor)
         assertEquals(templateBackgroundColor, state.backgroundColor)
 

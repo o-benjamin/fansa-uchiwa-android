@@ -1,7 +1,6 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -68,15 +67,15 @@ class HomeScreenTest {
                     onTabSelected = { selectedTabState.value = it }
                 )
                 val selectedMemberColorState = androidx.compose.runtime.remember {
-                    androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+                    androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
                 }
 
                 HomeTabContent(
                     selectedTab = selectedTabState.value,
                     masterpiecePathList = sampleMasterpieces,
                     templates = templates,
-                    selectedMemberColor = selectedMemberColorState.value,
-                    onMemberColorSelected = { selectedMemberColorState.value = it },
+                    selectedMainColor = selectedMemberColorState.value,
+                    onMainColorSelected = { selectedMemberColorState.value = it },
                     isSelectionMode = false,
                     selectedPaths = emptyList(),
                     onImageClick = {},
@@ -112,19 +111,19 @@ class HomeScreenTest {
     @Test
     fun createTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
-        val targetColor = DecorationColors.BLUE.value
+        val targetColor = DecorationColors.BLUE
 
         composeTestRule.setContent {
             val selectedMemberColorState = androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+                androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
             }
 
             HomeTabContent(
                 selectedTab = HomeTab.HOME,
                 masterpiecePathList = emptyList(),
                 templates = templates,
-                selectedMemberColor = selectedMemberColorState.value,
-                onMemberColorSelected = { selectedMemberColorState.value = it },
+                selectedMainColor = selectedMemberColorState.value,
+                onMainColorSelected = { selectedMemberColorState.value = it },
                 isSelectionMode = false,
                 selectedPaths = emptyList(),
                 onImageClick = {},
@@ -135,8 +134,8 @@ class HomeScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).performClick()
-        composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).assertIsSelected()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).performClick()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).assertIsSelected()
     }
 
 }

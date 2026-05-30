@@ -1,7 +1,9 @@
 package com.fansauchiwa.data
 
 import androidx.compose.ui.graphics.Color
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class DecorationColors(
     private val colorValue: Long
 ) {

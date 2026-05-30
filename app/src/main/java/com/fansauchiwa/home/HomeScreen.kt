@@ -80,6 +80,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fansauchiwa.EditScreenInputArg
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
@@ -89,6 +90,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
@@ -105,7 +107,6 @@ import kotlin.math.min
 
 internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
 internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
-
 internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
     append(
         savedUchiwa.decorations
@@ -295,7 +296,7 @@ internal fun HomeNavigationBar(
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
-    onImageClick: (String, String?) -> Unit = { _, _ -> },
+    onImageClick: (EditScreenInputArg) -> Unit = {},
     onAddClick: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {}
@@ -424,13 +425,19 @@ fun HomeScreen(
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
                     viewModel.logItemEditTap()
-                    onImageClick(uchiwaId, null)
+                    onImageClick(EditScreenInputArg(uchiwaId = uchiwaId))
                 }
             },
             onTemplateClick = { templateId ->
                 viewModel.logTemplateTap(templateId)
                 val newUchiwaId = UUID.randomUUID().toString()
-                onImageClick(newUchiwaId, templateId)
+                onImageClick(
+                    EditScreenInputArg(
+                        uchiwaId = newUchiwaId,
+                        templateId = templateId,
+                        templateMainColor = uiState.selectedMainColor
+                    )
+                )
             },
             onImageLongPress = {
                 viewModel.enterSelectionMode()
@@ -446,8 +453,8 @@ internal fun HomeTabContent(
     selectedTab: HomeTab,
     masterpiecePathList: List<String>,
     templates: List<Template>,
-    selectedMainColor: Color,
-    onMainColorSelected: (Color) -> Unit,
+    selectedMainColor: DecorationColors,
+    onMainColorSelected: (DecorationColors) -> Unit,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
     onImageClick: (String) -> Unit,
@@ -486,8 +493,8 @@ internal fun HomeTabContent(
 @Composable
 private fun HomeTabHomeContent(
     templates: List<Template>,
-    selectedMainColor: Color,
-    onMainColorSelected: (Color) -> Unit,
+    selectedMainColor: DecorationColors,
+    onMainColorSelected: (DecorationColors) -> Unit,
     onTemplateClick: (String) -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
@@ -536,6 +543,7 @@ private fun HomeTabHomeContent(
         items(templates, key = { it.id }) { template ->
             TemplateItem(
                 template = template,
+                mainColor = selectedMainColor,
                 onClick = { onTemplateClick(template.id) },
                 isPreview = isPreview
             )
@@ -545,13 +553,16 @@ private fun HomeTabHomeContent(
 
 @Composable
 private fun MainColorSelector(
-    selectedColor: Color,
-    onColorSelected: (Color) -> Unit,
+    selectedColor: DecorationColors,
+    onColorSelected: (DecorationColors) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ColorPickerRow(
-        currentColor = selectedColor,
-        onColorSelected = onColorSelected,
+        currentColor = selectedColor.value,
+        onColorSelected = { color ->
+            val decorationColor = DecorationColors.entries.find { it.value == color } ?: DecorationColors.PINK
+            onColorSelected(decorationColor)
+        },
         modifier = modifier,
         colors = DecorationColors.entries.map { it.value },
         includeCustomColorPicker = false,
@@ -632,6 +643,7 @@ private fun SectionHeader(
 @Composable
 private fun TemplateItem(
     template: Template,
+    mainColor: DecorationColors,
     onClick: () -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
@@ -644,6 +656,7 @@ private fun TemplateItem(
     ) {
         ComponentTemplateItem(
             template = template,
+            mainColor = mainColor.value,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -652,9 +665,12 @@ private fun TemplateItem(
 @Composable
 private fun ComponentTemplateItem(
     template: Template,
+    mainColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val savedUchiwa = template.savedUchiwa
+    val savedUchiwa = remember(template, mainColor) {
+        template.savedUchiwa.applyTemplateMainColor(mainColor)
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -883,7 +899,7 @@ private fun HomeTabHomeContentPreview() {
     HomeTabHomeContent(
         modifier = Modifier.fillMaxSize(),
         templates = previewTemplates(),
-        selectedMainColor = previewTemplates().first().savedUchiwa.uchiwaColor,
+        selectedMainColor = DecorationColors.PINK,
         onMainColorSelected = {},
         onTemplateClick = {},
         statusBarPadding = 0.dp,
