@@ -1,7 +1,6 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -111,7 +110,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun homeTabColorSelector_updatesAllTemplatePreviewsImmediately() {
+    fun homeTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
         val targetColor = DecorationColors.BLUE.value
 
@@ -138,19 +137,6 @@ class HomeScreenTest {
 
         composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).performClick()
         composeTestRule.onNodeWithTag(memberColorChipTag(targetColor)).assertIsSelected()
-
-        templates.forEach { template ->
-            composeTestRule
-                .onNodeWithTag("template-preview-${template.id}")
-                .assert(
-                    SemanticsMatcher.expectValue(
-                        TemplatePreviewSummaryKey,
-                        buildTemplatePreviewSummary(
-                            template.savedUchiwa.copy(uchiwaColor = targetColor)
-                        )
-                    )
-                )
-        }
     }
 
 }

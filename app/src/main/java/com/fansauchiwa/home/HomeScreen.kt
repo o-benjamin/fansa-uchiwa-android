@@ -2,7 +2,6 @@ package com.fansauchiwa.home
 
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -535,7 +533,6 @@ private fun HomeTabHomeContent(
         items(templates, key = { it.id }) { template ->
             TemplateItem(
                 template = template,
-                memberColor = selectedMemberColor,
                 onClick = { onTemplateClick(template.id) },
                 isPreview = isPreview
             )
@@ -635,7 +632,6 @@ private fun TemplateSectionHeader(modifier: Modifier = Modifier) {
 @Composable
 private fun TemplateItem(
     template: Template,
-    memberColor: Color,
     onClick: () -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
@@ -644,15 +640,10 @@ private fun TemplateItem(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1.2f),
-        colors = CardDefaults.cardColors(
-            containerColor = memberColor.copy(alpha = 0.16f)
-        ),
-        border = BorderStroke(2.dp, memberColor.copy(alpha = 0.72f)),
         onClick = onClick
     ) {
         ComponentTemplateItem(
             template = template,
-            memberColor = memberColor,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -661,12 +652,9 @@ private fun TemplateItem(
 @Composable
 private fun ComponentTemplateItem(
     template: Template,
-    memberColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val savedUchiwa = remember(template, memberColor) {
-        template.savedUchiwa.copy(uchiwaColor = memberColor)
-    }
+    val savedUchiwa = template.savedUchiwa
 
     BoxWithConstraints(
         modifier = modifier
