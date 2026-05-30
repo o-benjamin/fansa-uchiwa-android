@@ -68,10 +68,16 @@ class HomeScreenTest {
                     selectedTab = selectedTabState.value,
                     onTabSelected = { selectedTabState.value = it }
                 )
+                val selectedMemberColorState = androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+                }
+
                 HomeTabContent(
                     selectedTab = selectedTabState.value,
                     masterpiecePathList = sampleMasterpieces,
                     templates = templates,
+                    selectedMemberColor = selectedMemberColorState.value,
+                    onMemberColorSelected = { selectedMemberColorState.value = it },
                     isSelectionMode = false,
                     selectedPaths = emptyList(),
                     onImageClick = {},
@@ -110,10 +116,16 @@ class HomeScreenTest {
         val targetColor = DecorationColors.BLUE.value
 
         composeTestRule.setContent {
+            val selectedMemberColorState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(templates.first().savedUchiwa.uchiwaColor)
+            }
+
             HomeTabContent(
                 selectedTab = HomeTab.HOME,
                 masterpiecePathList = emptyList(),
                 templates = templates,
+                selectedMemberColor = selectedMemberColorState.value,
+                onMemberColorSelected = { selectedMemberColorState.value = it },
                 isSelectionMode = false,
                 selectedPaths = emptyList(),
                 onImageClick = {},

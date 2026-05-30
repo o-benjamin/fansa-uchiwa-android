@@ -1,18 +1,15 @@
 package com.fansauchiwa.home
 
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,24 +18,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
@@ -72,7 +61,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
@@ -86,7 +74,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,7 +91,6 @@ import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
-import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.edit.FontFamilies
@@ -112,6 +98,7 @@ import com.fansauchiwa.edit.UchiwaShape
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
@@ -138,14 +125,9 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
 
 internal fun memberColorChipTag(color: Color): String = "member-color-chip-${color.toArgb()}"
 
-private val availableMemberColors = DecorationColors.entries
-    .filterNot { it == DecorationColors.GRAY }
+private val availableMemberColors = com.fansauchiwa.data.DecorationColors.entries
+    .filterNot { it == com.fansauchiwa.data.DecorationColors.GRAY }
     .map { it.value }
-
-private val memberColorChipSize = 40.dp
-private val memberColorChipSpacing = 16.dp
-private const val templateCardBackgroundAlpha = 0.16f
-private const val templateCardBorderAlpha = 0.72f
 
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
@@ -440,6 +422,8 @@ fun HomeScreen(
             selectedTab = uiState.selectedTab,
             masterpiecePathList = uiState.masterpiecePathList,
             templates = uiState.templates,
+            selectedMemberColor = uiState.selectedMemberColor,
+            onMemberColorSelected = viewModel::onMemberColorSelected,
             isSelectionMode = uiState.isSelectionMode,
             selectedPaths = uiState.selectedPaths,
             lazyGridState = lazyGridState,
@@ -471,6 +455,8 @@ internal fun HomeTabContent(
     selectedTab: HomeTab,
     masterpiecePathList: List<String>,
     templates: List<Template>,
+    selectedMemberColor: Color,
+    onMemberColorSelected: (Color) -> Unit,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
     onImageClick: (String) -> Unit,
@@ -484,6 +470,8 @@ internal fun HomeTabContent(
     when (selectedTab) {
         HomeTab.HOME -> HomeTabHomeContent(
             templates = templates,
+            selectedMemberColor = selectedMemberColor,
+            onMemberColorSelected = onMemberColorSelected,
             onTemplateClick = onTemplateClick,
             statusBarPadding = statusBarPadding,
             modifier = modifier,
@@ -507,6 +495,8 @@ internal fun HomeTabContent(
 @Composable
 private fun HomeTabHomeContent(
     templates: List<Template>,
+    selectedMemberColor: Color,
+    onMemberColorSelected: (Color) -> Unit,
     onTemplateClick: (String) -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
@@ -524,50 +514,31 @@ private fun HomeTabHomeContent(
         return
     }
 
-    var selectedMemberColor by remember { mutableStateOf<Color?>(null) }
-    val effectiveMemberColor = selectedMemberColor
-        ?: templates.firstOrNull()?.savedUchiwa?.uchiwaColor
-        ?: availableMemberColors.first()
-
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(152.dp),
         modifier = modifier
             .fillMaxSize()
             .padding(top = statusBarPadding),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             MemberColorSelector(
-                selectedColor = effectiveMemberColor,
-                onColorSelected = { selectedMemberColor = it }
+                selectedColor = selectedMemberColor,
+                onColorSelected = onMemberColorSelected
             )
         }
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             TemplateSectionHeader()
         }
-        itemsIndexed(
-            items = templates.chunked(2),
-            key = { index, row -> row.firstOrNull()?.id ?: "template-row-$index" }
-        ) { _, row ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                row.forEach { template ->
-                    TemplateItem(
-                        template = template,
-                        memberColor = effectiveMemberColor,
-                        onClick = { onTemplateClick(template.id) },
-                        isPreview = isPreview,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                repeat(2 - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
+        items(templates, key = { it.id }) { template ->
+            TemplateItem(
+                template = template,
+                memberColor = selectedMemberColor,
+                onClick = { onTemplateClick(template.id) },
+                isPreview = isPreview
+            )
         }
     }
 }
@@ -578,54 +549,28 @@ private fun MemberColorSelector(
     onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
+    ColorPickerRow(
+        currentColor = selectedColor,
+        onColorSelected = onColorSelected,
+        modifier = modifier,
+        colors = availableMemberColors,
+        includeCustomColorPicker = false,
+        chipSize = 40.dp,
         contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(memberColorChipSpacing)
-    ) {
-        items(availableMemberColors, key = { it.toArgb() }) { memberColor ->
-            val isSelected = memberColor == selectedColor
-            val scale by animateFloatAsState(
-                targetValue = if (isSelected) 1.15f else 1f,
-                label = "memberColorChipScale"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(memberColorChipSize)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    }
-                    .clip(CircleShape)
-                    .background(memberColor)
-                    .border(
-                        width = if (isSelected) 3.dp else 1.dp,
-                        color = if (memberColor == Color.White) {
-                            MaterialTheme.colorScheme.outline
-                        } else {
-                            Color.White
-                        },
-                        shape = CircleShape
-                    )
-                    .selectable(
-                        selected = isSelected,
-                        onClick = { onColorSelected(memberColor) }
-                    )
-                    .semantics { selected = isSelected }
-                    .testTag(memberColorChipTag(memberColor)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isSelected) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = if (memberColor.luminance() > 0.5f) Color.Black else Color.White
-                    )
-                }
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        selectedScale = 1.15f,
+        showSelectionIndicator = true,
+        selectedBorderWidth = 3.dp,
+        applySelectedSemantics = true,
+        chipBorderColor = { memberColor, _ ->
+            if (memberColor == Color.White) {
+                MaterialTheme.colorScheme.outline
+            } else {
+                Color.White
             }
-        }
-    }
+        },
+        testTagProvider = ::memberColorChipTag
+    )
 }
 
 @Composable
@@ -701,9 +646,9 @@ private fun TemplateItem(
             .fillMaxWidth()
             .aspectRatio(1.2f),
         colors = CardDefaults.cardColors(
-            containerColor = memberColor.copy(alpha = templateCardBackgroundAlpha)
+            containerColor = memberColor.copy(alpha = 0.16f)
         ),
-        border = BorderStroke(2.dp, memberColor.copy(alpha = templateCardBorderAlpha)),
+        border = BorderStroke(2.dp, memberColor.copy(alpha = 0.72f)),
         onClick = onClick
     ) {
         ComponentTemplateItem(
@@ -966,6 +911,8 @@ private fun HomeTabHomeContentPreview() {
     HomeTabHomeContent(
         modifier = Modifier.fillMaxSize(),
         templates = previewTemplates(),
+        selectedMemberColor = previewTemplates().first().savedUchiwa.uchiwaColor,
+        onMemberColorSelected = {},
         onTemplateClick = {},
         statusBarPadding = 0.dp,
         isPreview = true

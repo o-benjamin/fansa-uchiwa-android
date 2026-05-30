@@ -1,5 +1,6 @@
 package com.fansauchiwa.home
 
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.DecorationColors
@@ -22,6 +23,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private val defaultHomeMemberColor = DecorationColors.entries.first { it != DecorationColors.GRAY }.value
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -64,8 +67,8 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
-    fun onColorSelected(color: DecorationColors?) {
-        _uiState.update { it.copy(selectedDefaultColor = color) }
+    fun onMemberColorSelected(color: Color) {
+        _uiState.update { it.copy(selectedMemberColor = color) }
     }
 
     fun showNameDialog(targetTemplate: Template?) {
@@ -102,7 +105,16 @@ class HomeViewModel @Inject constructor(
     fun loadTemplates() {
         viewModelScope.launch {
             val templates = templateRepository.getTemplates()
-            _uiState.update { it.copy(templates = templates) }
+            _uiState.update { currentState ->
+                currentState.copy(
+                    templates = templates,
+                    selectedMemberColor = if (currentState.selectedMemberColor != Color.Unspecified) {
+                        currentState.selectedMemberColor
+                    } else {
+                        templates.firstOrNull()?.savedUchiwa?.uchiwaColor ?: defaultHomeMemberColor
+                    }
+                )
+            }
         }
     }
 
