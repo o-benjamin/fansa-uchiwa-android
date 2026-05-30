@@ -83,6 +83,7 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.EditScreenInputArg
+import com.fansauchiwa.NAME_TEMPLATE_PLACEHOLDER_TEXT
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
@@ -106,8 +107,6 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.min
-
-private const val NAME_TEMPLATE_PLACEHOLDER_TEXT = "〇〇くん"
 
 internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
 internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
@@ -623,7 +622,7 @@ internal fun NameTemplateInputDialog(
             Text(text = stringResource(R.string.name_template_dialog_title))
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = lastName,
                     onValueChange = onLastNameChange,

@@ -15,6 +15,7 @@ import com.fansauchiwa.FIRST_NAME_1_ARG
 import com.fansauchiwa.FIRST_NAME_2_ARG
 import com.fansauchiwa.HONORIFIC_ARG
 import com.fansauchiwa.LAST_NAME_ARG
+import com.fansauchiwa.NAME_TEMPLATE_PLACEHOLDER_TEXT
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
@@ -51,7 +52,6 @@ import javax.inject.Inject
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"
 private const val MAX_HISTORY_SIZE = 50
-private const val NAME_TEMPLATE_PLACEHOLDER_TEXT = "〇〇くん"
 private const val NAME_TEMPLATE_CHARACTER_SPACING = 120f
 private const val NAME_TEMPLATE_PART_GAP = 32f
 
