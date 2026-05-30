@@ -138,4 +138,35 @@ class HomeScreenTest {
         composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).assertIsSelected()
     }
 
+    @Test
+    fun nameTemplateInputDialog_displaysThreeInputHints() {
+        composeTestRule.setContent {
+            val lastNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val firstNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val honorificState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            NameTemplateInputDialog(
+                lastName = lastNameState.value,
+                onLastNameChange = { lastNameState.value = it },
+                firstName = firstNameState.value,
+                onFirstNameChange = { firstNameState.value = it },
+                honorific = honorificState.value,
+                onHonorificChange = { honorificState.value = it },
+                onDismiss = {},
+                onConfirm = {}
+            )
+        }
+
+        val context = getContext()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_dialog_title)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_last_name_placeholder)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_first_name_placeholder)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_honorific_placeholder)).assertIsDisplayed()
+    }
+
 }

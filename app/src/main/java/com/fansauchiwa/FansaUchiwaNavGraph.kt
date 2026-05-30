@@ -66,6 +66,26 @@ fun FansaUchiwaNavGraph(
                     type = NavType.EnumType(DecorationColors::class.java)
                     nullable = false
                     defaultValue = DecorationColors.PINK
+                },
+                navArgument(LAST_NAME_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(FIRST_NAME_1_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(FIRST_NAME_2_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(HONORIFIC_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) {

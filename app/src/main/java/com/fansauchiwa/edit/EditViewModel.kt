@@ -11,6 +11,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.R
+import com.fansauchiwa.FIRST_NAME_1_ARG
+import com.fansauchiwa.FIRST_NAME_2_ARG
+import com.fansauchiwa.HONORIFIC_ARG
+import com.fansauchiwa.LAST_NAME_ARG
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
@@ -47,6 +51,9 @@ import javax.inject.Inject
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"
 private const val MAX_HISTORY_SIZE = 50
+private const val NAME_TEMPLATE_PLACEHOLDER_TEXT = "〇〇くん"
+private const val NAME_TEMPLATE_CHARACTER_SPACING = 120f
+private const val NAME_TEMPLATE_PART_GAP = 32f
 
 @HiltViewModel
 class EditViewModel @Inject constructor(
@@ -191,9 +198,10 @@ class EditViewModel @Inject constructor(
                 val savedUchiwa =
                     templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
                         ?: template.savedUchiwa
+                val decorations = buildTemplateDecorations(savedUchiwa.decorations)
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
-                    decorations = savedUchiwa.decorations,
+                    decorations = decorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
                     backgroundColor = savedUchiwa.backgroundColor
                 )
@@ -205,6 +213,62 @@ class EditViewModel @Inject constructor(
 
     private fun resolveTemplateMainColor(): Color? {
         return savedStateHandle.get<DecorationColors>(TEMPLATE_MAIN_COLOR_ARG)?.value
+    }
+
+    private fun buildTemplateDecorations(decorations: List<Decoration>): List<Decoration> {
+        val hasNameTemplateArgs =
+            savedStateHandle.contains(LAST_NAME_ARG) ||
+                savedStateHandle.contains(FIRST_NAME_1_ARG) ||
+                savedStateHandle.contains(FIRST_NAME_2_ARG) ||
+                savedStateHandle.contains(HONORIFIC_ARG)
+        if (!hasNameTemplateArgs) {
+            return decorations
+        }
+        val placeholderDecoration = decorations
+            .filterIsInstance<Decoration.Text>()
+            .firstOrNull { it.text == NAME_TEMPLATE_PLACEHOLDER_TEXT }
+            ?: return decorations
+        val nameParts = listOf(
+            "last_name" to (savedStateHandle.get<String>(LAST_NAME_ARG) ?: ""),
+            "first_name_1" to (savedStateHandle.get<String>(FIRST_NAME_1_ARG) ?: ""),
+            "first_name_2" to (savedStateHandle.get<String>(FIRST_NAME_2_ARG) ?: ""),
+            "honorific" to (savedStateHandle.get<String>(HONORIFIC_ARG) ?: "")
+        )
+        val dynamicNameDecorations = buildNameTemplateDecorations(
+            prototype = placeholderDecoration,
+            nameParts = nameParts
+        )
+        return decorations.filterNot { it.id == placeholderDecoration.id } + dynamicNameDecorations
+    }
+
+    private fun buildNameTemplateDecorations(
+        prototype: Decoration.Text,
+        nameParts: List<Pair<String, String>>
+    ): List<Decoration.Text> {
+        val validParts = nameParts.filter { it.second.isNotEmpty() }
+        if (validParts.isEmpty()) {
+            return emptyList()
+        }
+
+        val partWidths = validParts.map { (_, text) ->
+            maxOf(text.length * NAME_TEMPLATE_CHARACTER_SPACING, NAME_TEMPLATE_CHARACTER_SPACING)
+        }
+        val totalWidth = partWidths.sum() + NAME_TEMPLATE_PART_GAP * (validParts.size - 1)
+        var cursorX = prototype.offset.x - (totalWidth / 2f)
+
+        return validParts.mapIndexed { index, (suffix, text) ->
+            val partWidth = partWidths[index]
+            val decoration = prototype.copy(
+                text = text,
+                id = "${prototype.id}_$suffix",
+                offset = Offset(
+                    x = cursorX + partWidth / 2f,
+                    y = prototype.offset.y
+                )
+            )
+            cursorX += partWidth + NAME_TEMPLATE_PART_GAP
+            decoration
+        }
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {

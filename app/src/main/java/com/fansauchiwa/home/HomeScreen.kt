@@ -42,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -54,6 +55,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -105,6 +107,8 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.min
 
+private const val NAME_TEMPLATE_PLACEHOLDER_TEXT = "〇〇くん"
+
 internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
 internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
 internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
@@ -120,6 +124,16 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
 }
 
 internal fun mainColorChipTag(color: Color): String = "main-color-chip-${color.toArgb()}"
+internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, String> = when (firstName.length) {
+    0 -> "" to ""
+    1 -> firstName to ""
+    else -> firstName.take(1) to firstName.drop(1)
+}
+
+internal fun Template.hasNameInputPlaceholder(): Boolean =
+    savedUchiwa.decorations
+        .filterIsInstance<Decoration.Text>()
+        .any { it.text == NAME_TEMPLATE_PLACEHOLDER_TEXT }
 
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
@@ -312,6 +326,17 @@ fun HomeScreen(
     val context = LocalContext.current
     val duplicateMasterpieceSnackbar = stringResource(R.string.duplicate_masterpiece_snackbar)
     val deleteMasterpieceSnackbar = stringResource(R.string.delete_masterpiece_snackbar)
+    var nameTemplateId by rememberSaveable { mutableStateOf<String?>(null) }
+    var lastName by rememberSaveable { mutableStateOf("") }
+    var firstName by rememberSaveable { mutableStateOf("") }
+    var honorific by rememberSaveable { mutableStateOf("") }
+
+    fun resetNameTemplateDialog() {
+        nameTemplateId = null
+        lastName = ""
+        firstName = ""
+        honorific = ""
+    }
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -335,6 +360,33 @@ fun HomeScreen(
                 TextButton(onClick = { viewModel.dismissApologyDialog() }) {
                     Text(text = "閉じる")
                 }
+            }
+        )
+    }
+
+    nameTemplateId?.let { templateId ->
+        NameTemplateInputDialog(
+            lastName = lastName,
+            onLastNameChange = { lastName = it },
+            firstName = firstName,
+            onFirstNameChange = { firstName = it },
+            honorific = honorific,
+            onHonorificChange = { honorific = it },
+            onDismiss = ::resetNameTemplateDialog,
+            onConfirm = {
+                val (firstName1, firstName2) = splitFirstNameForNameTemplate(firstName)
+                onImageClick(
+                    EditScreenInputArg(
+                        uchiwaId = UUID.randomUUID().toString(),
+                        templateId = templateId,
+                        templateMainColor = uiState.selectedMainColor,
+                        lastName = lastName,
+                        firstName1 = firstName1,
+                        firstName2 = firstName2,
+                        honorific = honorific
+                    )
+                )
+                resetNameTemplateDialog()
             }
         )
     }
@@ -428,16 +480,19 @@ fun HomeScreen(
                     onImageClick(EditScreenInputArg(uchiwaId = uchiwaId))
                 }
             },
-            onTemplateClick = { templateId ->
-                viewModel.logTemplateTap(templateId)
-                val newUchiwaId = UUID.randomUUID().toString()
-                onImageClick(
-                    EditScreenInputArg(
-                        uchiwaId = newUchiwaId,
-                        templateId = templateId,
-                        templateMainColor = uiState.selectedMainColor
+            onTemplateClick = { template ->
+                viewModel.logTemplateTap(template.id)
+                if (template.hasNameInputPlaceholder()) {
+                    nameTemplateId = template.id
+                } else {
+                    onImageClick(
+                        EditScreenInputArg(
+                            uchiwaId = UUID.randomUUID().toString(),
+                            templateId = template.id,
+                            templateMainColor = uiState.selectedMainColor
+                        )
                     )
-                )
+                }
             },
             onImageLongPress = {
                 viewModel.enterSelectionMode()
@@ -458,7 +513,7 @@ internal fun HomeTabContent(
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
     onImageClick: (String) -> Unit,
-    onTemplateClick: (String) -> Unit,
+    onTemplateClick: (Template) -> Unit,
     onImageLongPress: () -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
@@ -495,7 +550,7 @@ private fun HomeTabHomeContent(
     templates: List<Template>,
     selectedMainColor: DecorationColors,
     onMainColorSelected: (DecorationColors) -> Unit,
-    onTemplateClick: (String) -> Unit,
+    onTemplateClick: (Template) -> Unit,
     statusBarPadding: Dp,
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
@@ -544,11 +599,65 @@ private fun HomeTabHomeContent(
             TemplateItem(
                 template = template,
                 mainColor = selectedMainColor,
-                onClick = { onTemplateClick(template.id) },
+                onClick = { onTemplateClick(template) },
                 isPreview = isPreview
             )
         }
     }
+}
+
+@Composable
+internal fun NameTemplateInputDialog(
+    lastName: String,
+    onLastNameChange: (String) -> Unit,
+    firstName: String,
+    onFirstNameChange: (String) -> Unit,
+    honorific: String,
+    onHonorificChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(R.string.name_template_dialog_title))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = lastName,
+                    onValueChange = onLastNameChange,
+                    label = { Text(text = stringResource(R.string.name_template_last_name)) },
+                    placeholder = { Text(text = stringResource(R.string.name_template_last_name_placeholder)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = firstName,
+                    onValueChange = onFirstNameChange,
+                    label = { Text(text = stringResource(R.string.name_template_first_name)) },
+                    placeholder = { Text(text = stringResource(R.string.name_template_first_name_placeholder)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = honorific,
+                    onValueChange = onHonorificChange,
+                    label = { Text(text = stringResource(R.string.name_template_honorific)) },
+                    placeholder = { Text(text = stringResource(R.string.name_template_honorific_placeholder)) },
+                    singleLine = true
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(R.string.decide))
+            }
+        }
+    )
 }
 
 @Composable

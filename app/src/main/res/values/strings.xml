@@ -73,6 +73,13 @@
     <string name="main_color_section_title">メインカラーを選択</string>
     <string name="template_section_title">テンプレートから作成</string>
     <string name="my_design_section_title">マイデザイン</string>
+    <string name="name_template_dialog_title">名前を入力</string>
+    <string name="name_template_last_name">名字</string>
+    <string name="name_template_first_name">名前</string>
+    <string name="name_template_honorific">敬称</string>
+    <string name="name_template_last_name_placeholder">佐藤</string>
+    <string name="name_template_first_name_placeholder">勝利</string>
+    <string name="name_template_honorific_placeholder">くん、ちゃん など</string>
     <string name="export_template">テンプレートエクスポート</string>
     <string name="export_template_dialog_message">テンプレート用にデータ出力します</string>
     <string name="help">ヘルプ</string>
