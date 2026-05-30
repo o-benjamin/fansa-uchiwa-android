@@ -110,7 +110,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun homeTabColorSelector_updatesSelectedChipState() {
+    fun createTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
         val targetColor = DecorationColors.BLUE.value
 
