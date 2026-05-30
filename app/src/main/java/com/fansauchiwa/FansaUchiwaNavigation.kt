@@ -36,7 +36,7 @@ data object EditDestination : FansaUchiwaNavigationDestination {
             arguments = arrayOf(
                 UCHIWA_ID_ARG to inputArg.uchiwaId,
                 TEMPLATE_ID_ARG to inputArg.templateId,
-                TEMPLATE_MAIN_COLOR_ARG to inputArg.templateMainColor
+                TEMPLATE_MAIN_COLOR_ARG to inputArg.templateMainColor?.name
             )
         )
 }
@@ -74,18 +74,13 @@ data object EventTimelineDestination : FansaUchiwaNavigationDestination {
 
 private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"
 
-private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, Any?>>): String {
+private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String?>>): String {
     val query = arguments.mapNotNull { (key, value) ->
-        value?.let { "$key=${serializeRouteArgumentValue(it)}" }
+        value?.let { "$key=$it" }
     }
     return if (query.isEmpty()) {
         screen
     } else {
         "$screen?${query.joinToString("&")}"
     }
-}
-
-private fun serializeRouteArgumentValue(value: Any): String = when (value) {
-    is Enum<*> -> value.name
-    else -> value.toString()
 }

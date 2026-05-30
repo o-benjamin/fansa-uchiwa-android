@@ -107,6 +107,7 @@ import kotlin.math.min
 
 internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
 internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
+private val mainColorToDecorationColor = DecorationColors.entries.associateBy { it.value }
 
 internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
     append(
@@ -436,9 +437,7 @@ fun HomeScreen(
                     EditScreenInputArg(
                         uchiwaId = newUchiwaId,
                         templateId = templateId,
-                        templateMainColor = DecorationColors.entries.firstOrNull {
-                            it.value == uiState.selectedMainColor
-                        }
+                        templateMainColor = mainColorToDecorationColor[uiState.selectedMainColor]
                     )
                 )
             },
