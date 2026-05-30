@@ -45,6 +45,7 @@ import javax.inject.Inject
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"
 private const val MAX_HISTORY_SIZE = 50
+private const val LOG_TAG = "EditViewModel"
 
 @HiltViewModel
 class EditViewModel @Inject constructor(
@@ -184,9 +185,7 @@ class EditViewModel @Inject constructor(
         if (templateId != null) {
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
-                val templateMainColor = savedStateHandle.get<String>(TEMPLATE_MAIN_COLOR_ARG)
-                    ?.toULongOrNull()
-                    ?.let { Color(it) }
+                val templateMainColor = resolveTemplateMainColor()
                 val savedUchiwa = templateMainColor?.let { template.savedUchiwa.applyQuickTemplateStyle(it) }
                     ?: template.savedUchiwa
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
@@ -199,6 +198,14 @@ class EditViewModel @Inject constructor(
             }
         }
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
+    }
+
+    private fun resolveTemplateMainColor(): Color? {
+        val rawColorValue = savedStateHandle.get<String>(TEMPLATE_MAIN_COLOR_ARG) ?: return null
+        return rawColorValue.toULongOrNull()?.let { Color(it) } ?: run {
+            Log.w(LOG_TAG, "Invalid template main color: $rawColorValue")
+            null
+        }
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
