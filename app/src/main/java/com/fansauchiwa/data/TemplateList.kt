@@ -77,7 +77,7 @@ val templateList: List<Template> = listOf(
                 ),
                 Decoration.Text(
                     text = "名",
-                    id = "bfe0084e-681b-4d0a-b582-7f9679174dc5-name-1",
+                    id = "4b8b6f56-9dc9-4d6b-9286-1802ea38ee99",
                     offset = Offset(-64.29743f, -211.73433f),
                     rotation = 0.23916245f,
                     scale = 1.8064443f,
@@ -91,7 +91,7 @@ val templateList: List<Template> = listOf(
                 ),
                 Decoration.Text(
                     text = "前",
-                    id = "bfe0084e-681b-4d0a-b582-7f9679174dc5-name-2",
+                    id = "1f97693d-6f7f-4d6d-9d96-2ca8966f4ac1",
                     offset = Offset(2.702568f, -211.73433f),
                     rotation = 0.23916245f,
                     scale = 1.8064443f,
@@ -105,7 +105,7 @@ val templateList: List<Template> = listOf(
                 ),
                 Decoration.Text(
                     text = "くん",
-                    id = "bfe0084e-681b-4d0a-b582-7f9679174dc5-honorific",
+                    id = "d9a1f557-215b-4d10-ba4d-7b850f1c3e64",
                     offset = Offset(92.70257f, -211.73433f),
                     rotation = 0.23916245f,
                     scale = 1.8064443f,
@@ -210,7 +210,7 @@ val templateList: List<Template> = listOf(
                 ),
                 Decoration.Text(
                     text = "名",
-                    id = "20e415c0-a614-4ed7-a112-e843680f4194-name-1",
+                    id = "6ceda16c-25aa-4f86-82ca-137ad6112f43",
                     offset = Offset(-54.0f, -183.5997f),
                     rotation = 0.24852562f,
                     scale = 1.6775169f,
@@ -224,7 +224,7 @@ val templateList: List<Template> = listOf(
                 ),
                 Decoration.Text(
                     text = "前",
-                    id = "20e415c0-a614-4ed7-a112-e843680f4194-name-2",
+                    id = "3f7f6088-78f6-4d90-9991-0be019f8fe3d",
                     offset = Offset(14.0f, -183.5997f),
                     rotation = 0.24852562f,
                     scale = 1.6775169f,
@@ -238,7 +238,7 @@ val templateList: List<Template> = listOf(
                 ),
                 Decoration.Text(
                     text = "くん",
-                    id = "20e415c0-a614-4ed7-a112-e843680f4194-honorific",
+                    id = "1049fd4d-9e54-4e65-8be9-088286a95d6a",
                     offset = Offset(110.0f, -183.5997f),
                     rotation = 0.24852562f,
                     scale = 1.6775169f,

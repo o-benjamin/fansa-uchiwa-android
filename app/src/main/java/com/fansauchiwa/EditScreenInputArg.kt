@@ -6,6 +6,11 @@ import java.nio.charset.StandardCharsets
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+private val editScreenInputArgJson = Json {
+    encodeDefaults = false
+    ignoreUnknownKeys = true
+}
+
 @Serializable
 data class EditScreenInputArg(
     val uchiwaId: String,
@@ -16,13 +21,15 @@ data class EditScreenInputArg(
     val firstName2: String? = null,
     val honorific: String? = null
 ) {
-    fun toRouteArgument(): String = Json.encodeToString(this)
+    fun toRouteArgument(): String =
+        editScreenInputArgJson.encodeToString(serializer(), this)
 
     companion object {
         fun fromRouteArgument(value: String): EditScreenInputArg = runCatching {
-            Json.decodeFromString<EditScreenInputArg>(value)
+            editScreenInputArgJson.decodeFromString(serializer(), value)
         }.getOrElse {
-            Json.decodeFromString<EditScreenInputArg>(
+            editScreenInputArgJson.decodeFromString(
+                serializer(),
                 URLDecoder.decode(value, StandardCharsets.UTF_8.toString())
             )
         }

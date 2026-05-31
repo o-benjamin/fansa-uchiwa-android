@@ -127,6 +127,7 @@ internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, Stri
     1 -> firstName to ""
     else -> firstName.take(1) to firstName.drop(1)
 }
+internal fun shouldShowFirstNameRequiredError(firstName: String): Boolean = firstName.isBlank()
 
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
@@ -377,7 +378,7 @@ fun HomeScreen(
             },
             onDismiss = ::resetNameTemplateDialog,
             onConfirm = {
-                if (nameTemplateDialogState.firstName.isBlank()) {
+                if (shouldShowFirstNameRequiredError(nameTemplateDialogState.firstName)) {
                     nameTemplateDialogState = nameTemplateDialogState.copy(
                         showFirstNameRequiredError = true
                     )

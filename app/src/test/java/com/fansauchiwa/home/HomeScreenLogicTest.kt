@@ -26,6 +26,17 @@ class HomeScreenLogicTest {
     }
 
     @Test
+    fun shouldShowFirstNameRequiredError_returnsTrueWhenFirstNameIsBlank() {
+        assertTrue(shouldShowFirstNameRequiredError(""))
+        assertTrue(shouldShowFirstNameRequiredError(" "))
+    }
+
+    @Test
+    fun shouldShowFirstNameRequiredError_returnsFalseWhenFirstNameIsPresent() {
+        assertFalse(shouldShowFirstNameRequiredError("潤"))
+    }
+
+    @Test
     fun isNameInputPlaceholderEnabled_returnsConfiguredFlag() {
         val namedTemplate = Template(
             id = "named",
