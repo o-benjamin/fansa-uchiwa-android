@@ -77,9 +77,10 @@
     <string name="name_template_last_name">名字</string>
     <string name="name_template_first_name">名前</string>
     <string name="name_template_honorific">敬称</string>
-    <string name="name_template_last_name_placeholder">佐藤</string>
-    <string name="name_template_first_name_placeholder">勝利</string>
+    <string name="name_template_last_name_placeholder">みょうじ</string>
+    <string name="name_template_first_name_placeholder">名前</string>
     <string name="name_template_honorific_placeholder">くん、ちゃん など</string>
+    <string name="name_template_first_name_required_error">名前の入力は必須です</string>
     <string name="export_template">テンプレートエクスポート</string>
     <string name="export_template_dialog_message">テンプレート用にデータ出力します</string>
     <string name="help">ヘルプ</string>

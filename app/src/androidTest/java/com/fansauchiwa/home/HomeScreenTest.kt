@@ -155,6 +155,7 @@ class HomeScreenTest {
                 onLastNameChange = { lastNameState.value = it },
                 firstName = firstNameState.value,
                 onFirstNameChange = { firstNameState.value = it },
+                firstNameErrorMessage = null,
                 honorific = honorificState.value,
                 onHonorificChange = { honorificState.value = it },
                 onDismiss = {},
@@ -167,6 +168,52 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText(context.getString(R.string.name_template_last_name_placeholder)).assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.name_template_first_name_placeholder)).assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.name_template_honorific_placeholder)).assertIsDisplayed()
+    }
+
+    @Test
+    fun nameTemplateInputDialog_showsRequiredErrorWhenFirstNameIsEmpty() {
+        composeTestRule.setContent {
+            val lastNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val firstNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val honorificState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val showErrorState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(false)
+            }
+            NameTemplateInputDialog(
+                lastName = lastNameState.value,
+                onLastNameChange = { lastNameState.value = it },
+                firstName = firstNameState.value,
+                onFirstNameChange = {
+                    firstNameState.value = it
+                    showErrorState.value = false
+                },
+                firstNameErrorMessage = if (showErrorState.value) {
+                    androidx.compose.ui.res.stringResource(R.string.name_template_first_name_required_error)
+                } else {
+                    null
+                },
+                honorific = honorificState.value,
+                onHonorificChange = { honorificState.value = it },
+                onDismiss = {},
+                onConfirm = {
+                    if (firstNameState.value.isBlank()) {
+                        showErrorState.value = true
+                    }
+                }
+            )
+        }
+
+        val context = getContext()
+        composeTestRule.onNodeWithText(context.getString(R.string.decide)).performClick()
+        composeTestRule.onNodeWithText(
+            context.getString(R.string.name_template_first_name_required_error)
+        ).assertIsDisplayed()
     }
 
 }

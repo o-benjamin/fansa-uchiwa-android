@@ -83,7 +83,6 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.EditScreenInputArg
-import com.fansauchiwa.NAME_TEMPLATE_PLACEHOLDER_TEXT
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
@@ -128,11 +127,6 @@ internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, Stri
     1 -> firstName to ""
     else -> firstName.take(1) to firstName.drop(1)
 }
-
-internal fun Template.hasNameInputPlaceholder(): Boolean =
-    savedUchiwa.decorations
-        .filterIsInstance<Decoration.Text>()
-        .any { it.text == NAME_TEMPLATE_PLACEHOLDER_TEXT }
 
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
@@ -325,16 +319,12 @@ fun HomeScreen(
     val context = LocalContext.current
     val duplicateMasterpieceSnackbar = stringResource(R.string.duplicate_masterpiece_snackbar)
     val deleteMasterpieceSnackbar = stringResource(R.string.delete_masterpiece_snackbar)
-    var nameTemplateId by rememberSaveable { mutableStateOf<String?>(null) }
-    var lastName by rememberSaveable { mutableStateOf("") }
-    var firstName by rememberSaveable { mutableStateOf("") }
-    var honorific by rememberSaveable { mutableStateOf("") }
+    var nameTemplateDialogState by rememberSaveable(stateSaver = NameTemplateDialogState.Saver) {
+        mutableStateOf(NameTemplateDialogState())
+    }
 
     fun resetNameTemplateDialog() {
-        nameTemplateId = null
-        lastName = ""
-        firstName = ""
-        honorific = ""
+        nameTemplateDialogState = NameTemplateDialogState()
     }
 
     LaunchedEffect(Unit) {
@@ -363,26 +353,48 @@ fun HomeScreen(
         )
     }
 
-    nameTemplateId?.let { templateId ->
+    nameTemplateDialogState.templateId?.let { templateId ->
         NameTemplateInputDialog(
-            lastName = lastName,
-            onLastNameChange = { lastName = it },
-            firstName = firstName,
-            onFirstNameChange = { firstName = it },
-            honorific = honorific,
-            onHonorificChange = { honorific = it },
+            lastName = nameTemplateDialogState.lastName,
+            onLastNameChange = {
+                nameTemplateDialogState = nameTemplateDialogState.copy(lastName = it)
+            },
+            firstName = nameTemplateDialogState.firstName,
+            onFirstNameChange = {
+                nameTemplateDialogState = nameTemplateDialogState.copy(
+                    firstName = it,
+                    showFirstNameRequiredError = false
+                )
+            },
+            firstNameErrorMessage = if (nameTemplateDialogState.showFirstNameRequiredError) {
+                stringResource(R.string.name_template_first_name_required_error)
+            } else {
+                null
+            },
+            honorific = nameTemplateDialogState.honorific,
+            onHonorificChange = {
+                nameTemplateDialogState = nameTemplateDialogState.copy(honorific = it)
+            },
             onDismiss = ::resetNameTemplateDialog,
             onConfirm = {
-                val (firstName1, firstName2) = splitFirstNameForNameTemplate(firstName)
+                if (nameTemplateDialogState.firstName.isBlank()) {
+                    nameTemplateDialogState = nameTemplateDialogState.copy(
+                        showFirstNameRequiredError = true
+                    )
+                    return@NameTemplateInputDialog
+                }
+                val (firstName1, firstName2) = splitFirstNameForNameTemplate(
+                    nameTemplateDialogState.firstName
+                )
                 onImageClick(
                     EditScreenInputArg(
                         uchiwaId = UUID.randomUUID().toString(),
                         templateId = templateId,
                         templateMainColor = uiState.selectedMainColor,
-                        lastName = lastName,
+                        lastName = nameTemplateDialogState.lastName,
                         firstName1 = firstName1,
                         firstName2 = firstName2,
-                        honorific = honorific
+                        honorific = nameTemplateDialogState.honorific
                     )
                 )
                 resetNameTemplateDialog()
@@ -481,8 +493,8 @@ fun HomeScreen(
             },
             onTemplateClick = { template ->
                 viewModel.logTemplateTap(template.id)
-                if (template.hasNameInputPlaceholder()) {
-                    nameTemplateId = template.id
+                if (template.isNameInputPlaceholderEnabled) {
+                    nameTemplateDialogState = NameTemplateDialogState(templateId = template.id)
                 } else {
                     onImageClick(
                         EditScreenInputArg(
@@ -611,6 +623,7 @@ internal fun NameTemplateInputDialog(
     onLastNameChange: (String) -> Unit,
     firstName: String,
     onFirstNameChange: (String) -> Unit,
+    firstNameErrorMessage: String?,
     honorific: String,
     onHonorificChange: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -635,7 +648,11 @@ internal fun NameTemplateInputDialog(
                     onValueChange = onFirstNameChange,
                     label = { Text(text = stringResource(R.string.name_template_first_name)) },
                     placeholder = { Text(text = stringResource(R.string.name_template_first_name_placeholder)) },
-                    singleLine = true
+                    singleLine = true,
+                    isError = firstNameErrorMessage != null,
+                    supportingText = {
+                        firstNameErrorMessage?.let { Text(text = it) }
+                    }
                 )
                 OutlinedTextField(
                     value = honorific,

@@ -62,9 +62,51 @@ val templateList: List<Template> = listOf(
                     secondStrokeWidth = 3.0f
                 ),
                 Decoration.Text(
-                    text = "〇〇くん",
+                    text = "みょうじ",
                     id = "bfe0084e-681b-4d0a-b582-7f9679174dc5",
-                    offset = Offset(-46.297432f, -211.73433f),
+                    offset = Offset(-188.29742f, -211.73433f),
+                    rotation = 0.23916245f,
+                    scale = 1.8064443f,
+                    color = DecorationColors.WHITE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 30.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "名",
+                    id = "bfe0084e-681b-4d0a-b582-7f9679174dc5-name-1",
+                    offset = Offset(-64.29743f, -211.73433f),
+                    rotation = 0.23916245f,
+                    scale = 1.8064443f,
+                    color = DecorationColors.WHITE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 30.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "前",
+                    id = "bfe0084e-681b-4d0a-b582-7f9679174dc5-name-2",
+                    offset = Offset(2.702568f, -211.73433f),
+                    rotation = 0.23916245f,
+                    scale = 1.8064443f,
+                    color = DecorationColors.WHITE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 30.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "くん",
+                    id = "bfe0084e-681b-4d0a-b582-7f9679174dc5-honorific",
+                    offset = Offset(92.70257f, -211.73433f),
                     rotation = 0.23916245f,
                     scale = 1.8064443f,
                     color = DecorationColors.WHITE.value,
@@ -93,6 +135,7 @@ val templateList: List<Template> = listOf(
             uchiwaColor = Color(0xFFF6D6FF),
             backgroundColor = Color(0x11000000)
         ),
+        isNameInputPlaceholderEnabled = true
     ),
     Template(
         id = "template_2",
@@ -152,9 +195,51 @@ val templateList: List<Template> = listOf(
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "〇〇くん",
+                    text = "みょうじ",
                     id = "20e415c0-a614-4ed7-a112-e843680f4194",
-                    offset = Offset(0.0f, -183.5997f),
+                    offset = Offset(-170.0f, -183.5997f),
+                    rotation = 0.24852562f,
+                    scale = 1.6775169f,
+                    color = DecorationColors.WHITE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 30.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "名",
+                    id = "20e415c0-a614-4ed7-a112-e843680f4194-name-1",
+                    offset = Offset(-54.0f, -183.5997f),
+                    rotation = 0.24852562f,
+                    scale = 1.6775169f,
+                    color = DecorationColors.WHITE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 30.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "前",
+                    id = "20e415c0-a614-4ed7-a112-e843680f4194-name-2",
+                    offset = Offset(14.0f, -183.5997f),
+                    rotation = 0.24852562f,
+                    scale = 1.6775169f,
+                    color = DecorationColors.WHITE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 30.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 30.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "くん",
+                    id = "20e415c0-a614-4ed7-a112-e843680f4194-honorific",
+                    offset = Offset(110.0f, -183.5997f),
                     rotation = 0.24852562f,
                     scale = 1.6775169f,
                     color = DecorationColors.WHITE.value,
@@ -168,7 +253,8 @@ val templateList: List<Template> = listOf(
             ),
             uchiwaColor = Color(0xFFBFE6FF),
             backgroundColor = Color(0x11000000)
-        )
+        ),
+        isNameInputPlaceholderEnabled = true
     ),
     Template(
         id = "template_3",

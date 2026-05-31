@@ -11,7 +11,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.edit.EditScreen
 import com.fansauchiwa.edit.EditViewModel
 import com.fansauchiwa.edit.imagepreview.ImagePreviewScreen
@@ -52,37 +51,7 @@ fun FansaUchiwaNavGraph(
         composable(
             route = EditDestination.route,
             arguments = listOf(
-                navArgument(UCHIWA_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(TEMPLATE_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(TEMPLATE_MAIN_COLOR_ARG) {
-                    type = NavType.EnumType(DecorationColors::class.java)
-                    nullable = false
-                    defaultValue = DecorationColors.PINK
-                },
-                navArgument(LAST_NAME_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(FIRST_NAME_1_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(FIRST_NAME_2_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(HONORIFIC_ARG) {
+                navArgument(EDIT_INPUT_ARG) {
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null

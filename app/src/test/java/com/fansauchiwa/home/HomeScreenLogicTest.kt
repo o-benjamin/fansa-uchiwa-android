@@ -1,10 +1,8 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
-import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
-import com.fansauchiwa.edit.FontFamilies
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -28,39 +26,28 @@ class HomeScreenLogicTest {
     }
 
     @Test
-    fun hasNameInputPlaceholder_returnsTrueOnlyForTemplatesWithNamePlaceholder() {
+    fun isNameInputPlaceholderEnabled_returnsConfiguredFlag() {
         val namedTemplate = Template(
             id = "named",
             previewImageResId = 0,
             savedUchiwa = SavedUchiwa(
-                decorations = listOf(
-                    Decoration.Text(
-                        text = "〇〇くん",
-                        id = "name-placeholder",
-                        font = FontFamilies.M_PLUS_ROUNDED_1C
-                    )
-                ),
+                decorations = emptyList(),
                 uchiwaColor = Color.Black,
                 backgroundColor = Color.White
-            )
+            ),
+            isNameInputPlaceholderEnabled = true
         )
         val regularTemplate = Template(
             id = "regular",
             previewImageResId = 0,
             savedUchiwa = SavedUchiwa(
-                decorations = listOf(
-                    Decoration.Text(
-                        text = "プロポーズ",
-                        id = "fixed-text",
-                        font = FontFamilies.M_PLUS_ROUNDED_1C
-                    )
-                ),
+                decorations = emptyList(),
                 uchiwaColor = Color.Black,
                 backgroundColor = Color.White
             )
         )
 
-        assertTrue(namedTemplate.hasNameInputPlaceholder())
-        assertFalse(regularTemplate.hasNameInputPlaceholder())
+        assertTrue(namedTemplate.isNameInputPlaceholderEnabled)
+        assertFalse(regularTemplate.isNameInputPlaceholderEnabled)
     }
 }
