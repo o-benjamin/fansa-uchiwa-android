@@ -235,13 +235,13 @@ class EditViewModel @Inject constructor(
         if (replacementByPlaceholderText.values.none { it != null }) {
             return decorations
         }
-        return decorations.map { decoration ->
+        return decorations.mapNotNull { decoration ->
             if (decoration is Decoration.Text) {
                 val replacement = replacementByPlaceholderText[decoration.text]
-                if (replacement != null) {
-                    decoration.copy(text = replacement)
-                } else {
-                    decoration
+                when {
+                    replacement == null -> decoration
+                    replacement.isBlank() -> null
+                    else -> decoration.copy(text = replacement)
                 }
             } else {
                 decoration

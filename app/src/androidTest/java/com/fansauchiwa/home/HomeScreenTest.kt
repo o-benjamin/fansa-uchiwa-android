@@ -171,7 +171,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun nameTemplateInputDialog_showsRequiredErrorWhenFirstNameIsEmpty() {
+    fun nameTemplateInputDialog_allowsConfirmWhenFirstNameIsEmpty() {
         composeTestRule.setContent {
             val lastNameState = androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableStateOf("")
@@ -182,38 +182,30 @@ class HomeScreenTest {
             val honorificState = androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableStateOf("")
             }
-            val showErrorState = androidx.compose.runtime.remember {
+            val confirmedState = androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableStateOf(false)
             }
             NameTemplateInputDialog(
                 lastName = lastNameState.value,
                 onLastNameChange = { lastNameState.value = it },
                 firstName = firstNameState.value,
-                onFirstNameChange = {
-                    firstNameState.value = it
-                    showErrorState.value = false
-                },
-                firstNameErrorMessage = if (showErrorState.value) {
-                    androidx.compose.ui.res.stringResource(R.string.name_template_first_name_required_error)
-                } else {
-                    null
-                },
+                onFirstNameChange = { firstNameState.value = it },
+                firstNameErrorMessage = null,
                 honorific = honorificState.value,
                 onHonorificChange = { honorificState.value = it },
                 onDismiss = {},
                 onConfirm = {
-                    if (firstNameState.value.isBlank()) {
-                        showErrorState.value = true
-                    }
+                    confirmedState.value = true
                 }
             )
+            if (confirmedState.value) {
+                androidx.compose.material3.Text("confirmed")
+            }
         }
 
         val context = getContext()
         composeTestRule.onNodeWithText(context.getString(R.string.decide)).performClick()
-        composeTestRule.onNodeWithText(
-            context.getString(R.string.name_template_first_name_required_error)
-        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("confirmed").assertIsDisplayed()
     }
 
 }

@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,17 +22,6 @@ class HomeScreenLogicTest {
     @Test
     fun splitFirstNameForNameTemplate_splitsFirstCharacterAndRemainingCharacters() {
         assertEquals("勝" to "利", splitFirstNameForNameTemplate("勝利"))
-    }
-
-    @Test
-    fun shouldShowFirstNameRequiredError_returnsTrueWhenFirstNameIsBlank() {
-        assertTrue(shouldShowFirstNameRequiredError(""))
-        assertTrue(shouldShowFirstNameRequiredError(" "))
-    }
-
-    @Test
-    fun shouldShowFirstNameRequiredError_returnsFalseWhenFirstNameIsPresent() {
-        assertFalse(shouldShowFirstNameRequiredError("潤"))
     }
 
     @Test

@@ -6,11 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.fansauchiwa.edit.EditScreen
 import com.fansauchiwa.edit.EditViewModel
 import com.fansauchiwa.edit.imagepreview.ImagePreviewScreen
@@ -34,11 +32,11 @@ fun FansaUchiwaNavGraph(
             HomeScreen(
                 onImageClick = { inputArg ->
                     navController.navigate(
-                        EditDestination.createRoute(inputArg)
+                        EditRoute(inputArg = inputArg.toRouteArgument())
                     )
                 },
                 onAddClick = {
-                    navController.navigate(EditDestination.screen)
+                    navController.navigate(EditRoute())
                 },
                 onNavigateToSettings = {
                     navController.navigate(SettingsDestination.route)
@@ -48,16 +46,7 @@ fun FansaUchiwaNavGraph(
                 }
             )
         }
-        composable(
-            route = EditDestination.route,
-            arguments = listOf(
-                navArgument(EDIT_INPUT_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) {
+        composable<EditRoute> {
             val viewModel: EditViewModel = hiltViewModel()
             EditScreen(
                 viewModel = viewModel,

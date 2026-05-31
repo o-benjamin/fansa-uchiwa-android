@@ -479,7 +479,7 @@ class EditViewModelTest {
     }
 
     @Test
-    fun applyNewUchiwaState_namedTemplateSpecified_updatesTextOnlyAndPreservesIdsForEmptyValues() = runTest {
+    fun applyNewUchiwaState_namedTemplateSpecified_removesPlaceholderTextsForBlankValues() = runTest {
         val uchiwaId = "new-uchiwa-id"
         val templateId = "template_1"
         val lastNamePlaceholder = Decoration.Text(
@@ -531,18 +531,18 @@ class EditViewModelTest {
         val viewModel = createViewModel(
             uchiwaId = uchiwaId,
             templateId = templateId,
-            lastName = "",
+            lastName = " ",
             firstName1 = "潤",
             firstName2 = "",
-            honorific = ""
+            honorific = "   "
         )
         advanceUntilIdle()
 
         val textDecorations = viewModel.uiState.value.decorations.filterIsInstance<Decoration.Text>()
 
-        assertEquals(listOf("", "潤", "", "", "プロポーズ"), textDecorations.map { it.text })
+        assertEquals(listOf("潤", "プロポーズ"), textDecorations.map { it.text })
         assertEquals(
-            listOf("name-last", "name-1", "name-2", "name-honorific", "fixed-text"),
+            listOf("name-1", "fixed-text"),
             textDecorations.map { it.id }
         )
     }
