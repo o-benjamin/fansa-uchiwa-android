@@ -572,7 +572,7 @@ private fun HomeTabHomeContent(
         modifier = modifier
             .fillMaxSize()
             .padding(top = statusBarPadding),
-        contentPadding = PaddingValues(horizontal = 8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -681,7 +681,6 @@ private fun MainColorSelector(
         colors = DecorationColors.entries.map { it.value },
         includeCustomColorPicker = false,
         chipSize = 40.dp,
-        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         applySelectedSemantics = true,
         testTagProvider = ::mainColorChipTag
@@ -750,7 +749,7 @@ private fun SectionHeader(
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
-        modifier = modifier.padding(start = 16.dp, bottom = 8.dp)
+        modifier = modifier.padding(bottom = 8.dp)
     )
 }
 
