@@ -10,6 +10,16 @@ import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.EDIT_INPUT_ARG
+import com.fansauchiwa.EditScreenInputArg
+import com.fansauchiwa.FIRST_NAME_1_ARG
+import com.fansauchiwa.FIRST_NAME_2_ARG
+import com.fansauchiwa.HONORIFIC_ARG
+import com.fansauchiwa.LAST_NAME_ARG
+import com.fansauchiwa.NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT
 import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
@@ -59,6 +69,9 @@ class EditViewModel @Inject constructor(
     private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+    private val inputArg: EditScreenInputArg? =
+        savedStateHandle.get<String>(EDIT_INPUT_ARG)?.let(EditScreenInputArg::fromRouteArgument)
+
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(
         UI_STATE_KEY,
         EditUiState(
@@ -110,7 +123,7 @@ class EditViewModel @Inject constructor(
 
     private fun loadExistingDecorations() {
         viewModelScope.launch {
-            val uchiwaId: String? = savedStateHandle[UCHIWA_ID_ARG]
+            val uchiwaId: String? = inputArg?.uchiwaId ?: savedStateHandle[UCHIWA_ID_ARG]
             if (uchiwaId != null) {
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
                 val uchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
@@ -181,7 +194,7 @@ class EditViewModel @Inject constructor(
     }
 
     private suspend fun applyNewUchiwaState(uchiwaId: String) {
-        val templateId: String? = savedStateHandle[TEMPLATE_ID_ARG]
+        val templateId: String? = inputArg?.templateId ?: savedStateHandle[TEMPLATE_ID_ARG]
         val currentState = uiState.value
         if (templateId != null) {
             val template = templateRepository.getTemplateById(templateId)
@@ -191,9 +204,10 @@ class EditViewModel @Inject constructor(
                 val savedUchiwa =
                     templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
                         ?: template.savedUchiwa
+                val decorations = buildTemplateDecorations(savedUchiwa.decorations)
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
-                    decorations = savedUchiwa.decorations,
+                    decorations = decorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
                     backgroundColor = savedUchiwa.backgroundColor
                 )
@@ -204,7 +218,36 @@ class EditViewModel @Inject constructor(
     }
 
     private fun resolveTemplateMainColor(): Color? {
-        return savedStateHandle.get<DecorationColors>(TEMPLATE_MAIN_COLOR_ARG)?.value
+        return inputArg?.templateMainColor?.value
+            ?: savedStateHandle.get<DecorationColors>(TEMPLATE_MAIN_COLOR_ARG)?.value
+    }
+
+    private fun buildTemplateDecorations(decorations: List<Decoration>): List<Decoration> {
+        val replacementByPlaceholderText = mapOf(
+            NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT to (inputArg?.lastName
+                ?: savedStateHandle.get<String>(LAST_NAME_ARG)),
+            NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT to (inputArg?.firstName1
+                ?: savedStateHandle.get<String>(FIRST_NAME_1_ARG)),
+            NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT to (inputArg?.firstName2
+                ?: savedStateHandle.get<String>(FIRST_NAME_2_ARG)),
+            NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT to (inputArg?.honorific
+                ?: savedStateHandle.get<String>(HONORIFIC_ARG))
+        )
+        if (replacementByPlaceholderText.values.none { it != null }) {
+            return decorations
+        }
+        return decorations.mapNotNull { decoration ->
+            if (decoration is Decoration.Text) {
+                val replacement = replacementByPlaceholderText[decoration.text]
+                when {
+                    replacement == null -> decoration
+                    replacement.isBlank() -> null
+                    else -> decoration.copy(text = replacement)
+                }
+            } else {
+                decoration
+            }
+        }
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {

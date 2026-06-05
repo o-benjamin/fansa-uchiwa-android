@@ -3,10 +3,9 @@ package com.fansauchiwa.edit
 import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.EDIT_INPUT_ARG
+import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
-import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
-import com.fansauchiwa.TEMPLATE_ID_ARG
-import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
@@ -105,6 +104,10 @@ class EditViewModelTest {
         uchiwaId: String?,
         templateId: String? = null,
         templateMainColor: DecorationColors? = null,
+        lastName: String? = null,
+        firstName1: String? = null,
+        firstName2: String? = null,
+        honorific: String? = null,
         hasSeenEditCompletionTooltip: Boolean = false
     ): EditViewModel {
         settingsRepository = FakeSettingsRepository(
@@ -112,13 +115,18 @@ class EditViewModelTest {
         )
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
-                set(UCHIWA_ID_ARG, uchiwaId)
-            }
-            if (templateId != null) {
-                set(TEMPLATE_ID_ARG, templateId)
-            }
-            if (templateMainColor != null) {
-                set(TEMPLATE_MAIN_COLOR_ARG, templateMainColor)
+                set(
+                    EDIT_INPUT_ARG,
+                    EditScreenInputArg(
+                        uchiwaId = uchiwaId,
+                        templateId = templateId,
+                        templateMainColor = templateMainColor,
+                        lastName = lastName,
+                        firstName1 = firstName1,
+                        firstName2 = firstName2,
+                        honorific = honorific
+                    ).toRouteArgument()
+                )
             }
         }
         return EditViewModel(
@@ -399,6 +407,144 @@ class EditViewModelTest {
         coVerify(exactly = 0) {
             localDatabaseRepository.saveUchiwa(any())
         }
+    }
+
+    @Test
+    fun applyNewUchiwaState_namedTemplateSpecified_replacesPlaceholderWithNonEmptyNameParts() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        val templateId = "template_1"
+        val lastNamePlaceholder = Decoration.Text(
+            text = "みょうじ",
+            id = "name-last",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName1Placeholder = Decoration.Text(
+            text = "名",
+            id = "name-1",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName2Placeholder = Decoration.Text(
+            text = "前",
+            id = "name-2",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val honorificPlaceholder = Decoration.Text(
+            text = "くん",
+            id = "name-honorific",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val fixedDecoration = Decoration.Text(
+            text = "して！",
+            id = "fixed-text",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val template = Template(
+            id = templateId,
+            previewImageResId = 0,
+            savedUchiwa = SavedUchiwa(
+                decorations = listOf(
+                    lastNamePlaceholder,
+                    firstName1Placeholder,
+                    firstName2Placeholder,
+                    honorificPlaceholder,
+                    fixedDecoration
+                ),
+                uchiwaColor = Color.Black,
+                backgroundColor = Color.White
+            ),
+            isNameInputPlaceholderEnabled = true
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        coEvery { templateRepository.getTemplateById(templateId) } returns template
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            templateId = templateId,
+            lastName = "佐藤",
+            firstName1 = "勝",
+            firstName2 = "利",
+            honorific = "くん"
+        )
+        advanceUntilIdle()
+
+        val textDecorations = viewModel.uiState.value.decorations.filterIsInstance<Decoration.Text>()
+
+        assertEquals(listOf("佐藤", "勝", "利", "くん", "して！"), textDecorations.map { it.text })
+        assertEquals(
+            listOf("name-last", "name-1", "name-2", "name-honorific", "fixed-text"),
+            textDecorations.map { it.id }
+        )
+    }
+
+    @Test
+    fun applyNewUchiwaState_namedTemplateSpecified_removesPlaceholderTextsForBlankValues() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        val templateId = "template_1"
+        val lastNamePlaceholder = Decoration.Text(
+            text = "みょうじ",
+            id = "name-last",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName1Placeholder = Decoration.Text(
+            text = "名",
+            id = "name-1",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName2Placeholder = Decoration.Text(
+            text = "前",
+            id = "name-2",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val honorificPlaceholder = Decoration.Text(
+            text = "くん",
+            id = "name-honorific",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val fixedDecoration = Decoration.Text(
+            text = "プロポーズ",
+            id = "fixed-text",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val template = Template(
+            id = templateId,
+            previewImageResId = 0,
+            savedUchiwa = SavedUchiwa(
+                decorations = listOf(
+                    lastNamePlaceholder,
+                    firstName1Placeholder,
+                    firstName2Placeholder,
+                    honorificPlaceholder,
+                    fixedDecoration
+                ),
+                uchiwaColor = Color.Black,
+                backgroundColor = Color.White
+            ),
+            isNameInputPlaceholderEnabled = true
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        coEvery { templateRepository.getTemplateById(templateId) } returns template
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            templateId = templateId,
+            lastName = " ",
+            firstName1 = "潤",
+            firstName2 = "",
+            honorific = "   "
+        )
+        advanceUntilIdle()
+
+        val textDecorations = viewModel.uiState.value.decorations.filterIsInstance<Decoration.Text>()
+
+        assertEquals(listOf("潤", "プロポーズ"), textDecorations.map { it.text })
+        assertEquals(
+            listOf("name-1", "fixed-text"),
+            textDecorations.map { it.id }
+        )
     }
 
     @Test

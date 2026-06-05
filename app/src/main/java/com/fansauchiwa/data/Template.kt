@@ -5,6 +5,6 @@ import androidx.annotation.DrawableRes
 data class Template(
     val id: String,
     @DrawableRes val previewImageResId: Int,
-    val savedUchiwa: SavedUchiwa
+    val savedUchiwa: SavedUchiwa,
+    val isNameInputPlaceholderEnabled: Boolean = false
 )
-

@@ -1,5 +1,8 @@
 package com.fansauchiwa
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 sealed interface FansaUchiwaNavigationDestination {
     val screen: String
     val route: String
@@ -15,8 +18,13 @@ object FansaUchiwaScreens {
 }
 
 const val UCHIWA_ID_ARG = "uchiwaId"
+const val EDIT_INPUT_ARG = "inputArg"
 const val TEMPLATE_ID_ARG = "templateId"
 const val TEMPLATE_MAIN_COLOR_ARG = "templateMainColor"
+const val LAST_NAME_ARG = "lastName"
+const val FIRST_NAME_1_ARG = "firstName1"
+const val FIRST_NAME_2_ARG = "firstName2"
+const val HONORIFIC_ARG = "honorific"
 const val IMAGE_PATH_ARG = "imagePath"
 const val IMAGE_URI_ARG = "imageUri"
 
@@ -27,16 +35,13 @@ data object HomeDestination : FansaUchiwaNavigationDestination {
 
 data object EditDestination : FansaUchiwaNavigationDestination {
     override val screen: String = FansaUchiwaScreens.EDIT_SCREEN
-    override val route: String =
-        "$screen?$UCHIWA_ID_ARG={$UCHIWA_ID_ARG}&$TEMPLATE_ID_ARG={$TEMPLATE_ID_ARG}&$TEMPLATE_MAIN_COLOR_ARG={$TEMPLATE_MAIN_COLOR_ARG}"
+    override val route: String = "$screen?$EDIT_INPUT_ARG={$EDIT_INPUT_ARG}"
 
     fun createRoute(inputArg: EditScreenInputArg): String =
         buildQueryRoute(
             screen = screen,
             arguments = arrayOf(
-                UCHIWA_ID_ARG to inputArg.uchiwaId,
-                TEMPLATE_ID_ARG to inputArg.templateId,
-                TEMPLATE_MAIN_COLOR_ARG to inputArg.templateMainColor?.name
+                EDIT_INPUT_ARG to inputArg.toRouteArgument()
             )
         )
 }
@@ -76,7 +81,7 @@ private fun buildPathRoute(screen: String, argument: String): String = "$screen/
 
 private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String?>>): String {
     val query = arguments.mapNotNull { (key, value) ->
-        value?.let { "$key=$it" }
+        value?.let { "$key=${encodeQueryValue(it)}" }
     }
     return if (query.isEmpty()) {
         screen
@@ -84,3 +89,7 @@ private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String
         "$screen?${query.joinToString("&")}"
     }
 }
+
+private fun encodeQueryValue(value: String): String =
+    URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
+        .replace("+", "%20")
