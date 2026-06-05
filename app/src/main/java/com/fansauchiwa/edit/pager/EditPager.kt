@@ -83,6 +83,8 @@ data class EditPagerUiState(
     val selectedDeletingImages: List<String> = emptyList(),
     val uchiwaColor: Color,
     val backgroundColor: Color,
+    val overallBorderColor: Color,
+    val overallBorderWidth: Float,
     val decorations: List<Decoration> = emptyList(),
     val selectedDecorationId: String? = null,
     val isPukuPukuSupported: Boolean = false
@@ -106,6 +108,8 @@ data class EditPagerActions(
     val onImageToggleSelection: (String) -> Unit,
     val onUchiwaColorSelected: (Color) -> Unit,
     val onBackgroundColorSelected: (Color) -> Unit,
+    val onOverallBorderColorSelected: (Color) -> Unit,
+    val onOverallBorderWidthChanged: (Float) -> Unit,
     val onDecorationClick: (String) -> Unit,
     val onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
 )
@@ -207,8 +211,12 @@ fun EditPager(
                     UchiwaBackgroundPage(
                         onUchiwaColorSelected = actions.onUchiwaColorSelected,
                         onBackgroundColorSelected = actions.onBackgroundColorSelected,
+                        onOverallBorderColorSelected = actions.onOverallBorderColorSelected,
+                        onOverallBorderWidthChanged = actions.onOverallBorderWidthChanged,
                         currentUchiwaColor = state.uchiwaColor,
-                        currentBackgroundColor = state.backgroundColor
+                        currentBackgroundColor = state.backgroundColor,
+                        currentOverallBorderColor = state.overallBorderColor,
+                        currentOverallBorderWidth = state.overallBorderWidth
                     )
                 }
 
@@ -249,7 +257,7 @@ private fun EditPagerTabRow(
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { onTabSelected(index) },
-                    text = { Text(text = title.tabText, maxLines = 1) }
+                    text = { Text(text = stringResource(title.tabTextRes), maxLines = 1) }
                 )
             }
         }
@@ -567,8 +575,12 @@ fun UchiwaBackgroundPage(
     modifier: Modifier = Modifier,
     onUchiwaColorSelected: (Color) -> Unit,
     onBackgroundColorSelected: (Color) -> Unit,
+    onOverallBorderColorSelected: (Color) -> Unit,
+    onOverallBorderWidthChanged: (Float) -> Unit,
     currentUchiwaColor: Color,
-    currentBackgroundColor: Color
+    currentBackgroundColor: Color,
+    currentOverallBorderColor: Color,
+    currentOverallBorderWidth: Float
 ) {
     val scrollState = rememberScrollState()
 
@@ -602,6 +614,15 @@ fun UchiwaBackgroundPage(
             modifier = Modifier.padding(top = 8.dp),
             currentColor = currentBackgroundColor
         )
+        ColorAndWeightControl(
+            title = stringResource(R.string.overall_border_color_and_weight),
+            color = currentOverallBorderColor,
+            width = currentOverallBorderWidth,
+            valueRange = 0f..90f,
+            steps = 0,
+            onColorSelected = onOverallBorderColorSelected,
+            onWeightChanged = onOverallBorderWidthChanged
+        )
     }
 }
 
@@ -612,8 +633,12 @@ fun UchiwaBackgroundPagePreview() {
         UchiwaBackgroundPage(
             onUchiwaColorSelected = {},
             onBackgroundColorSelected = {},
+            onOverallBorderColorSelected = {},
+            onOverallBorderWidthChanged = {},
             currentUchiwaColor = DecorationColors.RED.value,
-            currentBackgroundColor = DecorationColors.BLUE.value
+            currentBackgroundColor = DecorationColors.BLUE.value,
+            currentOverallBorderColor = Color.Transparent,
+            currentOverallBorderWidth = 0f
         )
     }
 }

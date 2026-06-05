@@ -145,7 +145,9 @@ class EditViewModel @Inject constructor(
             uchiwaId = uchiwaId,
             decorations = savedUchiwa.decorations,
             uchiwaColor = savedUchiwa.uchiwaColor,
-            backgroundColor = savedUchiwa.backgroundColor
+            backgroundColor = savedUchiwa.backgroundColor,
+            overallBorderColor = savedUchiwa.overallBorderColor,
+            overallBorderWidth = savedUchiwa.overallBorderWidth
         )
 
         val imageDecorations =
@@ -176,7 +178,9 @@ class EditViewModel @Inject constructor(
                     id = uchiwaId,
                     decorations = finalDecorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
+                    backgroundColor = savedUchiwa.backgroundColor,
+                    overallBorderColor = savedUchiwa.overallBorderColor,
+                    overallBorderWidth = savedUchiwa.overallBorderWidth
                 )
             )
         }
@@ -187,6 +191,8 @@ class EditViewModel @Inject constructor(
             decorations = finalDecorations,
             uchiwaColor = savedUchiwa.uchiwaColor,
             backgroundColor = savedUchiwa.backgroundColor,
+            overallBorderColor = savedUchiwa.overallBorderColor,
+            overallBorderWidth = savedUchiwa.overallBorderWidth,
             images = currentState.images.filterNot { existing ->
                 validImages.any { it.id == existing.id }
             } + validImages
@@ -209,7 +215,9 @@ class EditViewModel @Inject constructor(
                     uchiwaId = uchiwaId,
                     decorations = decorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
+                    backgroundColor = savedUchiwa.backgroundColor,
+                    overallBorderColor = savedUchiwa.overallBorderColor,
+                    overallBorderWidth = savedUchiwa.overallBorderWidth
                 )
                 return
             }
@@ -645,6 +653,22 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
     }
 
+    fun updateOverallBorderColor(color: Color) {
+        saveSnapshot()
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_BACKGROUND_COLOR,
+            mapOf("target" to BackGroundColorParams.PARAM_OVERALL_BORDER)
+        )
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderColor = color)
+    }
+
+    fun updateOverallBorderWidth(width: Float) {
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderWidth = width)
+    }
+
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
         viewModelScope.launch {
             localImageRepository.saveImage(uri, id)
@@ -823,7 +847,9 @@ class EditViewModel @Inject constructor(
             val savedUchiwa = SavedUchiwa(
                 decorations = state.decorations,
                 uchiwaColor = state.uchiwaColor,
-                backgroundColor = state.backgroundColor
+                backgroundColor = state.backgroundColor,
+                overallBorderColor = state.overallBorderColor,
+                overallBorderWidth = state.overallBorderWidth
             )
             val code = TemplateExportUtil.exportToKotlinCode(savedUchiwa)
             Log.d("TemplateExport", code)
@@ -833,7 +859,9 @@ class EditViewModel @Inject constructor(
                     id = state.uchiwaId,
                     decorations = state.decorations,
                     uchiwaColor = state.uchiwaColor,
-                    backgroundColor = state.backgroundColor
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth
                 )
             )
             onDecorationSave(state.uchiwaId)
@@ -848,7 +876,9 @@ class EditViewModel @Inject constructor(
                     id = state.uchiwaId,
                     decorations = state.decorations,
                     uchiwaColor = state.uchiwaColor,
-                    backgroundColor = state.backgroundColor
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth
                 )
             )
             onDecorationSave(state.uchiwaId)
@@ -897,13 +927,17 @@ class EditViewModel @Inject constructor(
                     id = currentState.uchiwaId,
                     decorations = template.savedUchiwa.decorations,
                     uchiwaColor = template.savedUchiwa.uchiwaColor,
-                    backgroundColor = template.savedUchiwa.backgroundColor
+                    backgroundColor = template.savedUchiwa.backgroundColor,
+                    overallBorderColor = template.savedUchiwa.overallBorderColor,
+                    overallBorderWidth = template.savedUchiwa.overallBorderWidth
                 )
             )
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
                 decorations = template.savedUchiwa.decorations,
                 uchiwaColor = template.savedUchiwa.uchiwaColor,
-                backgroundColor = template.savedUchiwa.backgroundColor
+                backgroundColor = template.savedUchiwa.backgroundColor,
+                overallBorderColor = template.savedUchiwa.overallBorderColor,
+                overallBorderWidth = template.savedUchiwa.overallBorderWidth
             )
         }
     }

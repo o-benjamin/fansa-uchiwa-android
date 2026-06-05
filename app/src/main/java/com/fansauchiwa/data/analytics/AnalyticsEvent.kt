@@ -92,6 +92,7 @@ object EditStickerTargetParams {
 object BackGroundColorParams {
     const val PARAM_UCHIWA = "uchiwa"
     const val PARAM_BACKGROUND = "background"
+    const val PARAM_OVERALL_BORDER = "overall_border"
 }
 
 /**

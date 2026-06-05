@@ -119,6 +119,10 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
     append(savedUchiwa.backgroundColor.value.toString())
     append(";uchiwa=")
     append(savedUchiwa.uchiwaColor.value.toString())
+    append(";overallBorder=")
+    append(savedUchiwa.overallBorderColor.value.toString())
+    append(",")
+    append(savedUchiwa.overallBorderWidth.toString())
 }
 
 internal fun mainColorChipTag(color: Color): String = "main-color-chip-${color.toArgb()}"

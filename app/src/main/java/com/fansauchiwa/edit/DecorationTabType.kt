@@ -1,9 +1,12 @@
 package com.fansauchiwa.edit
 
-enum class DecorationTabType(val tabText: String) {
-    TEXT("文字"),
-    IMAGE("画像"),
-    STAMP("ステッカー"),
-    BACKGROUND("背景"),
-    LAYERS("レイヤー")
+import androidx.annotation.StringRes
+import com.fansauchiwa.R
+
+enum class DecorationTabType(@StringRes val tabTextRes: Int) {
+    TEXT(R.string.edit_tab_text),
+    IMAGE(R.string.edit_tab_image),
+    STAMP(R.string.edit_tab_sticker),
+    BACKGROUND(R.string.edit_tab_overall),
+    LAYERS(R.string.edit_tab_layers)
 }

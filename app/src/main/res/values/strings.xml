@@ -13,9 +13,15 @@
     <string name="done">完了</string>
     <string name="uchiwa_preview">うちわプレビュー</string>
     <string name="back_to_home">ホームに戻る</string>
+    <string name="edit_tab_text">文字</string>
+    <string name="edit_tab_image">画像</string>
+    <string name="edit_tab_sticker">ステッカー</string>
+    <string name="edit_tab_overall">全体</string>
+    <string name="edit_tab_layers">レイヤー</string>
     <string name="text_color_and_weight">文字色・太さ</string>
     <string name="stroke_color_and_weight">枠線色・太さ</string>
     <string name="second_stroke_color_and_weight">枠線色・太さ2</string>
+    <string name="overall_border_color_and_weight">全体の枠線</string>
     <string name="text_puffy_enabled">ぷくぷく文字（ベータ版）</string>
     <string name="sticker_puffy_enabled">ぷくぷくステッカー（ベータ版）</string>
     <string name="snackbar_input_too_short">1文字以上入力してください</string>

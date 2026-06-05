@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit
 
 import android.content.Intent
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -71,11 +72,15 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -119,6 +124,7 @@ import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import kotlin.math.ceil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -329,7 +335,9 @@ fun EditScreen(
                             modifier = Modifier.fillMaxSize(),
                             images = uiState.images,
                             uchiwaColor = uiState.uchiwaColor,
-                            backgroundColor = uiState.backgroundColor
+                            backgroundColor = uiState.backgroundColor,
+                            overallBorderColor = uiState.overallBorderColor,
+                            overallBorderWidth = uiState.overallBorderWidth
                         )
 
 
@@ -360,6 +368,8 @@ fun EditScreen(
                         selectedDeletingImages = uiState.selectedDeletingImages,
                         uchiwaColor = uiState.uchiwaColor,
                         backgroundColor = uiState.backgroundColor,
+                        overallBorderColor = uiState.overallBorderColor,
+                        overallBorderWidth = uiState.overallBorderWidth,
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported
@@ -417,6 +427,8 @@ fun EditScreen(
                         onImageToggleSelection = viewModel::toggleImageSelection,
                         onUchiwaColorSelected = viewModel::updateUchiwaColor,
                         onBackgroundColorSelected = viewModel::updateBackgroundColor,
+                        onOverallBorderColorSelected = viewModel::updateOverallBorderColor,
+                        onOverallBorderWidthChanged = viewModel::updateOverallBorderWidth,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->
                             hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
@@ -587,7 +599,9 @@ fun UchiwaPreview(
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
     uchiwaColor: Color,
-    backgroundColor: Color
+    backgroundColor: Color,
+    overallBorderColor: Color,
+    overallBorderWidth: Float
 ) {
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
     var snappedX by remember { mutableStateOf(false) }
@@ -600,6 +614,8 @@ fun UchiwaPreview(
     var wasRotationSnapped by remember { mutableStateOf(false) }
     val snapThreshold = with(LocalDensity.current) { 2.dp.toPx() }
     val hapticManager = rememberFansaHapticManager()
+    val decorationsLayer = rememberGraphicsLayer()
+    val overallBorderLayer = rememberGraphicsLayer()
     val currentOnBackgroundTap by rememberUpdatedState(onBackgroundTap)
     val currentSelectedDecoration by rememberUpdatedState(
         decorations.find { it.id == selectedDecorationId }
@@ -696,6 +712,72 @@ fun UchiwaPreview(
                 },
 
             )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    decorationsLayer.record {
+                        this@drawWithContent.drawContent()
+                    }
+                    if (shouldDrawOverallBorder(overallBorderColor, overallBorderWidth)) {
+                        overallBorderLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                        drawOverallBorder(
+                            overallBorderLayer = overallBorderLayer,
+                            decorationsLayer = decorationsLayer,
+                            overallBorderColor = overallBorderColor,
+                            overallBorderWidth = overallBorderWidth
+                        )
+                    } else {
+                        overallBorderLayer.setOutsets(0, 0, 0, 0)
+                        overallBorderLayer.colorFilter = null
+                        overallBorderLayer.renderEffect = null
+                        overallBorderLayer.scaleX = 1f
+                        overallBorderLayer.scaleY = 1f
+                        overallBorderLayer.blendMode = BlendMode.SrcOver
+                    }
+                    drawLayer(decorationsLayer)
+                }
+        ) {
+            decorations.forEach { decoration ->
+                key("overall-visual-${decoration.id}") {
+                    val currentOffset = resolveDecorationOffset(
+                        decorationId = decoration.id,
+                        selectedDecorationId = selectedDecorationId,
+                        baseOffset = decoration.offset,
+                        offsetDiff = offsetDiff
+                    )
+                    val currentScale = resolveDecorationScale(
+                        decorationId = decoration.id,
+                        selectedDecorationId = selectedDecorationId,
+                        baseScale = decoration.scale,
+                        scaleDiff = scaleDiff
+                    )
+                    val currentRotation = resolveDecorationRotation(
+                        decorationId = decoration.id,
+                        selectedDecorationId = selectedDecorationId,
+                        baseRotation = decoration.rotation,
+                        rotationDiff = rotationDiff
+                    )
+                    val decorationZIndex = resolveDecorationZIndex(
+                        decorationId = decoration.id,
+                        selectedDecorationId = selectedDecorationId
+                    )
+                    DecorationVisualItem(
+                        decoration = decoration,
+                        isSelected = false,
+                        currentOffset = currentOffset,
+                        currentScale = currentScale,
+                        currentRotation = currentRotation,
+                        imagePath = (decoration as? Decoration.Image)?.let { imageDecoration ->
+                            images.find { it.id == imageDecoration.imageId }?.path
+                        },
+                        zIndex = decorationZIndex
+                    )
+                }
+            }
+        }
         decorations.forEach { decoration ->
             key(decoration.id) {
                 val isSelected = decoration.id == selectedDecorationId
@@ -741,14 +823,6 @@ fun UchiwaPreview(
                         val decorationDpSize = with(LocalDensity.current) {
                             decorationSize.toDpSize()
                         }
-                        TextItem(
-                            decoration = decoration,
-                            isSelected = isSelected,
-                            currentOffset = currentOffset,
-                            currentScale = currentScale,
-                            currentRotation = currentRotation,
-                            zIndex = decorationZIndex,
-                        )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
                             scale = decoration.scale,
@@ -796,6 +870,16 @@ fun UchiwaPreview(
                             onTapDuplicate = { onTapDuplicate(decoration.id) },
                             zIndex = decorationZIndex,
                         )
+                        if (isSelected) {
+                            TextItem(
+                                decoration = decoration,
+                                isSelected = true,
+                                currentOffset = currentOffset,
+                                currentScale = currentScale,
+                                currentRotation = currentRotation,
+                                zIndex = decorationZIndex,
+                            )
+                        }
                     }
 
                     is Decoration.Sticker -> {
@@ -851,14 +935,16 @@ fun UchiwaPreview(
                             onTapDuplicate = { onTapDuplicate(decoration.id) },
                             zIndex = decorationZIndex,
                         )
-                        StickerItem(
-                            decoration = decoration,
-                            isSelected = isSelected,
-                            currentOffset = currentOffset,
-                            currentScale = currentScale,
-                            currentRotation = currentRotation,
-                            zIndex = decorationZIndex,
-                        )
+                        if (isSelected) {
+                            StickerItem(
+                                decoration = decoration,
+                                isSelected = true,
+                                currentOffset = currentOffset,
+                                currentScale = currentScale,
+                                currentRotation = currentRotation,
+                                zIndex = decorationZIndex,
+                            )
+                        }
                     }
 
                     is Decoration.Image -> {
@@ -917,15 +1003,17 @@ fun UchiwaPreview(
                             onTapDuplicate = { onTapDuplicate(decoration.id) },
                             zIndex = decorationZIndex,
                         )
-                        ImageItem(
-                            decoration = decoration,
-                            isSelected = isSelected,
-                            currentOffset = currentOffset,
-                            currentScale = currentScale,
-                            currentRotation = currentRotation,
-                            imagePath = images.find { it.id == decoration.imageId }?.path,
-                            zIndex = decorationZIndex,
-                        )
+                        if (isSelected) {
+                            ImageItem(
+                                decoration = decoration,
+                                isSelected = true,
+                                currentOffset = currentOffset,
+                                currentScale = currentScale,
+                                currentRotation = currentRotation,
+                                imagePath = images.find { it.id == decoration.imageId }?.path,
+                                zIndex = decorationZIndex,
+                            )
+                        }
                     }
                 }
             }
@@ -953,6 +1041,97 @@ fun UchiwaPreview(
                     )
                 }
             }
+        }
+    }
+}
+
+private fun shouldDrawOverallBorder(color: Color, width: Float): Boolean {
+    return color.alpha > 0f && width > 0f
+}
+
+private fun DrawScope.drawOverallBorder(
+    overallBorderLayer: GraphicsLayer,
+    decorationsLayer: GraphicsLayer,
+    overallBorderColor: Color,
+    overallBorderWidth: Float
+) {
+    val borderOutset = ceil(overallBorderWidth * 2f).toInt()
+    val isBlurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    overallBorderLayer.apply {
+        colorFilter = ColorFilter.tint(overallBorderColor)
+        blendMode = BlendMode.SrcOver
+        setOutsets(borderOutset, borderOutset, borderOutset, borderOutset)
+        if (isBlurSupported) {
+            renderEffect = BlurEffect(
+                radiusX = overallBorderWidth / 2f,
+                radiusY = overallBorderWidth / 2f,
+                edgeTreatment = TileMode.Decal
+            )
+            scaleX = 1f
+            scaleY = 1f
+        } else {
+            renderEffect = null
+            val widthScale = size.width.takeIf { it > 0f }
+                ?.let { 1f + (overallBorderWidth * 2f / it) }
+                ?: 1f
+            val heightScale = size.height.takeIf { it > 0f }
+                ?.let { 1f + (overallBorderWidth * 2f / it) }
+                ?: 1f
+            scaleX = widthScale
+            scaleY = heightScale
+        }
+    }
+    drawLayer(overallBorderLayer)
+
+    decorationsLayer.blendMode = BlendMode.Clear
+    drawLayer(decorationsLayer)
+    decorationsLayer.blendMode = BlendMode.SrcOver
+}
+
+@Composable
+private fun DecorationVisualItem(
+    decoration: Decoration,
+    isSelected: Boolean,
+    currentOffset: Offset,
+    currentScale: Float,
+    currentRotation: Float,
+    imagePath: String?,
+    zIndex: Float
+) {
+    when (decoration) {
+        is Decoration.Text -> {
+            TextItem(
+                decoration = decoration,
+                isSelected = isSelected,
+                currentOffset = currentOffset,
+                currentScale = currentScale,
+                currentRotation = currentRotation,
+                zIndex = zIndex
+            )
+        }
+
+        is Decoration.Sticker -> {
+            StickerItem(
+                decoration = decoration,
+                isSelected = isSelected,
+                currentOffset = currentOffset,
+                currentScale = currentScale,
+                currentRotation = currentRotation,
+                zIndex = zIndex
+            )
+        }
+
+        is Decoration.Image -> {
+            ImageItem(
+                decoration = decoration,
+                isSelected = isSelected,
+                currentOffset = currentOffset,
+                currentScale = currentScale,
+                currentRotation = currentRotation,
+                imagePath = imagePath,
+                zIndex = zIndex
+            )
         }
     }
 }

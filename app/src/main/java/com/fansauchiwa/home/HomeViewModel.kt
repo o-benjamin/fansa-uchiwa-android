@@ -190,7 +190,9 @@ class HomeViewModel @Inject constructor(
                         id = newId,
                         decorations = savedUchiwa.decorations,
                         uchiwaColor = savedUchiwa.uchiwaColor,
-                        backgroundColor = savedUchiwa.backgroundColor
+                        backgroundColor = savedUchiwa.backgroundColor,
+                        overallBorderColor = savedUchiwa.overallBorderColor,
+                        overallBorderWidth = savedUchiwa.overallBorderWidth
                     )
                 )
             }

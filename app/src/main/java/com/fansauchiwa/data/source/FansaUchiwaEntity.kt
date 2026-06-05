@@ -9,5 +9,7 @@ data class FansaUchiwaEntity(
     @PrimaryKey val id: String,
     val decorations: List<Decoration>,
     val uchiwaColorValue: Long,
-    val backgroundColorValue: Long
+    val backgroundColorValue: Long,
+    val overallBorderColorValue: Long,
+    val overallBorderWidth: Float
 )
