@@ -1055,6 +1055,8 @@ private fun DrawScope.drawOverallBorder(
     overallBorderColor: Color,
     overallBorderWidth: Float
 ) {
+    // The blurred/scaled silhouette can spill past the recorded decoration bounds,
+    // so expand the offscreen layer enough to keep the full outline visible.
     val borderOutset = ceil(overallBorderWidth * 2f).toInt()
     val isBlurSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
