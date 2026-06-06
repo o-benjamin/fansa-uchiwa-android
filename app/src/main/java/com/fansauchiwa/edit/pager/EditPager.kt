@@ -75,6 +75,9 @@ import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
+private val OVERALL_BORDER_WIDTH_RANGE = 0f..16f
+private const val OVERALL_BORDER_WIDTH_STEPS = 7
+
 @Immutable
 data class EditPagerUiState(
     val selectedDecoration: Decoration? = null,
@@ -83,8 +86,8 @@ data class EditPagerUiState(
     val selectedDeletingImages: List<String> = emptyList(),
     val uchiwaColor: Color,
     val backgroundColor: Color,
-    val overallBorderColor: Color = Color.Transparent,
-    val overallBorderWidth: Float = 0f,
+    val overallBorderColor: Color,
+    val overallBorderWidth: Float,
     val decorations: List<Decoration> = emptyList(),
     val selectedDecorationId: String? = null,
     val isPukuPukuSupported: Boolean = false
@@ -618,8 +621,8 @@ fun UchiwaBackgroundPage(
             title = stringResource(R.string.overall_border),
             color = currentOverallBorderColor,
             width = currentOverallBorderWidth,
-            valueRange = 0f..16f,
-            steps = 7,
+            valueRange = OVERALL_BORDER_WIDTH_RANGE,
+            steps = OVERALL_BORDER_WIDTH_STEPS,
             onColorSelected = onOverallBorderColorSelected,
             onWeightChanged = onOverallBorderWidthChanged
         )

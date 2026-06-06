@@ -1051,7 +1051,7 @@ private fun OverallBorderCopies(
     borderWidth: Float,
     content: @Composable (Modifier) -> Unit
 ) {
-    if (borderWidth <= 0f || borderColor.alpha <= 0f) return
+    if (borderWidth <= 0f || borderColor.alpha == 0f) return
 
     val offsets = remember(borderWidth) { buildOverallBorderOffsets(borderWidth) }
     offsets.forEach { offset ->
@@ -1068,10 +1068,17 @@ private fun buildOverallBorderOffsets(borderWidth: Float): List<Offset> {
     if (borderWidth <= 0f) return emptyList()
 
     val outerRadius = borderWidth
-    val radii = if (borderWidth > 2f) listOf(borderWidth / 2f, outerRadius) else listOf(outerRadius)
+    val radii = if (borderWidth > OVERALL_BORDER_MULTI_RING_THRESHOLD) {
+        listOf(borderWidth / 2f, outerRadius)
+    } else {
+        listOf(outerRadius)
+    }
 
     return radii.flatMap { radius ->
-        val sampleCount = (maxOf(12, ceil(radius).toInt() * 4)).coerceAtMost(24)
+        val sampleCount = maxOf(
+            OVERALL_BORDER_MIN_SAMPLE_COUNT,
+            ceil(radius).toInt() * OVERALL_BORDER_SAMPLE_MULTIPLIER
+        ).coerceAtMost(OVERALL_BORDER_MAX_SAMPLE_COUNT)
         List(sampleCount) { index ->
             val angle = (2 * Math.PI * index) / sampleCount
             Offset(
@@ -1413,6 +1420,10 @@ fun CompleteEditButton(
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
+private const val OVERALL_BORDER_MULTI_RING_THRESHOLD = 2f
+private const val OVERALL_BORDER_MIN_SAMPLE_COUNT = 12
+private const val OVERALL_BORDER_SAMPLE_MULTIPLIER = 4
+private const val OVERALL_BORDER_MAX_SAMPLE_COUNT = 24
 
 @Preview(showBackground = true)
 @Composable
