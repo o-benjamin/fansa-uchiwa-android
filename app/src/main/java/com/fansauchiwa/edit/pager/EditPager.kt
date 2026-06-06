@@ -75,9 +75,6 @@ import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-private val OVERALL_BORDER_WIDTH_RANGE = 0f..16f
-private const val OVERALL_BORDER_WIDTH_STEPS = 7
-
 @Immutable
 data class EditPagerUiState(
     val selectedDecoration: Decoration? = null,
@@ -645,3 +642,6 @@ fun UchiwaBackgroundPagePreview() {
         )
     }
 }
+
+private val OVERALL_BORDER_WIDTH_RANGE = 0f..16f
+private const val OVERALL_BORDER_WIDTH_STEPS = 7

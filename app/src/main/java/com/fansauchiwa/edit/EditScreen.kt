@@ -1420,9 +1420,13 @@ fun CompleteEditButton(
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
+// 太い枠線では内側にも補助リングを追加し、輪郭の隙間を目立ちにくくする。
 private const val OVERALL_BORDER_MULTI_RING_THRESHOLD = 2f
+// 角度サンプル数の下限。細い枠線でも円周方向の欠けを抑える。
 private const val OVERALL_BORDER_MIN_SAMPLE_COUNT = 12
+// 半径に応じてサンプル数を増やし、太い枠線でも滑らかさを維持する。
 private const val OVERALL_BORDER_SAMPLE_MULTIPLIER = 4
+// オフセットコピー数の上限。見た目と描画負荷のバランスを取る。
 private const val OVERALL_BORDER_MAX_SAMPLE_COUNT = 24
 
 @Preview(showBackground = true)

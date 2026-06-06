@@ -10,6 +10,7 @@ data class FansaUchiwaEntity(
     val decorations: List<Decoration>,
     val uchiwaColorValue: Long,
     val backgroundColorValue: Long,
+    // 既存DBの移行直後に未設定レコードも読み出せるよう、デフォルト値を持たせる。
     val overallBorderColorValue: Long = 0L,
     val overallBorderWidth: Float = 0f
 )
