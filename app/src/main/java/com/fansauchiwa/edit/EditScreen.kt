@@ -119,6 +119,9 @@ import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import kotlin.math.ceil
+import kotlin.math.cos
+import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -329,7 +332,9 @@ fun EditScreen(
                             modifier = Modifier.fillMaxSize(),
                             images = uiState.images,
                             uchiwaColor = uiState.uchiwaColor,
-                            backgroundColor = uiState.backgroundColor
+                            backgroundColor = uiState.backgroundColor,
+                            overallBorderColor = uiState.overallBorderColor,
+                            overallBorderWidth = uiState.overallBorderWidth
                         )
 
 
@@ -360,6 +365,8 @@ fun EditScreen(
                         selectedDeletingImages = uiState.selectedDeletingImages,
                         uchiwaColor = uiState.uchiwaColor,
                         backgroundColor = uiState.backgroundColor,
+                        overallBorderColor = uiState.overallBorderColor,
+                        overallBorderWidth = uiState.overallBorderWidth,
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported
@@ -417,6 +424,8 @@ fun EditScreen(
                         onImageToggleSelection = viewModel::toggleImageSelection,
                         onUchiwaColorSelected = viewModel::updateUchiwaColor,
                         onBackgroundColorSelected = viewModel::updateBackgroundColor,
+                        onOverallBorderColorSelected = viewModel::updateOverallBorderColor,
+                        onOverallBorderWidthChanged = viewModel::updateOverallBorderWidth,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->
                             hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
@@ -587,7 +596,9 @@ fun UchiwaPreview(
     modifier: Modifier = Modifier,
     images: List<ImageReference> = emptyList(),
     uchiwaColor: Color,
-    backgroundColor: Color
+    backgroundColor: Color,
+    overallBorderColor: Color,
+    overallBorderWidth: Float
 ) {
     var uchiwaSize by remember { mutableStateOf<IntSize?>(null) }
     var snappedX by remember { mutableStateOf(false) }
@@ -748,6 +759,8 @@ fun UchiwaPreview(
                             currentScale = currentScale,
                             currentRotation = currentRotation,
                             zIndex = decorationZIndex,
+                            overallBorderColor = overallBorderColor,
+                            overallBorderWidth = overallBorderWidth,
                         )
                         val handleOffset = calculateHandleOffset(
                             baseOffset = decoration.offset,
@@ -858,6 +871,8 @@ fun UchiwaPreview(
                             currentScale = currentScale,
                             currentRotation = currentRotation,
                             zIndex = decorationZIndex,
+                            overallBorderColor = overallBorderColor,
+                            overallBorderWidth = overallBorderWidth,
                         )
                     }
 
@@ -925,6 +940,8 @@ fun UchiwaPreview(
                             currentRotation = currentRotation,
                             imagePath = images.find { it.id == decoration.imageId }?.path,
                             zIndex = decorationZIndex,
+                            overallBorderColor = overallBorderColor,
+                            overallBorderWidth = overallBorderWidth,
                         )
                     }
                 }
@@ -1029,6 +1046,65 @@ private fun GestureInputLayer(
 }
 
 @Composable
+private fun OverallBorderCopies(
+    borderColor: Color,
+    borderWidth: Float,
+    content: @Composable (Modifier) -> Unit
+) {
+    if (borderWidth <= 0f || borderColor.alpha <= 0f) return
+
+    val offsets = remember(borderWidth) { buildOverallBorderOffsets(borderWidth) }
+    offsets.forEach { offset ->
+        content(
+            Modifier.graphicsLayer {
+                translationX = offset.x
+                translationY = offset.y
+            }
+        )
+    }
+}
+
+private fun buildOverallBorderOffsets(borderWidth: Float): List<Offset> {
+    if (borderWidth <= 0f) return emptyList()
+
+    val outerRadius = borderWidth
+    val radii = if (borderWidth > 2f) listOf(borderWidth / 2f, outerRadius) else listOf(outerRadius)
+
+    return radii.flatMap { radius ->
+        val sampleCount = (maxOf(12, ceil(radius).toInt() * 4)).coerceAtMost(24)
+        List(sampleCount) { index ->
+            val angle = (2 * Math.PI * index) / sampleCount
+            Offset(
+                x = (cos(angle) * radius).toFloat(),
+                y = (sin(angle) * radius).toFloat()
+            )
+        }
+    }
+}
+
+private fun Decoration.Text.toOverallBorderDecoration(color: Color): Decoration.Text {
+    return copy(
+        color = color,
+        strokeColor = color,
+        secondBorderColor = color,
+        strokeWidth = strokeWidth + secondBorderWidth,
+        secondBorderWidth = 0f,
+        isPuffyEnabled = false
+    )
+}
+
+private fun Decoration.Sticker.toOverallBorderDecoration(color: Color): Decoration.Sticker {
+    return copy(
+        color = color,
+        strokeColor = color,
+        secondStrokeColor = color,
+        strokeWidth = strokeWidth + secondStrokeWidth,
+        secondStrokeWidth = 0f,
+        isPukupuku = false
+    )
+}
+
+@Composable
 private fun TextItem(
     decoration: Decoration.Text,
     isSelected: Boolean,
@@ -1036,6 +1112,8 @@ private fun TextItem(
     currentScale: Float,
     currentRotation: Float,
     zIndex: Float,
+    overallBorderColor: Color,
+    overallBorderWidth: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1058,6 +1136,16 @@ private fun TextItem(
     )
     {
         val textSize = 24.sp.nonScaledSp
+        OverallBorderCopies(
+            borderColor = overallBorderColor,
+            borderWidth = overallBorderWidth
+        ) { modifier ->
+            TextItemContent(
+                decoration = decoration.toOverallBorderDecoration(overallBorderColor),
+                textSize = textSize,
+                modifier = modifier
+            )
+        }
         TextItemContent(
             decoration = decoration,
             textSize = textSize,
@@ -1077,6 +1165,8 @@ private fun StickerItem(
     currentScale: Float,
     currentRotation: Float,
     zIndex: Float,
+    overallBorderColor: Color,
+    overallBorderWidth: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1096,6 +1186,15 @@ private fun StickerItem(
             .wrapContentSize()
     )
     {
+        OverallBorderCopies(
+            borderColor = overallBorderColor,
+            borderWidth = overallBorderWidth
+        ) { modifier ->
+            StickerItemContent(
+                decoration = decoration.toOverallBorderDecoration(overallBorderColor),
+                modifier = modifier,
+            )
+        }
         StickerItemContent(
             decoration = decoration,
             modifier = borderModifier,
@@ -1115,6 +1214,8 @@ private fun ImageItem(
     currentRotation: Float,
     imagePath: String?,
     zIndex: Float,
+    overallBorderColor: Color,
+    overallBorderWidth: Float,
 ) {
     val borderColor = getSelectionBorderColor(currentRotation)
     val borderModifier = if (isSelected) Modifier
@@ -1134,6 +1235,18 @@ private fun ImageItem(
             .wrapContentSize()
     )
     {
+        OverallBorderCopies(
+            borderColor = overallBorderColor,
+            borderWidth = overallBorderWidth
+        ) { modifier ->
+            ImageItemContent(
+                decoration = decoration,
+                imagePath = imagePath,
+                size = IMAGE_SIZE_DEFAULT,
+                modifier = modifier,
+                colorFilter = ColorFilter.tint(overallBorderColor),
+            )
+        }
         ImageItemContent(
             decoration = decoration,
             imagePath = imagePath,
@@ -1324,6 +1437,8 @@ private fun StickerItemPreview() {
                 currentScale = 1f,
                 currentRotation = 0f,
                 zIndex = SELECTED_DECORATION_Z_INDEX,
+                overallBorderColor = Color.Black,
+                overallBorderWidth = 8f,
             )
         }
     }
@@ -1352,6 +1467,8 @@ private fun TextItemPreview() {
                 currentScale = 1f,
                 currentRotation = 0f,
                 zIndex = SELECTED_DECORATION_Z_INDEX,
+                overallBorderColor = Color.White,
+                overallBorderWidth = 8f,
             )
         }
     }

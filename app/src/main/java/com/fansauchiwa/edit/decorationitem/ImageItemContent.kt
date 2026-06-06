@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,8 @@ fun ImageItemContent(
     decoration: Decoration.Image,
     imagePath: String?,
     size: Dp,
-    modifier: Modifier
+    modifier: Modifier,
+    colorFilter: ColorFilter? = null
 ) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
@@ -36,6 +38,7 @@ fun ImageItemContent(
             .allowHardware(false)
             .build(),
         contentDescription = null,
+        colorFilter = colorFilter,
         modifier = modifier
             .size(size)
     )
@@ -60,4 +63,3 @@ private fun ImageItemContentPreview() {
 }
 
 // endregion
-

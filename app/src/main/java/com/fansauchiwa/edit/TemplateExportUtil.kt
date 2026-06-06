@@ -21,7 +21,9 @@ object TemplateExportUtil {
             appendLine(decorationsCode.prependIndent("        "))
             appendLine("    ),")
             appendLine("    uchiwaColor = ${colorToCode(uchiwa.uchiwaColor)},")
-            appendLine("    backgroundColor = ${colorToCode(uchiwa.backgroundColor)}")
+            appendLine("    backgroundColor = ${colorToCode(uchiwa.backgroundColor)},")
+            appendLine("    overallBorderColor = ${colorToCode(uchiwa.overallBorderColor)},")
+            appendLine("    overallBorderWidth = ${uchiwa.overallBorderWidth}f")
             append(")")
         }
     }

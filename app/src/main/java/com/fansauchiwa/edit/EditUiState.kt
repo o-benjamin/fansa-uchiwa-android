@@ -23,6 +23,8 @@ data class EditUiState(
     val savedPath: String? = null,
     val uchiwaColor: Color = Color(0xFF000000),
     val backgroundColor: Color = Color(0x11000000),
+    val overallBorderColor: Color = Color.Transparent,
+    val overallBorderWidth: Float = 0f,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val showImageDeleteWarningDialog: Boolean = false,
