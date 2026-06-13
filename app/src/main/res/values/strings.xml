@@ -18,6 +18,7 @@
     <string name="second_stroke_color_and_weight">枠線色・太さ2</string>
     <string name="text_puffy_enabled">ぷくぷく文字（ベータ版）</string>
     <string name="sticker_puffy_enabled">ぷくぷくステッカー（ベータ版）</string>
+    <string name="overall_border_puffy_enabled">ぷくぷくフチ（ベータ版）</string>
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
     <string name="snackbar_puku_puku_unsupported">このエフェクトはAndroid 13以上の端末でのみご利用いただけます</string>
     <string name="snackbar_saved">画像を保存しました</string>
@@ -89,6 +90,12 @@
     <string name="official_site">公式サイト</string>
     <string name="badge_ranking">No.%d</string>
     <string name="badge_new">New</string>
+    <string name="edit_tab_text">文字</string>
+    <string name="edit_tab_image">画像</string>
+    <string name="edit_tab_sticker">ステッカー</string>
+    <string name="edit_tab_overall">全体</string>
+    <string name="edit_tab_layers">レイヤー</string>
+    <string name="overall_border">全体の縁</string>
 
     <!-- SelectionCircleIcon -->
     <string name="selection_circle_icon_selected">Selected</string>

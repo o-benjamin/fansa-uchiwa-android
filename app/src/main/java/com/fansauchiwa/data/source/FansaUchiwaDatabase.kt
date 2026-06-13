@@ -15,7 +15,7 @@ import com.fansauchiwa.data.Converters
         EventEntity::class,
         EventUchiwaCrossRef::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -114,13 +114,27 @@ abstract class FansaUchiwaDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE `fansa_uchiwa_data` ADD COLUMN `overallBorderColorValue` INTEGER NOT NULL DEFAULT 4294967295"
+                )
+                database.execSQL(
+                    "ALTER TABLE `fansa_uchiwa_data` ADD COLUMN `overallBorderWidth` REAL NOT NULL DEFAULT 0"
+                )
+                database.execSQL(
+                    "ALTER TABLE `fansa_uchiwa_data` ADD COLUMN `isOverallBorderPuffyEnabled` INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun build(context: Context): FansaUchiwaDatabase {
             return Room.databaseBuilder(
                 context.applicationContext,
                 FansaUchiwaDatabase::class.java,
                 "uchiwaData.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
         }
     }
