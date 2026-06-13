@@ -629,7 +629,7 @@ fun UchiwaBackgroundPage(
             color = currentOverallBorderColor,
             width = currentOverallBorderWidth,
             valueRange = 0f..24f,
-            steps = 5,
+            steps = 2,
             onColorSelected = onOverallBorderColorSelected,
             onWeightChanged = onOverallBorderWeightChanged
         )
