@@ -3,11 +3,8 @@ package com.fansauchiwa.edit
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BlurMaskFilter
-import android.graphics.Canvas as AndroidCanvas
-import android.graphics.Color as AndroidColor
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint as AndroidPaint
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -82,16 +79,15 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Canvas as ComposeCanvas
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
-import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -100,7 +96,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -138,6 +133,10 @@ import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
+import android.graphics.Canvas as AndroidCanvas
+import android.graphics.Color as AndroidColor
+import android.graphics.Paint as AndroidPaint
+import androidx.compose.ui.graphics.Canvas as ComposeCanvas
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -928,7 +927,8 @@ fun UchiwaPreview(
                                         platformStyle = PlatformTextStyle(includeFontPadding = false)
                                     )
                                 )
-                                val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
+                                val maxStroke =
+                                    decoration.strokeWidth + decoration.secondBorderWidth
                                 val decorationSize = Size(
                                     layoutResult.size.width + maxStroke,
                                     layoutResult.size.height + maxStroke
@@ -973,7 +973,8 @@ fun UchiwaPreview(
                                             hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                                         }
                                         wasRotationSnapped = rotationResult.isSnapped
-                                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
+                                        rotationDiff =
+                                            rotationResult.snappedRotation - decoration.rotation
                                     },
                                     onTransformEnd = {
                                         commitDecorationTransform(decoration)
@@ -991,11 +992,7 @@ fun UchiwaPreview(
                                         borderColor = getSelectionBorderColor(currentRotation),
                                         currentScale = currentScale,
                                         modifier = Modifier
-                                            .testTag("TextItemBorder")
-                                            .semantics {
-                                                this.borderColor =
-                                                    getSelectionBorderColor(currentRotation)
-                                            },
+                                            .testTag("TextItemBorder"),
                                         zIndex = decorationZIndex + 0.1f
                                     )
                                 }
@@ -1043,7 +1040,8 @@ fun UchiwaPreview(
                                             hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                                         }
                                         wasRotationSnapped = rotationResult.isSnapped
-                                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
+                                        rotationDiff =
+                                            rotationResult.snappedRotation - decoration.rotation
                                     },
                                     onTransformEnd = {
                                         commitDecorationTransform(decoration)
@@ -1066,7 +1064,8 @@ fun UchiwaPreview(
                             }
 
                             is Decoration.Image -> {
-                                val decorationDpSize = DpSize(IMAGE_SIZE_DEFAULT, IMAGE_SIZE_DEFAULT)
+                                val decorationDpSize =
+                                    DpSize(IMAGE_SIZE_DEFAULT, IMAGE_SIZE_DEFAULT)
                                 val decorationSize = with(density) {
                                     Size(
                                         IMAGE_SIZE_DEFAULT.toPx(),
@@ -1112,7 +1111,8 @@ fun UchiwaPreview(
                                             hapticManager.perform(FansaHapticType.SEGMENT_TICK)
                                         }
                                         wasRotationSnapped = rotationResult.isSnapped
-                                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
+                                        rotationDiff =
+                                            rotationResult.snappedRotation - decoration.rotation
                                     },
                                     onTransformEnd = {
                                         commitDecorationTransform(decoration)
@@ -1187,8 +1187,13 @@ private fun SelectionOutline(
                 rotationZ = rotation
             }
             .size(decorationSize)
-            .border(1.dp, borderColor)
     ) {
+        // Iconをborderよりも上層に表示するため、親Boxにborderをつけるのではなく、同じサイズの子Boxにborderをつけ、描画順を固定する
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(1.dp, borderColor)
+        )
         DecorationHandleIcons(currentScale = currentScale)
     }
 }
@@ -1609,7 +1614,6 @@ private fun StickerItemPreview() {
                     secondStrokeColor = Color(0xFFFF0000),
                     secondStrokeWidth = 5f
                 ),
-                isSelected = true,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
@@ -1637,7 +1641,6 @@ private fun TextItemPreview() {
                     width = 900,
                     font = FontFamilies.ZEN_MARU_GOTHIC
                 ),
-                isSelected = true,
                 currentOffset = Offset.Zero,
                 currentScale = 1f,
                 currentRotation = 0f,
