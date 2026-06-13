@@ -26,7 +26,10 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
             id = uchiwa.id,
             decorations = uchiwa.decorations,
             uchiwaColorValue = uchiwa.uchiwaColor.toColorLong(),
-            backgroundColorValue = uchiwa.backgroundColor.toColorLong()
+            backgroundColorValue = uchiwa.backgroundColor.toColorLong(),
+            overallBorderColorValue = uchiwa.overallBorderColor.toColorLong(),
+            overallBorderWidth = uchiwa.overallBorderWidth,
+            isOverallBorderPuffyEnabled = uchiwa.isOverallBorderPuffyEnabled
         )
         return fansaUchiwaDao.upsertUchiwaData(fansaUchiwaEntity)
     }
@@ -38,7 +41,10 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
                 id = it.id,
                 decorations = it.decorations,
                 uchiwaColor = Color(it.uchiwaColorValue.toULong()),
-                backgroundColor = Color(it.backgroundColorValue.toULong())
+                backgroundColor = Color(it.backgroundColorValue.toULong()),
+                overallBorderColor = Color(it.overallBorderColorValue.toULong()),
+                overallBorderWidth = it.overallBorderWidth,
+                isOverallBorderPuffyEnabled = it.isOverallBorderPuffyEnabled
             )
         }
     }
@@ -54,7 +60,10 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
                     id = entity.id,
                     decorations = entity.decorations,
                     uchiwaColor = Color(entity.uchiwaColorValue.toULong()),
-                    backgroundColor = Color(entity.backgroundColorValue.toULong())
+                    backgroundColor = Color(entity.backgroundColorValue.toULong()),
+                    overallBorderColor = Color(entity.overallBorderColorValue.toULong()),
+                    overallBorderWidth = entity.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = entity.isOverallBorderPuffyEnabled
                 )
             }
         }

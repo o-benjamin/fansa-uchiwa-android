@@ -145,7 +145,10 @@ class EditViewModel @Inject constructor(
             uchiwaId = uchiwaId,
             decorations = savedUchiwa.decorations,
             uchiwaColor = savedUchiwa.uchiwaColor,
-            backgroundColor = savedUchiwa.backgroundColor
+            backgroundColor = savedUchiwa.backgroundColor,
+            overallBorderColor = savedUchiwa.overallBorderColor,
+            overallBorderWidth = savedUchiwa.overallBorderWidth,
+            isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
         )
 
         val imageDecorations =
@@ -176,7 +179,10 @@ class EditViewModel @Inject constructor(
                     id = uchiwaId,
                     decorations = finalDecorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
+                    backgroundColor = savedUchiwa.backgroundColor,
+                    overallBorderColor = savedUchiwa.overallBorderColor,
+                    overallBorderWidth = savedUchiwa.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
                 )
             )
         }
@@ -187,6 +193,9 @@ class EditViewModel @Inject constructor(
             decorations = finalDecorations,
             uchiwaColor = savedUchiwa.uchiwaColor,
             backgroundColor = savedUchiwa.backgroundColor,
+            overallBorderColor = savedUchiwa.overallBorderColor,
+            overallBorderWidth = savedUchiwa.overallBorderWidth,
+            isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled,
             images = currentState.images.filterNot { existing ->
                 validImages.any { it.id == existing.id }
             } + validImages
@@ -209,7 +218,10 @@ class EditViewModel @Inject constructor(
                     uchiwaId = uchiwaId,
                     decorations = decorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
+                    backgroundColor = savedUchiwa.backgroundColor,
+                    overallBorderColor = savedUchiwa.overallBorderColor,
+                    overallBorderWidth = savedUchiwa.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
                 )
                 return
             }
@@ -645,6 +657,32 @@ class EditViewModel @Inject constructor(
         savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
     }
 
+    fun updateOverallBorderColor(color: Color) {
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderColor = color)
+    }
+
+    fun updateOverallBorderWidth(width: Float) {
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderWidth = width)
+    }
+
+    fun updateOverallBorderPuffyEnabled(isEnabled: Boolean) {
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            isOverallBorderPuffyEnabled = isEnabled
+        )
+    }
+
+    fun setDragging(isDragging: Boolean) {
+        val currentState = uiState.value
+        if (currentState.isDragging == isDragging) return
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(isDragging = isDragging)
+    }
+
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
         viewModelScope.launch {
             localImageRepository.saveImage(uri, id)
@@ -823,7 +861,10 @@ class EditViewModel @Inject constructor(
             val savedUchiwa = SavedUchiwa(
                 decorations = state.decorations,
                 uchiwaColor = state.uchiwaColor,
-                backgroundColor = state.backgroundColor
+                backgroundColor = state.backgroundColor,
+                overallBorderColor = state.overallBorderColor,
+                overallBorderWidth = state.overallBorderWidth,
+                isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
             )
             val code = TemplateExportUtil.exportToKotlinCode(savedUchiwa)
             Log.d("TemplateExport", code)
@@ -833,7 +874,10 @@ class EditViewModel @Inject constructor(
                     id = state.uchiwaId,
                     decorations = state.decorations,
                     uchiwaColor = state.uchiwaColor,
-                    backgroundColor = state.backgroundColor
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
                 )
             )
             onDecorationSave(state.uchiwaId)
@@ -848,7 +892,10 @@ class EditViewModel @Inject constructor(
                     id = state.uchiwaId,
                     decorations = state.decorations,
                     uchiwaColor = state.uchiwaColor,
-                    backgroundColor = state.backgroundColor
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
                 )
             )
             onDecorationSave(state.uchiwaId)
@@ -873,7 +920,8 @@ class EditViewModel @Inject constructor(
             userMessage = null,
             isDeletingImage = false,
             selectedDeletingImages = emptyList(),
-            savedPath = null
+            savedPath = null,
+            isDragging = false
         )
     }
 
@@ -897,13 +945,19 @@ class EditViewModel @Inject constructor(
                     id = currentState.uchiwaId,
                     decorations = template.savedUchiwa.decorations,
                     uchiwaColor = template.savedUchiwa.uchiwaColor,
-                    backgroundColor = template.savedUchiwa.backgroundColor
+                    backgroundColor = template.savedUchiwa.backgroundColor,
+                    overallBorderColor = template.savedUchiwa.overallBorderColor,
+                    overallBorderWidth = template.savedUchiwa.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = template.savedUchiwa.isOverallBorderPuffyEnabled
                 )
             )
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
                 decorations = template.savedUchiwa.decorations,
                 uchiwaColor = template.savedUchiwa.uchiwaColor,
-                backgroundColor = template.savedUchiwa.backgroundColor
+                backgroundColor = template.savedUchiwa.backgroundColor,
+                overallBorderColor = template.savedUchiwa.overallBorderColor,
+                overallBorderWidth = template.savedUchiwa.overallBorderWidth,
+                isOverallBorderPuffyEnabled = template.savedUchiwa.isOverallBorderPuffyEnabled
             )
         }
     }

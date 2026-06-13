@@ -83,6 +83,9 @@ data class EditPagerUiState(
     val selectedDeletingImages: List<String> = emptyList(),
     val uchiwaColor: Color,
     val backgroundColor: Color,
+    val overallBorderColor: Color,
+    val overallBorderWidth: Float,
+    val isOverallBorderPuffyEnabled: Boolean,
     val decorations: List<Decoration> = emptyList(),
     val selectedDecorationId: String? = null,
     val isPukuPukuSupported: Boolean = false
@@ -106,6 +109,9 @@ data class EditPagerActions(
     val onImageToggleSelection: (String) -> Unit,
     val onUchiwaColorSelected: (Color) -> Unit,
     val onBackgroundColorSelected: (Color) -> Unit,
+    val onOverallBorderColorSelected: (Color) -> Unit,
+    val onOverallBorderWeightChanged: (Float) -> Unit,
+    val onOverallBorderPuffyEnabledChanged: (Boolean) -> Unit,
     val onDecorationClick: (String) -> Unit,
     val onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
 )
@@ -207,8 +213,16 @@ fun EditPager(
                     UchiwaBackgroundPage(
                         onUchiwaColorSelected = actions.onUchiwaColorSelected,
                         onBackgroundColorSelected = actions.onBackgroundColorSelected,
+                        onOverallBorderColorSelected = actions.onOverallBorderColorSelected,
+                        onOverallBorderWeightChanged = actions.onOverallBorderWeightChanged,
+                        onOverallBorderPuffyEnabledChanged = actions.onOverallBorderPuffyEnabledChanged,
+                        onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
                         currentUchiwaColor = state.uchiwaColor,
-                        currentBackgroundColor = state.backgroundColor
+                        currentBackgroundColor = state.backgroundColor,
+                        currentOverallBorderColor = state.overallBorderColor,
+                        currentOverallBorderWidth = state.overallBorderWidth,
+                        isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled,
+                        isPukuPukuSupported = state.isPukuPukuSupported
                     )
                 }
 
@@ -249,7 +263,7 @@ private fun EditPagerTabRow(
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { onTabSelected(index) },
-                    text = { Text(text = title.tabText, maxLines = 1) }
+                    text = { Text(text = stringResource(title.tabTextRes), maxLines = 1) }
                 )
             }
         }
@@ -567,8 +581,16 @@ fun UchiwaBackgroundPage(
     modifier: Modifier = Modifier,
     onUchiwaColorSelected: (Color) -> Unit,
     onBackgroundColorSelected: (Color) -> Unit,
+    onOverallBorderColorSelected: (Color) -> Unit,
+    onOverallBorderWeightChanged: (Float) -> Unit,
+    onOverallBorderPuffyEnabledChanged: (Boolean) -> Unit,
+    onPuffyUnsupportedClick: () -> Unit,
     currentUchiwaColor: Color,
-    currentBackgroundColor: Color
+    currentBackgroundColor: Color,
+    currentOverallBorderColor: Color,
+    currentOverallBorderWidth: Float,
+    isOverallBorderPuffyEnabled: Boolean,
+    isPukuPukuSupported: Boolean
 ) {
     val scrollState = rememberScrollState()
 
@@ -602,6 +624,22 @@ fun UchiwaBackgroundPage(
             modifier = Modifier.padding(top = 8.dp),
             currentColor = currentBackgroundColor
         )
+        ColorAndWeightControl(
+            title = stringResource(R.string.overall_border),
+            color = currentOverallBorderColor,
+            width = currentOverallBorderWidth,
+            valueRange = 0f..24f,
+            steps = 5,
+            onColorSelected = onOverallBorderColorSelected,
+            onWeightChanged = onOverallBorderWeightChanged
+        )
+        PuffyEffectToggleRow(
+            label = stringResource(R.string.overall_border_puffy_enabled),
+            isEnabled = isPukuPukuSupported,
+            isChecked = isOverallBorderPuffyEnabled,
+            onCheckedChange = onOverallBorderPuffyEnabledChanged,
+            onUnsupportedClick = onPuffyUnsupportedClick
+        )
     }
 }
 
@@ -612,8 +650,16 @@ fun UchiwaBackgroundPagePreview() {
         UchiwaBackgroundPage(
             onUchiwaColorSelected = {},
             onBackgroundColorSelected = {},
+            onOverallBorderColorSelected = {},
+            onOverallBorderWeightChanged = {},
+            onOverallBorderPuffyEnabledChanged = {},
+            onPuffyUnsupportedClick = {},
             currentUchiwaColor = DecorationColors.RED.value,
-            currentBackgroundColor = DecorationColors.BLUE.value
+            currentBackgroundColor = DecorationColors.BLUE.value,
+            currentOverallBorderColor = DecorationColors.WHITE.value,
+            currentOverallBorderWidth = 8f,
+            isOverallBorderPuffyEnabled = true,
+            isPukuPukuSupported = true
         )
     }
 }
