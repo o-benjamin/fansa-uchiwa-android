@@ -106,8 +106,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -1187,8 +1189,8 @@ private fun SelectionOutline(
 
 private fun captureGraphicsLayerBitmap(
     graphicsLayer: GraphicsLayer,
-    density: androidx.compose.ui.unit.Density,
-    layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+    density: Density,
+    layoutDirection: LayoutDirection,
     targetSize: IntSize
 ): Bitmap {
     val safeWidth = targetSize.width.coerceAtLeast(1)
@@ -1212,7 +1214,7 @@ private fun createOverallBorderMaskBitmap(
 ): Bitmap? {
     val blurPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
         maskFilter = BlurMaskFilter(
-            (overallBorderWidth * 3f).coerceAtLeast(1f),
+            (overallBorderWidth * OVERALL_BORDER_BLUR_RADIUS_MULTIPLIER).coerceAtLeast(1f),
             BlurMaskFilter.Blur.NORMAL
         )
     }
@@ -1225,16 +1227,7 @@ private fun createOverallBorderMaskBitmap(
     )
     val canvas = AndroidCanvas(maskBitmap)
     val maskPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-        colorFilter = ColorMatrixColorFilter(
-            ColorMatrix(
-                floatArrayOf(
-                    0f, 0f, 0f, 0f, 255f,
-                    0f, 0f, 0f, 0f, 255f,
-                    0f, 0f, 0f, 0f, 255f,
-                    0f, 0f, 0f, 255f, 0f
-                )
-            )
-        )
+        colorFilter = ColorMatrixColorFilter(createOverallBorderMaskColorMatrix())
     }
     canvas.drawBitmap(blurredAlphaBitmap, offset[0].toFloat(), offset[1].toFloat(), maskPaint)
     blurredAlphaBitmap.recycle()
@@ -1252,20 +1245,29 @@ private fun createOverallBorderBitmap(
     )
     val androidColor = borderColor.toArgb()
     val colorPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-        colorFilter = ColorMatrixColorFilter(
-            ColorMatrix(
-                floatArrayOf(
-                    0f, 0f, 0f, 0f, AndroidColor.red(androidColor).toFloat(),
-                    0f, 0f, 0f, 0f, AndroidColor.green(androidColor).toFloat(),
-                    0f, 0f, 0f, 0f, AndroidColor.blue(androidColor).toFloat(),
-                    0f, 0f, 0f, 1f, 0f
-                )
-            )
-        )
+        colorFilter = ColorMatrixColorFilter(createOverallBorderColorMatrix(androidColor))
     }
     AndroidCanvas(coloredBitmap).drawBitmap(maskBitmap, 0f, 0f, colorPaint)
     return coloredBitmap
 }
+
+private fun createOverallBorderMaskColorMatrix(): ColorMatrix = ColorMatrix(
+    floatArrayOf(
+        0f, 0f, 0f, 0f, 255f,
+        0f, 0f, 0f, 0f, 255f,
+        0f, 0f, 0f, 0f, 255f,
+        0f, 0f, 0f, 255f, 0f
+    )
+)
+
+private fun createOverallBorderColorMatrix(androidColor: Int): ColorMatrix = ColorMatrix(
+    floatArrayOf(
+        0f, 0f, 0f, 0f, AndroidColor.red(androidColor).toFloat(),
+        0f, 0f, 0f, 0f, AndroidColor.green(androidColor).toFloat(),
+        0f, 0f, 0f, 0f, AndroidColor.blue(androidColor).toFloat(),
+        0f, 0f, 0f, 1f, 0f
+    )
+)
 
 @Composable
 private fun GestureInputLayer(
@@ -1581,6 +1583,7 @@ fun CompleteEditButton(
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
+private const val OVERALL_BORDER_BLUR_RADIUS_MULTIPLIER = 3f
 
 @Preview(showBackground = true)
 @Composable
