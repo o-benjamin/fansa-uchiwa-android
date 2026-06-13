@@ -60,6 +60,7 @@ fun ColorAndWeightControl(
     modifier: Modifier = Modifier,
     onColorSelected: (Color) -> Unit = {},
     onWeightChanged: (Float) -> Unit = {},
+    onWeightChangedFinished: () -> Unit = {},
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
     val hapticManager = rememberFansaHapticManager()
@@ -110,6 +111,7 @@ fun ColorAndWeightControl(
                     isColorPickerOpen.value = false
                     hapticManager.perform(FansaHapticType.SEGMENT_FREQUENT_TICK)
                 },
+                onValueChangeFinished = onWeightChangedFinished,
                 valueRange = valueRange,
                 steps = steps,
                 modifier = Modifier.weight(1f)
@@ -194,7 +196,8 @@ fun ColorAndWeightControlPreview() {
             valueRange = 1f..10f,
             steps = 8,
             onColorSelected = {},
-            onWeightChanged = {}
+            onWeightChanged = {},
+            onWeightChangedFinished = {}
         )
     }
 }

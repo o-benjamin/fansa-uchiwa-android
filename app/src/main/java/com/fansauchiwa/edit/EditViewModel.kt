@@ -81,6 +81,7 @@ class EditViewModel @Inject constructor(
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
+    private var pendingSliderSnapshot: HistorySnapshot? = null
     private var hasShownCompletionTooltipInSession = false
 
     init {
@@ -535,44 +536,56 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateWidth(id: String, newWidth: Int) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                        mapOf("target" to EditTextTargetParams.TEXT)
-                    )
-                    decoration.copy(width = newWidth)
-                }
+                is Decoration.Text -> decoration.copy(width = newWidth)
 
                 else -> decoration
             }
         }
     }
 
+    fun finishWidthChange(id: String) {
+        if (!savePendingSliderSnapshot()) return
+        if (uiState.value.decorations.find { it.id == id } is Decoration.Text) {
+            logEvent(
+                AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                mapOf("target" to EditTextTargetParams.TEXT)
+            )
+        }
+    }
+
     fun updateStrokeWidth(id: String, newWidth: Float) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_1)
-                    )
-                    decoration.copy(strokeWidth = newWidth)
-                }
-
-                is Decoration.Sticker -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
-                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_1)
-                    )
-                    decoration.copy(strokeWidth = newWidth)
-                }
+                is Decoration.Text -> decoration.copy(strokeWidth = newWidth)
+                is Decoration.Sticker -> decoration.copy(strokeWidth = newWidth)
 
                 is Decoration.Image -> decoration.copy(strokeWidth = newWidth)
             }
+        }
+    }
+
+    fun finishStrokeWidthChange(id: String) {
+        if (!savePendingSliderSnapshot()) return
+        when (uiState.value.decorations.find { it.id == id }) {
+            is Decoration.Text -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                    mapOf("target" to EditTextTargetParams.PARAM_STROKE_1)
+                )
+            }
+
+            is Decoration.Sticker -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
+                    mapOf("target" to EditStickerTargetParams.PARAM_STROKE_1)
+                )
+            }
+
+            else -> Unit
         }
     }
 
@@ -602,27 +615,35 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateSecondBorderWidth(id: String, newWidth: Float) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_2)
-                    )
-                    decoration.copy(secondBorderWidth = newWidth)
-                }
-
-                is Decoration.Sticker -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
-                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_2)
-                    )
-                    decoration.copy(secondStrokeWidth = newWidth)
-                }
+                is Decoration.Text -> decoration.copy(secondBorderWidth = newWidth)
+                is Decoration.Sticker -> decoration.copy(secondStrokeWidth = newWidth)
 
                 else -> decoration
             }
+        }
+    }
+
+    fun finishSecondBorderWidthChange(id: String) {
+        if (!savePendingSliderSnapshot()) return
+        when (uiState.value.decorations.find { it.id == id }) {
+            is Decoration.Text -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                    mapOf("target" to EditTextTargetParams.PARAM_STROKE_2)
+                )
+            }
+
+            is Decoration.Sticker -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
+                    mapOf("target" to EditStickerTargetParams.PARAM_STROKE_2)
+                )
+            }
+
+            else -> Unit
         }
     }
 
@@ -664,9 +685,13 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateOverallBorderWidth(width: Float) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderWidth = width)
+    }
+
+    fun finishOverallBorderWidthChange() {
+        savePendingSliderSnapshot()
     }
 
     fun updateOverallBorderPuffyEnabled(isEnabled: Boolean) {
@@ -720,8 +745,24 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    private fun saveSnapshot() {
-        val snapshot = HistorySnapshot.from(uiState.value)
+    private fun capturePendingSliderSnapshot() {
+        if (pendingSliderSnapshot == null) {
+            pendingSliderSnapshot = HistorySnapshot.from(uiState.value)
+        }
+    }
+
+    private fun savePendingSliderSnapshot(): Boolean {
+        val snapshot = pendingSliderSnapshot ?: return false
+        pendingSliderSnapshot = null
+        if (snapshot == HistorySnapshot.from(uiState.value)) {
+            return false
+        }
+        saveSnapshot(snapshot)
+        return true
+    }
+
+    private fun saveSnapshot(snapshot: HistorySnapshot = HistorySnapshot.from(uiState.value)) {
+        pendingSliderSnapshot = null
         undoStack.addLast(snapshot)
         if (undoStack.size > MAX_HISTORY_SIZE) {
             undoStack.removeFirst()
