@@ -108,6 +108,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -119,6 +120,7 @@ import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsBackDialogActions
 import com.fansauchiwa.data.captureHighResBitmap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
+import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
 import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
@@ -793,6 +795,11 @@ fun UchiwaPreview(
 
             )
         Box(modifier = Modifier.matchParentSize()) {
+            val overallBorderShaderParams = remember {
+                PuffyShaderParams(
+                    edgeWidthMulti = 7.0f
+                )
+            }
             if (shouldRenderOverallBorder) {
                 when {
                     overallBorderSdfBitmap != null -> {
@@ -800,7 +807,8 @@ fun UchiwaPreview(
                             sdfTextureBitmap = overallBorderSdfBitmap!!,
                             baseColor = overallBorderColor,
                             scaleFactor = 1f,
-                            modifier = Modifier.matchParentSize()
+                            modifier = Modifier.matchParentSize(),
+                            shaderParams = overallBorderShaderParams
                         )
                     }
 
@@ -1206,7 +1214,7 @@ private fun captureGraphicsLayerBitmap(
 ): Bitmap {
     val safeWidth = targetSize.width.coerceAtLeast(1)
     val safeHeight = targetSize.height.coerceAtLeast(1)
-    val bitmap = Bitmap.createBitmap(safeWidth, safeHeight, Bitmap.Config.ARGB_8888)
+    val bitmap = createBitmap(safeWidth, safeHeight)
     val canvas = ComposeCanvas(AndroidCanvas(bitmap))
     CanvasDrawScope().draw(
         density = density,
@@ -1231,16 +1239,18 @@ private fun createOverallBorderMaskBitmap(
     }
     val offset = IntArray(2)
     val blurredAlphaBitmap = sourceBitmap.extractAlpha(blurPaint, offset) ?: return null
-    val maskBitmap = Bitmap.createBitmap(
-        sourceBitmap.width,
-        sourceBitmap.height,
-        Bitmap.Config.ARGB_8888
-    )
+    val maskBitmap = createBitmap(sourceBitmap.width, sourceBitmap.height)
     val canvas = AndroidCanvas(maskBitmap)
     val maskPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
         colorFilter = ColorMatrixColorFilter(createOverallBorderMaskColorMatrix())
     }
     canvas.drawBitmap(blurredAlphaBitmap, offset[0].toFloat(), offset[1].toFloat(), maskPaint)
+
+    val clearPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
+        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OUT)
+    }
+    canvas.drawBitmap(sourceBitmap, 0f, 0f, clearPaint)
+
     blurredAlphaBitmap.recycle()
     return maskBitmap
 }
@@ -1249,11 +1259,7 @@ private fun createOverallBorderBitmap(
     maskBitmap: Bitmap,
     borderColor: Color
 ): Bitmap {
-    val coloredBitmap = Bitmap.createBitmap(
-        maskBitmap.width,
-        maskBitmap.height,
-        Bitmap.Config.ARGB_8888
-    )
+    val coloredBitmap = createBitmap(maskBitmap.width, maskBitmap.height)
     val androidColor = borderColor.toArgb()
     val colorPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
         colorFilter = ColorMatrixColorFilter(createOverallBorderColorMatrix(androidColor))
@@ -1592,7 +1598,6 @@ fun CompleteEditButton(
 }
 
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
-internal val TEXT_ITEM_PADDING = 8.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
 private const val OVERALL_BORDER_BLUR_RADIUS_MULTIPLIER = 3f
 
