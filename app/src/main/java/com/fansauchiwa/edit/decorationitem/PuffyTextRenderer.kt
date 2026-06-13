@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -392,6 +393,7 @@ fun PuffyTextRenderer(
             .fillMaxSize()
             .drawBehind {
                 drawIntoCanvas { canvas ->
+                    if (!canvas.nativeCanvas.isHardwareAccelerated) return@drawIntoCanvas
                     canvas.drawRect(
                         left = 0f,
                         top = 0f,

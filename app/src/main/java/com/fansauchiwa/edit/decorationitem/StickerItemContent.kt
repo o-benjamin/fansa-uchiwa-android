@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
@@ -161,10 +162,11 @@ fun StickerItemContent(
     ) {
         // 通常描画（ぷくぷくOFF時、またはSDF生成完了までのフォールバック）
         Canvas(modifier = Modifier.matchParentSize()) {
+            val isHardware = drawContext.canvas.nativeCanvas.isHardwareAccelerated
             val adjustedStrokeWidth = strokeWidth / innerScale
             val adjustedSecondStrokeWidth = secondStrokeWidth / innerScale
 
-            if (adjustedSecondStrokeWidth > 0f && (!shouldRenderPukupuku || secondBorderSdfBitmap == null)) {
+            if (adjustedSecondStrokeWidth > 0f && (!shouldRenderPukupuku || secondBorderSdfBitmap == null || !isHardware)) {
                 drawStickerLayer(
                     imageVector,
                     innerScale,
@@ -175,14 +177,14 @@ fun StickerItemContent(
                 )
             }
 
-            if (adjustedStrokeWidth > 0f && (!shouldRenderPukupuku || strokeSdfBitmap == null)) {
+            if (adjustedStrokeWidth > 0f && (!shouldRenderPukupuku || strokeSdfBitmap == null || !isHardware)) {
                 drawStickerLayer(
                     imageVector, innerScale, strokeColor,
                     adjustedStrokeWidth, DrawMode.StrokeOnly, BlendMode.SrcOver
                 )
             }
 
-            if (!shouldRenderPukupuku || fillSdfBitmap == null) {
+            if (!shouldRenderPukupuku || fillSdfBitmap == null || !isHardware) {
                 drawStickerLayer(
                     imageVector, innerScale, fillColor,
                     0f, DrawMode.FillOnly, BlendMode.SrcOver
