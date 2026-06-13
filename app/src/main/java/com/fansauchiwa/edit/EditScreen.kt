@@ -420,15 +420,24 @@ fun EditScreen(
                                 viewModel.updateWidth(decorationId, weight)
                             }
                         },
+                        onTextWeightChangedFinished = {
+                            viewModel.finishWidthChange()
+                        },
                         onStrokeWeightChanged = { weight ->
                             uiState.selectedDecorationId?.let { decorationId ->
                                 viewModel.updateStrokeWidth(decorationId, weight)
                             }
                         },
+                        onStrokeWeightChangedFinished = {
+                            uiState.selectedDecorationId?.let(viewModel::finishStrokeWidthChange)
+                        },
                         onSecondBorderWeightChanged = { weight ->
                             uiState.selectedDecorationId?.let { decorationId ->
                                 viewModel.updateSecondBorderWidth(decorationId, weight)
                             }
+                        },
+                        onSecondBorderWeightChangedFinished = {
+                            uiState.selectedDecorationId?.let(viewModel::finishSecondBorderWidthChange)
                         },
                         onPuffyEnabledChanged = { isPuffyEnabled ->
                             uiState.selectedDecorationId?.let { decorationId ->
@@ -447,6 +456,7 @@ fun EditScreen(
                         onBackgroundColorSelected = viewModel::updateBackgroundColor,
                         onOverallBorderColorSelected = viewModel::updateOverallBorderColor,
                         onOverallBorderWeightChanged = viewModel::updateOverallBorderWidth,
+                        onOverallBorderWeightChangedFinished = viewModel::finishOverallBorderWidthChange,
                         onOverallBorderPuffyEnabledChanged = viewModel::updateOverallBorderPuffyEnabled,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->

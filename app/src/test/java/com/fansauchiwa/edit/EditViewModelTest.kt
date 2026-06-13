@@ -141,6 +141,18 @@ class EditViewModelTest {
         )
     }
 
+    private fun EditViewModel.findTextDecoration(id: String): Decoration.Text? {
+        return uiState.value.decorations
+            .filterIsInstance<Decoration.Text>()
+            .find { it.id == id }
+    }
+
+    private fun EditViewModel.findStickerDecoration(id: String): Decoration.Sticker? {
+        return uiState.value.decorations
+            .filterIsInstance<Decoration.Sticker>()
+            .find { it.id == id }
+    }
+
     @Test
     fun `loadExistingDecorations removes missing images and keeps valid ones`() = runTest {
         val uchiwaId = "test-uchiwa-id"
@@ -721,6 +733,202 @@ class EditViewModelTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun updateWidth_multipleDragUpdates_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val initialWidth = 400
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            width = initialWidth,
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateWidth(textDecorationId, 500)
+        viewModel.updateWidth(textDecorationId, 600)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(600, viewModel.findTextDecoration(textDecorationId)?.width)
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(
+                match { it.name == AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT }
+            )
+        }
+
+        viewModel.finishWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT &&
+                            it.params["target"] == EditTextTargetParams.TEXT
+                }
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(initialWidth, viewModel.findTextDecoration(textDecorationId)?.width)
+    }
+
+    @Test
+    fun updateStrokeWidth_stickerDrag_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val stickerDecorationId = "sticker-1"
+        val initialStrokeWidth = 3f
+        val stickerDecoration = Decoration.Sticker(
+            id = stickerDecorationId,
+            label = "heart",
+            strokeWidth = initialStrokeWidth
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(stickerDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateStrokeWidth(stickerDecorationId, 5f)
+        viewModel.updateStrokeWidth(stickerDecorationId, 7f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(7f, viewModel.findStickerDecoration(stickerDecorationId)?.strokeWidth)
+
+        viewModel.finishStrokeWidthChange(stickerDecorationId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT &&
+                            it.params["target"] == EditStickerTargetParams.PARAM_STROKE_1
+                }
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(
+            initialStrokeWidth,
+            viewModel.findStickerDecoration(stickerDecorationId)?.strokeWidth
+        )
+    }
+
+    @Test
+    fun updateSecondBorderWidth_textDrag_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val initialSecondBorderWidth = 6f
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            secondBorderWidth = initialSecondBorderWidth,
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateSecondBorderWidth(textDecorationId, 9f)
+        viewModel.updateSecondBorderWidth(textDecorationId, 12f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(12f, viewModel.findTextDecoration(textDecorationId)?.secondBorderWidth)
+
+        viewModel.finishSecondBorderWidthChange(textDecorationId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT &&
+                            it.params["target"] == EditTextTargetParams.PARAM_STROKE_2
+                }
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(
+            initialSecondBorderWidth,
+            viewModel.findTextDecoration(textDecorationId)?.secondBorderWidth
+        )
+    }
+
+    @Test
+    fun updateOverallBorderWidth_multipleDragUpdates_finishCommitsSingleUndo() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val initialOverallBorderWidth = 4f
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = emptyList(),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White,
+            overallBorderWidth = initialOverallBorderWidth
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateOverallBorderWidth(8f)
+        viewModel.updateOverallBorderWidth(10f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(10f, viewModel.uiState.value.overallBorderWidth)
+
+        viewModel.finishOverallBorderWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(initialOverallBorderWidth, viewModel.uiState.value.overallBorderWidth)
     }
 
     @Test
