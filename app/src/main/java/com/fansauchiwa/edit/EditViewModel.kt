@@ -546,14 +546,12 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun finishWidthChange(id: String) {
+    fun finishWidthChange() {
         if (!savePendingSliderSnapshot()) return
-        if (uiState.value.decorations.find { it.id == id } is Decoration.Text) {
-            logEvent(
-                AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                mapOf("target" to EditTextTargetParams.TEXT)
-            )
-        }
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+            mapOf("target" to EditTextTargetParams.TEXT)
+        )
     }
 
     fun updateStrokeWidth(id: String, newWidth: Float) {
@@ -762,7 +760,6 @@ class EditViewModel @Inject constructor(
     }
 
     private fun saveSnapshot(snapshot: HistorySnapshot = HistorySnapshot.from(uiState.value)) {
-        pendingSliderSnapshot = null
         undoStack.addLast(snapshot)
         if (undoStack.size > MAX_HISTORY_SIZE) {
             undoStack.removeFirst()

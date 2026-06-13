@@ -421,7 +421,7 @@ fun EditScreen(
                             }
                         },
                         onTextWeightChangedFinished = {
-                            uiState.selectedDecorationId?.let(viewModel::finishWidthChange)
+                            viewModel.finishWidthChange()
                         },
                         onStrokeWeightChanged = { weight ->
                             uiState.selectedDecorationId?.let { decorationId ->

@@ -771,7 +771,7 @@ class EditViewModelTest {
             )
         }
 
-        viewModel.finishWidthChange(textDecorationId)
+        viewModel.finishWidthChange()
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.canUndo)
