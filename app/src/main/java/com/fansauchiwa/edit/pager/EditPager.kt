@@ -77,7 +77,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 private const val OVERALL_BORDER_MIN_WIDTH = 0f
 private const val OVERALL_BORDER_MAX_WIDTH = 24f
-private const val OVERALL_BORDER_SLIDER_STEPS = 2
+private const val OVERALL_BORDER_SLIDER_STEPS = 9
 
 @Immutable
 data class EditPagerUiState(

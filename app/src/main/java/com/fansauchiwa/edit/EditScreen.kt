@@ -887,245 +887,251 @@ fun UchiwaPreview(
                 }
             }
 
-            decorations.forEach { decoration ->
-                key("overlay-${decoration.id}") {
-                    val isSelected = decoration.id == selectedDecorationId
-                    val currentOffset = resolveDecorationOffset(
-                        decorationId = decoration.id,
-                        selectedDecorationId = selectedDecorationId,
-                        baseOffset = decoration.offset,
-                        offsetDiff = offsetDiff
-                    )
-                    val currentScale = resolveDecorationScale(
-                        decorationId = decoration.id,
-                        selectedDecorationId = selectedDecorationId,
-                        baseScale = decoration.scale,
-                        scaleDiff = scaleDiff
-                    )
-                    val currentRotation = resolveDecorationRotation(
-                        decorationId = decoration.id,
-                        selectedDecorationId = selectedDecorationId,
-                        baseRotation = decoration.rotation,
-                        rotationDiff = rotationDiff
-                    )
-                    val decorationZIndex = resolveDecorationZIndex(
-                        decorationId = decoration.id,
-                        selectedDecorationId = selectedDecorationId
-                    )
-                    when (decoration) {
-                        is Decoration.Text -> {
-                            val textMeasurer = rememberTextMeasurer()
-                            val layoutResult = textMeasurer.measure(
-                                decoration.text,
-                                TextStyle(
-                                    fontFamily = decoration.font.value,
-                                    fontWeight = FontWeight(decoration.width),
-                                    fontSize = 24.sp.nonScaledSp,
-                                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+            Box(
+                modifier = Modifier.matchParentSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                decorations.forEach { decoration ->
+                    key("overlay-${decoration.id}") {
+                        val isSelected = decoration.id == selectedDecorationId
+                        val currentOffset = resolveDecorationOffset(
+                            decorationId = decoration.id,
+                            selectedDecorationId = selectedDecorationId,
+                            baseOffset = decoration.offset,
+                            offsetDiff = offsetDiff
+                        )
+                        val currentScale = resolveDecorationScale(
+                            decorationId = decoration.id,
+                            selectedDecorationId = selectedDecorationId,
+                            baseScale = decoration.scale,
+                            scaleDiff = scaleDiff
+                        )
+                        val currentRotation = resolveDecorationRotation(
+                            decorationId = decoration.id,
+                            selectedDecorationId = selectedDecorationId,
+                            baseRotation = decoration.rotation,
+                            rotationDiff = rotationDiff
+                        )
+                        val decorationZIndex = resolveDecorationZIndex(
+                            decorationId = decoration.id,
+                            selectedDecorationId = selectedDecorationId
+                        )
+                        when (decoration) {
+                            is Decoration.Text -> {
+                                val textMeasurer = rememberTextMeasurer()
+                                val layoutResult = textMeasurer.measure(
+                                    decoration.text,
+                                    TextStyle(
+                                        fontFamily = decoration.font.value,
+                                        fontWeight = FontWeight(decoration.width),
+                                        fontSize = 24.sp.nonScaledSp,
+                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
+                                    )
                                 )
-                            )
-                            val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
-                            val decorationSize = Size(
-                                layoutResult.size.width + maxStroke,
-                                layoutResult.size.height + maxStroke
-                            )
-                            val decorationDpSize = with(density) { decorationSize.toDpSize() }
-                            val handleOffset = calculateHandleOffset(
-                                baseOffset = decoration.offset,
-                                scale = decoration.scale,
-                                rotation = decoration.rotation,
-                                decorationSize = decorationSize,
-                                corner = HandleCorner.BottomRight
-                            )
-                            GestureInputLayer(
-                                offset = decoration.offset,
-                                scale = decoration.scale,
-                                rotation = decoration.rotation,
-                                decorationSize = decorationDpSize,
-                                isSelected = isSelected,
-                                onDecorationTap = { onDecorationTap(decoration.id) },
-                                onTransformStart = {
-                                    cumulativeOffset = Offset.Zero
-                                    onDraggingChanged(true)
-                                },
-                                onTransform = { dragAmount ->
-                                    val transformation = calculateTransformations(
-                                        cumulativeOffset,
-                                        handleOffset - decoration.offset
-                                    )
-                                    cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
-                                    val targetScale =
-                                        (decoration.scale + transformation.scaleDiff).coerceIn(
-                                            decoration.scaleRange()
-                                        )
-                                    scaleDiff = calculateScaleFactor(
-                                        baseScale = decoration.scale,
-                                        targetScale = targetScale
-                                    )
-                                    val rotationResult = applyRotationSnap(
-                                        decoration.rotation + transformation.rotationDiff
-                                    )
-                                    if (rotationResult.isSnapped && !wasRotationSnapped) {
-                                        hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                                    }
-                                    wasRotationSnapped = rotationResult.isSnapped
-                                    rotationDiff = rotationResult.snappedRotation - decoration.rotation
-                                },
-                                onTransformEnd = {
-                                    commitDecorationTransform(decoration)
-                                },
-                                onTapDelete = { onTapDelete(decoration.id) },
-                                onTapDuplicate = { onTapDuplicate(decoration.id) },
-                                zIndex = decorationZIndex,
-                            )
-                            if (isSelected) {
-                                SelectionOutline(
-                                    offset = currentOffset,
-                                    scale = currentScale,
-                                    rotation = currentRotation,
+                                val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
+                                val decorationSize = Size(
+                                    layoutResult.size.width + maxStroke,
+                                    layoutResult.size.height + maxStroke
+                                )
+                                val decorationDpSize = with(density) { decorationSize.toDpSize() }
+                                val handleOffset = calculateHandleOffset(
+                                    baseOffset = decoration.offset,
+                                    scale = decoration.scale,
+                                    rotation = decoration.rotation,
+                                    decorationSize = decorationSize,
+                                    corner = HandleCorner.BottomRight
+                                )
+                                GestureInputLayer(
+                                    offset = decoration.offset,
+                                    scale = decoration.scale,
+                                    rotation = decoration.rotation,
                                     decorationSize = decorationDpSize,
-                                    borderColor = getSelectionBorderColor(currentRotation),
-                                    currentScale = currentScale,
-                                    modifier = Modifier
-                                        .testTag("TextItemBorder")
-                                        .semantics {
-                                            this.borderColor = getSelectionBorderColor(currentRotation)
-                                        },
-                                    zIndex = decorationZIndex + 0.1f
+                                    isSelected = isSelected,
+                                    onDecorationTap = { onDecorationTap(decoration.id) },
+                                    onTransformStart = {
+                                        cumulativeOffset = Offset.Zero
+                                        onDraggingChanged(true)
+                                    },
+                                    onTransform = { dragAmount ->
+                                        val transformation = calculateTransformations(
+                                            cumulativeOffset,
+                                            handleOffset - decoration.offset
+                                        )
+                                        cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
+                                        val targetScale =
+                                            (decoration.scale + transformation.scaleDiff).coerceIn(
+                                                decoration.scaleRange()
+                                            )
+                                        scaleDiff = calculateScaleFactor(
+                                            baseScale = decoration.scale,
+                                            targetScale = targetScale
+                                        )
+                                        val rotationResult = applyRotationSnap(
+                                            decoration.rotation + transformation.rotationDiff
+                                        )
+                                        if (rotationResult.isSnapped && !wasRotationSnapped) {
+                                            hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                        }
+                                        wasRotationSnapped = rotationResult.isSnapped
+                                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
+                                    },
+                                    onTransformEnd = {
+                                        commitDecorationTransform(decoration)
+                                    },
+                                    onTapDelete = { onTapDelete(decoration.id) },
+                                    onTapDuplicate = { onTapDuplicate(decoration.id) },
+                                    zIndex = decorationZIndex,
                                 )
+                                if (isSelected) {
+                                    SelectionOutline(
+                                        offset = currentOffset,
+                                        scale = currentScale,
+                                        rotation = currentRotation,
+                                        decorationSize = decorationDpSize,
+                                        borderColor = getSelectionBorderColor(currentRotation),
+                                        currentScale = currentScale,
+                                        modifier = Modifier
+                                            .testTag("TextItemBorder")
+                                            .semantics {
+                                                this.borderColor =
+                                                    getSelectionBorderColor(currentRotation)
+                                            },
+                                        zIndex = decorationZIndex + 0.1f
+                                    )
+                                }
                             }
-                        }
 
-                        is Decoration.Sticker -> {
-                            val decorationSize = painterResource(decoration.resId).intrinsicSize
-                            val decorationDpSize = with(density) { decorationSize.toDpSize() }
-                            val handleOffset = calculateHandleOffset(
-                                baseOffset = decoration.offset,
-                                scale = decoration.scale,
-                                rotation = decoration.rotation,
-                                decorationSize = decorationSize,
-                                corner = HandleCorner.BottomRight
-                            )
-                            GestureInputLayer(
-                                offset = decoration.offset,
-                                scale = decoration.scale,
-                                rotation = decoration.rotation,
-                                decorationSize = decorationDpSize,
-                                isSelected = isSelected,
-                                onDecorationTap = { onDecorationTap(decoration.id) },
-                                onTransformStart = {
-                                    cumulativeOffset = Offset.Zero
-                                    onDraggingChanged(true)
-                                },
-                                onTransform = { dragAmount ->
-                                    val transformation = calculateTransformations(
-                                        cumulativeOffset,
-                                        handleOffset - decoration.offset
-                                    )
-                                    cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
-                                    val targetScale =
-                                        (decoration.scale + transformation.scaleDiff).coerceIn(
-                                            decoration.scaleRange()
-                                        )
-                                    scaleDiff = calculateScaleFactor(
-                                        baseScale = decoration.scale,
-                                        targetScale = targetScale
-                                    )
-                                    val rotationResult = applyRotationSnap(
-                                        decoration.rotation + transformation.rotationDiff
-                                    )
-                                    if (rotationResult.isSnapped && !wasRotationSnapped) {
-                                        hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                                    }
-                                    wasRotationSnapped = rotationResult.isSnapped
-                                    rotationDiff = rotationResult.snappedRotation - decoration.rotation
-                                },
-                                onTransformEnd = {
-                                    commitDecorationTransform(decoration)
-                                },
-                                onTapDelete = { onTapDelete(decoration.id) },
-                                onTapDuplicate = { onTapDuplicate(decoration.id) },
-                                zIndex = decorationZIndex,
-                            )
-                            if (isSelected) {
-                                SelectionOutline(
-                                    offset = currentOffset,
-                                    scale = currentScale,
-                                    rotation = currentRotation,
-                                    decorationSize = decorationDpSize,
-                                    borderColor = getSelectionBorderColor(currentRotation),
-                                    currentScale = currentScale,
-                                    zIndex = decorationZIndex + 0.1f
+                            is Decoration.Sticker -> {
+                                val decorationSize = painterResource(decoration.resId).intrinsicSize
+                                val decorationDpSize = with(density) { decorationSize.toDpSize() }
+                                val handleOffset = calculateHandleOffset(
+                                    baseOffset = decoration.offset,
+                                    scale = decoration.scale,
+                                    rotation = decoration.rotation,
+                                    decorationSize = decorationSize,
+                                    corner = HandleCorner.BottomRight
                                 )
+                                GestureInputLayer(
+                                    offset = decoration.offset,
+                                    scale = decoration.scale,
+                                    rotation = decoration.rotation,
+                                    decorationSize = decorationDpSize,
+                                    isSelected = isSelected,
+                                    onDecorationTap = { onDecorationTap(decoration.id) },
+                                    onTransformStart = {
+                                        cumulativeOffset = Offset.Zero
+                                        onDraggingChanged(true)
+                                    },
+                                    onTransform = { dragAmount ->
+                                        val transformation = calculateTransformations(
+                                            cumulativeOffset,
+                                            handleOffset - decoration.offset
+                                        )
+                                        cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
+                                        val targetScale =
+                                            (decoration.scale + transformation.scaleDiff).coerceIn(
+                                                decoration.scaleRange()
+                                            )
+                                        scaleDiff = calculateScaleFactor(
+                                            baseScale = decoration.scale,
+                                            targetScale = targetScale
+                                        )
+                                        val rotationResult = applyRotationSnap(
+                                            decoration.rotation + transformation.rotationDiff
+                                        )
+                                        if (rotationResult.isSnapped && !wasRotationSnapped) {
+                                            hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                        }
+                                        wasRotationSnapped = rotationResult.isSnapped
+                                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
+                                    },
+                                    onTransformEnd = {
+                                        commitDecorationTransform(decoration)
+                                    },
+                                    onTapDelete = { onTapDelete(decoration.id) },
+                                    onTapDuplicate = { onTapDuplicate(decoration.id) },
+                                    zIndex = decorationZIndex,
+                                )
+                                if (isSelected) {
+                                    SelectionOutline(
+                                        offset = currentOffset,
+                                        scale = currentScale,
+                                        rotation = currentRotation,
+                                        decorationSize = decorationDpSize,
+                                        borderColor = getSelectionBorderColor(currentRotation),
+                                        currentScale = currentScale,
+                                        zIndex = decorationZIndex + 0.1f
+                                    )
+                                }
                             }
-                        }
 
-                        is Decoration.Image -> {
-                            val decorationDpSize = DpSize(IMAGE_SIZE_DEFAULT, IMAGE_SIZE_DEFAULT)
-                            val decorationSize = with(density) {
-                                Size(
-                                    IMAGE_SIZE_DEFAULT.toPx(),
-                                    IMAGE_SIZE_DEFAULT.toPx()
+                            is Decoration.Image -> {
+                                val decorationDpSize = DpSize(IMAGE_SIZE_DEFAULT, IMAGE_SIZE_DEFAULT)
+                                val decorationSize = with(density) {
+                                    Size(
+                                        IMAGE_SIZE_DEFAULT.toPx(),
+                                        IMAGE_SIZE_DEFAULT.toPx()
+                                    )
+                                }
+                                val handleOffset = calculateHandleOffset(
+                                    baseOffset = decoration.offset,
+                                    scale = decoration.scale,
+                                    rotation = decoration.rotation,
+                                    decorationSize = decorationSize,
+                                    corner = HandleCorner.BottomRight
                                 )
-                            }
-                            val handleOffset = calculateHandleOffset(
-                                baseOffset = decoration.offset,
-                                scale = decoration.scale,
-                                rotation = decoration.rotation,
-                                decorationSize = decorationSize,
-                                corner = HandleCorner.BottomRight
-                            )
-                            GestureInputLayer(
-                                offset = decoration.offset,
-                                scale = decoration.scale,
-                                rotation = decoration.rotation,
-                                decorationSize = decorationDpSize,
-                                isSelected = isSelected,
-                                onDecorationTap = { onDecorationTap(decoration.id) },
-                                onTransformStart = {
-                                    cumulativeOffset = Offset.Zero
-                                    onDraggingChanged(true)
-                                },
-                                onTransform = { dragAmount ->
-                                    val transformation = calculateTransformations(
-                                        cumulativeOffset,
-                                        handleOffset - decoration.offset
-                                    )
-                                    cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
-                                    val targetScale =
-                                        (decoration.scale + transformation.scaleDiff).coerceIn(
-                                            decoration.scaleRange()
-                                        )
-                                    scaleDiff = calculateScaleFactor(
-                                        baseScale = decoration.scale,
-                                        targetScale = targetScale
-                                    )
-                                    val rotationResult = applyRotationSnap(
-                                        decoration.rotation + transformation.rotationDiff
-                                    )
-                                    if (rotationResult.isSnapped && !wasRotationSnapped) {
-                                        hapticManager.perform(FansaHapticType.SEGMENT_TICK)
-                                    }
-                                    wasRotationSnapped = rotationResult.isSnapped
-                                    rotationDiff = rotationResult.snappedRotation - decoration.rotation
-                                },
-                                onTransformEnd = {
-                                    commitDecorationTransform(decoration)
-                                },
-                                onTapDelete = { onTapDelete(decoration.id) },
-                                onTapDuplicate = { onTapDuplicate(decoration.id) },
-                                zIndex = decorationZIndex,
-                            )
-                            if (isSelected) {
-                                SelectionOutline(
-                                    offset = currentOffset,
-                                    scale = currentScale,
-                                    rotation = currentRotation,
+                                GestureInputLayer(
+                                    offset = decoration.offset,
+                                    scale = decoration.scale,
+                                    rotation = decoration.rotation,
                                     decorationSize = decorationDpSize,
-                                    borderColor = getSelectionBorderColor(currentRotation),
-                                    currentScale = currentScale,
-                                    zIndex = decorationZIndex + 0.1f
+                                    isSelected = isSelected,
+                                    onDecorationTap = { onDecorationTap(decoration.id) },
+                                    onTransformStart = {
+                                        cumulativeOffset = Offset.Zero
+                                        onDraggingChanged(true)
+                                    },
+                                    onTransform = { dragAmount ->
+                                        val transformation = calculateTransformations(
+                                            cumulativeOffset,
+                                            handleOffset - decoration.offset
+                                        )
+                                        cumulativeOffset += dragAmount.rotateBy(decoration.rotation) * decoration.scale
+                                        val targetScale =
+                                            (decoration.scale + transformation.scaleDiff).coerceIn(
+                                                decoration.scaleRange()
+                                            )
+                                        scaleDiff = calculateScaleFactor(
+                                            baseScale = decoration.scale,
+                                            targetScale = targetScale
+                                        )
+                                        val rotationResult = applyRotationSnap(
+                                            decoration.rotation + transformation.rotationDiff
+                                        )
+                                        if (rotationResult.isSnapped && !wasRotationSnapped) {
+                                            hapticManager.perform(FansaHapticType.SEGMENT_TICK)
+                                        }
+                                        wasRotationSnapped = rotationResult.isSnapped
+                                        rotationDiff = rotationResult.snappedRotation - decoration.rotation
+                                    },
+                                    onTransformEnd = {
+                                        commitDecorationTransform(decoration)
+                                    },
+                                    onTapDelete = { onTapDelete(decoration.id) },
+                                    onTapDuplicate = { onTapDuplicate(decoration.id) },
+                                    zIndex = decorationZIndex,
                                 )
+                                if (isSelected) {
+                                    SelectionOutline(
+                                        offset = currentOffset,
+                                        scale = currentScale,
+                                        rotation = currentRotation,
+                                        decorationSize = decorationDpSize,
+                                        borderColor = getSelectionBorderColor(currentRotation),
+                                        currentScale = currentScale,
+                                        zIndex = decorationZIndex + 0.1f
+                                    )
+                                }
                             }
                         }
                     }
