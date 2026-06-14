@@ -211,7 +211,7 @@ class EditViewModel @Inject constructor(
             if (template != null) {
                 val templateMainColor = resolveTemplateMainColor()
                 val savedUchiwa =
-                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
+                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it, template.isNameInputPlaceholderEnabled) }
                         ?: template.savedUchiwa
                 val decorations = buildTemplateDecorations(savedUchiwa.decorations)
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(

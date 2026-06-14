@@ -481,8 +481,7 @@ fun HomeScreen(
     ) { innerPadding ->
         HomeTabContent(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding()),
+                .fillMaxSize(),
             selectedTab = uiState.selectedTab,
             masterpiecePathList = uiState.masterpiecePathList,
             templates = uiState.templates,
@@ -517,7 +516,8 @@ fun HomeScreen(
             onImageLongPress = {
                 viewModel.enterSelectionMode()
             },
-            statusBarPadding = innerPadding.calculateTopPadding()
+            statusBarPadding = innerPadding.calculateTopPadding(),
+            bottomPadding = innerPadding.calculateBottomPadding()
         )
 
     }
@@ -536,6 +536,7 @@ internal fun HomeTabContent(
     onTemplateClick: (Template) -> Unit,
     onImageLongPress: () -> Unit,
     statusBarPadding: Dp,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier,
     lazyGridState: LazyGridState = rememberLazyGridState(),
     isPreview: Boolean = false
@@ -547,6 +548,7 @@ internal fun HomeTabContent(
             onMainColorSelected = onMainColorSelected,
             onTemplateClick = onTemplateClick,
             statusBarPadding = statusBarPadding,
+            bottomPadding = bottomPadding,
             modifier = modifier,
             isPreview = isPreview
         )
@@ -559,6 +561,7 @@ internal fun HomeTabContent(
             onImageClick = onImageClick,
             onImageLongPress = onImageLongPress,
             statusBarPadding = statusBarPadding,
+            bottomPadding = bottomPadding,
             modifier = modifier,
             isPreview = isPreview
         )
@@ -572,6 +575,7 @@ private fun HomeTabHomeContent(
     onMainColorSelected: (DecorationColors) -> Unit,
     onTemplateClick: (Template) -> Unit,
     statusBarPadding: Dp,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
 ) {
@@ -579,7 +583,7 @@ private fun HomeTabHomeContent(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(top = statusBarPadding),
+                .padding(top = statusBarPadding, bottom = bottomPadding),
             contentAlignment = Alignment.Center
         ) {
             EmptyTemplateMessage()
@@ -590,16 +594,19 @@ private fun HomeTabHomeContent(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(152.dp),
         modifier = modifier
-            .fillMaxSize()
-            .padding(top = statusBarPadding),
-        contentPadding = PaddingValues(horizontal = 16.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = statusBarPadding + 16.dp,
+            end = 16.dp,
+            bottom = bottomPadding + 80.dp
+        ),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             SectionHeader(
                 title = stringResource(R.string.main_color_section_title),
-                modifier = Modifier.padding(top = 16.dp)
             )
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -717,6 +724,7 @@ private fun HomeTabMyDesignContent(
     onImageClick: (String) -> Unit,
     onImageLongPress: () -> Unit,
     statusBarPadding: Dp,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
 ) {
@@ -724,7 +732,7 @@ private fun HomeTabMyDesignContent(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(top = statusBarPadding),
+                .padding(top = statusBarPadding, bottom = bottomPadding),
             contentAlignment = Alignment.Center
         ) {
             EmptyMasterpieceMessage()
@@ -736,16 +744,19 @@ private fun HomeTabMyDesignContent(
         columns = GridCells.Adaptive(152.dp),
         state = lazyGridState,
         modifier = modifier
-            .fillMaxSize()
-            .padding(top = statusBarPadding),
-        contentPadding = PaddingValues(horizontal = 8.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 8.dp,
+            top = statusBarPadding + 16.dp,
+            end = 8.dp,
+            bottom = bottomPadding + 80.dp
+        ),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             SectionHeader(
                 title = stringResource(R.string.my_design_section_title),
-                modifier = Modifier.padding(top = 16.dp)
             )
         }
         items(masterpiecePathList) { path ->
@@ -803,7 +814,7 @@ private fun ComponentTemplateItem(
     modifier: Modifier = Modifier
 ) {
     val savedUchiwa = remember(template, mainColor) {
-        template.savedUchiwa.applyTemplateMainColor(mainColor)
+        template.savedUchiwa.applyTemplateMainColor(mainColor, template.isNameInputPlaceholderEnabled)
     }
 
     var decorationLayerSize by remember { mutableStateOf(IntSize.Zero) }
@@ -1132,6 +1143,7 @@ private fun HomeTabHomeContentPreview() {
         onMainColorSelected = {},
         onTemplateClick = {},
         statusBarPadding = 0.dp,
+        bottomPadding = 0.dp,
         isPreview = true
     )
 }
@@ -1148,6 +1160,7 @@ private fun HomeTabMyDesignContentPreview() {
         onImageClick = {},
         onImageLongPress = {},
         statusBarPadding = 0.dp,
+        bottomPadding = 0.dp,
         isPreview = true
     )
 }
