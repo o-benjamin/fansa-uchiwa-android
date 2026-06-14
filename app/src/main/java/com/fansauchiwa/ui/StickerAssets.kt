@@ -8,6 +8,7 @@ enum class StickerAsset(
     @DrawableRes val resId: Int,
     val isNew: Boolean = false
 ) {
+    PAN_TOOL_ALT("pan_tool_alt", R.drawable.baseline_pan_tool_alt_24, isNew = true),
     CROWN("crown", R.drawable.crown_24px, isNew = true),
     CHESS("chess", R.drawable.chess_24px, isNew = true),
     CHESS_QUEEN("chess_queen", R.drawable.chess_queen_24px, isNew = true),

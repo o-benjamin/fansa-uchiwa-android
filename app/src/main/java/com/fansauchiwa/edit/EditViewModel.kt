@@ -210,9 +210,8 @@ class EditViewModel @Inject constructor(
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
                 val templateMainColor = resolveTemplateMainColor()
-                footprint(templateMainColor)
                 val savedUchiwa =
-                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it) }
+                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it, template.isNameInputPlaceholderEnabled) }
                         ?: template.savedUchiwa
                 val decorations = buildTemplateDecorations(savedUchiwa.decorations)
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
@@ -237,25 +236,25 @@ class EditViewModel @Inject constructor(
 
     private fun buildTemplateDecorations(decorations: List<Decoration>): List<Decoration> {
         val replacementByPlaceholderText = mapOf(
-            NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT to (inputArg?.lastName
+            NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT to (inputArg?.lastName?.takeIf { it.isNotEmpty() }
                 ?: savedStateHandle.get<String>(LAST_NAME_ARG)),
-            NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT to (inputArg?.firstName1
+            NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT to (inputArg?.firstName1?.takeIf { it.isNotEmpty() }
                 ?: savedStateHandle.get<String>(FIRST_NAME_1_ARG)),
-            NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT to (inputArg?.firstName2
+            NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT to (inputArg?.firstName2?.takeIf { it.isNotEmpty() }
                 ?: savedStateHandle.get<String>(FIRST_NAME_2_ARG)),
-            NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT to (inputArg?.honorific
+            NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT to (inputArg?.honorific?.takeIf { it.isNotEmpty() }
                 ?: savedStateHandle.get<String>(HONORIFIC_ARG))
         )
-        if (replacementByPlaceholderText.values.none { it != null }) {
+        if (replacementByPlaceholderText.values.all { it.isNullOrBlank() }) {
             return decorations
         }
-        return decorations.mapNotNull { decoration ->
+        return decorations.map { decoration ->
             if (decoration is Decoration.Text) {
                 val replacement = replacementByPlaceholderText[decoration.text]
-                when {
-                    replacement == null -> decoration
-                    replacement.isBlank() -> null
-                    else -> decoration.copy(text = replacement)
+                if (!replacement.isNullOrBlank()) {
+                    decoration.copy(text = replacement)
+                } else {
+                    decoration
                 }
             } else {
                 decoration

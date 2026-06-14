@@ -16,10 +16,10 @@ data class EditScreenInputArg(
     val uchiwaId: String,
     val templateId: String? = null,
     val templateMainColor: DecorationColors? = null,
-    val lastName: String? = null,
-    val firstName1: String? = null,
-    val firstName2: String? = null,
-    val honorific: String? = null
+    val lastName: String = "",
+    val firstName1: String = "",
+    val firstName2: String = "",
+    val honorific: String = ""
 ) {
     fun toRouteArgument(): String =
         editScreenInputArgJson.encodeToString(serializer(), this)

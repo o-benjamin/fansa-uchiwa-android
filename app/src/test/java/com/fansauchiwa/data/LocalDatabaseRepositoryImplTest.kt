@@ -38,7 +38,10 @@ class LocalDatabaseRepositoryImplTest {
                         Decoration.Image(id = "dec-1", imageId = targetImageId)
                     ),
                     uchiwaColorValue = 0L,
-                    backgroundColorValue = 0L
+                    backgroundColorValue = 0L,
+                    overallBorderColorValue = 0L,
+                    overallBorderWidth = 0f,
+                    isOverallBorderPuffyEnabled = false
                 )
             )
         )
@@ -60,7 +63,10 @@ class LocalDatabaseRepositoryImplTest {
                         Decoration.Image(id = "dec-1", imageId = "image-999")
                     ),
                     uchiwaColorValue = 0L,
-                    backgroundColorValue = 0L
+                    backgroundColorValue = 0L,
+                    overallBorderColorValue = 0L,
+                    overallBorderWidth = 0f,
+                    isOverallBorderPuffyEnabled = false
                 )
             )
         )
@@ -82,7 +88,10 @@ class LocalDatabaseRepositoryImplTest {
                         Decoration.Image(id = "dec-1", imageId = "image-other")
                     ),
                     uchiwaColorValue = 0L,
-                    backgroundColorValue = 0L
+                    backgroundColorValue = 0L,
+                    overallBorderColorValue = 0L,
+                    overallBorderWidth = 0f,
+                    isOverallBorderPuffyEnabled = false
                 ),
                 FansaUchiwaEntity(
                     id = "uchiwa-B",
@@ -90,7 +99,10 @@ class LocalDatabaseRepositoryImplTest {
                         Decoration.Image(id = "dec-2", imageId = targetImageId)
                     ),
                     uchiwaColorValue = 0L,
-                    backgroundColorValue = 0L
+                    backgroundColorValue = 0L,
+                    overallBorderColorValue = 0L,
+                    overallBorderWidth = 0f,
+                    isOverallBorderPuffyEnabled = false
                 )
             )
         )
@@ -121,7 +133,10 @@ class LocalDatabaseRepositoryImplTest {
                         Decoration.Sticker(id = "dec-sticker", label = "star")
                     ),
                     uchiwaColorValue = 0L,
-                    backgroundColorValue = 0L
+                    backgroundColorValue = 0L,
+                    overallBorderColorValue = 0L,
+                    overallBorderWidth = 0f,
+                    isOverallBorderPuffyEnabled = false
                 )
             )
         )
@@ -139,7 +154,10 @@ class LocalDatabaseRepositoryImplTest {
                     id = "uchiwa-C",
                     decorations = emptyList(),
                     uchiwaColorValue = 0L,
-                    backgroundColorValue = 0L
+                    backgroundColorValue = 0L,
+                    overallBorderColorValue = 0L,
+                    overallBorderWidth = 0f,
+                    isOverallBorderPuffyEnabled = false
                 )
             )
         )
@@ -160,7 +178,10 @@ class LocalDatabaseRepositoryImplTest {
                 id = "uchiwa-1",
                 decorations = emptyList(),
                 uchiwaColorValue = 0L,
-                backgroundColorValue = 0L
+                backgroundColorValue = 0L,
+                overallBorderColorValue = 0L,
+                overallBorderWidth = 0f,
+                isOverallBorderPuffyEnabled = false
             ),
             FansaUchiwaEntity(
                 id = "uchiwa-2",
@@ -168,7 +189,10 @@ class LocalDatabaseRepositoryImplTest {
                     Decoration.Sticker(id = "sticker-1", label = "heart")
                 ),
                 uchiwaColorValue = 0L,
-                backgroundColorValue = 0L
+                backgroundColorValue = 0L,
+                overallBorderColorValue = 0L,
+                overallBorderWidth = 0f,
+                isOverallBorderPuffyEnabled = false
             )
         )
 
