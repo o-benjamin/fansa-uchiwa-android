@@ -2,6 +2,10 @@ package com.fansauchiwa.data
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT
 import com.fansauchiwa.R
 import com.fansauchiwa.edit.FontFamilies
 
@@ -13,7 +17,7 @@ val templateList: List<Template> = listOf(
         savedUchiwa = SavedUchiwa(
             decorations = listOf(
                 Decoration.Text(
-                    text = "名",
+                    text = NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT,
                     id = "4b8b6f56-9dc9-4d6b-9286-1802ea38ee99",
                     offset = Offset(-21.90332f, -49.61328f),
                     rotation = 1.5258789E-5f,
@@ -51,21 +55,21 @@ val templateList: List<Template> = listOf(
                     secondStrokeWidth = 3.0f
                 ),
                 Decoration.Text(
-                    text = "前",
+                    text = NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT,
                     id = "1f97693d-6f7f-4d6d-9d96-2ca8966f4ac1",
                     offset = Offset(214.61371f, 36.934616f),
                     rotation = 15.502495f,
                     scale = 2.1579828f,
                     color = DecorationColors.PINK.value,
                     strokeColor = DecorationColors.WHITE.value,
-                    strokeWidth = 10.0f,
+                    strokeWidth = 5.0f,
                     secondBorderColor = DecorationColors.BLACK.value,
                     secondBorderWidth = 15.0f,
                     width = 900,
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "くん",
+                    text = NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT,
                     id = "d9a1f557-215b-4d10-ba4d-7b850f1c3e64",
                     offset = Offset(117.23871f, 186.52739f),
                     rotation = -3.8146973E-6f,
@@ -79,7 +83,7 @@ val templateList: List<Template> = listOf(
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "みょうじ",
+                    text = NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT,
                     id = "bfe0084e-681b-4d0a-b582-7f9679174dc5",
                     offset = Offset(-130.99176f, -211.58784f),
                     rotation = -10.866273f,
@@ -159,7 +163,7 @@ val templateList: List<Template> = listOf(
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "みょうじ",
+                    text = NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT,
                     id = "20e415c0-a614-4ed7-a112-e843680f4194",
                     offset = Offset(-170.0f, -183.5997f),
                     rotation = 0.24852562f,
@@ -173,7 +177,7 @@ val templateList: List<Template> = listOf(
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "名",
+                    text = NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT,
                     id = "6ceda16c-25aa-4f86-82ca-137ad6112f43",
                     offset = Offset(-54.0f, -183.5997f),
                     rotation = 0.24852562f,
@@ -187,7 +191,7 @@ val templateList: List<Template> = listOf(
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "前",
+                    text = NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT,
                     id = "3f7f6088-78f6-4d90-9991-0be019f8fe3d",
                     offset = Offset(14.0f, -183.5997f),
                     rotation = 0.24852562f,
@@ -201,7 +205,7 @@ val templateList: List<Template> = listOf(
                     font = FontFamilies.M_PLUS_ROUNDED_1C
                 ),
                 Decoration.Text(
-                    text = "くん",
+                    text = NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT,
                     id = "1049fd4d-9e54-4e65-8be9-088286a95d6a",
                     offset = Offset(110.0f, -183.5997f),
                     rotation = 0.24852562f,
@@ -275,11 +279,14 @@ val templateList: List<Template> = listOf(
 )
 
 internal fun SavedUchiwa.applyTemplateMainColor(mainColor: Color): SavedUchiwa = copy(
+    overallBorderColor = mainColor,
     decorations = decorations.map { decoration ->
         when (decoration) {
-            is Decoration.Text -> decoration.copy(
-                color = mainColor
-            )
+            is Decoration.Text -> if (decoration.text == NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT || decoration.text == NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT) {
+                decoration.copy(color = mainColor)
+            } else {
+                decoration
+            }
 
             is Decoration.Sticker -> decoration
             is Decoration.Image -> decoration

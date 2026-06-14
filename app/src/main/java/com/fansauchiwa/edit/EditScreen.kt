@@ -131,6 +131,9 @@ import com.fansauchiwa.edit.pager.EditPagerActions
 import com.fansauchiwa.edit.pager.EditPagerUiState
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
+import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
+import com.fansauchiwa.ui.util.createOverallBorderBitmap
+import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -659,9 +662,7 @@ fun UchiwaPreview(
     val shouldRenderOverallBorder = overallBorderWidth > 0f && !isDragging
 
     fun clearOverallBorderBitmaps() {
-        overallBorderBitmap?.recycle()
         overallBorderBitmap = null
-        overallBorderSdfBitmap?.recycle()
         overallBorderSdfBitmap = null
     }
 
@@ -1216,86 +1217,6 @@ private fun SelectionOutline(
     }
 }
 
-private fun captureGraphicsLayerBitmap(
-    graphicsLayer: GraphicsLayer,
-    density: Density,
-    layoutDirection: LayoutDirection,
-    targetSize: IntSize
-): Bitmap {
-    val safeWidth = targetSize.width.coerceAtLeast(1)
-    val safeHeight = targetSize.height.coerceAtLeast(1)
-    val bitmap = createBitmap(safeWidth, safeHeight)
-    val canvas = ComposeCanvas(AndroidCanvas(bitmap))
-    CanvasDrawScope().draw(
-        density = density,
-        layoutDirection = layoutDirection,
-        canvas = canvas,
-        size = Size(safeWidth.toFloat(), safeHeight.toFloat())
-    ) {
-        drawLayer(graphicsLayer)
-    }
-    return bitmap
-}
-
-private fun createOverallBorderMaskBitmap(
-    sourceBitmap: Bitmap,
-    overallBorderWidth: Float
-): Bitmap? {
-    val blurPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-        maskFilter = BlurMaskFilter(
-            (overallBorderWidth * OVERALL_BORDER_BLUR_RADIUS_MULTIPLIER).coerceAtLeast(1f),
-            BlurMaskFilter.Blur.NORMAL
-        )
-    }
-    val offset = IntArray(2)
-    val blurredAlphaBitmap = sourceBitmap.extractAlpha(blurPaint, offset) ?: return null
-    val maskBitmap = createBitmap(sourceBitmap.width, sourceBitmap.height)
-    val canvas = AndroidCanvas(maskBitmap)
-    val maskPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-        colorFilter = ColorMatrixColorFilter(createOverallBorderMaskColorMatrix())
-    }
-    canvas.drawBitmap(blurredAlphaBitmap, offset[0].toFloat(), offset[1].toFloat(), maskPaint)
-
-    val clearPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_OUT)
-    }
-    canvas.drawBitmap(sourceBitmap, 0f, 0f, clearPaint)
-
-    blurredAlphaBitmap.recycle()
-    return maskBitmap
-}
-
-private fun createOverallBorderBitmap(
-    maskBitmap: Bitmap,
-    borderColor: Color
-): Bitmap {
-    val coloredBitmap = createBitmap(maskBitmap.width, maskBitmap.height)
-    val androidColor = borderColor.toArgb()
-    val colorPaint = AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-        colorFilter = ColorMatrixColorFilter(createOverallBorderColorMatrix(androidColor))
-    }
-    AndroidCanvas(coloredBitmap).drawBitmap(maskBitmap, 0f, 0f, colorPaint)
-    return coloredBitmap
-}
-
-private fun createOverallBorderMaskColorMatrix(): ColorMatrix = ColorMatrix(
-    floatArrayOf(
-        0f, 0f, 0f, 0f, 255f,
-        0f, 0f, 0f, 0f, 255f,
-        0f, 0f, 0f, 0f, 255f,
-        0f, 0f, 0f, 255f, 0f
-    )
-)
-
-private fun createOverallBorderColorMatrix(androidColor: Int): ColorMatrix = ColorMatrix(
-    floatArrayOf(
-        0f, 0f, 0f, 0f, AndroidColor.red(androidColor).toFloat(),
-        0f, 0f, 0f, 0f, AndroidColor.green(androidColor).toFloat(),
-        0f, 0f, 0f, 0f, AndroidColor.blue(androidColor).toFloat(),
-        0f, 0f, 0f, 1f, 0f
-    )
-)
-
 @Composable
 private fun GestureInputLayer(
     offset: Offset,
@@ -1609,7 +1530,6 @@ fun CompleteEditButton(
 
 internal val GESTURE_INPUT_HANDLE_SIZE = 24.dp
 private val IMAGE_SIZE_DEFAULT = 64.dp
-private const val OVERALL_BORDER_BLUR_RADIUS_MULTIPLIER = 3f
 
 @Preview(showBackground = true)
 @Composable

@@ -1,6 +1,8 @@
 package com.fansauchiwa.home
 
+import android.graphics.Bitmap
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -58,14 +61,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -77,15 +88,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.fansauchiwa.EditScreenInputArg
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
+import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.Decoration
@@ -94,8 +106,12 @@ import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
+import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.decorationitem.generateSdfTexture
+import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
@@ -103,6 +119,9 @@ import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
+import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
+import com.fansauchiwa.ui.util.createOverallBorderBitmap
+import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
 import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.min
@@ -122,11 +141,12 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
 }
 
 internal fun mainColorChipTag(color: Color): String = "main-color-chip-${color.toArgb()}"
-internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, String> = when (firstName.length) {
-    0 -> "" to ""
-    1 -> firstName to ""
-    else -> firstName.take(1) to firstName.drop(1)
-}
+internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, String> =
+    when (firstName.length) {
+        0 -> "" to ""
+        1 -> firstName to ""
+        else -> firstName.take(1) to firstName.drop(1)
+    }
 
 private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
 
@@ -674,7 +694,8 @@ private fun MainColorSelector(
     ColorPickerRow(
         currentColor = selectedColor.value,
         onColorSelected = { color ->
-            val decorationColor = DecorationColors.entries.find { it.value == color } ?: DecorationColors.PINK
+            val decorationColor =
+                DecorationColors.entries.find { it.value == color } ?: DecorationColors.PINK
             onColorSelected(decorationColor)
         },
         modifier = modifier,
@@ -785,6 +806,64 @@ private fun ComponentTemplateItem(
         template.savedUchiwa.applyTemplateMainColor(mainColor)
     }
 
+    var decorationLayerSize by remember { mutableStateOf(IntSize.Zero) }
+    var overallBorderBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var overallBorderSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val decorationVisualLayer = rememberGraphicsLayer()
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+
+    fun clearOverallBorderBitmaps() {
+        overallBorderBitmap = null
+        overallBorderSdfBitmap = null
+    }
+
+    DisposableEffect(template, mainColor) {
+        onDispose {
+            clearOverallBorderBitmaps()
+        }
+    }
+
+    LaunchedEffect(
+        savedUchiwa.decorations,
+        savedUchiwa.overallBorderWidth,
+        savedUchiwa.overallBorderColor,
+        savedUchiwa.isOverallBorderPuffyEnabled,
+        decorationLayerSize
+    ) {
+        clearOverallBorderBitmaps()
+        val overallBorderWidth = savedUchiwa.overallBorderWidth
+        val overallBorderColor = savedUchiwa.overallBorderColor
+        val isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
+
+        if (overallBorderWidth <= 0f) return@LaunchedEffect
+        if (decorationLayerSize.width <= 0 || decorationLayerSize.height <= 0) return@LaunchedEffect
+
+        withFrameNanos { }
+        val bufferBitmap = captureGraphicsLayerBitmap(
+            graphicsLayer = decorationVisualLayer,
+            density = density,
+            layoutDirection = layoutDirection,
+            targetSize = decorationLayerSize
+        )
+        val borderMaskBitmap = createOverallBorderMaskBitmap(
+            sourceBitmap = bufferBitmap,
+            overallBorderWidth = overallBorderWidth
+        )
+        bufferBitmap.recycle()
+        if (borderMaskBitmap == null) return@LaunchedEffect
+
+        if (isOverallBorderPuffyEnabled && supportsPukuPukuEffect()) {
+            overallBorderSdfBitmap = generateSdfTexture(borderMaskBitmap)
+        } else {
+            overallBorderBitmap = createOverallBorderBitmap(
+                maskBitmap = borderMaskBitmap,
+                borderColor = overallBorderColor
+            )
+        }
+        borderMaskBitmap.recycle()
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .padding(8.dp)
@@ -807,11 +886,49 @@ private fun ComponentTemplateItem(
                 },
             contentAlignment = Alignment.Center
         ) {
-            savedUchiwa.decorations.forEach { decoration ->
-                when (decoration) {
-                    is Decoration.Text -> TemplateTextItem(decoration)
-                    is Decoration.Sticker -> TemplateStickerItem(decoration)
-                    is Decoration.Image -> Unit
+            val overallBorderShaderParams = remember {
+                PuffyShaderParams(
+                    edgeWidthMulti = 7.0f
+                )
+            }
+            when {
+                overallBorderSdfBitmap != null -> {
+                    PuffyTextRenderer(
+                        sdfTextureBitmap = overallBorderSdfBitmap!!,
+                        baseColor = savedUchiwa.overallBorderColor,
+                        scaleFactor = 1f,
+                        modifier = Modifier.fillMaxSize(),
+                        shaderParams = overallBorderShaderParams
+                    )
+                }
+
+                overallBorderBitmap != null -> {
+                    Image(
+                        bitmap = overallBorderBitmap!!.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { decorationLayerSize = it }
+                    .drawWithContent {
+                        decorationVisualLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                        drawLayer(decorationVisualLayer)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                savedUchiwa.decorations.forEach { decoration ->
+                    when (decoration) {
+                        is Decoration.Text -> TemplateTextItem(decoration)
+                        is Decoration.Sticker -> TemplateStickerItem(decoration)
+                        is Decoration.Image -> Unit
+                    }
                 }
             }
         }
