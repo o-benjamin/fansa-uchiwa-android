@@ -1103,7 +1103,6 @@ private fun previewTemplates(): List<Template> {
     return (1..3).map { index ->
         Template(
             id = "template_$index",
-            previewImageResId = R.drawable.uchiwa_shape,
             savedUchiwa = SavedUchiwa(
                 decorations = listOf(
                     Decoration.Text(
