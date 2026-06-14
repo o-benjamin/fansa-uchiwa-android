@@ -121,10 +121,10 @@ class EditViewModelTest {
                         uchiwaId = uchiwaId,
                         templateId = templateId,
                         templateMainColor = templateMainColor,
-                        lastName = lastName,
-                        firstName1 = firstName1,
-                        firstName2 = firstName2,
-                        honorific = honorific
+                        lastName = lastName ?: "",
+                        firstName1 = firstName1 ?: "",
+                        firstName2 = firstName2 ?: "",
+                        honorific = honorific ?: ""
                     ).toRouteArgument()
                 )
             }
@@ -491,7 +491,7 @@ class EditViewModelTest {
     }
 
     @Test
-    fun applyNewUchiwaState_namedTemplateSpecified_removesPlaceholderTextsForBlankValues() = runTest {
+    fun applyNewUchiwaState_namedTemplateSpecified_revertsToPlaceholderForEmptyValues() = runTest {
         val uchiwaId = "new-uchiwa-id"
         val templateId = "template_1"
         val lastNamePlaceholder = Decoration.Text(
@@ -552,9 +552,10 @@ class EditViewModelTest {
 
         val textDecorations = viewModel.uiState.value.decorations.filterIsInstance<Decoration.Text>()
 
-        assertEquals(listOf("潤", "プロポーズ"), textDecorations.map { it.text })
+        // 空文字や空白のみの場合はデフォルトのテキストに戻る
+        assertEquals(listOf("みょうじ", "潤", "前", "くん", "プロポーズ"), textDecorations.map { it.text })
         assertEquals(
-            listOf("name-1", "fixed-text"),
+            listOf("name-last", "name-1", "name-2", "name-honorific", "fixed-text"),
             textDecorations.map { it.id }
         )
     }

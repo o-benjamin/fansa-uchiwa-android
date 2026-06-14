@@ -43,7 +43,10 @@ class HistorySnapshotTest {
         val snapshot = HistorySnapshot(
             decorations = listOf(Decoration.Image(id = "history-id", imageId = "history-image-id")),
             uchiwaColor = Color(0xFF111111),
-            backgroundColor = Color(0xFF222222)
+            backgroundColor = Color(0xFF222222),
+            overallBorderColor = Color(0xFFFFFFFF),
+            overallBorderWidth = 0f,
+            isOverallBorderPuffyEnabled = false
         )
 
         val restoredState = snapshot.restore(currentState)
