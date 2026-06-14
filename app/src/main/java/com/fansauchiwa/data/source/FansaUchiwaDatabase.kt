@@ -1,8 +1,8 @@
 package com.fansauchiwa.data.source
 
 import android.content.Context
-import androidx.room.Room
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
@@ -117,7 +117,7 @@ abstract class FansaUchiwaDatabase : RoomDatabase() {
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL(
-                    "ALTER TABLE `fansa_uchiwa_data` ADD COLUMN `overallBorderColorValue` INTEGER NOT NULL DEFAULT 4294967295"
+                    "ALTER TABLE `fansa_uchiwa_data` ADD COLUMN `overallBorderColorValue` INTEGER NOT NULL DEFAULT -224742753697792"
                 )
                 database.execSQL(
                     "ALTER TABLE `fansa_uchiwa_data` ADD COLUMN `overallBorderWidth` REAL NOT NULL DEFAULT 0"
