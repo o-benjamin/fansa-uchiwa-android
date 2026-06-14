@@ -96,7 +96,7 @@ val templateList: List<Template> = listOf(
                 )
             ),
             uchiwaColor = Color(0xFF000000),
-            backgroundColor = Color(0xFF999999),
+            backgroundColor = Color(0x11000000),
             overallBorderColor = Color(0xFFFF3399),
             overallBorderWidth = 4.0f,
             isOverallBorderPuffyEnabled = false
@@ -201,7 +201,7 @@ val templateList: List<Template> = listOf(
                 )
             ),
             uchiwaColor = Color(0xFF000000),
-            backgroundColor = Color(0xFF999999),
+            backgroundColor = Color(0x11000000),
             overallBorderColor = Color(0xFFFF3399),
             overallBorderWidth = 4.0f,
             isOverallBorderPuffyEnabled = false
@@ -294,7 +294,7 @@ val templateList: List<Template> = listOf(
                 )
             ),
             uchiwaColor = Color(0xFF000000),
-            backgroundColor = Color(0xFF999999),
+            backgroundColor = Color(0x11000000),
             overallBorderColor = Color(0xFFFF3399),
             overallBorderWidth = 4.0f,
             isOverallBorderPuffyEnabled = false
@@ -399,7 +399,7 @@ val templateList: List<Template> = listOf(
                 )
             ),
             uchiwaColor = Color(0xFF000000),
-            backgroundColor = Color(0xFF999999),
+            backgroundColor = Color(0x11000000),
             overallBorderColor = Color(0xFFFF3399),
             overallBorderWidth = 4.0f,
             isOverallBorderPuffyEnabled = false
