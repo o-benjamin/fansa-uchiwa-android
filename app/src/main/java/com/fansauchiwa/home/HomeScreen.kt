@@ -43,11 +43,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -297,6 +299,8 @@ internal fun HomeNavigationBar(
 ) {
     NavigationBar(
         modifier = modifier,
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp,
         windowInsets = WindowInsets()
     ) {
         homeNavigationTabs.forEach { tab ->
@@ -434,18 +438,22 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            Column {
-                HomeNavigationBar(
-                    selectedTab = uiState.selectedTab,
-                    onTabSelected = viewModel::onTabSelected,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                BannerAd(
-                    LocalContext.current,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                )
+            Surface(
+                tonalElevation = NavigationBarDefaults.Elevation
+            ) {
+                Column {
+                    HomeNavigationBar(
+                        selectedTab = uiState.selectedTab,
+                        onTabSelected = viewModel::onTabSelected,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    BannerAd(
+                        LocalContext.current,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                    )
+                }
             }
         },
         floatingActionButton = {
