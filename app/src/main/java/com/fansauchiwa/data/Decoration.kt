@@ -1,6 +1,7 @@
 package com.fansauchiwa.data
 
 import android.os.Parcelable
+import androidx.annotation.Keep
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -15,6 +16,8 @@ import kotlinx.serialization.Serializable
 
 const val DEFAULT_DECORATION_TEXT = "テキストを入力"
 
+// Room に JSON で保存しているため、R8 による名前の変更から保護する（サブクラスにも個別に付与）
+@Keep
 @Polymorphic
 @Serializable
 sealed interface Decoration : Parcelable {
@@ -31,6 +34,7 @@ sealed interface Decoration : Parcelable {
     val strokeWidth: Float
 
 
+    @Keep
     @Parcelize
     @Serializable
     @TypeParceler<Offset, OffsetParceler>
@@ -56,6 +60,7 @@ sealed interface Decoration : Parcelable {
         val font: FontFamilies
     ) : Decoration
 
+    @Keep
     @Parcelize
     @Serializable
     @TypeParceler<Offset, OffsetParceler>
@@ -81,6 +86,7 @@ sealed interface Decoration : Parcelable {
         val resId = StickerAsset.entries.find { it.type == label }?.resId ?: 0
     }
 
+    @Keep
     @Parcelize
     @Serializable
     @TypeParceler<Offset, OffsetParceler>
