@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.Keep
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -32,6 +33,8 @@ private const val EVENT_REMINDER_HOUR = 20
 private const val EVENT_REMINDER_MINUTE = 0
 private const val EVENT_REMINDER_DAYS_THRESHOLD = 10
 
+// WorkManager がクラス名を DB に永続化し、リフレクションで生成するため R8 から保護する
+@Keep
 class UchiwaReminderWorker(
     appContext: Context,
     params: WorkerParameters
