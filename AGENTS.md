@@ -1,8 +1,8 @@
-# Fansa Uchiwa (Android) - Copilot Instructions
+# Fansa Uchiwa (Android) - AI Agent Instructions
 
 ## 1. テクニカルスタック & バージョン
 
-- **Language**: Kotlin 2.0.x
+- **Language**: Kotlin（バージョンは `gradle/libs.versions.toml` の `kotlin` を参照）
 - **UI Framework**: Jetpack Compose (Material 3)
 - **Architecture**: MVVM + Unidirectional Data Flow (UDF)
 - **Dependency Management**: Gradle Version Catalog (libs.versions.toml)
@@ -19,7 +19,7 @@
     - **8-Point Grid Systemの適用**: UIのサイズや余白は、原則として**8の倍数 (8, 16, 24, 32...)**
       で定義してください（テキスト周りなど細かい調整が必要な場合のみ4の倍数を許容します）。
     - 既存のコードや提案するコードにおいて、対象となるサイズが8の倍数になっていない場合（例: `10.dp` や
-      `15.dp` など）は、Copilot自身で最も近い8の倍数（または4の倍数）に修正した上で適用を行ってください。
+      `15.dp` など）は、エージェント自身で最も近い8の倍数（または4の倍数）に修正した上で適用を行ってください。
 
 ## 3. アーキテクチャとデータ設計ガイドライン
 
@@ -92,7 +92,7 @@
 - **共通コンポーザブルの作成基準 (Rule of Two)**:
     - 同じ標準コンポーザブル（Button, IconButton, Slider等）を使用する箇所が**2箇所以上**
       になる場合は、必ずその標準コンポーザブルをラップした独自の共通コンポーザブル（例: `FansaButton`
-      ）を `ui/component` パッケージに作成してください。
+      ）を `ui/composable` パッケージに作成してください。
     - これにより、デザイン、Haptic Feedback、Analytics等の横断的関心を一括管理します。
 - **Haptic Feedback (触覚フィードバック) の実装ルール**:
     - 触覚フィードバックはUIの副作用であるため、ViewModelには含めずUI層で完結させてください。
@@ -138,9 +138,47 @@
         - **ユニットテスト**: `app/src/test/java/com/fansauchiwa/...`
         - **UI動作テスト**: `app/src/androidTest/java/com/fansauchiwa/...`
 
-## 5. プロンプトへの回答スタイル
+## 6. プロンプトへの回答スタイル
 
 - コード提案は最新の Kotlin 記法（Trailing Lambdas等）を遵守してください。
 - 実装が複雑になる場合（特に `Decoration` の座標計算など）は、ロジックの正当性を証明するための単体テストコードも併せて提案してください。
 - 実装の最後にビルドして確認しようとしないでください。コンパイルエラーがないかどうかのみ確認し、ビルドが必要なコンパイルエラーは無視してください。
 - 他ファイルのオブジェクトを使用するとき、com.fansauchiwa~から始まるパスを直接記述しないでください。そのような場合はimportをしてください。
+
+## 7. コミットメッセージ規約
+
+When generating a commit message, strictly follow the format below:
+
+### Format
+
+```text
+<branch-name>[<type>]: <short_summary_in_title_case>
+
+* <change_detail_1>
+* <change_detail_2>
+```
+
+### Rules
+
+1. **Branch Name**: Use the name of the current git branch.
+2. **Type**: Use one of the following:
+    - feat: New features
+    - fix: Bug fixes
+    - refactor: Code changes that neither fix a bug nor add a feature
+    - style: Changes that do not affect the meaning of the code (white-space, formatting, etc.)
+    - docs: Documentation only changes
+    - test: Adding missing tests or correcting existing tests
+    - chore: Changes to the build process or auxiliary tools and libraries
+3. **Title**: Concise summary starting with a capital letter.
+4. **Body**: Use bullet points (*) to describe specific changes.
+5. **Language**: Always generate the message in English.
+
+### Example
+
+```text
+feature/add-stamps[feat]: Add New Animal Stamps To Edit Screen
+
+* Add cat and dog svg assets to StickerAssets.kt
+* Update EditViewModel to include new categories
+* Implement horizontal scroll for stamp picker
+```
