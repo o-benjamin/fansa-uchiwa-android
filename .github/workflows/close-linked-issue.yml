@@ -1,0 +1,39 @@
+name: Close Linked Issue on Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: ["*"]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  close-linked-issue:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues referenced in the PR body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          ISSUE_NUMBERS=$(printf '%s\n' "$PR_BODY" \
+            | grep -oiE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+#[0-9]+' \
+            | grep -oE '[0-9]+' \
+            | sort -u)
+
+          if [ -z "$ISSUE_NUMBERS" ]; then
+            echo "PR本文にクローズキーワードが見つからなかったため、何もしません。"
+            exit 0
+          fi
+
+          for issue in $ISSUE_NUMBERS; do
+            echo "Issue #$issue をクローズします。"
+            gh issue close "$issue" --repo "$REPO" \
+              --comment "PR #$PR_NUMBER がマージされたため自動クローズします。" \
+              || echo "Issue #$issue のクローズに失敗しました（既にクローズ済み、または存在しない可能性があります）。"
+          done
