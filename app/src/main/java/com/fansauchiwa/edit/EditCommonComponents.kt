@@ -22,14 +22,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
@@ -38,7 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
-import com.fansauchiwa.data.DecorationColors
+import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -54,66 +51,6 @@ fun HeaderTitle(title: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ColorPickerRow(
-    currentColor: Color,
-    onColorSelected: (Color) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var showColorPickerDialog by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .border(1.dp, colorResource(R.color.gray), CircleShape)
-                .background(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            Color.Red,
-                            Color.Yellow,
-                            Color.Green,
-                            Color.Cyan,
-                            Color.Blue,
-                            Color.Magenta,
-                            Color.Red
-                        )
-                    )
-                )
-                .clickable {
-                    showColorPickerDialog = true
-                }
-        )
-        DecorationColors.entries.forEach { decorationColor ->
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, colorResource(R.color.gray), CircleShape)
-                    .background(color = decorationColor.value)
-                    .clickable {
-                        onColorSelected(decorationColor.value)
-                    }
-            )
-        }
-    }
-
-    if (showColorPickerDialog) {
-        ColorPickerDialog(
-            initialColor = currentColor,
-            onDismiss = { showColorPickerDialog = false },
-            onColorSelected = onColorSelected
-        )
-    }
-}
-
-@Composable
 fun ColorAndWeightControl(
     title: String,
     color: Color,
@@ -123,6 +60,7 @@ fun ColorAndWeightControl(
     modifier: Modifier = Modifier,
     onColorSelected: (Color) -> Unit = {},
     onWeightChanged: (Float) -> Unit = {},
+    onWeightChangedFinished: () -> Unit = {},
 ) {
     val isColorPickerOpen = remember { mutableStateOf(false) }
     val hapticManager = rememberFansaHapticManager()
@@ -142,7 +80,7 @@ fun ColorAndWeightControl(
                     onClick = {
                         isColorPickerOpen.value = false
                     },
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ExpandLess,
@@ -156,7 +94,7 @@ fun ColorAndWeightControl(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(32.dp)
                             .clip(CircleShape)
                             .border(1.dp, colorResource(R.color.gray), CircleShape)
                             .background(color = color)
@@ -173,6 +111,7 @@ fun ColorAndWeightControl(
                     isColorPickerOpen.value = false
                     hapticManager.perform(FansaHapticType.SEGMENT_FREQUENT_TICK)
                 },
+                onValueChangeFinished = onWeightChangedFinished,
                 valueRange = valueRange,
                 steps = steps,
                 modifier = Modifier.weight(1f)
@@ -257,7 +196,8 @@ fun ColorAndWeightControlPreview() {
             valueRange = 1f..10f,
             steps = 8,
             onColorSelected = {},
-            onWeightChanged = {}
+            onWeightChanged = {},
+            onWeightChangedFinished = {}
         )
     }
 }

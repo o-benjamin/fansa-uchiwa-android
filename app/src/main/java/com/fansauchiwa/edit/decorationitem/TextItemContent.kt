@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
@@ -137,9 +138,10 @@ fun TextItemContent(
         modifier = modifier.size(boxSize)
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
+            val isHardware = drawContext.canvas.nativeCanvas.isHardwareAccelerated
             translate(maxStroke / 2f, maxStroke / 2f) {
                 if (secondBorderWidth > 0f) {
-                    if (!shouldRenderPuffyText || secondBorderSdfBitmap == null) {
+                    if (!shouldRenderPuffyText || secondBorderSdfBitmap == null || !isHardware) {
                         drawText(
                             textLayoutResult = layoutResult,
                             drawStyle = Stroke(
@@ -151,7 +153,7 @@ fun TextItemContent(
                     }
                 }
 
-                if (!shouldRenderPuffyText || strokeSdfBitmap == null) {
+                if (!shouldRenderPuffyText || strokeSdfBitmap == null || !isHardware) {
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round),
@@ -159,7 +161,7 @@ fun TextItemContent(
                     )
                 }
 
-                if (!shouldRenderPuffyText || fillSdfBitmap == null) {
+                if (!shouldRenderPuffyText || fillSdfBitmap == null || !isHardware) {
                     drawText(
                         textLayoutResult = layoutResult,
                         drawStyle = Fill,

@@ -10,13 +10,24 @@ import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.EDIT_INPUT_ARG
+import com.fansauchiwa.EditScreenInputArg
+import com.fansauchiwa.FIRST_NAME_1_ARG
+import com.fansauchiwa.FIRST_NAME_2_ARG
+import com.fansauchiwa.HONORIFIC_ARG
+import com.fansauchiwa.LAST_NAME_ARG
+import com.fansauchiwa.NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT
+import com.fansauchiwa.NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT
 import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
+import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
@@ -28,10 +39,13 @@ import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
+import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
@@ -55,6 +69,9 @@ class EditViewModel @Inject constructor(
     private val templateRepository: TemplateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+    private val inputArg: EditScreenInputArg? =
+        savedStateHandle.get<String>(EDIT_INPUT_ARG)?.let(EditScreenInputArg::fromRouteArgument)
+
     val uiState: StateFlow<EditUiState> = savedStateHandle.getStateFlow(
         UI_STATE_KEY,
         EditUiState(
@@ -64,6 +81,7 @@ class EditViewModel @Inject constructor(
 
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
+    private var pendingSliderSnapshot: HistorySnapshot? = null
     private var hasShownCompletionTooltipInSession = false
 
     init {
@@ -106,7 +124,7 @@ class EditViewModel @Inject constructor(
 
     private fun loadExistingDecorations() {
         viewModelScope.launch {
-            val uchiwaId: String? = savedStateHandle[UCHIWA_ID_ARG]
+            val uchiwaId: String? = inputArg?.uchiwaId ?: savedStateHandle[UCHIWA_ID_ARG]
             if (uchiwaId != null) {
                 savedStateHandle[UCHIWA_ID_KEY] = uchiwaId
                 val uchiwa = localDatabaseRepository.getUchiwa(uchiwaId)
@@ -128,7 +146,10 @@ class EditViewModel @Inject constructor(
             uchiwaId = uchiwaId,
             decorations = savedUchiwa.decorations,
             uchiwaColor = savedUchiwa.uchiwaColor,
-            backgroundColor = savedUchiwa.backgroundColor
+            backgroundColor = savedUchiwa.backgroundColor,
+            overallBorderColor = savedUchiwa.overallBorderColor,
+            overallBorderWidth = savedUchiwa.overallBorderWidth,
+            isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
         )
 
         val imageDecorations =
@@ -159,7 +180,10 @@ class EditViewModel @Inject constructor(
                     id = uchiwaId,
                     decorations = finalDecorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
+                    backgroundColor = savedUchiwa.backgroundColor,
+                    overallBorderColor = savedUchiwa.overallBorderColor,
+                    overallBorderWidth = savedUchiwa.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
                 )
             )
         }
@@ -170,6 +194,9 @@ class EditViewModel @Inject constructor(
             decorations = finalDecorations,
             uchiwaColor = savedUchiwa.uchiwaColor,
             backgroundColor = savedUchiwa.backgroundColor,
+            overallBorderColor = savedUchiwa.overallBorderColor,
+            overallBorderWidth = savedUchiwa.overallBorderWidth,
+            isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled,
             images = currentState.images.filterNot { existing ->
                 validImages.any { it.id == existing.id }
             } + validImages
@@ -177,22 +204,62 @@ class EditViewModel @Inject constructor(
     }
 
     private suspend fun applyNewUchiwaState(uchiwaId: String) {
-        val templateId: String? = savedStateHandle[TEMPLATE_ID_ARG]
+        val templateId: String? = inputArg?.templateId ?: savedStateHandle[TEMPLATE_ID_ARG]
         val currentState = uiState.value
         if (templateId != null) {
             val template = templateRepository.getTemplateById(templateId)
             if (template != null) {
-                val savedUchiwa = template.savedUchiwa
+                val templateMainColor = resolveTemplateMainColor()
+                val savedUchiwa =
+                    templateMainColor?.let { template.savedUchiwa.applyTemplateMainColor(it, template.isNameInputPlaceholderEnabled) }
+                        ?: template.savedUchiwa
+                val decorations = buildTemplateDecorations(savedUchiwa.decorations)
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     uchiwaId = uchiwaId,
-                    decorations = savedUchiwa.decorations,
+                    decorations = decorations,
                     uchiwaColor = savedUchiwa.uchiwaColor,
-                    backgroundColor = savedUchiwa.backgroundColor
+                    backgroundColor = savedUchiwa.backgroundColor,
+                    overallBorderColor = savedUchiwa.overallBorderColor,
+                    overallBorderWidth = savedUchiwa.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
                 )
                 return
             }
         }
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
+    }
+
+    private fun resolveTemplateMainColor(): Color? {
+        return inputArg?.templateMainColor?.value
+            ?: savedStateHandle.get<DecorationColors>(TEMPLATE_MAIN_COLOR_ARG)?.value
+    }
+
+    private fun buildTemplateDecorations(decorations: List<Decoration>): List<Decoration> {
+        val replacementByPlaceholderText = mapOf(
+            NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT to (inputArg?.lastName?.takeIf { it.isNotEmpty() }
+                ?: savedStateHandle.get<String>(LAST_NAME_ARG)),
+            NAME_TEMPLATE_FIRST_NAME_1_PLACEHOLDER_TEXT to (inputArg?.firstName1?.takeIf { it.isNotEmpty() }
+                ?: savedStateHandle.get<String>(FIRST_NAME_1_ARG)),
+            NAME_TEMPLATE_FIRST_NAME_2_PLACEHOLDER_TEXT to (inputArg?.firstName2?.takeIf { it.isNotEmpty() }
+                ?: savedStateHandle.get<String>(FIRST_NAME_2_ARG)),
+            NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT to (inputArg?.honorific?.takeIf { it.isNotEmpty() }
+                ?: savedStateHandle.get<String>(HONORIFIC_ARG))
+        )
+        if (replacementByPlaceholderText.values.all { it.isNullOrBlank() }) {
+            return decorations
+        }
+        return decorations.map { decoration ->
+            if (decoration is Decoration.Text) {
+                val replacement = replacementByPlaceholderText[decoration.text]
+                if (!replacement.isNullOrBlank()) {
+                    decoration.copy(text = replacement)
+                } else {
+                    decoration
+                }
+            } else {
+                decoration
+            }
+        }
     }
 
     fun updateDecoration(id: String, transform: (Decoration) -> Decoration) {
@@ -208,7 +275,8 @@ class EditViewModel @Inject constructor(
         saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = currentState.decorations + decoration
+            decorations = currentState.decorations + decoration,
+            selectedDecorationId = decoration.id
         )
         when (decoration) {
             is Decoration.Text -> {
@@ -467,44 +535,54 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateWidth(id: String, newWidth: Int) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                        mapOf("target" to EditTextTargetParams.TEXT)
-                    )
-                    decoration.copy(width = newWidth)
-                }
+                is Decoration.Text -> decoration.copy(width = newWidth)
 
                 else -> decoration
             }
         }
     }
 
+    fun finishWidthChange() {
+        if (!savePendingSliderSnapshot()) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+            mapOf("target" to EditTextTargetParams.TEXT)
+        )
+    }
+
     fun updateStrokeWidth(id: String, newWidth: Float) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_1)
-                    )
-                    decoration.copy(strokeWidth = newWidth)
-                }
-
-                is Decoration.Sticker -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
-                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_1)
-                    )
-                    decoration.copy(strokeWidth = newWidth)
-                }
+                is Decoration.Text -> decoration.copy(strokeWidth = newWidth)
+                is Decoration.Sticker -> decoration.copy(strokeWidth = newWidth)
 
                 is Decoration.Image -> decoration.copy(strokeWidth = newWidth)
             }
+        }
+    }
+
+    fun finishStrokeWidthChange(id: String) {
+        if (!savePendingSliderSnapshot()) return
+        when (uiState.value.decorations.find { it.id == id }) {
+            is Decoration.Text -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                    mapOf("target" to EditTextTargetParams.PARAM_STROKE_1)
+                )
+            }
+
+            is Decoration.Sticker -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
+                    mapOf("target" to EditStickerTargetParams.PARAM_STROKE_1)
+                )
+            }
+
+            else -> Unit
         }
     }
 
@@ -534,27 +612,35 @@ class EditViewModel @Inject constructor(
     }
 
     fun updateSecondBorderWidth(id: String, newWidth: Float) {
-        saveSnapshot()
+        capturePendingSliderSnapshot()
         updateDecoration(id) { decoration ->
             when (decoration) {
-                is Decoration.Text -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
-                        mapOf("target" to EditTextTargetParams.PARAM_STROKE_2)
-                    )
-                    decoration.copy(secondBorderWidth = newWidth)
-                }
-
-                is Decoration.Sticker -> {
-                    logEvent(
-                        AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
-                        mapOf("target" to EditStickerTargetParams.PARAM_STROKE_2)
-                    )
-                    decoration.copy(secondStrokeWidth = newWidth)
-                }
+                is Decoration.Text -> decoration.copy(secondBorderWidth = newWidth)
+                is Decoration.Sticker -> decoration.copy(secondStrokeWidth = newWidth)
 
                 else -> decoration
             }
+        }
+    }
+
+    fun finishSecondBorderWidthChange(id: String) {
+        if (!savePendingSliderSnapshot()) return
+        when (uiState.value.decorations.find { it.id == id }) {
+            is Decoration.Text -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT,
+                    mapOf("target" to EditTextTargetParams.PARAM_STROKE_2)
+                )
+            }
+
+            is Decoration.Sticker -> {
+                logEvent(
+                    AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT,
+                    mapOf("target" to EditStickerTargetParams.PARAM_STROKE_2)
+                )
+            }
+
+            else -> Unit
         }
     }
 
@@ -587,6 +673,36 @@ class EditViewModel @Inject constructor(
         )
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(backgroundColor = color)
+    }
+
+    fun updateOverallBorderColor(color: Color) {
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderColor = color)
+    }
+
+    fun updateOverallBorderWidth(width: Float) {
+        capturePendingSliderSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(overallBorderWidth = width)
+    }
+
+    fun finishOverallBorderWidthChange() {
+        savePendingSliderSnapshot()
+    }
+
+    fun updateOverallBorderPuffyEnabled(isEnabled: Boolean) {
+        saveSnapshot()
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            isOverallBorderPuffyEnabled = isEnabled
+        )
+    }
+
+    fun setDragging(isDragging: Boolean) {
+        val currentState = uiState.value
+        if (currentState.isDragging == isDragging) return
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(isDragging = isDragging)
     }
 
     fun saveImage(uri: Uri, id: String, onSaved: () -> Unit = {}) {
@@ -626,8 +742,23 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    private fun saveSnapshot() {
-        val snapshot = HistorySnapshot.from(uiState.value)
+    private fun capturePendingSliderSnapshot() {
+        if (pendingSliderSnapshot == null) {
+            pendingSliderSnapshot = HistorySnapshot.from(uiState.value)
+        }
+    }
+
+    private fun savePendingSliderSnapshot(): Boolean {
+        val snapshot = pendingSliderSnapshot ?: return false
+        pendingSliderSnapshot = null
+        if (snapshot == HistorySnapshot.from(uiState.value)) {
+            return false
+        }
+        saveSnapshot(snapshot)
+        return true
+    }
+
+    private fun saveSnapshot(snapshot: HistorySnapshot = HistorySnapshot.from(uiState.value)) {
         undoStack.addLast(snapshot)
         if (undoStack.size > MAX_HISTORY_SIZE) {
             undoStack.removeFirst()
@@ -767,7 +898,10 @@ class EditViewModel @Inject constructor(
             val savedUchiwa = SavedUchiwa(
                 decorations = state.decorations,
                 uchiwaColor = state.uchiwaColor,
-                backgroundColor = state.backgroundColor
+                backgroundColor = state.backgroundColor,
+                overallBorderColor = state.overallBorderColor,
+                overallBorderWidth = state.overallBorderWidth,
+                isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
             )
             val code = TemplateExportUtil.exportToKotlinCode(savedUchiwa)
             Log.d("TemplateExport", code)
@@ -777,7 +911,10 @@ class EditViewModel @Inject constructor(
                     id = state.uchiwaId,
                     decorations = state.decorations,
                     uchiwaColor = state.uchiwaColor,
-                    backgroundColor = state.backgroundColor
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
                 )
             )
             onDecorationSave(state.uchiwaId)
@@ -792,7 +929,10 @@ class EditViewModel @Inject constructor(
                     id = state.uchiwaId,
                     decorations = state.decorations,
                     uchiwaColor = state.uchiwaColor,
-                    backgroundColor = state.backgroundColor
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
                 )
             )
             onDecorationSave(state.uchiwaId)
@@ -817,7 +957,8 @@ class EditViewModel @Inject constructor(
             userMessage = null,
             isDeletingImage = false,
             selectedDeletingImages = emptyList(),
-            savedPath = null
+            savedPath = null,
+            isDragging = false
         )
     }
 
@@ -841,13 +982,19 @@ class EditViewModel @Inject constructor(
                     id = currentState.uchiwaId,
                     decorations = template.savedUchiwa.decorations,
                     uchiwaColor = template.savedUchiwa.uchiwaColor,
-                    backgroundColor = template.savedUchiwa.backgroundColor
+                    backgroundColor = template.savedUchiwa.backgroundColor,
+                    overallBorderColor = template.savedUchiwa.overallBorderColor,
+                    overallBorderWidth = template.savedUchiwa.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = template.savedUchiwa.isOverallBorderPuffyEnabled
                 )
             )
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
                 decorations = template.savedUchiwa.decorations,
                 uchiwaColor = template.savedUchiwa.uchiwaColor,
-                backgroundColor = template.savedUchiwa.backgroundColor
+                backgroundColor = template.savedUchiwa.backgroundColor,
+                overallBorderColor = template.savedUchiwa.overallBorderColor,
+                overallBorderWidth = template.savedUchiwa.overallBorderWidth,
+                isOverallBorderPuffyEnabled = template.savedUchiwa.isOverallBorderPuffyEnabled
             )
         }
     }

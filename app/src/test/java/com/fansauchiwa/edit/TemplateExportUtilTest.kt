@@ -36,7 +36,7 @@ class TemplateExportUtilTest {
                     offset = Offset(0.3f, 0.4f),
                     scale = 1.5f,
                     color = DecorationColors.WHITE.value,
-                    strokeColor = DecorationColors.MAGENTA.value,
+                    strokeColor = DecorationColors.PINK.value,
                     strokeWidth = 30f,
                     font = FontFamilies.DELA_GOTHIC_ONE
                 )
@@ -53,7 +53,7 @@ class TemplateExportUtilTest {
         assertTrue(result.contains("offset = Offset(0.3f, 0.4f)"))
         assertTrue(result.contains("scale = 1.5f"))
         assertTrue(result.contains("color = DecorationColors.WHITE.value"))
-        assertTrue(result.contains("strokeColor = DecorationColors.MAGENTA.value"))
+        assertTrue(result.contains("strokeColor = DecorationColors.PINK.value"))
         assertTrue(result.contains("strokeWidth = 30.0f"))
         assertTrue(result.contains("font = FontFamilies.DELA_GOTHIC_ONE"))
     }
@@ -98,7 +98,7 @@ class TemplateExportUtilTest {
                     offset = Offset(0.5f, 0.5f),
                     scale = 1.0f,
                     color = DecorationColors.WHITE.value,
-                    strokeColor = DecorationColors.CYAN.value,
+                    strokeColor = DecorationColors.BLUE.value,
                     strokeWidth = 30f
                 )
             ),

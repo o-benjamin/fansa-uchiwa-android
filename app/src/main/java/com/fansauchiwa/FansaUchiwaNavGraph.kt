@@ -32,11 +32,13 @@ fun FansaUchiwaNavGraph(
     ) {
         composable(HomeDestination.route) {
             HomeScreen(
-                onImageClick = { id, templateId ->
-                    navController.navigate(EditDestination.createRoute(id, templateId))
+                onImageClick = { inputArg ->
+                    navController.navigate(
+                        EditRoute(inputArg = inputArg.toRouteArgument())
+                    )
                 },
                 onAddClick = {
-                    navController.navigate(EditDestination.screen)
+                    navController.navigate(EditRoute())
                 },
                 onNavigateToSettings = {
                     navController.navigate(SettingsDestination.route)
@@ -46,21 +48,7 @@ fun FansaUchiwaNavGraph(
                 }
             )
         }
-        composable(
-            route = EditDestination.route,
-            arguments = listOf(
-                navArgument(UCHIWA_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument(TEMPLATE_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                }
-            )
-        ) {
+        composable<EditRoute> {
             val viewModel: EditViewModel = hiltViewModel()
             EditScreen(
                 viewModel = viewModel,

@@ -3,10 +3,11 @@ package com.fansauchiwa.edit
 import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.EDIT_INPUT_ARG
+import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
-import com.fansauchiwa.TEMPLATE_ID_ARG
-import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.LocalDatabaseRepository
 import com.fansauchiwa.data.LocalImageRepository
@@ -102,6 +103,11 @@ class EditViewModelTest {
     private fun createViewModel(
         uchiwaId: String?,
         templateId: String? = null,
+        templateMainColor: DecorationColors? = null,
+        lastName: String? = null,
+        firstName1: String? = null,
+        firstName2: String? = null,
+        honorific: String? = null,
         hasSeenEditCompletionTooltip: Boolean = false
     ): EditViewModel {
         settingsRepository = FakeSettingsRepository(
@@ -109,10 +115,18 @@ class EditViewModelTest {
         )
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
-                set(UCHIWA_ID_ARG, uchiwaId)
-            }
-            if (templateId != null) {
-                set(TEMPLATE_ID_ARG, templateId)
+                set(
+                    EDIT_INPUT_ARG,
+                    EditScreenInputArg(
+                        uchiwaId = uchiwaId,
+                        templateId = templateId,
+                        templateMainColor = templateMainColor,
+                        lastName = lastName ?: "",
+                        firstName1 = firstName1 ?: "",
+                        firstName2 = firstName2 ?: "",
+                        honorific = honorific ?: ""
+                    ).toRouteArgument()
+                )
             }
         }
         return EditViewModel(
@@ -125,6 +139,18 @@ class EditViewModelTest {
             templateRepository = templateRepository,
             savedStateHandle = savedStateHandle
         )
+    }
+
+    private fun EditViewModel.findTextDecoration(id: String): Decoration.Text? {
+        return uiState.value.decorations
+            .filterIsInstance<Decoration.Text>()
+            .find { it.id == id }
+    }
+
+    private fun EditViewModel.findStickerDecoration(id: String): Decoration.Sticker? {
+        return uiState.value.decorations
+            .filterIsInstance<Decoration.Sticker>()
+            .find { it.id == id }
     }
 
     @Test
@@ -321,20 +347,31 @@ class EditViewModelTest {
     }
 
     @Test
-    fun applyNewUchiwaState_templateIdSpecified_templateDataAppliedToState() = runTest {
+    fun applyNewUchiwaState_templateIdAndMainColorSpecified_appliesTemplateMainColor() = runTest {
         val uchiwaId = "new-uchiwa-id"
         val templateId = "template_1"
+        val selectedMainColor = DecorationColors.BLUE
         val templateUchiwaColor = Color(0xFFFF69B4)
         val templateBackgroundColor = Color(0xFFFFFFFF)
 
         val templateTextDecoration = Decoration.Text(
             text = "推し",
             id = "template_1_text_1",
+            color = DecorationColors.PINK.value,
+            strokeColor = DecorationColors.WHITE.value,
+            strokeWidth = 18f,
+            secondBorderColor = DecorationColors.BLACK.value,
+            secondBorderWidth = 18f,
             font = FontFamilies.DELA_GOTHIC_ONE
         )
         val templateStickerDecoration = Decoration.Sticker(
             label = "heart",
-            id = "template_1_sticker_1"
+            id = "template_1_sticker_1",
+            color = DecorationColors.PINK.value,
+            strokeColor = DecorationColors.WHITE.value,
+            strokeWidth = 4f,
+            secondStrokeColor = DecorationColors.BLACK.value,
+            secondStrokeWidth = 4f
         )
 
         val templateSavedUchiwa = SavedUchiwa(
@@ -353,21 +390,241 @@ class EditViewModelTest {
         coEvery { templateRepository.getTemplateById(templateId) } returns template
         every { localImageRepository.getAllImages() } returns emptyList()
 
-        val viewModel = createViewModel(uchiwaId = uchiwaId, templateId = templateId)
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            templateId = templateId,
+            templateMainColor = selectedMainColor
+        )
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
+        val textDecoration = state.decorations.filterIsInstance<Decoration.Text>().single()
+        val stickerDecoration = state.decorations.filterIsInstance<Decoration.Sticker>().single()
 
         assertEquals(uchiwaId, state.uchiwaId)
         assertEquals(2, state.decorations.size)
-        assertTrue(state.decorations.any { it.id == "template_1_text_1" })
-        assertTrue(state.decorations.any { it.id == "template_1_sticker_1" })
+        assertEquals("template_1_text_1", textDecoration.id)
+        assertEquals(selectedMainColor.value, textDecoration.color)
+        assertEquals(DecorationColors.WHITE.value, textDecoration.strokeColor)
+        assertEquals(DecorationColors.BLACK.value, textDecoration.secondBorderColor)
+        assertEquals(18f, textDecoration.secondBorderWidth)
+        assertEquals("template_1_sticker_1", stickerDecoration.id)
+        assertEquals(DecorationColors.PINK.value, stickerDecoration.color)
+        assertEquals(DecorationColors.WHITE.value, stickerDecoration.strokeColor)
+        assertEquals(DecorationColors.BLACK.value, stickerDecoration.secondStrokeColor)
+        assertEquals(4f, stickerDecoration.secondStrokeWidth)
         assertEquals(templateUchiwaColor, state.uchiwaColor)
         assertEquals(templateBackgroundColor, state.backgroundColor)
 
         coVerify(exactly = 0) {
             localDatabaseRepository.saveUchiwa(any())
         }
+    }
+
+    @Test
+    fun applyNewUchiwaState_namedTemplateSpecified_replacesPlaceholderWithNonEmptyNameParts() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        val templateId = "template_1"
+        val lastNamePlaceholder = Decoration.Text(
+            text = "みょうじ",
+            id = "name-last",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName1Placeholder = Decoration.Text(
+            text = "名",
+            id = "name-1",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName2Placeholder = Decoration.Text(
+            text = "前",
+            id = "name-2",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val honorificPlaceholder = Decoration.Text(
+            text = "くん",
+            id = "name-honorific",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val fixedDecoration = Decoration.Text(
+            text = "して！",
+            id = "fixed-text",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val template = Template(
+            id = templateId,
+            previewImageResId = 0,
+            savedUchiwa = SavedUchiwa(
+                decorations = listOf(
+                    lastNamePlaceholder,
+                    firstName1Placeholder,
+                    firstName2Placeholder,
+                    honorificPlaceholder,
+                    fixedDecoration
+                ),
+                uchiwaColor = Color.Black,
+                backgroundColor = Color.White
+            ),
+            isNameInputPlaceholderEnabled = true
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        coEvery { templateRepository.getTemplateById(templateId) } returns template
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            templateId = templateId,
+            lastName = "佐藤",
+            firstName1 = "勝",
+            firstName2 = "利",
+            honorific = "くん"
+        )
+        advanceUntilIdle()
+
+        val textDecorations = viewModel.uiState.value.decorations.filterIsInstance<Decoration.Text>()
+
+        assertEquals(listOf("佐藤", "勝", "利", "くん", "して！"), textDecorations.map { it.text })
+        assertEquals(
+            listOf("name-last", "name-1", "name-2", "name-honorific", "fixed-text"),
+            textDecorations.map { it.id }
+        )
+    }
+
+    @Test
+    fun applyNewUchiwaState_namedTemplateSpecified_revertsToPlaceholderForEmptyValues() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        val templateId = "template_1"
+        val lastNamePlaceholder = Decoration.Text(
+            text = "みょうじ",
+            id = "name-last",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName1Placeholder = Decoration.Text(
+            text = "名",
+            id = "name-1",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val firstName2Placeholder = Decoration.Text(
+            text = "前",
+            id = "name-2",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val honorificPlaceholder = Decoration.Text(
+            text = "くん",
+            id = "name-honorific",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val fixedDecoration = Decoration.Text(
+            text = "プロポーズ",
+            id = "fixed-text",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val template = Template(
+            id = templateId,
+            previewImageResId = 0,
+            savedUchiwa = SavedUchiwa(
+                decorations = listOf(
+                    lastNamePlaceholder,
+                    firstName1Placeholder,
+                    firstName2Placeholder,
+                    honorificPlaceholder,
+                    fixedDecoration
+                ),
+                uchiwaColor = Color.Black,
+                backgroundColor = Color.White
+            ),
+            isNameInputPlaceholderEnabled = true
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        coEvery { templateRepository.getTemplateById(templateId) } returns template
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            templateId = templateId,
+            lastName = " ",
+            firstName1 = "潤",
+            firstName2 = "",
+            honorific = "   "
+        )
+        advanceUntilIdle()
+
+        val textDecorations = viewModel.uiState.value.decorations.filterIsInstance<Decoration.Text>()
+
+        // 空文字や空白のみの場合はデフォルトのテキストに戻る
+        assertEquals(listOf("みょうじ", "潤", "前", "くん", "プロポーズ"), textDecorations.map { it.text })
+        assertEquals(
+            listOf("name-last", "name-1", "name-2", "name-honorific", "fixed-text"),
+            textDecorations.map { it.id }
+        )
+    }
+
+    @Test
+    fun addTextDecoration_selectsNewlyAddedTextDecoration() = runTest {
+        val newDecoration = Decoration.Text(
+            id = "text-1",
+            text = "テスト",
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createText(FontFamilies.HACHI_MARU_POP) } returns newDecoration
+
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.addTextDecoration(FontFamilies.HACHI_MARU_POP)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.decorations.contains(newDecoration))
+        assertEquals(newDecoration.id, state.selectedDecorationId)
+    }
+
+    @Test
+    fun addStickerDecoration_selectsNewlyAddedStickerDecoration() = runTest {
+        val newDecoration = Decoration.Sticker(
+            id = "sticker-1",
+            label = "heart"
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createSticker("heart") } returns newDecoration
+
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.addStickerDecoration("heart")
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.decorations.contains(newDecoration))
+        assertEquals(newDecoration.id, state.selectedDecorationId)
+    }
+
+    @Test
+    fun addImageDecoration_selectsNewlyAddedImageDecoration() = runTest {
+        val imageId = "image-1"
+        val newDecoration = Decoration.Image(
+            id = "image-decoration-1",
+            imageId = imageId
+        )
+        val imageReference = ImageReference(
+            id = imageId,
+            path = "/path/to/image.png"
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createImage(imageId) } returns newDecoration
+        every { localImageRepository.loadImage(imageId) } returns imageReference
+
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.addImageDecoration(imageId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.decorations.contains(newDecoration))
+        assertEquals(newDecoration.id, state.selectedDecorationId)
     }
 
     @Test
@@ -477,6 +734,202 @@ class EditViewModelTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun updateWidth_multipleDragUpdates_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val initialWidth = 400
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            width = initialWidth,
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateWidth(textDecorationId, 500)
+        viewModel.updateWidth(textDecorationId, 600)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(600, viewModel.findTextDecoration(textDecorationId)?.width)
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(
+                match { it.name == AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT }
+            )
+        }
+
+        viewModel.finishWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT &&
+                            it.params["target"] == EditTextTargetParams.TEXT
+                }
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(initialWidth, viewModel.findTextDecoration(textDecorationId)?.width)
+    }
+
+    @Test
+    fun updateStrokeWidth_stickerDrag_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val stickerDecorationId = "sticker-1"
+        val initialStrokeWidth = 3f
+        val stickerDecoration = Decoration.Sticker(
+            id = stickerDecorationId,
+            label = "heart",
+            strokeWidth = initialStrokeWidth
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(stickerDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateStrokeWidth(stickerDecorationId, 5f)
+        viewModel.updateStrokeWidth(stickerDecorationId, 7f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(7f, viewModel.findStickerDecoration(stickerDecorationId)?.strokeWidth)
+
+        viewModel.finishStrokeWidthChange(stickerDecorationId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_STICKER_WEIGHT &&
+                            it.params["target"] == EditStickerTargetParams.PARAM_STROKE_1
+                }
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(
+            initialStrokeWidth,
+            viewModel.findStickerDecoration(stickerDecorationId)?.strokeWidth
+        )
+    }
+
+    @Test
+    fun updateSecondBorderWidth_textDrag_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val initialSecondBorderWidth = 6f
+        val textDecoration = Decoration.Text(
+            id = textDecorationId,
+            text = "テスト",
+            secondBorderWidth = initialSecondBorderWidth,
+            font = FontFamilies.HACHI_MARU_POP
+        )
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(textDecoration),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateSecondBorderWidth(textDecorationId, 9f)
+        viewModel.updateSecondBorderWidth(textDecorationId, 12f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(12f, viewModel.findTextDecoration(textDecorationId)?.secondBorderWidth)
+
+        viewModel.finishSecondBorderWidthChange(textDecorationId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_TEXT_WEIGHT &&
+                            it.params["target"] == EditTextTargetParams.PARAM_STROKE_2
+                }
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(
+            initialSecondBorderWidth,
+            viewModel.findTextDecoration(textDecorationId)?.secondBorderWidth
+        )
+    }
+
+    @Test
+    fun updateOverallBorderWidth_multipleDragUpdates_finishCommitsSingleUndo() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val initialOverallBorderWidth = 4f
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = emptyList(),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White,
+            overallBorderWidth = initialOverallBorderWidth
+        )
+
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateOverallBorderWidth(8f)
+        viewModel.updateOverallBorderWidth(10f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(10f, viewModel.uiState.value.overallBorderWidth)
+
+        viewModel.finishOverallBorderWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(initialOverallBorderWidth, viewModel.uiState.value.overallBorderWidth)
     }
 
     @Test

@@ -2,14 +2,20 @@ package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.fansauchiwa.R
+import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.edit.FontFamilies
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,9 +34,18 @@ class HomeScreenTest {
                 id = "template_$index",
                 previewImageResId = R.drawable.uchiwa_shape,
                 savedUchiwa = SavedUchiwa(
-                    decorations = emptyList(),
-                    uchiwaColor = Color.White,
-                    backgroundColor = Color.White
+                    decorations = listOf(
+                        Decoration.Text(
+                            id = "preview_text_$index",
+                            text = "サンプル$index",
+                            color = Color.White,
+                            strokeColor = Color(0xFF65E8FF),
+                            strokeWidth = 24f,
+                            font = FontFamilies.M_PLUS_ROUNDED_1C
+                        )
+                    ),
+                    uchiwaColor = Color(0xFFF6D6FF),
+                    backgroundColor = Color(0x11000000)
                 )
             )
         }
@@ -39,93 +54,76 @@ class HomeScreenTest {
     private val sampleMasterpieces = (1..6).map { "masterpiece_$it" }
 
     @Test
-    fun templatesAndMasterpieces_displaysBothSections() {
+    fun homeNavigationBar_switchesVisibleContentByTab() {
+        val templates = previewTemplates()
         composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = sampleMasterpieces,
-                templates = previewTemplates(),
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
+            val selectedTabState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(HomeTab.HOME)
+            }
+
+            androidx.compose.foundation.layout.Column {
+                HomeNavigationBar(
+                    selectedTab = selectedTabState.value,
+                    onTabSelected = { selectedTabState.value = it }
+                )
+                val selectedMemberColorState = androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
+                }
+
+                HomeTabContent(
+                    selectedTab = selectedTabState.value,
+                    masterpiecePathList = sampleMasterpieces,
+                    templates = templates,
+                    selectedMainColor = selectedMemberColorState.value,
+                    onMainColorSelected = { selectedMemberColorState.value = it },
+                    isSelectionMode = false,
+                    selectedPaths = emptyList(),
+                    onImageClick = {},
+                    onTemplateClick = {},
+                    onImageLongPress = {},
+                    statusBarPadding = 0.dp,
+                    isPreview = true
+                )
+            }
         }
 
         val context = getContext()
+        val homeTabLabel = context.getString(R.string.home)
+        val myDesignTabLabel = context.getString(R.string.my_design)
         val templateSectionTitle = context.getString(R.string.template_section_title)
         val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
 
+        composeTestRule.onNodeWithText(homeTabLabel).assertIsDisplayed()
+        composeTestRule.onNodeWithText(myDesignTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
-        composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
-
-        composeTestRule.onNodeWithText("template_1").assertIsDisplayed()
-        composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
-    }
-
-    @Test
-    fun templatesOnly_displaysTemplateSectionAndEmptyMessage() {
-        composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = emptyList(),
-                templates = previewTemplates(),
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
-        }
-
-        val context = getContext()
-        val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
-        val emptyMessageTitle = context.getString(R.string.empty_masterpiece_title)
-
-        composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
-        composeTestRule.onNodeWithText("template_1").assertIsDisplayed()
-
+        composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
-        composeTestRule.onNodeWithText(emptyMessageTitle).assertIsDisplayed()
-    }
+        composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
 
-    @Test
-    fun masterpiecesOnly_displaysMyDesignSection() {
-        composeTestRule.setContent {
-            HomeScreenContent(
-                masterpiecePathList = sampleMasterpieces,
-                templates = emptyList(),
-                isSelectionMode = false,
-                selectedPaths = emptyList(),
-                onImageClick = {},
-                onTemplateClick = {},
-                onImageLongPress = {},
-                statusBarPadding = 0.dp,
-                isPreview = true
-            )
-        }
-
-        val context = getContext()
-        val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
+        composeTestRule.onNodeWithText(myDesignTabLabel).performClick()
 
         composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
-        composeTestRule.onNodeWithText("template_1").assertDoesNotExist()
-
+        composeTestRule.onNodeWithTag("template-preview-template_1").assertDoesNotExist()
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
     }
 
     @Test
-    fun empty_displaysEmptyMessageOnly() {
+    fun createTabColorSelector_updatesSelectedChipState() {
+        val templates = previewTemplates()
+        val targetColor = DecorationColors.BLUE
+
         composeTestRule.setContent {
-            HomeScreenContent(
+            val selectedMemberColorState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
+            }
+
+            HomeTabContent(
+                selectedTab = HomeTab.HOME,
                 masterpiecePathList = emptyList(),
-                templates = emptyList(),
+                templates = templates,
+                selectedMainColor = selectedMemberColorState.value,
+                onMainColorSelected = { selectedMemberColorState.value = it },
                 isSelectionMode = false,
                 selectedPaths = emptyList(),
                 onImageClick = {},
@@ -136,14 +134,78 @@ class HomeScreenTest {
             )
         }
 
-        val context = getContext()
-        val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
-        val emptyMessageTitle = context.getString(R.string.empty_masterpiece_title)
-
-        composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
-        composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
-
-        composeTestRule.onNodeWithText(emptyMessageTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).performClick()
+        composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).assertIsSelected()
     }
+
+    @Test
+    fun nameTemplateInputDialog_displaysThreeInputHints() {
+        composeTestRule.setContent {
+            val lastNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val firstNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val honorificState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            NameTemplateInputDialog(
+                lastName = lastNameState.value,
+                onLastNameChange = { lastNameState.value = it },
+                firstName = firstNameState.value,
+                onFirstNameChange = { firstNameState.value = it },
+                firstNameErrorMessage = null,
+                honorific = honorificState.value,
+                onHonorificChange = { honorificState.value = it },
+                onDismiss = {},
+                onConfirm = {}
+            )
+        }
+
+        val context = getContext()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_dialog_title)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_last_name_placeholder)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_first_name_placeholder)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.name_template_honorific_placeholder)).assertIsDisplayed()
+    }
+
+    @Test
+    fun nameTemplateInputDialog_allowsConfirmWhenFirstNameIsEmpty() {
+        composeTestRule.setContent {
+            val lastNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val firstNameState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val honorificState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf("")
+            }
+            val confirmedState = androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(false)
+            }
+            NameTemplateInputDialog(
+                lastName = lastNameState.value,
+                onLastNameChange = { lastNameState.value = it },
+                firstName = firstNameState.value,
+                onFirstNameChange = { firstNameState.value = it },
+                firstNameErrorMessage = null,
+                honorific = honorificState.value,
+                onHonorificChange = { honorificState.value = it },
+                onDismiss = {},
+                onConfirm = {
+                    confirmedState.value = true
+                }
+            )
+            if (confirmedState.value) {
+                androidx.compose.material3.Text("confirmed")
+            }
+        }
+
+        val context = getContext()
+        composeTestRule.onNodeWithText(context.getString(R.string.decide)).performClick()
+        composeTestRule.onNodeWithText("confirmed").assertIsDisplayed()
+    }
+
 }

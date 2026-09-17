@@ -1,35 +1,37 @@
 package com.fansauchiwa.home
 
+import android.graphics.Bitmap
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -40,33 +42,55 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -75,17 +99,68 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
+import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.applyTemplateMainColor
+import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
+import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
+import com.fansauchiwa.edit.decorationitem.StickerItemContent
+import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.decorationitem.generateSdfTexture
+import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
+import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
 import com.fansauchiwa.ui.modifier.fansaCombinedClickable
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
+import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
+import com.fansauchiwa.ui.util.createOverallBorderBitmap
+import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.math.min
+
+internal val TemplatePreviewSummaryKey = SemanticsPropertyKey<String>("TemplatePreviewSummary")
+internal var SemanticsPropertyReceiver.templatePreviewSummary by TemplatePreviewSummaryKey
+internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = buildString {
+    append(
+        savedUchiwa.decorations
+            .filterIsInstance<Decoration.Text>()
+            .joinToString(separator = "|") { it.text }
+    )
+    append(";background=")
+    append(savedUchiwa.backgroundColor.value.toString())
+    append(";uchiwa=")
+    append(savedUchiwa.uchiwaColor.value.toString())
+}
+
+internal fun mainColorChipTag(color: Color): String = "main-color-chip-${color.toArgb()}"
+internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, String> =
+    when (firstName.length) {
+        0 -> "" to ""
+        1 -> firstName to ""
+        else -> firstName.take(1) to firstName.drop(1)
+    }
+
+private val homeNavigationTabs = listOf(HomeTab.HOME, HomeTab.MY_DESIGN)
+
+private fun HomeTab.icon(): ImageVector = when (this) {
+    HomeTab.HOME -> Icons.Default.Home
+    HomeTab.MY_DESIGN -> Icons.Default.PhotoLibrary
+}
+
+private fun HomeTab.labelResId(): Int = when (this) {
+    HomeTab.HOME -> R.string.home
+    HomeTab.MY_DESIGN -> R.string.my_design
+}
 
 @Composable
 private fun HomeFab(
@@ -216,12 +291,43 @@ private fun HomeTopAppBar(
     )
 }
 
+@Composable
+internal fun HomeNavigationBar(
+    selectedTab: HomeTab,
+    onTabSelected: (HomeTab) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NavigationBar(
+        modifier = modifier,
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp,
+        windowInsets = WindowInsets()
+    ) {
+        homeNavigationTabs.forEach { tab ->
+            val label = stringResource(tab.labelResId())
+            NavigationBarItem(
+                selected = selectedTab == tab,
+                onClick = { onTabSelected(tab) },
+                icon = {
+                    Icon(
+                        imageVector = tab.icon(),
+                        contentDescription = label
+                    )
+                },
+                label = {
+                    Text(text = label)
+                }
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
-    onImageClick: (String, String?) -> Unit = { _, _ -> },
+    onImageClick: (EditScreenInputArg) -> Unit = {},
     onAddClick: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {}
@@ -237,6 +343,13 @@ fun HomeScreen(
     val context = LocalContext.current
     val duplicateMasterpieceSnackbar = stringResource(R.string.duplicate_masterpiece_snackbar)
     val deleteMasterpieceSnackbar = stringResource(R.string.delete_masterpiece_snackbar)
+    var nameTemplateDialogState by rememberSaveable(stateSaver = NameTemplateDialogState.Saver) {
+        mutableStateOf(NameTemplateDialogState())
+    }
+
+    fun resetNameTemplateDialog() {
+        nameTemplateDialogState = NameTemplateDialogState()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -264,6 +377,44 @@ fun HomeScreen(
         )
     }
 
+    nameTemplateDialogState.templateId?.let { templateId ->
+        NameTemplateInputDialog(
+            lastName = nameTemplateDialogState.lastName,
+            onLastNameChange = {
+                nameTemplateDialogState = nameTemplateDialogState.copy(lastName = it)
+            },
+            firstName = nameTemplateDialogState.firstName,
+            onFirstNameChange = {
+                nameTemplateDialogState = nameTemplateDialogState.copy(
+                    firstName = it
+                )
+            },
+            firstNameErrorMessage = null,
+            honorific = nameTemplateDialogState.honorific,
+            onHonorificChange = {
+                nameTemplateDialogState = nameTemplateDialogState.copy(honorific = it)
+            },
+            onDismiss = ::resetNameTemplateDialog,
+            onConfirm = {
+                val (firstName1, firstName2) = splitFirstNameForNameTemplate(
+                    nameTemplateDialogState.firstName
+                )
+                onImageClick(
+                    EditScreenInputArg(
+                        uchiwaId = UUID.randomUUID().toString(),
+                        templateId = templateId,
+                        templateMainColor = uiState.selectedMainColor,
+                        lastName = nameTemplateDialogState.lastName,
+                        firstName1 = firstName1,
+                        firstName2 = firstName2,
+                        honorific = nameTemplateDialogState.honorific
+                    )
+                )
+                resetNameTemplateDialog()
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             val uriHandler = LocalUriHandler.current
@@ -287,10 +438,23 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            BannerAd(
-                LocalContext.current,
-                modifier.windowInsetsPadding(WindowInsets.navigationBars)
-            )
+            Surface(
+                tonalElevation = NavigationBarDefaults.Elevation
+            ) {
+                Column {
+                    HomeNavigationBar(
+                        selectedTab = uiState.selectedTab,
+                        onTabSelected = viewModel::onTabSelected,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    BannerAd(
+                        LocalContext.current,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.navigationBars)
+                    )
+                }
+            }
         },
         floatingActionButton = {
             HomeFab(
@@ -323,12 +487,14 @@ fun HomeScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        HomeScreenContent(
+        HomeTabContent(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = innerPadding.calculateBottomPadding()),
+                .fillMaxSize(),
+            selectedTab = uiState.selectedTab,
             masterpiecePathList = uiState.masterpiecePathList,
             templates = uiState.templates,
+            selectedMainColor = uiState.selectedMainColor,
+            onMainColorSelected = viewModel::onMainColorSelected,
             isSelectionMode = uiState.isSelectionMode,
             selectedPaths = uiState.selectedPaths,
             lazyGridState = lazyGridState,
@@ -338,44 +504,243 @@ fun HomeScreen(
                 } else {
                     val uchiwaId = viewModel.extractUchiwaId(path)
                     viewModel.logItemEditTap()
-                    onImageClick(uchiwaId, null)
+                    onImageClick(EditScreenInputArg(uchiwaId = uchiwaId))
                 }
             },
-            onTemplateClick = { templateId ->
-                viewModel.logTemplateTap(templateId)
-                val newUchiwaId = UUID.randomUUID().toString()
-                onImageClick(newUchiwaId, templateId)
+            onTemplateClick = { template ->
+                viewModel.logTemplateTap(template.id)
+                if (template.isNameInputPlaceholderEnabled) {
+                    nameTemplateDialogState = NameTemplateDialogState(templateId = template.id)
+                } else {
+                    onImageClick(
+                        EditScreenInputArg(
+                            uchiwaId = UUID.randomUUID().toString(),
+                            templateId = template.id,
+                            templateMainColor = uiState.selectedMainColor
+                        )
+                    )
+                }
             },
             onImageLongPress = {
                 viewModel.enterSelectionMode()
             },
-            statusBarPadding = innerPadding.calculateTopPadding()
+            statusBarPadding = innerPadding.calculateTopPadding(),
+            bottomPadding = innerPadding.calculateBottomPadding()
         )
 
     }
 }
 
 @Composable
-internal fun HomeScreenContent(
-    modifier: Modifier = Modifier,
+internal fun HomeTabContent(
+    selectedTab: HomeTab,
     masterpiecePathList: List<String>,
     templates: List<Template>,
+    selectedMainColor: DecorationColors,
+    onMainColorSelected: (DecorationColors) -> Unit,
     isSelectionMode: Boolean,
     selectedPaths: List<String>,
-    lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState = rememberLazyGridState(),
     onImageClick: (String) -> Unit,
-    onTemplateClick: (String) -> Unit,
+    onTemplateClick: (Template) -> Unit,
     onImageLongPress: () -> Unit,
     statusBarPadding: Dp,
+    bottomPadding: Dp,
+    modifier: Modifier = Modifier,
+    lazyGridState: LazyGridState = rememberLazyGridState(),
     isPreview: Boolean = false
 ) {
-    val isEmpty = templates.isEmpty() && masterpiecePathList.isEmpty()
+    when (selectedTab) {
+        HomeTab.HOME -> HomeTabHomeContent(
+            templates = templates,
+            selectedMainColor = selectedMainColor,
+            onMainColorSelected = onMainColorSelected,
+            onTemplateClick = onTemplateClick,
+            statusBarPadding = statusBarPadding,
+            bottomPadding = bottomPadding,
+            modifier = modifier,
+            isPreview = isPreview
+        )
 
-    if (isEmpty) {
+        HomeTab.MY_DESIGN -> HomeTabMyDesignContent(
+            masterpiecePathList = masterpiecePathList,
+            isSelectionMode = isSelectionMode,
+            selectedPaths = selectedPaths,
+            lazyGridState = lazyGridState,
+            onImageClick = onImageClick,
+            onImageLongPress = onImageLongPress,
+            statusBarPadding = statusBarPadding,
+            bottomPadding = bottomPadding,
+            modifier = modifier,
+            isPreview = isPreview
+        )
+    }
+}
+
+@Composable
+private fun HomeTabHomeContent(
+    templates: List<Template>,
+    selectedMainColor: DecorationColors,
+    onMainColorSelected: (DecorationColors) -> Unit,
+    onTemplateClick: (Template) -> Unit,
+    statusBarPadding: Dp,
+    bottomPadding: Dp,
+    modifier: Modifier = Modifier,
+    isPreview: Boolean = false
+) {
+    if (templates.isEmpty()) {
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(top = statusBarPadding),
+                .padding(top = statusBarPadding, bottom = bottomPadding),
+            contentAlignment = Alignment.Center
+        ) {
+            EmptyTemplateMessage()
+        }
+        return
+    }
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(152.dp),
+        modifier = modifier
+            .fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = statusBarPadding + 16.dp,
+            end = 16.dp,
+            bottom = bottomPadding + 80.dp
+        ),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(
+                title = stringResource(R.string.main_color_section_title),
+            )
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            MainColorSelector(
+                selectedColor = selectedMainColor,
+                onColorSelected = onMainColorSelected,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(
+                title = stringResource(R.string.template_section_title),
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+        items(templates, key = { it.id }) { template ->
+            TemplateItem(
+                template = template,
+                mainColor = selectedMainColor,
+                onClick = { onTemplateClick(template) },
+                isPreview = isPreview
+            )
+        }
+    }
+}
+
+@Composable
+internal fun NameTemplateInputDialog(
+    lastName: String,
+    onLastNameChange: (String) -> Unit,
+    firstName: String,
+    onFirstNameChange: (String) -> Unit,
+    firstNameErrorMessage: String?,
+    honorific: String,
+    onHonorificChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(R.string.name_template_dialog_title))
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = lastName,
+                    onValueChange = onLastNameChange,
+                    label = { Text(text = stringResource(R.string.name_template_last_name)) },
+                    placeholder = { Text(text = stringResource(R.string.name_template_last_name_placeholder)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = firstName,
+                    onValueChange = onFirstNameChange,
+                    label = { Text(text = stringResource(R.string.name_template_first_name)) },
+                    placeholder = { Text(text = stringResource(R.string.name_template_first_name_placeholder)) },
+                    singleLine = true,
+                    isError = firstNameErrorMessage != null,
+                    supportingText = {
+                        firstNameErrorMessage?.let { Text(text = it) }
+                    }
+                )
+                OutlinedTextField(
+                    value = honorific,
+                    onValueChange = onHonorificChange,
+                    label = { Text(text = stringResource(R.string.name_template_honorific)) },
+                    placeholder = { Text(text = stringResource(R.string.name_template_honorific_placeholder)) },
+                    singleLine = true
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(R.string.decide))
+            }
+        }
+    )
+}
+
+@Composable
+private fun MainColorSelector(
+    selectedColor: DecorationColors,
+    onColorSelected: (DecorationColors) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ColorPickerRow(
+        currentColor = selectedColor.value,
+        onColorSelected = { color ->
+            val decorationColor =
+                DecorationColors.entries.find { it.value == color } ?: DecorationColors.PINK
+            onColorSelected(decorationColor)
+        },
+        modifier = modifier,
+        colors = DecorationColors.entries.map { it.value },
+        includeCustomColorPicker = false,
+        chipSize = 40.dp,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        applySelectedSemantics = true,
+        testTagProvider = ::mainColorChipTag
+    )
+}
+
+@Composable
+private fun HomeTabMyDesignContent(
+    masterpiecePathList: List<String>,
+    isSelectionMode: Boolean,
+    selectedPaths: List<String>,
+    lazyGridState: LazyGridState,
+    onImageClick: (String) -> Unit,
+    onImageLongPress: () -> Unit,
+    statusBarPadding: Dp,
+    bottomPadding: Dp,
+    modifier: Modifier = Modifier,
+    isPreview: Boolean = false
+) {
+    if (masterpiecePathList.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(top = statusBarPadding, bottom = bottomPadding),
             contentAlignment = Alignment.Center
         ) {
             EmptyMasterpieceMessage()
@@ -387,79 +752,28 @@ internal fun HomeScreenContent(
         columns = GridCells.Adaptive(152.dp),
         state = lazyGridState,
         modifier = modifier
-            .fillMaxSize()
-            .padding(top = statusBarPadding),
-        contentPadding = PaddingValues(horizontal = 8.dp),
+            .fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 8.dp,
+            top = statusBarPadding + 16.dp,
+            end = 8.dp,
+            bottom = bottomPadding + 80.dp
+        ),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (templates.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                TemplateSectionHeader()
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                TemplateRow(
-                    templates = templates,
-                    onTemplateClick = onTemplateClick,
-                    isPreview = isPreview
-                )
-            }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(
+                title = stringResource(R.string.my_design_section_title),
+            )
         }
-
-        if (masterpiecePathList.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                MyDesignSectionHeader()
-            }
-            items(masterpiecePathList) { path ->
-                MasterpieceItem(
-                    imagePath = path,
-                    isSelected = selectedPaths.contains(path),
-                    isSelectionMode = isSelectionMode,
-                    onClick = { onImageClick(path) },
-                    onLongClick = onImageLongPress,
-                    isPreview = isPreview
-                )
-            }
-        }
-
-        if (masterpiecePathList.isEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                EmptyMasterpieceMessage(
-                    modifier = Modifier
-                        .defaultMinSize(minHeight = 300.dp)
-                        .padding(top = 64.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TemplateSectionHeader(modifier: Modifier = Modifier) {
-    Text(
-        text = stringResource(R.string.template_section_title),
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
-    )
-}
-
-@Composable
-private fun TemplateRow(
-    templates: List<Template>,
-    onTemplateClick: (String) -> Unit,
-    isPreview: Boolean,
-    modifier: Modifier = Modifier
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(templates, key = { it.id }) { template ->
-            TemplateItem(
-                template = template,
-                onClick = { onTemplateClick(template.id) },
+        items(masterpiecePathList) { path ->
+            MasterpieceItem(
+                imagePath = path,
+                isSelected = selectedPaths.contains(path),
+                isSelectionMode = isSelectionMode,
+                onClick = { onImageClick(path) },
+                onLongClick = onImageLongPress,
                 isPreview = isPreview
             )
         }
@@ -467,37 +781,218 @@ private fun TemplateRow(
 }
 
 @Composable
+private fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.padding(bottom = 8.dp)
+    )
+}
+
+@Composable
 private fun TemplateItem(
     template: Template,
+    mainColor: DecorationColors,
     onClick: () -> Unit,
     isPreview: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
-            .width(152.dp)
+            .fillMaxWidth()
             .aspectRatio(1.2f),
         onClick = onClick
     ) {
-        if (isPreview) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = template.id,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+        ComponentTemplateItem(
+            template = template,
+            mainColor = mainColor.value,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+private fun ComponentTemplateItem(
+    template: Template,
+    mainColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val savedUchiwa = remember(template, mainColor) {
+        template.savedUchiwa.applyTemplateMainColor(mainColor, template.isNameInputPlaceholderEnabled)
+    }
+
+    var decorationLayerSize by remember { mutableStateOf(IntSize.Zero) }
+    var overallBorderBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var overallBorderSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val decorationVisualLayer = rememberGraphicsLayer()
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+
+    fun clearOverallBorderBitmaps() {
+        overallBorderBitmap = null
+        overallBorderSdfBitmap = null
+    }
+
+    DisposableEffect(template, mainColor) {
+        onDispose {
+            clearOverallBorderBitmaps()
+        }
+    }
+
+    LaunchedEffect(
+        savedUchiwa.decorations,
+        savedUchiwa.overallBorderWidth,
+        savedUchiwa.overallBorderColor,
+        savedUchiwa.isOverallBorderPuffyEnabled,
+        decorationLayerSize
+    ) {
+        clearOverallBorderBitmaps()
+        val overallBorderWidth = savedUchiwa.overallBorderWidth
+        val overallBorderColor = savedUchiwa.overallBorderColor
+        val isOverallBorderPuffyEnabled = savedUchiwa.isOverallBorderPuffyEnabled
+
+        if (overallBorderWidth <= 0f) return@LaunchedEffect
+        if (decorationLayerSize.width <= 0 || decorationLayerSize.height <= 0) return@LaunchedEffect
+
+        withFrameNanos { }
+        val bufferBitmap = captureGraphicsLayerBitmap(
+            graphicsLayer = decorationVisualLayer,
+            density = density,
+            layoutDirection = layoutDirection,
+            targetSize = decorationLayerSize
+        )
+        val borderMaskBitmap = createOverallBorderMaskBitmap(
+            sourceBitmap = bufferBitmap,
+            overallBorderWidth = overallBorderWidth
+        )
+        bufferBitmap.recycle()
+        if (borderMaskBitmap == null) return@LaunchedEffect
+
+        if (isOverallBorderPuffyEnabled && supportsPukuPukuEffect()) {
+            overallBorderSdfBitmap = generateSdfTexture(borderMaskBitmap)
         } else {
-            Image(
-                painter = painterResource(template.previewImageResId),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillHeight
+            overallBorderBitmap = createOverallBorderBitmap(
+                maskBitmap = borderMaskBitmap,
+                borderColor = overallBorderColor
             )
         }
+        borderMaskBitmap.recycle()
+    }
+
+    BoxWithConstraints(
+        modifier = modifier
+            .padding(8.dp)
+            .testTag("template-preview-${template.id}"),
+        contentAlignment = Alignment.Center
+    ) {
+        val referenceWidth = 360.dp
+        val referenceHeight = referenceWidth / 1.414f
+        val scale = min(maxWidth / referenceWidth, maxHeight / referenceHeight)
+
+        Box(
+            modifier = Modifier
+                .requiredSize(referenceWidth, referenceHeight)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .semantics(mergeDescendants = true) {
+                    templatePreviewSummary = buildTemplatePreviewSummary(savedUchiwa)
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            val overallBorderShaderParams = remember {
+                PuffyShaderParams(
+                    edgeWidthMulti = 7.0f
+                )
+            }
+            when {
+                overallBorderSdfBitmap != null -> {
+                    PuffyTextRenderer(
+                        sdfTextureBitmap = overallBorderSdfBitmap!!,
+                        baseColor = savedUchiwa.overallBorderColor,
+                        scaleFactor = 1f,
+                        modifier = Modifier.fillMaxSize(),
+                        shaderParams = overallBorderShaderParams
+                    )
+                }
+
+                overallBorderBitmap != null -> {
+                    Image(
+                        bitmap = overallBorderBitmap!!.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onSizeChanged { decorationLayerSize = it }
+                    .drawWithContent {
+                        decorationVisualLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                        drawLayer(decorationVisualLayer)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                savedUchiwa.decorations.forEach { decoration ->
+                    when (decoration) {
+                        is Decoration.Text -> TemplateTextItem(decoration)
+                        is Decoration.Sticker -> TemplateStickerItem(decoration)
+                        is Decoration.Image -> Unit
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TemplateTextItem(
+    decoration: Decoration.Text,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.graphicsLayer {
+            translationX = decoration.offset.x
+            translationY = decoration.offset.y
+            scaleX = decoration.scale
+            scaleY = decoration.scale
+            rotationZ = decoration.rotation
+        }
+    ) {
+        TextItemContent(
+            decoration = decoration,
+            textSize = 24.sp.nonScaledSp,
+        )
+    }
+}
+
+@Composable
+private fun TemplateStickerItem(
+    decoration: Decoration.Sticker,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.graphicsLayer {
+            translationX = decoration.offset.x
+            translationY = decoration.offset.y
+            scaleX = decoration.scale
+            scaleY = decoration.scale
+            rotationZ = decoration.rotation
+        }
+    ) {
+        StickerItemContent(
+            decoration = decoration,
+            modifier = Modifier
+        )
     }
 }
 
@@ -512,7 +1007,26 @@ private fun MyDesignSectionHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun EmptyTemplateMessage(modifier: Modifier = Modifier) {
+    EmptyStateMessage(
+        title = stringResource(R.string.empty_template_title),
+        modifier = modifier
+    )
+}
+
+@Composable
 private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
+    EmptyStateMessage(
+        title = stringResource(R.string.empty_masterpiece_title),
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun EmptyStateMessage(
+    title: String,
+    modifier: Modifier = Modifier
+) {
     val uriHandler = LocalUriHandler.current
     Box(
         modifier = modifier,
@@ -523,7 +1037,7 @@ private fun EmptyMasterpieceMessage(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = stringResource(R.string.empty_masterpiece_title),
+                text = title,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.displaySmall,
                 textAlign = TextAlign.Center
@@ -608,80 +1122,53 @@ private fun previewTemplates(): List<Template> {
     return (1..3).map { index ->
         Template(
             id = "template_$index",
-            previewImageResId = R.drawable.uchiwa_shape,
             savedUchiwa = SavedUchiwa(
-                decorations = emptyList(),
-                uchiwaColor = Color.White,
-                backgroundColor = Color.White
+                decorations = listOf(
+                    Decoration.Text(
+                        id = "preview_text_$index",
+                        text = "サンプル$index",
+                        color = Color.White,
+                        strokeColor = Color(0xFF65E8FF),
+                        strokeWidth = 24f,
+                        width = FontWeight.W900.weight,
+                        font = FontFamilies.M_PLUS_ROUNDED_1C
+                    )
+                ),
+                uchiwaColor = Color(0xFFF6D6FF),
+                backgroundColor = Color(0x11000000)
             )
         )
     }
 }
 
-@Preview(showBackground = true, name = "テンプレートあり・マスターピースあり")
+@Preview(showBackground = true, name = "ホームタブ")
 @Composable
-private fun HomeScreenPreview_TemplatesAndMasterpieces() {
-    HomeScreenContent(
+private fun HomeTabHomeContentPreview() {
+    HomeTabHomeContent(
+        modifier = Modifier.fillMaxSize(),
+        templates = previewTemplates(),
+        selectedMainColor = DecorationColors.PINK,
+        onMainColorSelected = {},
+        onTemplateClick = {},
+        statusBarPadding = 0.dp,
+        bottomPadding = 0.dp,
+        isPreview = true
+    )
+}
+
+@Preview(showBackground = true, name = "マイデザインタブ")
+@Composable
+private fun HomeTabMyDesignContentPreview() {
+    HomeTabMyDesignContent(
         modifier = Modifier.fillMaxSize(),
         masterpiecePathList = (1..6).map { "masterpiece_$it" },
-        templates = previewTemplates(),
         isSelectionMode = false,
         selectedPaths = emptyList(),
+        lazyGridState = rememberLazyGridState(),
         onImageClick = {},
-        onTemplateClick = {},
         onImageLongPress = {},
         statusBarPadding = 0.dp,
-        isPreview = true
-    )
-}
-
-@Preview(showBackground = true, name = "テンプレートあり・マスターピースなし")
-@Composable
-private fun HomeScreenPreview_TemplatesOnly() {
-    HomeScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        masterpiecePathList = emptyList(),
-        templates = previewTemplates(),
-        isSelectionMode = false,
-        selectedPaths = emptyList(),
-        onImageClick = {},
-        onTemplateClick = {},
-        onImageLongPress = {},
-        statusBarPadding = 0.dp,
-        isPreview = true
-    )
-}
-
-@Preview(showBackground = true, name = "テンプレートなし・マスターピースあり")
-@Composable
-private fun HomeScreenPreview_MasterpiecesOnly() {
-    HomeScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        masterpiecePathList = (1..6).map { "masterpiece_$it" },
-        templates = emptyList(),
-        isSelectionMode = false,
-        selectedPaths = emptyList(),
-        onImageClick = {},
-        onTemplateClick = {},
-        onImageLongPress = {},
-        statusBarPadding = 0.dp,
-        isPreview = true
-    )
-}
-
-@Preview(showBackground = true, name = "テンプレートなし・マスターピースなし")
-@Composable
-private fun HomeScreenPreview_Empty() {
-    HomeScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        masterpiecePathList = emptyList(),
-        templates = emptyList(),
-        isSelectionMode = false,
-        selectedPaths = emptyList(),
-        onImageClick = {},
-        onTemplateClick = {},
-        onImageLongPress = {},
-        statusBarPadding = 0.dp,
+        bottomPadding = 0.dp,
         isPreview = true
     )
 }
