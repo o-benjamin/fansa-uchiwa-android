@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.ApplicationBuildType
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.util.Properties
 
@@ -20,6 +21,14 @@ val localProperties = Properties().apply {
     }
 }
 
+// AdMob のテスト用 ID を設定する。
+fun ApplicationBuildType.useTestAdUnits() {
+    manifestPlaceholders["ADMOB_APPLICATION_ID"] = "ca-app-pub-3940256099942544~3347511713"
+    buildConfigField("String", "REWARDED_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
+    buildConfigField("String", "BANNER_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
+    buildConfigField("String", "INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
+}
+
 android {
     namespace = "com.fansauchiwa"
     compileSdk = 36
@@ -36,25 +45,7 @@ android {
 
     buildTypes {
         debug {
-            manifestPlaceholders["ADMOB_APPLICATION_ID"] = "ca-app-pub-3940256099942544~3347511713"
-
-            buildConfigField(
-                "String",
-                "REWARDED_AD_UNIT_ID",
-                "\"ca-app-pub-3940256099942544/5224354917\""
-            )
-
-            buildConfigField(
-                "String",
-                "BANNER_AD_UNIT_ID",
-                "\"ca-app-pub-3940256099942544/9214589741\""
-            )
-
-            buildConfigField(
-                "String",
-                "INTERSTITIAL_AD_UNIT_ID",
-                "\"ca-app-pub-3940256099942544/1033173712\""
-            )
+            useTestAdUnits()
         }
 
         release {
@@ -95,6 +86,18 @@ android {
                             "Please add it to continue building the release version."
                 )
             buildConfigField("String", "INTERSTITIAL_AD_UNIT_ID", "\"$interstitialAdId\"")
+        }
+
+        // R8 の難読化・シュリンクを手元で検証するためのビルドタイプ。
+        // リリースと同じ R8 設定のままデバッグ署名・テスト広告で動かす。
+        create("beta") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+            }
+            useTestAdUnits()
         }
     }
     compileOptions {
