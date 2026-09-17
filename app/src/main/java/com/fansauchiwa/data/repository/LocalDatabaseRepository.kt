@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toColorLong
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.source.FansaUchiwaDao
+import com.fansauchiwa.data.infra.LocalDatabaseDataSource
 import com.fansauchiwa.data.source.FansaUchiwaEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -20,7 +20,7 @@ interface LocalDatabaseRepository {
 }
 
 class LocalDatabaseRepositoryImpl @Inject constructor(
-    private val fansaUchiwaDao: FansaUchiwaDao
+    private val localDatabaseDataSource: LocalDatabaseDataSource
 ) : LocalDatabaseRepository {
 
     override suspend fun saveUchiwa(uchiwa: Uchiwa) {
@@ -33,11 +33,11 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
             overallBorderWidth = uchiwa.overallBorderWidth,
             isOverallBorderPuffyEnabled = uchiwa.isOverallBorderPuffyEnabled
         )
-        return fansaUchiwaDao.upsertUchiwaData(fansaUchiwaEntity)
+        return localDatabaseDataSource.upsertUchiwaData(fansaUchiwaEntity)
     }
 
     override suspend fun getUchiwa(id: String): Uchiwa? {
-        val uchiwaData = fansaUchiwaDao.getUchiwaById(id)
+        val uchiwaData = localDatabaseDataSource.getUchiwaById(id)
         return uchiwaData?.let {
             Uchiwa(
                 id = it.id,
@@ -52,11 +52,11 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteUchiwa(id: String) {
-        fansaUchiwaDao.deleteUchiwaById(id)
+        localDatabaseDataSource.deleteUchiwaById(id)
     }
 
     override fun getAllUchiwasStream(): Flow<List<Uchiwa>> {
-        return fansaUchiwaDao.getAllUchiwasStream().map { entities ->
+        return localDatabaseDataSource.getAllUchiwasStream().map { entities ->
             entities.map { entity ->
                 Uchiwa(
                     id = entity.id,
@@ -72,7 +72,7 @@ class LocalDatabaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isImageUsedInAnyUchiwa(imageId: String): Boolean {
-        val allUchiwas = fansaUchiwaDao.getAllUchiwasStream().first()
+        val allUchiwas = localDatabaseDataSource.getAllUchiwasStream().first()
         return allUchiwas.any { uchiwa ->
             uchiwa.decorations.any { decoration ->
                 decoration is Decoration.Image && decoration.imageId == imageId
