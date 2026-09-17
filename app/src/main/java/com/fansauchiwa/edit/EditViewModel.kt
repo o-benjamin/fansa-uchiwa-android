@@ -27,8 +27,6 @@ import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
-import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
@@ -42,17 +40,19 @@ import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
+import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
+import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.util.UUID
-import javax.inject.Inject
 
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"

@@ -1,6 +1,8 @@
-package com.fansauchiwa.data
+package com.fansauchiwa.data.repository
 
 import android.graphics.Bitmap
+import com.fansauchiwa.data.infra.GalleryImageDataSource
+import com.fansauchiwa.data.infra.MasterpieceDataSource
 import javax.inject.Inject
 
 interface MasterpieceRepository {

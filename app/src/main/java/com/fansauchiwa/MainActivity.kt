@@ -8,15 +8,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.fansauchiwa.data.AdMobRepository
+import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.LocalHapticFeedbackEnabled
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

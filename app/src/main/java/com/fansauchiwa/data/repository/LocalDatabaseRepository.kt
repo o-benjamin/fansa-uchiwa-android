@@ -1,7 +1,9 @@
-package com.fansauchiwa.data
+package com.fansauchiwa.data.repository
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toColorLong
+import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaEntity
 import kotlinx.coroutines.flow.Flow
