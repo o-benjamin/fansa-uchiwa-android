@@ -31,15 +31,17 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
+import dagger.hilt.android.EntryPointAccessors
 
 /**
  * A composable function to display an Ad Manager banner advertisement.
  *
  * @param context The context to use for creating the AdView.
+ * @param placement Where the banner is shown, used for revenue analytics.
  * @param modifier The modifier to apply to the banner ad.
  */
 @Composable
-fun BannerAd(context: Context, modifier: Modifier = Modifier) {
+fun BannerAd(context: Context, placement: String, modifier: Modifier = Modifier) {
     var adLoadState by remember { mutableStateOf(AdLoadState.LOADING) }
 
     val deviceWidth = LocalConfiguration.current.screenWidthDp
@@ -60,6 +62,18 @@ fun BannerAd(context: Context, modifier: Modifier = Modifier) {
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     adLoadState = AdLoadState.FAILED
                 }
+            }
+            setOnPaidEventListener { adValue ->
+                // Resolve lazily so that Compose previews never touch the Hilt graph.
+                EntryPointAccessors
+                    .fromApplication(context.applicationContext, AdMobRepositoryEntryPoint::class.java)
+                    .adMobRepository()
+                    .logAdPaidEvent(
+                        adValue = adValue,
+                        adFormat = AdFormat.BANNER,
+                        placement = placement,
+                        adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName
+                    )
             }
             loadAd(AdRequest.Builder().build())
         }

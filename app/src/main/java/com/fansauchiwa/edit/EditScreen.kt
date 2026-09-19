@@ -118,6 +118,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsBackDialogActions
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.captureHighResBitmap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
@@ -268,6 +269,7 @@ fun EditScreen(
         bottomBar = {
             BannerAd(
                 LocalContext.current,
+                placement = AnalyticsScreens.EDIT_SCREEN,
                 modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
             )
         },

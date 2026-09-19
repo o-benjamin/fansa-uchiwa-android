@@ -182,6 +182,7 @@ class ImagePreviewViewModel @Inject constructor(
     private fun showInterstitialAdAndConfirm(activity: Activity, imageUri: String) {
         adMobRepository.showInterstitialAd(
             activity = activity,
+            placement = AnalyticsScreens.IMAGE_PREVIEW_SCREEN,
             onAdClosed = {
                 // 広告が閉じられたら遷移
                 viewModelScope.launch {
