@@ -3,14 +3,19 @@ package com.fansauchiwa.data.repository
 import android.app.Activity
 import android.content.Context
 import com.fansauchiwa.BuildConfig
+import com.fansauchiwa.ads.AdFormat
 import com.fansauchiwa.ads.AdLoadRetryPolicy
+import com.fansauchiwa.ads.AdPaidEventFactory
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.infra.AnalyticsDataSource
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
@@ -46,7 +51,7 @@ interface AdMobRepository {
     /**
      * リワード広告を表示する
      * @param activity 広告を表示するActivity
-     * @param placement 広告の表示場所（Analytics計測用）
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param waitForLoad trueの場合、ロード中の広告のロードが完了するまで待つ。falseの場合、ロード中であれば即座にスキップ
      * @param onUserEarnedReward ユーザーが報酬を獲得した際のコールバック
      * @param onAdFailedOrSkipped 広告の表示に失敗した、または広告がロードされていない場合のコールバック
@@ -69,11 +74,27 @@ interface AdMobRepository {
     /**
      * インタースティシャル広告を表示する
      * @param activity 広告を表示するActivity
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param onAdClosed 広告が閉じられた際のコールバック
      */
     fun showInterstitialAd(
         activity: Activity,
+        placement: String,
         onAdClosed: () -> Unit
+    )
+
+    /**
+     * 広告1回の表示で発生した収益をAnalyticsに記録する
+     * @param adValue OnPaidEventListener で受け取った収益
+     * @param adFormat 広告フォーマット（[AdFormat]）
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
+     * @param responseInfo 広告の読み込み結果。配信したネットワーク名を取り出す（不明なら null）
+     */
+    fun logAdPaidEvent(
+        adValue: AdValue,
+        adFormat: String,
+        placement: String,
+        responseInfo: ResponseInfo?
     )
 }
 
@@ -217,6 +238,15 @@ class AdMobRepositoryImpl @Inject constructor(
             }
         }
 
+        ad.setOnPaidEventListener { adValue ->
+            logAdPaidEvent(
+                adValue = adValue,
+                adFormat = AdFormat.REWARDED,
+                placement = placement,
+                responseInfo = ad.responseInfo
+            )
+        }
+
         ad.show(activity) { _ ->
             // 報酬獲得時のAnalytics計測
             analyticsScope.launch {
@@ -301,6 +331,7 @@ class AdMobRepositoryImpl @Inject constructor(
 
     override fun showInterstitialAd(
         activity: Activity,
+        placement: String,
         onAdClosed: () -> Unit
     ) {
         val ad = interstitialAd
@@ -347,6 +378,35 @@ class AdMobRepositoryImpl @Inject constructor(
             }
         }
 
+        ad.setOnPaidEventListener { adValue ->
+            logAdPaidEvent(
+                adValue = adValue,
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = placement,
+                responseInfo = ad.responseInfo
+            )
+        }
+
         ad.show(activity)
+    }
+
+    override fun logAdPaidEvent(
+        adValue: AdValue,
+        adFormat: String,
+        placement: String,
+        responseInfo: ResponseInfo?
+    ) {
+        analyticsScope.launch {
+            analyticsDataSource.logEvent(
+                AdPaidEventFactory.create(
+                    valueMicros = adValue.valueMicros,
+                    currencyCode = adValue.currencyCode,
+                    precisionType = adValue.precisionType,
+                    adFormat = adFormat,
+                    placement = placement,
+                    adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName
+                )
+            )
+        }
     }
 }

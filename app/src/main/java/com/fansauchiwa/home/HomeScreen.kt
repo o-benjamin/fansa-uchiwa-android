@@ -106,6 +106,7 @@ import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
@@ -449,6 +450,7 @@ fun HomeScreen(
                     )
                     BannerAd(
                         LocalContext.current,
+                        placement = AnalyticsScreens.HOME_SCREEN,
                         modifier = Modifier
                             .fillMaxWidth()
                             .windowInsetsPadding(WindowInsets.navigationBars)

@@ -72,6 +72,7 @@ import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -202,6 +203,7 @@ private fun ImagePreviewScreenContent(
                 )
                 BannerAd(
                     LocalContext.current,
+                    placement = AnalyticsScreens.IMAGE_PREVIEW_SCREEN,
                     modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars)
                 )
             }
