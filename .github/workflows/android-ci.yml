@@ -1,7 +1,6 @@
 name: Android CI
 
-# 実装中に push するたびに、コンパイル・ユニットテスト・Lint を実行する。
-# 使い方は .agents/ci.md を参照。
+# push するたびに、コンパイル・ユニットテスト・Lint を実行する。
 on:
   push:
     branches: ["**"]
