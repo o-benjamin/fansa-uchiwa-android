@@ -3,6 +3,7 @@ package com.fansauchiwa.data.repository
 import android.app.Activity
 import android.content.Context
 import com.fansauchiwa.BuildConfig
+import com.fansauchiwa.ads.AdLoadRetryPolicy
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.infra.AnalyticsDataSource
@@ -17,7 +18,9 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,7 +95,19 @@ class AdMobRepositoryImpl @Inject constructor(
     // Analytics計測用のCoroutineScope（コールバック内で使用）
     private val analyticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // ロード失敗時の再試行を待つためのCoroutineScope（広告のロードはメインスレッドで行う）
+    private val retryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var rewardedRetryAttempt = 0
+    private var rewardedRetryJob: Job? = null
+
     override fun loadRewardedAd() {
+        // 画面遷移など、広告が必要になったタイミングで呼ばれるため、再試行の回数をリセットしてすぐにロードする
+        rewardedRetryJob?.cancel()
+        rewardedRetryAttempt = 0
+        requestRewardedAd()
+    }
+
+    private fun requestRewardedAd() {
         // 既にロード中または既にロード済みの場合はスキップ
         if (_isLoadingRewardedAd.value || rewardedAd != null) {
             return
@@ -108,16 +123,30 @@ class AdMobRepositoryImpl @Inject constructor(
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
+                    rewardedRetryAttempt = 0
                     _isLoadingRewardedAd.value = false
                 }
 
                 override fun onAdFailedToLoad(loadAdError: LoadAdError) {
                     rewardedAd = null
                     _isLoadingRewardedAd.value = false
-                    loadRewardedAd()
+                    scheduleRewardedAdRetry()
                 }
             }
         )
+    }
+
+    /**
+     * ロード失敗時に、待ち時間を空けてからリワード広告を再ロードする
+     * 上限回数に達したら再試行を止め、次に loadRewardedAd() が呼ばれるまで待つ
+     */
+    private fun scheduleRewardedAdRetry() {
+        val delayMillis = AdLoadRetryPolicy.delayMillisFor(rewardedRetryAttempt) ?: return
+        rewardedRetryAttempt++
+        rewardedRetryJob = retryScope.launch {
+            delay(delayMillis)
+            requestRewardedAd()
+        }
     }
 
     override fun showRewardedAd(
