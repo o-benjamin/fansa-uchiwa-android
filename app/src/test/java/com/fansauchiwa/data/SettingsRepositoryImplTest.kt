@@ -24,7 +24,8 @@ class SettingsRepositoryImplTest {
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var localSource: SettingsLocalSource
     private lateinit var repository: SettingsRepositoryImpl
-    private var isFreshInstall = false
+    // FakeAppInstallDataSource が返す値
+    private var fakeIsFreshInstall = false
 
     @Before
     fun setUp() {
@@ -70,7 +71,7 @@ class SettingsRepositoryImplTest {
 
     @Test
     fun fetchHasSeenApologyDialog_updatedInstallNotSeen_returnsFalse() = runTest {
-        isFreshInstall = false
+        fakeIsFreshInstall = false
 
         repository.fetchHasSeenApologyDialog()
 
@@ -79,7 +80,7 @@ class SettingsRepositoryImplTest {
 
     @Test
     fun fetchHasSeenApologyDialog_freshInstall_returnsTrue() = runTest {
-        isFreshInstall = true
+        fakeIsFreshInstall = true
 
         repository.fetchHasSeenApologyDialog()
 
@@ -88,10 +89,10 @@ class SettingsRepositoryImplTest {
 
     @Test
     fun fetchHasSeenApologyDialog_freshInstallThenUpdated_staysTrue() = runTest {
-        isFreshInstall = true
+        fakeIsFreshInstall = true
         repository.fetchHasSeenApologyDialog()
 
-        isFreshInstall = false
+        fakeIsFreshInstall = false
         repository.fetchHasSeenApologyDialog()
 
         assertTrue(repository.getHasSeenApologyDialogStream().first())
@@ -99,7 +100,7 @@ class SettingsRepositoryImplTest {
 
     @Test
     fun fetchHasSeenApologyDialog_updatedInstallAlreadySeen_returnsTrue() = runTest {
-        isFreshInstall = false
+        fakeIsFreshInstall = false
         repository.setHasSeenApologyDialog(true)
 
         repository.fetchHasSeenApologyDialog()
@@ -108,6 +109,6 @@ class SettingsRepositoryImplTest {
     }
 
     private inner class FakeAppInstallDataSource : AppInstallDataSource {
-        override fun getIsFreshInstallStream(): Flow<Boolean> = flowOf(isFreshInstall)
+        override fun getIsFreshInstallStream(): Flow<Boolean> = flowOf(fakeIsFreshInstall)
     }
 }

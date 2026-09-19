@@ -35,6 +35,10 @@ interface SettingsRepository {
 
     fun getHasSeenApologyDialogStream(): Flow<Boolean>
 
+    /**
+     * お詫びダイアログを見たかどうかを取得して流す
+     * 新規インストールの場合は「見た」を保存してから true を流す
+     */
     suspend fun fetchHasSeenApologyDialog()
 
     suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
@@ -78,14 +82,16 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun fetchHasSeenApologyDialog() {
         val hasSeen = settingsDataSource.getHasSeenApologyDialogStream().first()
-        if (!hasSeen && appInstallDataSource.getIsFreshInstallStream().first()) {
-            // お詫びダイアログは v2.5.0 より前から使っていた人向けなので、新規インストールでは見たことにする。
-            // 次に更新すると新規インストールと判定できなくなるため、ここで保存しておく
+        // お詫びダイアログは v2.5.0 より前から使っていた人向けなので、新規インストールでは見たことにする。
+        // 次に更新すると新規インストールと判定できなくなるため、ここで保存しておく。
+        // インストール後に一度も開かずに更新した場合は判定できず、ダイアログが出る（許容している）。
+        // ダイアログは #239 で削除する予定
+        val isSkippedForFreshInstall =
+            !hasSeen && appInstallDataSource.getIsFreshInstallStream().first()
+        if (isSkippedForFreshInstall) {
             settingsDataSource.setHasSeenApologyDialog(true)
-            _hasSeenApologyDialogStream.emit(true)
-            return
         }
-        _hasSeenApologyDialogStream.emit(hasSeen)
+        _hasSeenApologyDialogStream.emit(hasSeen || isSkippedForFreshInstall)
     }
 
     override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
