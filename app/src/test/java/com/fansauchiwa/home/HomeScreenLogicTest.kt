@@ -29,7 +29,6 @@ class HomeScreenLogicTest {
     fun isNameInputPlaceholderEnabled_returnsConfiguredFlag() {
         val namedTemplate = Template(
             id = "named",
-            previewImageResId = 0,
             savedUchiwa = SavedUchiwa(
                 decorations = emptyList(),
                 uchiwaColor = Color.Black,
@@ -39,7 +38,6 @@ class HomeScreenLogicTest {
         )
         val regularTemplate = Template(
             id = "regular",
-            previewImageResId = 0,
             savedUchiwa = SavedUchiwa(
                 decorations = emptyList(),
                 uchiwaColor = Color.Black,

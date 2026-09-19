@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.ApplicationBuildType
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.util.Properties
 
 plugins {
@@ -19,6 +21,14 @@ val localProperties = Properties().apply {
     }
 }
 
+// AdMob のテスト用 ID を設定する。
+fun ApplicationBuildType.useTestAdUnits() {
+    manifestPlaceholders["ADMOB_APPLICATION_ID"] = "ca-app-pub-3940256099942544~3347511713"
+    buildConfigField("String", "REWARDED_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
+    buildConfigField("String", "BANNER_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/9214589741\"")
+    buildConfigField("String", "INTERSTITIAL_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/1033173712\"")
+}
+
 android {
     namespace = "com.fansauchiwa"
     compileSdk = 36
@@ -27,41 +37,27 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 24
-        versionName = "2.5.0"
+        versionCode = 25
+        versionName = "2.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         debug {
-            manifestPlaceholders["ADMOB_APPLICATION_ID"] = "ca-app-pub-3940256099942544~3347511713"
-
-            buildConfigField(
-                "String",
-                "REWARDED_AD_UNIT_ID",
-                "\"ca-app-pub-3940256099942544/5224354917\""
-            )
-
-            buildConfigField(
-                "String",
-                "BANNER_AD_UNIT_ID",
-                "\"ca-app-pub-3940256099942544/9214589741\""
-            )
-
-            buildConfigField(
-                "String",
-                "INTERSTITIAL_AD_UNIT_ID",
-                "\"ca-app-pub-3940256099942544/1033173712\""
-            )
+            useTestAdUnits()
         }
 
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+            }
 
             val applicationId = localProperties.getProperty("ADMOB_APPLICATION_ID_RELEASE")
                 ?: throw GradleException(
@@ -90,6 +86,18 @@ android {
                             "Please add it to continue building the release version."
                 )
             buildConfigField("String", "INTERSTITIAL_AD_UNIT_ID", "\"$interstitialAdId\"")
+        }
+
+        // R8 の難読化・シュリンクを手元で検証するためのビルドタイプ。
+        // リリースと同じ R8 設定のままデバッグ署名・テスト広告で動かす。
+        create("beta") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+            }
+            useTestAdUnits()
         }
     }
     compileOptions {
@@ -127,13 +135,16 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.androidx.work.testing)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
     ksp(libs.hilt.compiler)
+    ksp(libs.androidx.hilt.compiler)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -155,6 +166,8 @@ dependencies {
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
+    // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
+    implementation(libs.play.services.base)
 
     // ColorPicker
     implementation(libs.compose.colorpicker)

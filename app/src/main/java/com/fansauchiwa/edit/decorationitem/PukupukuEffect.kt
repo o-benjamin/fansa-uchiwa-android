@@ -3,6 +3,7 @@ package com.fansauchiwa.edit.decorationitem
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -32,7 +33,9 @@ private const val STICKER_PUKUPUKU_SPECULAR_INTENSITY = 1.2f
  * Returns whether the current runtime can apply the AGSL-based puffy effect.
  *
  * The optional [sdkInt] parameter exists to keep this check easy to unit test.
+ * [ChecksSdkIntAtLeast] lets Lint treat callers as SDK-guarded, avoiding false NewApi errors.
  */
+@ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
 internal fun supportsPukuPukuEffect(sdkInt: Int = Build.VERSION.SDK_INT): Boolean {
     return sdkInt >= Build.VERSION_CODES.TIRAMISU
 }

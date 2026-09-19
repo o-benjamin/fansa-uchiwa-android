@@ -20,6 +20,7 @@ object AnalyticsScreens {
     const val EDIT_SCREEN = "edit_screen"
     const val PREVIEW_SCREEN = "preview_screen"
     const val IMAGE_PREVIEW_SCREEN = "image_preview_screen"
+    const val EVENT_TIMELINE_SCREEN = "event_timeline_screen"
 }
 
 /**
@@ -55,6 +56,9 @@ object AnalyticsActions {
 
     const val TAP_IMAGE_PREVIEW_CONFIRM = "tap_image_preview_confirm"
 
+    const val BACKGROUND_REMOVAL_SUCCESS = "background_removal_success"
+    const val BACKGROUND_REMOVAL_FAILURE = "background_removal_failure"
+
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
     const val TAP_PREVIEW_SHARE = "tap_preview_share"
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
@@ -66,6 +70,9 @@ object AnalyticsActions {
 
     const val AD_INTERSTITIAL_SHOW = "ad_interstitial_show"
     const val AD_INTERSTITIAL_DISMISSED = "ad_interstitial_dismissed"
+
+    // 自動収集の ad_impression と重複しないよう別名にする
+    const val AD_PAID_EVENT = "ad_paid_event"
 }
 
 /**

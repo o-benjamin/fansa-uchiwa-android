@@ -1,4 +1,4 @@
-package com.fansauchiwa.data
+package com.fansauchiwa.data.infra
 
 import android.graphics.Bitmap
 

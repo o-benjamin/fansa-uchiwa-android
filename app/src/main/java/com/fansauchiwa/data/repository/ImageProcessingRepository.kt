@@ -1,11 +1,16 @@
 package com.fansauchiwa.data.repository
 
 import android.net.Uri
+import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import javax.inject.Inject
 
 interface ImageProcessingRepository {
+    /**
+     * 画像の背景を透過する
+     * @return 透過後の画像URI。失敗時は [BackgroundRemovalException] を持つ failure
+     */
     suspend fun removeBackground(sourceUri: Uri): Result<Uri>
 
     /**
@@ -27,13 +32,10 @@ interface ImageProcessingRepository {
 class ImageProcessingRepositoryImpl @Inject constructor(
     private val imageProcessingDataSource: ImageProcessingDataSource
 ) : ImageProcessingRepository {
-    override suspend fun removeBackground(sourceUri: Uri): Result<Uri> {
-        val resultUri = imageProcessingDataSource.removeBackground(sourceUri)
-        return if (resultUri != null) {
-            Result.success(resultUri)
-        } else {
-            Result.failure(Exception("Failed to remove background"))
-        }
+    override suspend fun removeBackground(sourceUri: Uri): Result<Uri> = try {
+        Result.success(imageProcessingDataSource.removeBackground(sourceUri))
+    } catch (e: BackgroundRemovalException) {
+        Result.failure(e)
     }
 
     override suspend fun applyManualCorrection(

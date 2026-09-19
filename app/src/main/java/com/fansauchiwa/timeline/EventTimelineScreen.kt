@@ -64,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
@@ -230,7 +231,8 @@ internal fun EventTimelineContent(
         bottomBar = {
             BannerAd(
                 LocalContext.current,
-                modifier.windowInsetsPadding(WindowInsets.navigationBars)
+                placement = AnalyticsScreens.EVENT_TIMELINE_SCREEN,
+                modifier = modifier.windowInsetsPadding(WindowInsets.navigationBars)
             )
         },
         floatingActionButton = {
