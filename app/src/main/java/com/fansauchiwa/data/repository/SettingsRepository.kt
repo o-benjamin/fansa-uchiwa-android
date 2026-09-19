@@ -1,5 +1,6 @@
 package com.fansauchiwa.data.repository
 
+import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -34,13 +35,18 @@ interface SettingsRepository {
 
     fun getHasSeenApologyDialogStream(): Flow<Boolean>
 
+    /**
+     * お詫びダイアログを見たかどうかを取得して流す
+     * 新規インストールの場合は「見た」を保存してから true を流す
+     */
     suspend fun fetchHasSeenApologyDialog()
 
     suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
 }
 
 class SettingsRepositoryImpl @Inject constructor(
-    private val settingsDataSource: SettingsDataSource
+    private val settingsDataSource: SettingsDataSource,
+    private val appInstallDataSource: AppInstallDataSource
 ) : SettingsRepository {
 
     private val _hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
@@ -75,8 +81,17 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchHasSeenApologyDialog() {
-        val value = settingsDataSource.getHasSeenApologyDialogStream().first()
-        _hasSeenApologyDialogStream.emit(value)
+        val hasSeen = settingsDataSource.getHasSeenApologyDialogStream().first()
+        // お詫びダイアログは v2.5.0 より前から使っていた人向けなので、新規インストールでは見たことにする。
+        // 次に更新すると新規インストールと判定できなくなるため、ここで保存しておく。
+        // インストール後に一度も開かずに更新した場合は判定できず、ダイアログが出る（許容している）。
+        // ダイアログは #239 で削除する予定
+        val isSkippedForFreshInstall =
+            !hasSeen && appInstallDataSource.getIsFreshInstallStream().first()
+        if (isSkippedForFreshInstall) {
+            settingsDataSource.setHasSeenApologyDialog(true)
+        }
+        _hasSeenApologyDialogStream.emit(hasSeen || isSkippedForFreshInstall)
     }
 
     override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
