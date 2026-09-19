@@ -54,9 +54,9 @@ object AnalyticsActions {
     const val SELECT_EDIT_LAYER = "select_edit_layer"
 
     const val TAP_IMAGE_PREVIEW_CONFIRM = "tap_image_preview_confirm"
+
     const val BACKGROUND_REMOVAL_SUCCESS = "background_removal_success"
     const val BACKGROUND_REMOVAL_FAILURE = "background_removal_failure"
-    const val PARAM_REASON = "reason"
 
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
     const val TAP_PREVIEW_SHARE = "tap_preview_share"
@@ -95,6 +95,13 @@ object EditStickerTargetParams {
 object BackGroundColorParams {
     const val PARAM_UCHIWA = "uchiwa"
     const val PARAM_BACKGROUND = "background"
+}
+
+/**
+ * 背景透過の失敗イベントのパラメータ
+ */
+object BackgroundRemovalParams {
+    const val PARAM_REASON = "reason"
 }
 
 /**

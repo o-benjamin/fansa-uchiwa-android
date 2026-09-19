@@ -7,6 +7,7 @@ import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
@@ -17,6 +18,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -114,6 +116,42 @@ class ImagePreviewBackgroundRemovalTest {
         )
     }
 
+    @Test
+    fun showOriginal_WhileRemoving_KeepsOriginalAfterSuccess() = runTest(testDispatcher) {
+        val removal = CompletableDeferred<Result<Uri>>()
+        coEvery { imageProcessingRepository.removeBackground(originalUri) } coAnswers { removal.await() }
+        val viewModel = createViewModel()
+
+        viewModel.showTransparent()
+        advanceUntilIdle()
+        viewModel.showOriginal()
+        removal.complete(Result.success(transparentUri))
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingOriginal)
+
+        // 結果はキャッシュされ、もう一度押すとすぐに表示される
+        viewModel.showTransparent()
+        assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Success)
+    }
+
+    @Test
+    fun showTransparent_TappedTwiceWhileRemoving_StartsRemovalOnce() = runTest(testDispatcher) {
+        val removal = CompletableDeferred<Result<Uri>>()
+        coEvery { imageProcessingRepository.removeBackground(originalUri) } coAnswers { removal.await() }
+        val viewModel = createViewModel()
+
+        viewModel.showTransparent()
+        advanceUntilIdle()
+        viewModel.showOriginal()
+        viewModel.showTransparent()
+        removal.complete(Result.success(transparentUri))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { imageProcessingRepository.removeBackground(originalUri) }
+        assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Success)
+    }
+
     private fun TestScope.assertFailureHandled(
         error: Throwable,
         expectedReason: BackgroundRemovalFailureReason
@@ -135,7 +173,7 @@ class ImagePreviewBackgroundRemovalTest {
             analyticsRepository.logEvent(
                 AnalyticsEvent(
                     name = AnalyticsActions.BACKGROUND_REMOVAL_FAILURE,
-                    params = mapOf(AnalyticsActions.PARAM_REASON to expectedReason.analyticsValue)
+                    params = mapOf(BackgroundRemovalParams.PARAM_REASON to expectedReason.analyticsValue)
                 )
             )
         }

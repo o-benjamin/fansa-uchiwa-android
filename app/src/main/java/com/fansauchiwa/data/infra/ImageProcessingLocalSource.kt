@@ -17,6 +17,7 @@ import com.google.android.gms.common.moduleinstall.InstallStatusListener
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate.InstallState
+import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
@@ -25,6 +26,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -61,9 +64,13 @@ class ImageProcessingLocalSource @Inject constructor(
             }
             return Uri.fromFile(tempFile)
         } catch (e: BackgroundRemovalException) {
+            // 理由付きの失敗は包み直さず、そのまま呼び出し元へ渡す
             throw e
         } catch (e: CancellationException) {
-            throw e
+            // Play 開発者サービスの Task が取り消されたときも await() は CancellationException を投げる。
+            // 呼び出し元のコルーチンが取り消されたときだけそのまま投げ、それ以外は失敗として画面に出す
+            currentCoroutineContext().ensureActive()
+            throw BackgroundRemovalException(BackgroundRemovalFailureReason.PROCESS_FAILED, e)
         } catch (e: Exception) {
             throw BackgroundRemovalException(BackgroundRemovalFailureReason.PROCESS_FAILED, e)
         } finally {
@@ -78,16 +85,15 @@ class ImageProcessingLocalSource @Inject constructor(
      */
     private suspend fun ensureModuleInstalled(segmenter: SubjectSegmenter) {
         val moduleInstallClient = ModuleInstall.getClient(context)
-        val isAvailable = try {
-            moduleInstallClient.areModulesAvailable(segmenter).await().areModulesAvailable()
-        } catch (e: ApiException) {
-            throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE, e)
-        }
+        val isAvailable = moduleInstallClient.areModulesAvailable(segmenter)
+            .awaitOrModuleUnavailable()
+            .areModulesAvailable()
         if (isAvailable) return
 
         // installModules() の Task は要求を受け付けた時点で完了するため、完了はリスナーで待つ
         val installResult = CompletableDeferred<Unit>()
         val listener = InstallStatusListener { update ->
+            // ダウンロード中などの途中経過は待つだけなので扱わない
             when (update.installState) {
                 InstallState.STATE_COMPLETED -> installResult.complete(Unit)
                 InstallState.STATE_FAILED, InstallState.STATE_CANCELED -> installResult.completeExceptionally(
@@ -101,11 +107,7 @@ class ImageProcessingLocalSource @Inject constructor(
             .build()
 
         try {
-            val response = try {
-                moduleInstallClient.installModules(request).await()
-            } catch (e: ApiException) {
-                throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE, e)
-            }
+            val response = moduleInstallClient.installModules(request).awaitOrModuleUnavailable()
             if (response.areModulesAlreadyInstalled()) return
 
             withTimeoutOrNull(MODULE_INSTALL_TIMEOUT_MILLIS) { installResult.await() }
@@ -113,6 +115,12 @@ class ImageProcessingLocalSource @Inject constructor(
         } finally {
             moduleInstallClient.unregisterListener(listener)
         }
+    }
+
+    private suspend fun <T> Task<T>.awaitOrModuleUnavailable(): T = try {
+        await()
+    } catch (e: ApiException) {
+        throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE, e)
     }
 
     override suspend fun applyManualCorrection(

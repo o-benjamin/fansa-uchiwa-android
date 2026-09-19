@@ -14,12 +14,14 @@ import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -48,6 +50,9 @@ class ImagePreviewViewModel @Inject constructor(
 
     // 背景透過処理の結果をキャッシュ
     private var transparentUri: Uri? = null
+
+    // モジュールのダウンロードで最大60秒かかるため、処理中にもう一度押されても重ねて始めない
+    private var removeBackgroundJob: Job? = null
 
     // 手動修正用のパスリスト
     private val _paths = mutableStateListOf<EraserPath>()
@@ -80,12 +85,16 @@ class ImagePreviewViewModel @Inject constructor(
             return
         }
 
-        // 背景透過処理を実行
-        viewModelScope.launch {
-            _uiState.value =
-                ImagePreviewUiState.Ready.ShowingTransparent.Loading(currentState.originalUri)
+        _uiState.value =
+            ImagePreviewUiState.Ready.ShowingTransparent.Loading(currentState.originalUri)
+        if (removeBackgroundJob?.isActive == true) return
 
+        // 背景透過処理を実行
+        removeBackgroundJob = viewModelScope.launch {
             val result = imageProcessingRepository.removeBackground(currentState.originalUri)
+            // 待っている間に「オリジナル」が選ばれていたら、表示は切り替えない
+            val isStillWaiting =
+                _uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Loading
 
             result.fold(
                 onSuccess = { uri ->
@@ -94,10 +103,12 @@ class ImagePreviewViewModel @Inject constructor(
                     )
                     adMobRepository.loadInterstitialAd()
                     transparentUri = uri
-                    _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
-                        originalUri = currentState.originalUri,
-                        transparentUri = uri
-                    )
+                    if (isStillWaiting) {
+                        _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
+                            originalUri = currentState.originalUri,
+                            transparentUri = uri
+                        )
+                    }
                 },
                 onFailure = { error ->
                     val reason = (error as? BackgroundRemovalException)?.reason
@@ -105,12 +116,14 @@ class ImagePreviewViewModel @Inject constructor(
                     analyticsRepository.logEvent(
                         AnalyticsEvent(
                             name = AnalyticsActions.BACKGROUND_REMOVAL_FAILURE,
-                            params = mapOf(AnalyticsActions.PARAM_REASON to reason.analyticsValue)
+                            params = mapOf(BackgroundRemovalParams.PARAM_REASON to reason.analyticsValue)
                         )
                     )
                     _errorEvent.emit(reason)
-                    _uiState.value =
-                        ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
+                    if (isStillWaiting) {
+                        _uiState.value =
+                            ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
+                    }
                 }
             )
         }
