@@ -4,7 +4,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 
 ## 常に守るルール
 
-- 実装の最後にビルドして確認しようとしないでください。コンパイルエラーがないかどうかのみ確認し、ビルドが必要なコンパイルエラーは無視してください。
+- 実装後の確認は、ユニットテストと Lint（`./gradlew testDebugUnitTest lintDebug`）までにしてください。エミュレータや実機でアプリを動かす動作確認はオーナーがリリース前にまとめて行うため、しないでください（頼まれたときと、不具合の原因調査で必要なときを除く。`.agents/android-cli.md`）。PR 本文は `.github/pull_request_template.md` の節に沿って書き、動きが変わる変更は「オーナーに動作確認してほしいこと」に操作と期待する結果を書いてください。
 - コードは最新の Kotlin 記法（Trailing Lambdas 等）で書いてください。
 - 他ファイルのオブジェクトを `com.fansauchiwa~` から始まる完全修飾名で書かず、import してください。
 - class / interface / object / enum class / data class は原則1ファイルに1つだけ定義してください。
@@ -22,6 +22,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | テストを作成・変更する、ロジックを追加する | `.agents/testing.md` |
 | リリースビルド設定・ProGuard ルール・`@Keep` を扱う | `.agents/r8.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
+| Android の API を調べる（`android docs search`）、頼まれたときや不具合の調査でアプリを動かす、既存の journey（`journeys/`）が通る画面の文言や手順を変える | `.agents/android-cli.md` |
 
 ## ルールの追加方法
 

@@ -14,3 +14,6 @@ app/release
 firebase.json
 google-services.json
 public
+
+# Android CLI の公式スキル（android skills add で入れる。.agents/android-cli.md）
+.claude/skills/android-cli/
