@@ -51,7 +51,10 @@ class TemplateListTest {
             overallBorderColor = Color.White
         )
 
-        val styled = savedUchiwa.applyTemplateMainColor(selectedMainColor)
+        val styled = savedUchiwa.applyTemplateMainColor(
+            mainColor = selectedMainColor,
+            isNameInputPlaceholderEnabled = true
+        )
         val nameText = styled.decorations.find { (it as? Decoration.Text)?.text == "名" } as Decoration.Text
         val frontText = styled.decorations.find { (it as? Decoration.Text)?.text == "前" } as Decoration.Text
         val otherText = styled.decorations.find { (it as? Decoration.Text)?.text == "くん" } as Decoration.Text

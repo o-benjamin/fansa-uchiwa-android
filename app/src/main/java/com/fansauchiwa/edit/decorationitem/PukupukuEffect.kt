@@ -3,6 +3,7 @@ package com.fansauchiwa.edit.decorationitem
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -33,6 +34,8 @@ private const val STICKER_PUKUPUKU_SPECULAR_INTENSITY = 1.2f
  *
  * The optional [sdkInt] parameter exists to keep this check easy to unit test.
  */
+// Lint にこの関数が SDK バージョンの判定であることを伝え、呼び出し側の NewApi 誤検知を防ぐ
+@ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
 internal fun supportsPukuPukuEffect(sdkInt: Int = Build.VERSION.SDK_INT): Boolean {
     return sdkInt >= Build.VERSION_CODES.TIRAMISU
 }

@@ -39,7 +39,7 @@ class ApplyRotationSnapTest {
         assertEquals(270f, result.snappedRotation, FLOAT_DELTA)
     }
 
-    // ---- 閾値内（±5度）での近傍値 ----
+    // ---- 閾値内（±4度）での近傍値 ----
 
     @Test
     fun applyRotationSnap_withinThreshold_snapsTo90() {
@@ -71,7 +71,7 @@ class ApplyRotationSnapTest {
 
     @Test
     fun applyRotationSnap_exactlyAtThresholdBoundary_snapsTo90() {
-        val result = applyRotationSnap(98f)
+        val result = applyRotationSnap(94f)
         assertTrue(result.isSnapped)
         assertEquals(90f, result.snappedRotation, FLOAT_DELTA)
     }
