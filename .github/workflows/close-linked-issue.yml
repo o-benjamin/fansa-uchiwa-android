@@ -1,9 +1,9 @@
 name: Close Linked Issue on Merge
 
 on:
+  # No branch filter: feature PRs target release/vX.Y.Z, and "*" would not match names containing "/".
   pull_request:
     types: [closed]
-    branches: ["*"]
 
 permissions:
   issues: write
