@@ -4,7 +4,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 
 ## 常に守るルール
 
-- ローカルでフルビルドせず、push して Android CI（ユニットテストと Lint）の結果で確かめてください。Draft PR を早めに作り、CI が緑になるまでレビューを依頼しないでください。手順は `.agents/ci.md`。
+- 実装の最後にビルドして確認しようとしないでください。コンパイルエラーがないかどうかのみ確認し、ビルドが必要なコンパイルエラーは無視してください。
 - コードは最新の Kotlin 記法（Trailing Lambdas 等）で書いてください。
 - 他ファイルのオブジェクトを `com.fansauchiwa~` から始まる完全修飾名で書かず、import してください。
 - class / interface / object / enum class / data class は原則1ファイルに1つだけ定義してください。
@@ -22,7 +22,6 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | テストを作成・変更する、ロジックを追加する | `.agents/testing.md` |
 | リリースビルド設定・ProGuard ルール・`@Keep` を扱う | `.agents/r8.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
-| push・PR を作る、CI が失敗した | `.agents/ci.md` |
 
 ## ルールの追加方法
 
