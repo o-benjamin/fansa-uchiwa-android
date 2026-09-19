@@ -1,5 +1,6 @@
 package com.fansauchiwa.data.repository
 
+import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -40,7 +41,8 @@ interface SettingsRepository {
 }
 
 class SettingsRepositoryImpl @Inject constructor(
-    private val settingsDataSource: SettingsDataSource
+    private val settingsDataSource: SettingsDataSource,
+    private val appInstallDataSource: AppInstallDataSource
 ) : SettingsRepository {
 
     private val _hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
@@ -75,8 +77,15 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun fetchHasSeenApologyDialog() {
-        val value = settingsDataSource.getHasSeenApologyDialogStream().first()
-        _hasSeenApologyDialogStream.emit(value)
+        val hasSeen = settingsDataSource.getHasSeenApologyDialogStream().first()
+        if (!hasSeen && appInstallDataSource.getIsFreshInstallStream().first()) {
+            // お詫びダイアログは v2.5.0 より前から使っていた人向けなので、新規インストールでは見たことにする。
+            // 次に更新すると新規インストールと判定できなくなるため、ここで保存しておく
+            settingsDataSource.setHasSeenApologyDialog(true)
+            _hasSeenApologyDialogStream.emit(true)
+            return
+        }
+        _hasSeenApologyDialogStream.emit(hasSeen)
     }
 
     override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
