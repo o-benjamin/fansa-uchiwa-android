@@ -59,6 +59,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
@@ -86,6 +87,7 @@ fun ImagePreviewScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -99,7 +101,7 @@ fun ImagePreviewScreen(
                 BackgroundRemovalFailureReason.MODULE_UNAVAILABLE,
                 BackgroundRemovalFailureReason.PROCESS_FAILED -> R.string.image_preview_error
             }
-            snackbarHostState.showSnackbar(message = context.getString(messageResId))
+            snackbarHostState.showSnackbar(message = resources.getString(messageResId))
         }
     }
 
