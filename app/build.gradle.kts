@@ -166,6 +166,8 @@ dependencies {
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
+    // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
+    implementation(libs.play.services.base)
 
     // ColorPicker
     implementation(libs.compose.colorpicker)

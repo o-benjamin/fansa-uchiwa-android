@@ -64,6 +64,8 @@
     <string name="layer_image">画像</string>
     <string name="image_preview_title">画像プレビュー</string>
     <string name="image_preview_error">背景透過処理に失敗しました</string>
+    <string name="image_preview_error_preparing">背景透過の準備中です。少し待ってからもう一度お試しください</string>
+    <string name="image_preview_error_no_subject">背景と区別できるものが見つかりませんでした</string>
     <string name="image_preview_load_failed">画像の取得に失敗しました</string>
     <string name="image_preview_original">オリジナル</string>
     <string name="image_preview_transparent">背景透過</string>
