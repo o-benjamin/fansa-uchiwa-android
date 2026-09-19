@@ -1,4 +1,4 @@
-package com.fansauchiwa.data
+package com.fansauchiwa.data.repository
 
 import android.app.Activity
 import android.content.Context

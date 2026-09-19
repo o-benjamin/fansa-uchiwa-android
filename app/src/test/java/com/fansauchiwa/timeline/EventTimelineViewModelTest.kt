@@ -4,8 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.EventRepository
+import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.source.EventEntity
 import com.fansauchiwa.data.source.EventWithUchiwas
+import io.mockk.mockk
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -15,13 +18,11 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import io.mockk.mockk
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventTimelineViewModelTest {
@@ -157,7 +158,7 @@ class EventTimelineViewModelTest {
         assertEquals(listOf("event-1"), repository.deletedEventIds)
     }
 
-    private class FakeMasterpieceRepository : com.fansauchiwa.data.MasterpieceRepository {
+    private class FakeMasterpieceRepository : MasterpieceRepository {
         override fun saveMasterpieceBitmap(bitmap: android.graphics.Bitmap, id: String): String? = null
         override fun saveMasterpieceToGallery(imagePath: String): Boolean = true
         override fun loadAllMasterpieces(): List<String> = listOf("/tmp/uchiwa-1.png")

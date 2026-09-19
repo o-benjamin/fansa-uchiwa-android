@@ -1,6 +1,7 @@
 package com.fansauchiwa.data
 
 import app.cash.turbine.test
+import com.fansauchiwa.data.repository.LocalDatabaseRepositoryImpl
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaEntity
 import io.mockk.every

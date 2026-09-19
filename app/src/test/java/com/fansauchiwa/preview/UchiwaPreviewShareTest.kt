@@ -3,14 +3,15 @@ package com.fansauchiwa.preview
 import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.IMAGE_PATH_ARG
-import com.fansauchiwa.data.AdMobRepository
-import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.MasterpieceRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import java.net.URLEncoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UchiwaPreviewShareTest {
