@@ -21,6 +21,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -159,18 +160,31 @@ class ImagePreviewBackgroundRemovalTest {
 
     @Test
     fun showTransparent_TappedAgainWhileErrorIsDelivered_StartsNewRemoval() = runTest(testDispatcher) {
+        val unavailable = Result.failure<Uri>(
+            BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE)
+        )
         coEvery { imageProcessingRepository.removeBackground(originalUri) } returnsMany listOf(
-            Result.failure(BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE)),
+            unavailable,
+            unavailable,
             Result.success(transparentUri)
         )
-        // エラー通知の受け手がいないため、1回目の処理は errorEvent.emit で止まったままになる
         val viewModel = createViewModel()
+        // 画面がスナックバーを表示している間を再現するため、受け取ったまま戻らない受け手にする
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.errorEvent.collect { awaitCancellation() }
+        }
 
+        // 1回目の失敗：受け手が止まる
         viewModel.showTransparent()
         advanceUntilIdle()
+        // 2回目の失敗：受け手が止まっているため、エラー通知で待ったままになる
+        viewModel.showTransparent()
+        advanceUntilIdle()
+        // 3回目：2回目の処理がエラー通知で待っていても、新しく始まる
         viewModel.showTransparent()
         advanceUntilIdle()
 
+        coVerify(exactly = 3) { imageProcessingRepository.removeBackground(originalUri) }
         assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Success)
     }
 

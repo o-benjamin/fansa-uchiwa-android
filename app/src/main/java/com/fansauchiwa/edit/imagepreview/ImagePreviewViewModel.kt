@@ -85,7 +85,7 @@ class ImagePreviewViewModel @Inject constructor(
             return
         }
 
-        // 処理中なら表示だけ読み込み中に戻し、結果は実行中の処理の完了時に反映する
+        // 読み込み中の表示にする。処理中なら新しく始めず、結果は実行中の処理の完了時に反映する
         _uiState.value =
             ImagePreviewUiState.Ready.ShowingTransparent.Loading(currentState.originalUri)
         if (isRemovingBackground) return
@@ -99,7 +99,8 @@ class ImagePreviewViewModel @Inject constructor(
                 isRemovingBackground = false
             }
             // 待っている間に「オリジナル」が選ばれていたら、表示は切り替えない。
-            // 表示の更新は、次の中断（ログ送信やエラー通知）より前に済ませる
+            // isStillWaiting は中断をはさむと古くなり、中断中の操作による表示を上書きしてしまうため、
+            // 表示の更新はログ送信やエラー通知（前のスナックバーが閉じるまで待つことがある）より前に行う
             val isStillWaiting =
                 _uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Loading
 
@@ -248,10 +249,10 @@ class ImagePreviewViewModel @Inject constructor(
                     )
                 },
                 onFailure = {
+                    // 元の ManualCorrection 状態に戻す。エラー通知は前のスナックバーが閉じるまで待つことがあるため、先に戻す
+                    _uiState.value = currentState
                     // 手動修正も背景透過の一部なので、同じエラー表示にする
                     _errorEvent.emit(BackgroundRemovalFailureReason.PROCESS_FAILED)
-                    // 元の ManualCorrection 状態に戻す
-                    _uiState.value = currentState
                 }
             )
         }
