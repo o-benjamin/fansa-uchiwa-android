@@ -11,6 +11,7 @@ import androidx.annotation.Keep
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -18,12 +19,13 @@ import androidx.work.WorkerParameters
 import androidx.work.WorkManager
 import com.fansauchiwa.MainActivity
 import com.fansauchiwa.R
-import com.fansauchiwa.data.source.FansaUchiwaDatabase
+import com.fansauchiwa.data.repository.EventRepository
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 
@@ -31,29 +33,24 @@ private const val EVENT_REMINDER_WORK_NAME = "event-reminder-work"
 private const val EVENT_REMINDER_CHANNEL_ID = "event-reminder-channel"
 private const val EVENT_REMINDER_HOUR = 20
 private const val EVENT_REMINDER_MINUTE = 0
-private const val EVENT_REMINDER_DAYS_THRESHOLD = 10
 
-// WorkManager がクラス名を DB に永続化し、リフレクションで生成するため R8 から保護する
+// WorkManager がクラス名を DB に永続化し、HiltWorkerFactory もそのクラス名で生成方法を引くため R8 から保護する。
+// 端末に登録済みの定期ジョブが生成できなくなるので、クラス名・パッケージも変更しないこと
 @Keep
-class UchiwaReminderWorker(
-    appContext: Context,
-    params: WorkerParameters
+@HiltWorker
+class UchiwaReminderWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted params: WorkerParameters,
+    private val eventRepository: EventRepository
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val events = EventReminderDatabaseProvider
-            .get(applicationContext)
-            .uchiwaDao()
-            .getAllEventsWithUchiwasStream()
-            .first()
+        // getEventsStream() は fetchEvents() するまで値を流さないため、先に取得する
+        eventRepository.fetchEvents()
+        val events = eventRepository.getEventsStream().first()
 
         val today = LocalDate.now()
-        val reminderTargets = events.filter { eventWithUchiwas ->
-            val daysUntil = calculateDaysUntil(today, eventWithUchiwas.event.eventDateEpochDay)
-            eventWithUchiwas.event.remindEnabled &&
-                eventWithUchiwas.uchiwas.isNotEmpty() &&
-                daysUntil in 0..EVENT_REMINDER_DAYS_THRESHOLD
-        }
+        val reminderTargets = selectReminderTargets(events, today)
 
         if (reminderTargets.isEmpty()) return Result.success()
 
@@ -82,13 +79,6 @@ class UchiwaReminderWorker(
         }
 
         return Result.success()
-    }
-
-    private fun calculateDaysUntil(today: LocalDate, eventDateEpochDay: Long): Int {
-        return ChronoUnit.DAYS.between(
-            today,
-            LocalDate.ofEpochDay(eventDateEpochDay)
-        ).toInt()
     }
 }
 
@@ -164,17 +154,6 @@ object UchiwaReminderNotifier {
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
         notificationManager.notify(eventId.hashCode(), notification)
-    }
-}
-
-private object EventReminderDatabaseProvider {
-    @Volatile
-    private var database: FansaUchiwaDatabase? = null
-
-    fun get(context: Context): FansaUchiwaDatabase {
-        return database ?: synchronized(this) {
-            database ?: FansaUchiwaDatabase.build(context).also { database = it }
-        }
     }
 }
 
