@@ -50,6 +50,7 @@ class DuplicateDecorationTest {
     private class FakeSettingsRepository : SettingsRepository {
         private val hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
         private val hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
+        private val hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
 
         override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticFeedbackEnabledStream
 
@@ -70,6 +71,17 @@ class DuplicateDecorationTest {
 
         override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
             hasSeenEditCompletionTooltipStream.emit(hasSeen)
+        }
+
+        override fun getHasSeenApologyDialogStream(): Flow<Boolean> = hasSeenApologyDialogStream
+
+        override suspend fun fetchHasSeenApologyDialog() {
+            // お詫びダイアログはこのテストの対象外なので「表示済み」にしておく
+            hasSeenApologyDialogStream.emit(true)
+        }
+
+        override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
+            hasSeenApologyDialogStream.emit(hasSeen)
         }
     }
 

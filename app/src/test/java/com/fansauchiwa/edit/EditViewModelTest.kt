@@ -13,6 +13,8 @@ import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.EditStickerTargetParams
+import com.fansauchiwa.data.analytics.EditTextTargetParams
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
@@ -58,6 +60,7 @@ class EditViewModelTest {
     ) : SettingsRepository {
         private val hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
         private val hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
+        private val hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
 
         override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticFeedbackEnabledStream
 
@@ -78,6 +81,17 @@ class EditViewModelTest {
 
         override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
             hasSeenEditCompletionTooltip = hasSeen
+        }
+
+        override fun getHasSeenApologyDialogStream(): Flow<Boolean> = hasSeenApologyDialogStream
+
+        override suspend fun fetchHasSeenApologyDialog() {
+            // お詫びダイアログはこのテストの対象外なので「表示済み」にしておく
+            hasSeenApologyDialogStream.emit(true)
+        }
+
+        override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
+            hasSeenApologyDialogStream.emit(hasSeen)
         }
 
         fun hasSeenEditCompletionTooltip(): Boolean = hasSeenEditCompletionTooltip
@@ -382,7 +396,6 @@ class EditViewModelTest {
 
         val template = Template(
             id = templateId,
-            previewImageResId = 0,
             savedUchiwa = templateSavedUchiwa
         )
 
@@ -452,7 +465,6 @@ class EditViewModelTest {
         )
         val template = Template(
             id = templateId,
-            previewImageResId = 0,
             savedUchiwa = SavedUchiwa(
                 decorations = listOf(
                     lastNamePlaceholder,
@@ -521,7 +533,6 @@ class EditViewModelTest {
         )
         val template = Template(
             id = templateId,
-            previewImageResId = 0,
             savedUchiwa = SavedUchiwa(
                 decorations = listOf(
                     lastNamePlaceholder,

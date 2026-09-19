@@ -42,31 +42,27 @@ import com.google.android.gms.ads.LoadAdError
 fun BannerAd(context: Context, modifier: Modifier = Modifier) {
     var adLoadState by remember { mutableStateOf(AdLoadState.LOADING) }
 
-    val adView = remember {
-        AdView(context).apply {
-            adUnitId = BuildConfig.BANNER_AD_UNIT_ID
-        }
-    }
-
     val deviceWidth = LocalConfiguration.current.screenWidthDp
     val adSize = remember(deviceWidth) {
         AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, deviceWidth)
     }
 
-    remember {
-        adView.setAdSize(adSize)
-        adView.adListener = object : AdListener() {
-            override fun onAdLoaded() {
-                adLoadState = AdLoadState.LOADED
-            }
+    // The AdView is created and starts loading only once, with the size at first composition.
+    val adView = remember {
+        AdView(context).apply {
+            adUnitId = BuildConfig.BANNER_AD_UNIT_ID
+            setAdSize(adSize)
+            adListener = object : AdListener() {
+                override fun onAdLoaded() {
+                    adLoadState = AdLoadState.LOADED
+                }
 
-            override fun onAdFailedToLoad(error: LoadAdError) {
-                adLoadState = AdLoadState.FAILED
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    adLoadState = AdLoadState.FAILED
+                }
             }
+            loadAd(AdRequest.Builder().build())
         }
-
-        val adRequest = AdRequest.Builder().build()
-        adView.loadAd(adRequest)
     }
 
     // Ad load does not work in preview mode because it requires a network connection.
