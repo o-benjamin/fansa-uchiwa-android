@@ -33,8 +33,8 @@ private const val STICKER_PUKUPUKU_SPECULAR_INTENSITY = 1.2f
  * Returns whether the current runtime can apply the AGSL-based puffy effect.
  *
  * The optional [sdkInt] parameter exists to keep this check easy to unit test.
+ * [ChecksSdkIntAtLeast] lets Lint treat callers as SDK-guarded, avoiding false NewApi errors.
  */
-// Lint にこの関数が SDK バージョンの判定であることを伝え、呼び出し側の NewApi 誤検知を防ぐ
 @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
 internal fun supportsPukuPukuEffect(sdkInt: Int = Build.VERSION.SDK_INT): Boolean {
     return sdkInt >= Build.VERSION_CODES.TIRAMISU

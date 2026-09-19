@@ -87,9 +87,9 @@ class ApplyRotationSnapTest {
 
     @Test
     fun applyRotationSnap_justOutsideThreshold_notSnapped() {
-        val result = applyRotationSnap(99f)
+        val result = applyRotationSnap(95f)
         assertFalse(result.isSnapped)
-        assertEquals(99f, result.snappedRotation, FLOAT_DELTA)
+        assertEquals(95f, result.snappedRotation, FLOAT_DELTA)
     }
 
     @Test

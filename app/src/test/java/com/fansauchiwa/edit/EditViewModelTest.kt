@@ -86,6 +86,7 @@ class EditViewModelTest {
         override fun getHasSeenApologyDialogStream(): Flow<Boolean> = hasSeenApologyDialogStream
 
         override suspend fun fetchHasSeenApologyDialog() {
+            // お詫びダイアログはこのテストの対象外なので「表示済み」にしておく
             hasSeenApologyDialogStream.emit(true)
         }
 
