@@ -6,6 +6,9 @@ import com.google.android.gms.ads.AdValue
 
 /**
  * 広告の収益（OnPaidEventListener で受け取る AdValue）を Analytics イベントに変換する
+ *
+ * GA4 のレポートで ad_format / placement / ad_source / precision を軸に使うには、
+ * GA4 の管理画面でイベントスコープのカスタムディメンションとして登録する必要がある。
  */
 object AdPaidEventFactory {
     private const val MICROS_PER_UNIT = 1_000_000.0
@@ -40,7 +43,8 @@ object AdPaidEventFactory {
     ): AnalyticsEvent = AnalyticsEvent(
         name = AnalyticsActions.AD_PAID_EVENT,
         params = buildMap {
-            // GA4 が収益として集計できるよう、value は通貨単位の Double、currency を併せて送る
+            // GA4 のイベントの値（event value）として通貨付きで集計できるよう、value は通貨単位の Double、
+            // currency を併せて送る。GA4 の広告収益の指標（ad_impression 由来）には含まれない
             put(PARAM_VALUE, valueMicros / MICROS_PER_UNIT)
             put(PARAM_CURRENCY, currencyCode)
             put(PARAM_PRECISION, precisionName(precisionType))

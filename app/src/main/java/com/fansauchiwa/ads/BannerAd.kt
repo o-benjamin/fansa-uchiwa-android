@@ -26,6 +26,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.R
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -37,7 +38,7 @@ import dagger.hilt.android.EntryPointAccessors
  * A composable function to display an Ad Manager banner advertisement.
  *
  * @param context The context to use for creating the AdView.
- * @param placement Where the banner is shown, used for revenue analytics.
+ * @param placement Where the banner is shown, used for revenue analytics (an [AnalyticsScreens] value).
  * @param modifier The modifier to apply to the banner ad.
  */
 @Composable
@@ -72,7 +73,7 @@ fun BannerAd(context: Context, placement: String, modifier: Modifier = Modifier)
                         adValue = adValue,
                         adFormat = AdFormat.BANNER,
                         placement = placement,
-                        adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName
+                        responseInfo = responseInfo
                     )
             }
             loadAd(AdRequest.Builder().build())

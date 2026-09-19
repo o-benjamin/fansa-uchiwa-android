@@ -8,12 +8,14 @@ import com.fansauchiwa.ads.AdLoadRetryPolicy
 import com.fansauchiwa.ads.AdPaidEventFactory
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.infra.AnalyticsDataSource
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
@@ -85,14 +87,14 @@ interface AdMobRepository {
      * 広告1回の表示で発生した収益をAnalyticsに記録する
      * @param adValue OnPaidEventListener で受け取った収益
      * @param adFormat 広告フォーマット（[AdFormat]）
-     * @param placement 広告の表示場所
-     * @param adSource 広告を配信したネットワーク名（不明なら null）
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
+     * @param responseInfo 広告の読み込み結果。配信したネットワーク名を取り出す（不明なら null）
      */
     fun logAdPaidEvent(
         adValue: AdValue,
         adFormat: String,
         placement: String,
-        adSource: String?
+        responseInfo: ResponseInfo?
     )
 }
 
@@ -241,7 +243,7 @@ class AdMobRepositoryImpl @Inject constructor(
                 adValue = adValue,
                 adFormat = AdFormat.REWARDED,
                 placement = placement,
-                adSource = ad.responseInfo.loadedAdapterResponseInfo?.adSourceName
+                responseInfo = ad.responseInfo
             )
         }
 
@@ -381,7 +383,7 @@ class AdMobRepositoryImpl @Inject constructor(
                 adValue = adValue,
                 adFormat = AdFormat.INTERSTITIAL,
                 placement = placement,
-                adSource = ad.responseInfo.loadedAdapterResponseInfo?.adSourceName
+                responseInfo = ad.responseInfo
             )
         }
 
@@ -392,7 +394,7 @@ class AdMobRepositoryImpl @Inject constructor(
         adValue: AdValue,
         adFormat: String,
         placement: String,
-        adSource: String?
+        responseInfo: ResponseInfo?
     ) {
         analyticsScope.launch {
             analyticsDataSource.logEvent(
@@ -402,7 +404,7 @@ class AdMobRepositoryImpl @Inject constructor(
                     precisionType = adValue.precisionType,
                     adFormat = adFormat,
                     placement = placement,
-                    adSource = adSource
+                    adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName
                 )
             )
         }
