@@ -9,54 +9,109 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.net.Uri
 import androidx.compose.ui.graphics.asAndroidPath
+import com.fansauchiwa.data.BackgroundRemovalException
+import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.moduleinstall.InstallStatusListener
+import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
+import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate.InstallState
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
+import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
+// ML Kit のモジュールのダウンロードを待つ上限。超えても裏でダウンロードは続き、次の試行で使える
+private const val MODULE_INSTALL_TIMEOUT_MILLIS = 60_000L
+
 class ImageProcessingLocalSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ImageProcessingDataSource {
-    override suspend fun removeBackground(sourceUri: Uri): Uri? {
-        return try {
-            // InputImageを取得
+    override suspend fun removeBackground(sourceUri: Uri): Uri {
+        val options = SubjectSegmenterOptions.Builder()
+            .enableForegroundBitmap()
+            .build()
+        val segmenter = SubjectSegmentation.getClient(options)
+
+        try {
+            ensureModuleInstalled(segmenter)
+
             val inputImage = InputImage.fromFilePath(context, sourceUri)
-
-            // SubjectSegmenterの設定
-            val options = SubjectSegmenterOptions.Builder()
-                .enableForegroundBitmap()
-                .build()
-
-            val segmenter = SubjectSegmentation.getClient(options)
-
-            // 背景透過処理を実行
             val result = segmenter.process(inputImage).await()
-            val foregroundBitmap = result.foregroundBitmap ?: return null
+            val foregroundBitmap = result.foregroundBitmap
+                ?: throw BackgroundRemovalException(BackgroundRemovalFailureReason.NO_SUBJECT)
 
             // 一時ファイルとして保存
-            val timestamp = System.currentTimeMillis()
-            val tempFile = File(context.cacheDir, "processed_image_$timestamp.png")
-
+            val tempFile = File(context.cacheDir, "processed_image_${System.currentTimeMillis()}.png")
             withContext(Dispatchers.IO) {
                 FileOutputStream(tempFile).use { outputStream ->
-                    foregroundBitmap.compress(
-                        Bitmap.CompressFormat.PNG,
-                        100,
-                        outputStream
-                    )
+                    foregroundBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
                 }
             }
+            return Uri.fromFile(tempFile)
+        } catch (e: BackgroundRemovalException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw BackgroundRemovalException(BackgroundRemovalFailureReason.PROCESS_FAILED, e)
+        } finally {
+            segmenter.close()
+        }
+    }
 
-            Uri.fromFile(tempFile)
-        } catch (_: Exception) {
-            null
+    /**
+     * 背景透過の ML Kit モジュールが端末になければダウンロードし、完了まで待つ。
+     * マニフェストの `com.google.mlkit.vision.DEPENDENCIES` によるインストール時の取得は、
+     * Play ストア以外から入れた場合や取得が済んでいない場合には効かないため、ここでも確かめる。
+     */
+    private suspend fun ensureModuleInstalled(segmenter: SubjectSegmenter) {
+        val moduleInstallClient = ModuleInstall.getClient(context)
+        val isAvailable = try {
+            moduleInstallClient.areModulesAvailable(segmenter).await().areModulesAvailable()
+        } catch (e: ApiException) {
+            throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE, e)
+        }
+        if (isAvailable) return
+
+        // installModules() の Task は要求を受け付けた時点で完了するため、完了はリスナーで待つ
+        val installResult = CompletableDeferred<Unit>()
+        val listener = InstallStatusListener { update ->
+            when (update.installState) {
+                InstallState.STATE_COMPLETED -> installResult.complete(Unit)
+                InstallState.STATE_FAILED, InstallState.STATE_CANCELED -> installResult.completeExceptionally(
+                    BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE)
+                )
+            }
+        }
+        val request = ModuleInstallRequest.newBuilder()
+            .addApi(segmenter)
+            .setListener(listener)
+            .build()
+
+        try {
+            val response = try {
+                moduleInstallClient.installModules(request).await()
+            } catch (e: ApiException) {
+                throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE, e)
+            }
+            if (response.areModulesAlreadyInstalled()) return
+
+            withTimeoutOrNull(MODULE_INSTALL_TIMEOUT_MILLIS) { installResult.await() }
+                ?: throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_TIMEOUT)
+        } finally {
+            moduleInstallClient.unregisterListener(listener)
         }
     }
 

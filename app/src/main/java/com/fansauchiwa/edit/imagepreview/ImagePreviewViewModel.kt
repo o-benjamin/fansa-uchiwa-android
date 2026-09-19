@@ -9,6 +9,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_URI_ARG
+import com.fansauchiwa.data.BackgroundRemovalException
+import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
@@ -38,8 +40,8 @@ class ImagePreviewViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ImagePreviewUiState>(ImagePreviewUiState.Loading)
     val uiState: StateFlow<ImagePreviewUiState> = _uiState.asStateFlow()
 
-    private val _errorEvent = MutableSharedFlow<Unit>()
-    val errorEvent: SharedFlow<Unit> = _errorEvent.asSharedFlow()
+    private val _errorEvent = MutableSharedFlow<BackgroundRemovalFailureReason>()
+    val errorEvent: SharedFlow<BackgroundRemovalFailureReason> = _errorEvent.asSharedFlow()
 
     private val _confirmEvent = MutableSharedFlow<String>()
     val confirmEvent: SharedFlow<String> = _confirmEvent.asSharedFlow()
@@ -87,6 +89,9 @@ class ImagePreviewViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { uri ->
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(AnalyticsActions.BACKGROUND_REMOVAL_SUCCESS)
+                    )
                     adMobRepository.loadInterstitialAd()
                     transparentUri = uri
                     _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
@@ -94,8 +99,16 @@ class ImagePreviewViewModel @Inject constructor(
                         transparentUri = uri
                     )
                 },
-                onFailure = {
-                    _errorEvent.emit(Unit)
+                onFailure = { error ->
+                    val reason = (error as? BackgroundRemovalException)?.reason
+                        ?: BackgroundRemovalFailureReason.PROCESS_FAILED
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(
+                            name = AnalyticsActions.BACKGROUND_REMOVAL_FAILURE,
+                            params = mapOf(AnalyticsActions.PARAM_REASON to reason.analyticsValue)
+                        )
+                    )
+                    _errorEvent.emit(reason)
                     _uiState.value =
                         ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
                 }
@@ -215,7 +228,8 @@ class ImagePreviewViewModel @Inject constructor(
                     )
                 },
                 onFailure = {
-                    _errorEvent.emit(Unit)
+                    // 手動修正も背景透過の一部なので、同じエラー表示にする
+                    _errorEvent.emit(BackgroundRemovalFailureReason.PROCESS_FAILED)
                     // 元の ManualCorrection 状態に戻す
                     _uiState.value = currentState
                 }

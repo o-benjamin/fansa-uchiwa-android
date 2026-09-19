@@ -69,6 +69,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -91,10 +92,14 @@ fun ImagePreviewScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.errorEvent.collect {
-            snackbarHostState.showSnackbar(
-                message = "背景の削除に失敗しました"
-            )
+        viewModel.errorEvent.collect { reason ->
+            val messageResId = when (reason) {
+                BackgroundRemovalFailureReason.MODULE_TIMEOUT -> R.string.image_preview_error_preparing
+                BackgroundRemovalFailureReason.NO_SUBJECT -> R.string.image_preview_error_no_subject
+                BackgroundRemovalFailureReason.MODULE_UNAVAILABLE,
+                BackgroundRemovalFailureReason.PROCESS_FAILED -> R.string.image_preview_error
+            }
+            snackbarHostState.showSnackbar(message = context.getString(messageResId))
         }
     }
 
