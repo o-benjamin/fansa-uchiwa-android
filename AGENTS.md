@@ -4,7 +4,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 
 ## 常に守るルール
 
-- 実装後の確認は、ユニットテストと Lint（`./gradlew testDebugUnitTest lintDebug`）までにしてください。エミュレータや実機でアプリを動かす動作確認はオーナーがリリース前にまとめて行うため、しないでください。PR 本文は `.github/pull_request_template.md` の節に沿って書き、動きが変わる変更は「オーナーに動作確認してほしいこと」に操作と期待する結果を書いてください。
+- 実装後の確認は、ユニットテストと Lint（`./gradlew testDebugUnitTest lintDebug`）までにしてください。エミュレータや実機でアプリを動かす動作確認はオーナーがリリース前にまとめて行うため、しないでください（頼まれたときと、不具合の原因調査で必要なときを除く。`.agents/android-cli.md`）。PR 本文は `.github/pull_request_template.md` の節に沿って書き、動きが変わる変更は「オーナーに動作確認してほしいこと」に操作と期待する結果を書いてください。
 - コードは最新の Kotlin 記法（Trailing Lambdas 等）で書いてください。
 - 他ファイルのオブジェクトを `com.fansauchiwa~` から始まる完全修飾名で書かず、import してください。
 - class / interface / object / enum class / data class は原則1ファイルに1つだけ定義してください。

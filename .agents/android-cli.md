@@ -8,15 +8,16 @@ Android CLI（`android` コマンド）の使い方。ふだん使うのは「�
 
 - `android --version` で入っているか確かめる。なければ https://developer.android.com/tools/agents から入れる
 - 公式のスキルを入れる：`android skills add --skill=android-cli --agent=claude-code --project=.`（`.claude/skills/android-cli/` に入る。Google の配布物のためコミットしない）
-- 使うエミュレータ（`android emulator list` で確認。なければ `android emulator create` で作る）
-  - `Pixel_10`（API 36.1 = targetSdk）：ふだんの確認
-  - `Pixel_4`（API 29 = minSdk）：API 33 以上でしか動かない機能（ぷくぷく効果など）の分岐を確かめるとき
 
 ## 実装の前
 
 - Android の API・ライブラリを新しく使うとき、書き方に自信がないときは、記憶で書かずに `android docs search <キーワード>` で調べ、`android docs fetch <URL>` で本文を読む（非推奨になった API や移行ガイドを見落とさないため）
 
 ## アプリを動かすとき（頼まれたときだけ）
+
+使うエミュレータ（`android emulator list` で確認。なければ `android emulator create` で作る）：
+- `Pixel_10`（API 36.1 = targetSdk）：最初に使う端末
+- `Pixel_4`（API 29 = minSdk）：API 33 以上でしか動かない機能（ぷくぷく効果など）の分岐を確かめるとき
 
 1. `android emulator start Pixel_10`（起動が終わるまで待って戻る）
 2. `./gradlew :app:assembleDebug` でビルドし、`android run --device=<serial> --apks=app/build/outputs/apk/debug/app-debug.apk --activity=com.fansauchiwa.MainActivity` で起動する（serial は `adb devices` で確認）
@@ -37,4 +38,7 @@ Android CLI（`android` コマンド）の使い方。ふだん使うのは「�
 
 ## journey の追加
 
-主要な操作の流れは `journeys/` に XML で置く（形式は `.claude/skills/android-cli/references/journeys.md`）。オーナーの動作確認の手順を書くときの下敷きにもなる。追加・変更するのは頼まれたときだけにし、そのときは一度実行して成功することを確かめてからコミットする。
+主要な操作の流れは `journeys/` に XML で置く（形式は `.claude/skills/android-cli/references/journeys.md`）。オーナーの動作確認の手順を書くときの下敷きにもなる。
+
+- 新しい journey の追加と実行は、頼まれたときだけ。追加したら一度実行して、成功することを確かめてからコミットする
+- 既存の journey が通る画面の文言や手順を変える PR では、同じ PR で XML の文言も直す。実行していないことは PR 本文の「確認したこと」に書く
