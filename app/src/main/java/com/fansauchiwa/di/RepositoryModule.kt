@@ -7,6 +7,8 @@ import com.fansauchiwa.data.infra.GalleryImageDataSource
 import com.fansauchiwa.data.infra.GalleryImageLocalSource
 import com.fansauchiwa.data.infra.ImageDataSource
 import com.fansauchiwa.data.infra.ImageLocalSource
+import com.fansauchiwa.data.infra.LocalDatabaseDataSource
+import com.fansauchiwa.data.infra.LocalDatabaseLocalSource
 import com.fansauchiwa.data.infra.MasterpieceDataSource
 import com.fansauchiwa.data.infra.MasterpieceLocalSource
 import com.fansauchiwa.data.repository.AdMobRepository
@@ -123,6 +125,12 @@ abstract class StorageModule {
     abstract fun bindGalleryImageDataSource(
         impl: GalleryImageLocalSource
     ): GalleryImageDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalDatabaseDataSource(
+        impl: LocalDatabaseLocalSource
+    ): LocalDatabaseDataSource
 }
 
 @Module
