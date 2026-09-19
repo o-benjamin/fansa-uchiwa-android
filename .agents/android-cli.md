@@ -1,6 +1,8 @@
 # Android CLI で動作を確かめる
 
-Android CLI（`android` コマンド）を使い、実装中に自分でアプリを動かして確かめる。オーナーの手元で初めて画面の崩れやクラッシュに気づく、という状態をなくすため。
+Android CLI（`android` コマンド）の使い方。ふだん使うのは「実装の前」の API の調べ方だけ。
+
+エミュレータや実機でアプリを動かす動作確認は、オーナーがリリース前にまとめて行う（時間とトークンを多く使うため）。AI エージェントがアプリを動かすのは、オーナーに頼まれたときか、コードを読むだけでは原因が分からない不具合を調べるときだけにする。
 
 ## 準備（初回のみ）
 
@@ -14,9 +16,7 @@ Android CLI（`android` コマンド）を使い、実装中に自分でアプ�
 
 - Android の API・ライブラリを新しく使うとき、書き方に自信がないときは、記憶で書かずに `android docs search <キーワード>` で調べ、`android docs fetch <URL>` で本文を読む（非推奨になった API や移行ガイドを見落とさないため）
 
-## 実装したあと
-
-画面・操作・広告・保存など、動きが変わる変更をしたら、PR を出す前に必ず確かめる。
+## アプリを動かすとき（頼まれたときだけ）
 
 1. `android emulator start Pixel_10`（起動が終わるまで待って戻る）
 2. `./gradlew :app:assembleDebug` でビルドし、`android run --device=<serial> --apks=app/build/outputs/apk/debug/app-debug.apk --activity=com.fansauchiwa.MainActivity` で起動する（serial は `adb devices` で確認）
@@ -26,7 +26,7 @@ Android CLI（`android` コマンド）を使い、実装中に自分でアプ�
    - 操作は `adb -s <serial> shell input tap <x> <y>` / `input text` / `input swipe`
 4. `adb -s <serial> logcat -d | grep -E "FATAL|AndroidRuntime: FATAL"` でクラッシュがないか確かめる
 5. 関係する journey（`journeys/*.xml`）があれば、`.claude/skills/android-cli/references/journeys.md` の手順で実行する
-6. PR 本文の「確認したこと」に、端末（エミュレータ名と API レベル）・確かめた操作・結果を書く
+6. 動かした場合は、PR 本文の「確認したこと」に、端末（エミュレータ名と API レベル）・確かめた操作・結果を書く
 
 ## 注意
 
@@ -37,4 +37,4 @@ Android CLI（`android` コマンド）を使い、実装中に自分でアプ�
 
 ## journey の追加
 
-主要な操作の流れは `journeys/` に XML で置く（形式は `.claude/skills/android-cli/references/journeys.md`）。新しい画面や、収益・保存に関わる流れを追加したら journey も追加する。書いたら一度実行して、成功することを確かめてからコミットする。
+主要な操作の流れは `journeys/` に XML で置く（形式は `.claude/skills/android-cli/references/journeys.md`）。オーナーの動作確認の手順を書くときの下敷きにもなる。追加・変更するのは頼まれたときだけにし、そのときは一度実行して成功することを確かめてからコミットする。
