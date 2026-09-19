@@ -2,6 +2,7 @@ package com.fansauchiwa.ads
 
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.google.android.gms.ads.AdValue
 
 /**
@@ -30,7 +31,7 @@ object AdPaidEventFactory {
      * @param currencyCode ISO 4217 の通貨コード
      * @param precisionType [AdValue.PrecisionType] の値
      * @param adFormat 広告フォーマット（[AdFormat]）
-     * @param placement 広告の表示場所
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param adSource 広告を配信したネットワーク名（不明なら null）
      */
     fun create(

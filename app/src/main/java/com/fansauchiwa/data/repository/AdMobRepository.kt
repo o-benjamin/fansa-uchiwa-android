@@ -51,7 +51,7 @@ interface AdMobRepository {
     /**
      * リワード広告を表示する
      * @param activity 広告を表示するActivity
-     * @param placement 広告の表示場所（Analytics計測用）
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param waitForLoad trueの場合、ロード中の広告のロードが完了するまで待つ。falseの場合、ロード中であれば即座にスキップ
      * @param onUserEarnedReward ユーザーが報酬を獲得した際のコールバック
      * @param onAdFailedOrSkipped 広告の表示に失敗した、または広告がロードされていない場合のコールバック
@@ -74,7 +74,7 @@ interface AdMobRepository {
     /**
      * インタースティシャル広告を表示する
      * @param activity 広告を表示するActivity
-     * @param placement 広告の表示場所（Analytics計測用）
+     * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param onAdClosed 広告が閉じられた際のコールバック
      */
     fun showInterstitialAd(
