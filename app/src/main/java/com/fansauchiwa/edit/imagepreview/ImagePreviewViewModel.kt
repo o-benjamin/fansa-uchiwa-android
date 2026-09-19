@@ -14,14 +14,13 @@ import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -51,8 +50,9 @@ class ImagePreviewViewModel @Inject constructor(
     // 背景透過処理の結果をキャッシュ
     private var transparentUri: Uri? = null
 
-    // モジュールのダウンロードで最大60秒かかるため、処理中にもう一度押されても重ねて始めない
-    private var removeBackgroundJob: Job? = null
+    // モジュールのダウンロードを待つと時間がかかるため、処理中にもう一度押されても重ねて始めない。
+    // 結果が出た時点で false に戻す（そのあとのログ送信やエラー通知の待ちの間は、次の処理を始めてよい）
+    private var isRemovingBackground = false
 
     // 手動修正用のパスリスト
     private val _paths = mutableStateListOf<EraserPath>()
@@ -85,23 +85,26 @@ class ImagePreviewViewModel @Inject constructor(
             return
         }
 
+        // 処理中なら表示だけ読み込み中に戻し、結果は実行中の処理の完了時に反映する
         _uiState.value =
             ImagePreviewUiState.Ready.ShowingTransparent.Loading(currentState.originalUri)
-        if (removeBackgroundJob?.isActive == true) return
+        if (isRemovingBackground) return
+        isRemovingBackground = true
 
         // 背景透過処理を実行
-        removeBackgroundJob = viewModelScope.launch {
-            val result = imageProcessingRepository.removeBackground(currentState.originalUri)
-            // 待っている間に「オリジナル」が選ばれていたら、表示は切り替えない
+        viewModelScope.launch {
+            val result = try {
+                imageProcessingRepository.removeBackground(currentState.originalUri)
+            } finally {
+                isRemovingBackground = false
+            }
+            // 待っている間に「オリジナル」が選ばれていたら、表示は切り替えない。
+            // 表示の更新は、次の中断（ログ送信やエラー通知）より前に済ませる
             val isStillWaiting =
                 _uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Loading
 
             result.fold(
                 onSuccess = { uri ->
-                    analyticsRepository.logEvent(
-                        AnalyticsEvent(AnalyticsActions.BACKGROUND_REMOVAL_SUCCESS)
-                    )
-                    adMobRepository.loadInterstitialAd()
                     transparentUri = uri
                     if (isStillWaiting) {
                         _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
@@ -109,10 +112,18 @@ class ImagePreviewViewModel @Inject constructor(
                             transparentUri = uri
                         )
                     }
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(AnalyticsActions.BACKGROUND_REMOVAL_SUCCESS)
+                    )
+                    adMobRepository.loadInterstitialAd()
                 },
                 onFailure = { error ->
                     val reason = (error as? BackgroundRemovalException)?.reason
                         ?: BackgroundRemovalFailureReason.PROCESS_FAILED
+                    if (isStillWaiting) {
+                        _uiState.value =
+                            ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
+                    }
                     analyticsRepository.logEvent(
                         AnalyticsEvent(
                             name = AnalyticsActions.BACKGROUND_REMOVAL_FAILURE,
@@ -120,10 +131,6 @@ class ImagePreviewViewModel @Inject constructor(
                         )
                     )
                     _errorEvent.emit(reason)
-                    if (isStillWaiting) {
-                        _uiState.value =
-                            ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
-                    }
                 }
             )
         }

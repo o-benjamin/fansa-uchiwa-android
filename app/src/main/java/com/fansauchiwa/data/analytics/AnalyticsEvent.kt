@@ -98,13 +98,6 @@ object BackGroundColorParams {
 }
 
 /**
- * 背景透過の失敗イベントのパラメータ
- */
-object BackgroundRemovalParams {
-    const val PARAM_REASON = "reason"
-}
-
-/**
  * 戻るダイアログアクション
  */
 object AnalyticsBackDialogActions {

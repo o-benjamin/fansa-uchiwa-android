@@ -136,6 +136,45 @@ class ImagePreviewBackgroundRemovalTest {
     }
 
     @Test
+    fun showOriginal_WhileRemoving_KeepsOriginalAndEmitsErrorAfterFailure() = runTest(testDispatcher) {
+        val removal = CompletableDeferred<Result<Uri>>()
+        coEvery { imageProcessingRepository.removeBackground(originalUri) } coAnswers { removal.await() }
+        val viewModel = createViewModel()
+        var emittedReason: BackgroundRemovalFailureReason? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            emittedReason = viewModel.errorEvent.first()
+        }
+
+        viewModel.showTransparent()
+        advanceUntilIdle()
+        viewModel.showOriginal()
+        removal.complete(
+            Result.failure(BackgroundRemovalException(BackgroundRemovalFailureReason.NO_SUBJECT))
+        )
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingOriginal)
+        assertEquals(BackgroundRemovalFailureReason.NO_SUBJECT, emittedReason)
+    }
+
+    @Test
+    fun showTransparent_TappedAgainWhileErrorIsDelivered_StartsNewRemoval() = runTest(testDispatcher) {
+        coEvery { imageProcessingRepository.removeBackground(originalUri) } returnsMany listOf(
+            Result.failure(BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE)),
+            Result.success(transparentUri)
+        )
+        // エラー通知の受け手がいないため、1回目の処理は errorEvent.emit で止まったままになる
+        val viewModel = createViewModel()
+
+        viewModel.showTransparent()
+        advanceUntilIdle()
+        viewModel.showTransparent()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Success)
+    }
+
+    @Test
     fun showTransparent_TappedTwiceWhileRemoving_StartsRemovalOnce() = runTest(testDispatcher) {
         val removal = CompletableDeferred<Result<Uri>>()
         coEvery { imageProcessingRepository.removeBackground(originalUri) } coAnswers { removal.await() }
