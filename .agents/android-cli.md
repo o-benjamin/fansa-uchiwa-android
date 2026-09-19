@@ -1,4 +1,4 @@
-# Android CLI で動作を確かめる
+# Android CLI（API の調べ方と、頼まれたときにアプリを動かす手順）
 
 Android CLI（`android` コマンド）の使い方。ふだん使うのは「実装の前」の API の調べ方だけ。
 
