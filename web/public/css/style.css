@@ -1,0 +1,797 @@
+/* =========================================
+   Reset & Base Styles
+   ========================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* パステル・ポップなカラーパレット */
+    --color-primary: #ff8fab;
+    /* メインピンク */
+    --color-secondary: #ffc2d1;
+    /* サブピンク */
+    --color-accent: #fb6f92;
+    /* アクセント濃いピンク */
+    --color-bg: #fff0f3;
+    /* 全体背景薄ピンク */
+    --color-text-main: #4a4e69;
+    /* メインテキスト色（濃いグレー紫） */
+    --color-text-light: #9a8c98;
+    --color-white: #ffffff;
+
+    --font-heading: 'M PLUS Rounded 1c', sans-serif;
+    --font-body: 'Kiwi Maru', serif;
+}
+
+body {
+    font-family: var(--font-body);
+    font-weight: 400;
+    color: var(--color-text-main);
+    background-color: var(--color-bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+.logo,
+.step-number {
+    font-family: var(--font-heading);
+    font-weight: 800;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* PC・スマホ問わず画面幅いっぱいに表示するためのラッパー */
+.app-container {
+    width: 100%;
+    background-color: var(--color-white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.main-content {
+    flex: 1;
+    /* コンテンツが少ない場合でもフッターを下部に押しやる */
+    width: 100%;
+}
+
+/* =========================================
+   Header 
+   ========================================= */
+.header {
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px dashed var(--color-secondary);
+}
+
+.logo {
+    font-size: 1.5rem;
+    color: var(--color-accent);
+    letter-spacing: 1px;
+    z-index: 201;
+}
+
+.header-nav {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.header-nav a {
+    color: var(--color-text-main);
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.header-nav a:hover {
+    color: var(--color-accent);
+}
+
+.hamburger-btn {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 24px;
+    padding: 0;
+    z-index: 201;
+}
+
+.hamburger-btn span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: var(--color-text-main);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .hamburger-btn {
+        display: flex;
+    }
+
+    .header-nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background-color: var(--color-bg);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        z-index: 199;
+        border-bottom: 2px dashed var(--color-secondary);
+    }
+
+    .header-nav.active {
+        max-height: 400px;
+        padding: 20px 0;
+    }
+
+    .header-nav a {
+        font-size: 1.2rem;
+    }
+
+    .hamburger-btn.active span:nth-child(1) {
+        transform: translateY(10.5px) rotate(45deg);
+    }
+
+    .hamburger-btn.active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger-btn.active span:nth-child(3) {
+        transform: translateY(-10.5px) rotate(-45deg);
+    }
+}
+
+/* =========================================
+   Hero Section
+   ========================================= */
+.hero {
+    position: relative;
+    padding: 40px 20px 60px;
+    background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-secondary) 100%);
+    text-align: center;
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 40px;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+}
+
+.hero-title {
+    font-size: 2rem;
+    line-height: 1.4;
+    margin-bottom: 15px;
+    color: var(--color-text-main);
+}
+
+.hero-title .highlight {
+    color: var(--color-accent);
+    position: relative;
+    display: inline-block;
+}
+
+.hero-title .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 12px;
+    background-color: var(--color-primary);
+    opacity: 0.3;
+    z-index: -1;
+    border-radius: 10px;
+}
+
+.hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+.store-badge {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.store-badge img {
+    height: 70px;
+    width: auto;
+}
+
+.store-badge:hover {
+    transform: scale(1.05);
+}
+
+.hero-mockup {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.hero-mockup .mockup-img {
+    border-radius: 30px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    border: 8px solid var(--color-white);
+    height: 400px;
+    width: auto;
+}
+
+/* カルーセルコンテナと無限スクロールアニメーション */
+.carousel-container {
+    overflow: hidden;
+    width: 100%;
+    /* スマホ画面より少し広げるなど必要に応じて */
+    margin-top: 20px;
+    position: relative;
+}
+
+.carousel-track {
+    display: flex;
+    gap: 30px;
+    /* モックアップ画像２セット分並べるため、自身の幅の50%分移動させる */
+    animation: scrollCarousel 20s linear infinite;
+    width: max-content;
+}
+
+/* 一時停止 */
+.carousel-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scrollCarousel {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(calc(-50% - 15px));
+    }
+
+    /* 1セット分(全体の半分)の移動 - gapの半量考慮 */
+}
+
+/* PC等（マウス操作ができる端末）では、画面幅に関わらず自動スクロールを止め、中央揃えの手動横スクロールにする */
+@media (hover: hover) {
+    .carousel-container {
+        overflow-x: auto;
+        padding-bottom: 15px;
+        /* スクロールバー用の余白 */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* スクロールバーのスタイル調整 */
+    .carousel-container::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .carousel-container::-webkit-scrollbar-track {
+        background: var(--color-bg);
+        border-radius: 4px;
+    }
+
+    .carousel-container::-webkit-scrollbar-thumb {
+        background-color: var(--color-primary);
+        border-radius: 4px;
+    }
+
+    .carousel-track {
+        animation: none;
+        width: max-content;
+        min-width: 100%;
+        margin: 0;
+    }
+
+    /* 要素が画面幅に収まる場合は中央揃え、あふれる場合は左側が切れないように左端からスクロールにする設定 */
+    .carousel-track::before,
+    .carousel-track::after {
+        content: '';
+        margin: auto;
+    }
+
+    .clone-img {
+        display: none;
+    }
+}
+
+/* =========================================
+   Section Common
+   ========================================= */
+section:not(.hero) {
+    padding: 60px 20px;
+    scroll-margin-top: 80px;
+}
+
+.section-title {
+    text-align: center;
+    font-size: 1.8rem;
+    color: var(--color-accent);
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.section-title::after {
+    content: '♥';
+    display: block;
+    font-size: 1.2rem;
+    color: var(--color-primary);
+    margin-top: 5px;
+}
+
+/* =========================================
+   Features Section
+   ========================================= */
+.features {
+    background-color: var(--color-white);
+}
+
+.feature-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* PC等の大画面では横並びにする */
+@media (min-width: 768px) {
+    .feature-cards {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .card {
+        flex: 1;
+    }
+}
+
+.card {
+    background-color: var(--color-bg);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    border: 2px dashed var(--color-secondary);
+}
+
+.card-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.card-title {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: var(--color-text-main);
+    line-height: 1.4;
+}
+
+.card-desc {
+    font-size: 0.95rem;
+}
+
+/* =========================================
+   How To Use Section
+   ========================================= */
+.how-to-use {
+    background-color: #fafcfc;
+}
+
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .steps-container {
+        flex-direction: row;
+        gap: 30px;
+    }
+
+    .step {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+.step {
+    position: relative;
+    background: var(--color-white);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    border-top: 5px solid var(--color-primary);
+}
+
+.step-number {
+    position: absolute;
+    top: -20px;
+    left: 20px;
+    background: var(--color-primary);
+    color: var(--color-white);
+    padding: 5px 20px;
+    border-radius: 20px;
+    font-size: 1.1rem;
+    box-shadow: 0 5px 15px rgba(255, 143, 171, 0.4);
+}
+
+.step-img {
+    margin: 20px auto;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    max-width: 200px;
+}
+
+.step-text {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.step-text h4 {
+    color: var(--color-accent);
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.step-text p {
+    font-size: 0.95rem;
+}
+
+/* =========================================
+   How To Print Section
+   ========================================= */
+.how-to-print {
+    background: linear-gradient(to bottom, #fff, var(--color-bg));
+}
+
+.print-guide-card {
+    background: var(--color-white);
+    border: 3px solid var(--color-secondary);
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.print-guide-card::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border: 1px dashed var(--color-primary);
+    border-radius: 12px;
+    pointer-events: none;
+}
+
+.print-desc {
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+.print-desc strong {
+    color: var(--color-accent);
+    font-family: var(--font-heading);
+}
+
+/* =========================================
+   CTA Bottom
+   ========================================= */
+.cta-bottom {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    text-align: center;
+    border-top-left-radius: 40px;
+    border-top-right-radius: 40px;
+}
+
+.cta-bottom h2 {
+    color: var(--color-white);
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+}
+
+.cta-bottom h2::after {
+    display: none;
+}
+
+/* =========================================
+   Footer
+   ========================================= */
+.footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #333;
+    color: #fff;
+    font-size: 0.8rem;
+}
+
+/* =========================================
+   Animations
+   ========================================= */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* =========================================
+   Guide Page Styles
+   ========================================= */
+.guide-header {
+    display: flex;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 15px 20px;
+    border-bottom: 2px dashed var(--color-secondary);
+}
+
+.back-link {
+    position: absolute;
+    left: 20px;
+    color: var(--color-text-light);
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.3s ease;
+}
+
+.back-link:hover {
+    color: var(--color-accent);
+}
+
+@media (max-width: 600px) {
+    .guide-header {
+        flex-direction: column;
+        gap: 10px;
+        padding-top: 15px;
+        padding-bottom: 10px;
+    }
+
+    .back-link {
+        position: relative;
+        left: 0;
+        align-self: flex-start;
+    }
+}
+
+.guide-hero {
+    padding: 30px 20px 40px;
+    background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-secondary) 100%);
+    text-align: center;
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 40px;
+    margin-bottom: 40px;
+}
+
+.guide-hero-title {
+    font-size: 1.8rem;
+    color: var(--color-text-main);
+}
+
+.guide-toc {
+    background-color: var(--color-white);
+    border: 3px solid var(--color-secondary);
+    border-radius: 20px;
+    padding: 25px;
+    margin: 0 auto 50px;
+    max-width: 800px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.guide-toc h3 {
+    text-align: center;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+}
+
+.guide-toc ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+@media (min-width: 768px) {
+    .guide-toc ul {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.guide-toc a {
+    display: block;
+    background-color: var(--color-bg);
+    padding: 12px 20px;
+    border-radius: 10px;
+    color: var(--color-text-main);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 5px solid var(--color-primary);
+}
+
+.guide-toc a:hover {
+    background-color: var(--color-secondary);
+    transform: translateX(5px);
+}
+
+.guide-sections {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    padding: 0 20px 60px;
+}
+
+.guide-card {
+    background-color: var(--color-white);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 194, 209, 0.5);
+    scroll-margin-top: 100px;
+}
+
+.guide-card-inner {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .guide-card-inner {
+        flex-direction: row;
+    }
+
+    .guide-card:nth-child(even) .guide-card-inner {
+        flex-direction: row-reverse;
+    }
+}
+
+.guide-card-content {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.guide-card-number {
+    display: inline-block;
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.guide-card-title {
+    font-size: 1.5rem;
+    color: var(--color-accent);
+    margin-bottom: 20px;
+}
+
+.guide-card-desc {
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+.guide-card-desc ul,
+.guide-card-desc ol {
+    margin-left: 25px;
+    margin-top: 15px;
+}
+
+.guide-card-desc li {
+    margin-bottom: 10px;
+}
+
+.guide-card-image {
+    flex: 1;
+    background-color: var(--color-bg);
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.guide-card-image img {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+    height: auto;
+}
+
+/* トップページ用のリンクボタンスタイル */
+.guide-link-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 25px;
+    background-color: var(--color-white);
+    color: var(--color-accent);
+    border: 2px solid var(--color-primary);
+    border-radius: 30px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(255, 143, 171, 0.2);
+}
+
+.guide-link-btn:hover {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(255, 143, 171, 0.4);
+}

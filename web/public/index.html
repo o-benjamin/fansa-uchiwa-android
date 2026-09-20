@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファンサうちわAndroid - スマホで簡単！オリジナルのファンサうちわを作ろう</title>
+    <meta name="description" content="スマートフォンで簡単に直感的にデザインできる推し活に必須のファンサうちわ作成アプリです。">
+    <meta name="google-site-verification" content="WueyZY2wiO-BkdBXBIxk9KBuqUcvmuXLGNFCDqaTIq8" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="icon" href="favicon.png" type="image/png">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="logo">ファンサうちわAndroid</div>
+            <button class="hamburger-btn" id="hamburger-btn" aria-label="メニューを開く">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav class="header-nav" id="header-nav">
+                <a href="#features" class="nav-link">アプリの特徴</a>
+                <a href="#how-to-use" class="nav-link">アプリの使い方</a>
+                <a href="#how-to-print" class="nav-link">印刷のしかた</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <!-- ヒーローセクション -->
+            <section class="hero fade-in">
+                <div class="hero-content">
+                    <h1 class="hero-title">スマホで簡単！<br>オリジナルの<span class="highlight">ファンサうちわ</span>を作ろう</h1>
+                    <p class="hero-subtitle">コンサートやライブでの推し活を全力サポート！</p>
+                    <div class="store-badge">
+                        <a href="https://play.google.com/store/apps/details?id=com.fansauchiwa" target="_blank"
+                            rel="noopener noreferrer" class="play-store-btn">
+                            <img src="https://play.google.com/intl/en_us/badges/static/images/badges/ja_badge_web_generic.png"
+                                alt="Google Playで手に入れよう">
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-mockup">
+                    <div class="carousel-container">
+                        <div class="carousel-track">
+                            <!-- オリジナル画像4枚 -->
+                            <img src="img/carousel-1.png" class="mockup-img" alt="アプリ画面イメージ1">
+                            <img src="img/carousel-2.png" class="mockup-img" alt="アプリ画面イメージ2">
+                            <img src="img/carousel-3.png" class="mockup-img" alt="アプリ画面イメージ3">
+                            <img src="img/carousel-4.png" class="mockup-img" alt="アプリ画面イメージ4">
+                            <!-- ループ用の複製4枚 -->
+                            <img src="img/carousel-1.png" class="mockup-img clone-img" alt="アプリ画面イメージ1">
+                            <img src="img/carousel-2.png" class="mockup-img clone-img" alt="アプリ画面イメージ2">
+                            <img src="img/carousel-3.png" class="mockup-img clone-img" alt="アプリ画面イメージ3">
+                            <img src="img/carousel-4.png" class="mockup-img clone-img" alt="アプリ画面イメージ4">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- アプリの特徴セクション -->
+            <section id="features" class="features">
+                <h2 class="section-title fade-in">アプリの特徴</h2>
+                <div class="feature-cards">
+                    <div class="card fade-in">
+                        <div class="card-icon">✨</div>
+                        <h3 class="card-title">豊富なフォントとステッカーで<br>自由にデザイン</h3>
+                        <p class="card-desc">推しに一番伝えたい言葉を、目立つフォントとカラーリングでアピール！多彩なステッカーでデコレーションも自由自在です。</p>
+                    </div>
+                    <div class="card fade-in">
+                        <div class="card-icon">🖨️</div>
+                        <h3 class="card-title">A3サイズで印刷すれば<br>ジャンボうちわサイズにぴったり！</h3>
+                        <p class="card-desc">完成した画像はうちわに合わせた比率で保存されます。コンビニプリントでA3印刷するだけで、公式のジャンボうちわサイズにジャストフィット！</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- アプリの使い方セクション -->
+            <section id="how-to-use" class="how-to-use">
+                <h2 class="section-title fade-in">アプリの使い方</h2>
+                <div class="steps-container">
+                    <div class="step fade-in">
+                        <div class="step-number">Step 1</div>
+                        <img src="img/step1.png" alt="Step 1: 新規作成またはテンプレート選択" class="step-img">
+                        <div class="step-text">
+                            <h4>新規作成、またはテンプレートから始める</h4>
+                            <p>白紙から自分好みに作ることも、テンプレートから選んでアレンジすることもできます。あなたのスタイルに合わせてスタートしましょう。</p>
+                        </div>
+                    </div>
+                    <div class="step fade-in">
+                        <div class="step-number">Step 2</div>
+                        <img src="img/step2.png" alt="Step 2: デコレーション" class="step-img">
+                        <div class="step-text">
+                            <h4>うちわを自由にデコレーション</h4>
+                            <p>推しカラーの背景色を選び、文字の縁取りや多彩なスタンプを使って目立つうちわに仕上げましょう。<br><a href="guide.html"
+                                    class="guide-link-btn">詳しい使い方を見る &rarr;</a></p>
+                        </div>
+                    </div>
+                    <div class="step fade-in">
+                        <div class="step-number">Step 3</div>
+                        <img src="img/step3.png" alt="Step 3: 画像保存" class="step-img">
+                        <div class="step-text">
+                            <h4>画像としてスマホに保存</h4>
+                            <p>完成したら「画像として保存」ボタンをタップするだけでカメラロールに保存されます。あとはコンビニでA3印刷するだけ！</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 印刷のしかたセクション -->
+            <section id="how-to-print" class="how-to-print">
+                <div class="print-guide-card fade-in">
+                    <h2 class="section-title">印刷のしかた</h2>
+                    <p class="print-desc">
+                        保存した画像は、各コンビニエンスストアの「ネットプリント」アプリなどを使って簡単に印刷できます。<br><br>
+                        <strong>設定：</strong><br>
+                        【用紙サイズ】 <strong>A3サイズ</strong><br>
+                        【カラー】 フルカラー<br>
+                        【その他】 「ちょっと小さめ」等の、印刷後に元サイズより小さくなってしまうような設定はしないようにしましょう。<br>
+                        印刷後、ハサミやカッターでフチに沿って切り抜いて、お手持ちのジャンボうちわに両面テープ等で貼り付けて完成です！
+                    </p>
+                </div>
+            </section>
+
+            <!-- CTAボトム -->
+            <section class="cta-bottom fade-in">
+                <h2>さっそくうちわを作ってみよう！</h2>
+                <div class="store-badge">
+                    <a href="https://play.google.com/store/apps/details?id=com.fansauchiwa" target="_blank"
+                        rel="noopener noreferrer" class="play-store-btn">
+                        <img src="https://play.google.com/intl/en_us/badges/static/images/badges/ja_badge_web_generic.png"
+                            alt="Google Playで手に入れよう">
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 ファンサうちわAndroid. All rights reserved.</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;"><a
+                    href="https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
+                    style="color: inherit; text-decoration: underline;">プライバシーポリシー</a></p>
+        </footer>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
