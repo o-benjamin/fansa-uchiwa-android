@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>詳しい使い方 - ファンサうちわAndroid</title>
+    <meta name="description" content="ファンサうちわAndroidの詳しいデコレーション機能の使い方を解説します。">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="icon" href="favicon.png" type="image/png">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header guide-header">
+            <a href="index.html" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                ホームに戻る
+            </a>
+            <div class="logo">ファンサうちわAndroid</div>
+        </header>
+
+        <main class="main-content">
+            <!-- ヒーローセクション -->
+            <section class="guide-hero fade-in">
+                <h1 class="guide-hero-title">詳しいデコレーション機能の使い方</h1>
+            </section>
+
+            <!-- 目次 -->
+            <section class="guide-toc fade-in">
+                <h3>目次</h3>
+                <ul>
+                    <li><a href="#text-add">1. テキストを追加する</a></li>
+                    <li><a href="#image-add">2. 画像を追加する</a></li>
+                    <li><a href="#sticker-add">3. ステッカーを追加する</a></li>
+                    <li><a href="#edit-item">4. 追加したデコレーションの編集</a></li>
+                    <li><a href="#bg-change">5. 背景色を変更する</a></li>
+                    <li><a href="#order-change">6. 重なり順を変更する</a></li>
+                    <li><a href="#undo-redo">7. 元に戻す / やり直し</a></li>
+                </ul>
+            </section>
+
+            <!-- 解説セクション -->
+            <div class="guide-sections">
+                <!-- 1. テキストを追加する -->
+                <article id="text-add" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">1</div>
+                            <h2 class="guide-card-title">テキストを追加する</h2>
+                            <div class="guide-card-desc">
+                                <p>画面下部の「文字」タブで、追加したいテキストのフォントを選択すると文字が追加できます。</p>
+                                <ul>
+                                    <li><strong>テキスト編集:</strong> テキストをタップして選択した状態でもう一度タップすると、テキストを編集できます。</li>
+                                    <li><strong>フォント変更:</strong>テキストをタップして選択した状態でフォントを選択すると、テキストはそのまま、フォントだけ変更できます。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-text.png" alt="テキスト編集のイメージ">
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 2. 画像を追加する -->
+                <article id="image-add" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">2</div>
+                            <h2 class="guide-card-title">画像を追加する</h2>
+                            <div class="guide-card-desc">
+                                <p>スマホのギャラリーから、好きな画像をうちわに配置できます。</p>
+                                <ul>
+                                    <li>「+」ボタンをタップし、スマホ内の写真を選びます。</li>
+                                    <li><strong>背景透過（自動切り抜き）:</strong>
+                                        画像の確認画面で「背景透過」ボタンを押すと、被写体だけを綺麗に切り抜くことができます。もちろん「オリジナル」ボタンを押せば元の画像に戻して追加することもできます。
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-image.png" alt="画像追加のイメージ">
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 3. ステッカーを追加する -->
+                <article id="sticker-add" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">3</div>
+                            <h2 class="guide-card-title">ステッカーを追加する</h2>
+                            <div class="guide-card-desc">
+                                <p>アプリ内蔵の可愛いステッカーを使って、うちわを華やかにデコレーションできます。</p>
+                                <ul>
+                                    <li>ハートや星、キラキラアイコンなど、多彩なステッカーから選べます。</li>
+                                    <li>好きな位置にドラッグして配置しましょう。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-sticker.png" alt="ステッカーのイメージ">
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 4. 追加したデコレーションの編集 -->
+                <article id="edit-item" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">4</div>
+                            <h2 class="guide-card-title">追加したデコレーションの編集</h2>
+                            <div class="guide-card-desc">
+                                <p>配置したアイテムは、後からいつでも編集可能です。</p>
+                                <ul>
+                                    <li><strong>拡大・縮小・回転:</strong> 右下にあるハンドルをドラッグするか、2本指でピンチイン・ピンチアウトして調整します。</li>
+                                    <li><strong>複製（コピー）:</strong> 選択したアイテムと同じものをもう一つ作ります。</li>
+                                    <li><strong>削除:</strong>ゴミ箱アイコンをタップすると、アイテムを削除できます。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-edit.png" alt="アイテム編集のイメージ">
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 5. 背景色を変更する -->
+                <article id="bg-change" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">5</div>
+                            <h2 class="guide-card-title">背景色を変更する</h2>
+                            <div class="guide-card-desc">
+                                <p>うちわの土台となる背景色を変更します。</p>
+                                <ul>
+                                    <li>推しのメンバーカラーに合わせて、お好みの色に設定しましょう。</li>
+                                    <li>うちわの外側の色を変更し、編集時にうちわを見やすくすることも可能です。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-background.png" alt="背景色変更のイメージ">
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 6. 重なり順を変更する -->
+                <article id="order-change" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">6</div>
+                            <h2 class="guide-card-title">重なり順を変更する</h2>
+                            <div class="guide-card-desc">
+                                <p>配置したアイテム（文字や画像、ステッカーなど）の重なり順を変更できます。</p>
+                                <ul>
+                                    <li>「レイヤー」タブで、右側のアイコンを掴んでドラッグ＆ドロップしてください。</li>
+                                    <li>例えば、ステッカーを文字の後ろに配置したい時などに便利です。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-layer.png" alt="重なり順変更のイメージ">
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 7. 元に戻す / やり直し -->
+                <article id="undo-redo" class="guide-card fade-in">
+                    <div class="guide-card-inner">
+                        <div class="guide-card-content">
+                            <div class="guide-card-number">7</div>
+                            <h2 class="guide-card-title">元に戻す / やり直し</h2>
+                            <div class="guide-card-desc">
+                                <p>間違えてしまった時や、元の状態に戻したい時に、操作を取り消すことができます。</p>
+                                <ul>
+                                    <li><strong>元に戻す:</strong> 矢印が左を向いているアイコンをタップすると、直前の操作を取り消します。</li>
+                                    <li><strong>やり直し:</strong> 矢印が右を向いているアイコンをタップすると、取り消した操作を再び適用します。</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="guide-card-image">
+                            <img src="img/guide-undoredo.png" alt="アンドゥ・リドゥのイメージ">
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 ファンサうちわAndroid. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- 共有のJS。スクロールアニメーションなど -->
+    <script src="js/main.js"></script>
+    <script>
+        // 目次リンクのスムーススクロール用処理の追加
+        document.querySelectorAll('.guide-toc a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
