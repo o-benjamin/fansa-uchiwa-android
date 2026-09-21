@@ -88,45 +88,51 @@ class UchiwaPreviewViewModel @Inject constructor(
      * この画面で既に広告を視聴済みの場合は広告をスキップして保存を実行
      */
     fun showRewardedAdAndSave(activity: Activity) {
-        logExportEvent()
-
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
 
-        if (hasEarnedRewardInSession) {
-            saveToGallery()
-            return
-        }
+        viewModelScope.launch {
+            // font_same_as_last の比較用に、保存処理（saveToGallery）で上書きされるより先に読んでおく。
+            // ここを読んでからのちにログ送信と保存を行うことで、
+            // 同じ画面で連続してエクスポートしたときの読み取り/上書きの競合を避ける
+            // （2回目以降は広告をスキップしてすぐ保存されるため、順序を保証しないと自分自身と比較しうる）。
+            val lastSavedFontName = settingsRepository.getLastSavedFontName()
+            logExportEvent(lastSavedFontName)
 
-        adMobRepository.showRewardedAd(
-            activity = activity,
-            placement = AnalyticsScreens.PREVIEW_SCREEN,
-            waitForLoad = true,
-            onUserEarnedReward = {
-                hasEarnedRewardInSession = true
+            if (hasEarnedRewardInSession) {
                 saveToGallery()
-            },
-            onAdFailedOrSkipped = {
-                saveToGallery()
+                return@launch
             }
-        )
+
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = {
+                    hasEarnedRewardInSession = true
+                    saveToGallery()
+                },
+                onAdFailedOrSkipped = {
+                    saveToGallery()
+                }
+            )
+        }
     }
 
     /**
      * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）付きで送る。
-     * font_same_as_last の判定に端末側の読み取りが必要なため suspend で計算してから送る。
      * 「前回保存したフォント」の上書きはここではしない（実際にギャラリーへの保存が成功した
      * ときだけ [saveToGallery] で上書きする。ここで上書きすると、保存に失敗したケースや
      * タップしただけで広告表示中に離脱したケースも「保存した」ことになってしまうため）。
      */
-    private fun logExportEvent() {
+    private fun logExportEvent(lastSavedFontName: String?) {
         viewModelScope.launch {
-            val params = buildFontSessionAnalyticsParams()
+            val params = buildFontSessionAnalyticsParams(lastSavedFontName)
             analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
         }
     }
 
-    private suspend fun buildFontSessionAnalyticsParams(): Map<String, Any> {
+    private fun buildFontSessionAnalyticsParams(lastSavedFontName: String?): Map<String, Any> {
         val state = uiState.value
         val elapsedMillis = System.currentTimeMillis() - state.editStartTimeMillis
         val baseParams = mapOf<String, Any>(
@@ -134,8 +140,6 @@ class UchiwaPreviewViewModel @Inject constructor(
             FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to editDurationBucket(elapsedMillis)
         )
         val finalFont = resolveFinalFont(state.finalFontName) ?: return baseParams
-
-        val lastSavedFontName = settingsRepository.getLastSavedFontName()
 
         return baseParams + mapOf(
             FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to finalFontRankBucket(finalFont),

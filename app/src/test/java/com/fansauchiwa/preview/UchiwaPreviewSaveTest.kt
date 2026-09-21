@@ -17,6 +17,7 @@ import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.edit.FontFamilies
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -309,6 +310,52 @@ class UchiwaPreviewSaveTest {
         // ギャラリーへの保存が失敗した場合は、保存したことにしない
         coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
     }
+
+    @Test
+    fun showRewardedAdAndSave_alreadyEarnedReward_readsLastSavedFontNameBeforeOverwritingIt() =
+        runTest {
+            // 広告を視聴済みの状態で連続してエクスポートしたとき、font_same_as_last の比較用の読み取りが
+            // 保存処理による上書きより先に行われること（読み取り/上書きの競合が無いこと）を確かめる
+            val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+            val viewModel = createViewModel(
+                imagePath = imagePath,
+                fontSwitchCount = 0,
+                finalFontName = FontFamilies.KEI_FONT.name,
+                editStartTimeMillis = 0L
+            )
+            val activity = mockk<Activity>()
+            every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+
+            val onUserEarnedRewardSlot = slot<() -> Unit>()
+            every {
+                adMobRepository.showRewardedAd(
+                    activity = activity,
+                    placement = AnalyticsScreens.PREVIEW_SCREEN,
+                    waitForLoad = true,
+                    onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                    onAdFailedOrSkipped = any(),
+                    onAdDismissed = null
+                )
+            } answers {
+                onUserEarnedRewardSlot.captured.invoke()
+            }
+
+            // 1回目：広告を視聴して保存（広告視聴済みフラグが立つ）
+            viewModel.showRewardedAdAndSave(activity)
+            advanceUntilIdle()
+
+            // 2回目：広告をスキップしてすぐ保存される。読み取りが先に終わっていなければ
+            // 1回目の書き込みと競合し、自分自身と比較してしまう
+            viewModel.showRewardedAdAndSave(activity)
+            advanceUntilIdle()
+
+            coVerifyOrder {
+                settingsRepository.getLastSavedFontName()
+                settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name)
+                settingsRepository.getLastSavedFontName()
+                settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name)
+            }
+        }
 
     // endregion
 }
