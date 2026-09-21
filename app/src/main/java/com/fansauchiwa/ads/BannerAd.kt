@@ -26,47 +26,58 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.R
+import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
+import dagger.hilt.android.EntryPointAccessors
 
 /**
  * A composable function to display an Ad Manager banner advertisement.
  *
  * @param context The context to use for creating the AdView.
+ * @param placement Where the banner is shown, used for revenue analytics (an [AnalyticsScreens] value).
  * @param modifier The modifier to apply to the banner ad.
  */
 @Composable
-fun BannerAd(context: Context, modifier: Modifier = Modifier) {
+fun BannerAd(context: Context, placement: String, modifier: Modifier = Modifier) {
     var adLoadState by remember { mutableStateOf(AdLoadState.LOADING) }
-
-    val adView = remember {
-        AdView(context).apply {
-            adUnitId = BuildConfig.BANNER_AD_UNIT_ID
-        }
-    }
 
     val deviceWidth = LocalConfiguration.current.screenWidthDp
     val adSize = remember(deviceWidth) {
         AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, deviceWidth)
     }
 
-    remember {
-        adView.setAdSize(adSize)
-        adView.adListener = object : AdListener() {
-            override fun onAdLoaded() {
-                adLoadState = AdLoadState.LOADED
-            }
+    // The AdView is created and starts loading only once, with the size at first composition.
+    val adView = remember {
+        AdView(context).apply {
+            adUnitId = BuildConfig.BANNER_AD_UNIT_ID
+            setAdSize(adSize)
+            adListener = object : AdListener() {
+                override fun onAdLoaded() {
+                    adLoadState = AdLoadState.LOADED
+                }
 
-            override fun onAdFailedToLoad(error: LoadAdError) {
-                adLoadState = AdLoadState.FAILED
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    adLoadState = AdLoadState.FAILED
+                }
             }
+            setOnPaidEventListener { adValue ->
+                // Resolve lazily so that Compose previews never touch the Hilt graph.
+                EntryPointAccessors
+                    .fromApplication(context.applicationContext, AdMobRepositoryEntryPoint::class.java)
+                    .adMobRepository()
+                    .logAdPaidEvent(
+                        adValue = adValue,
+                        adFormat = AdFormat.BANNER,
+                        placement = placement,
+                        responseInfo = responseInfo
+                    )
+            }
+            loadAd(AdRequest.Builder().build())
         }
-
-        val adRequest = AdRequest.Builder().build()
-        adView.loadAd(adRequest)
     }
 
     // Ad load does not work in preview mode because it requires a network connection.

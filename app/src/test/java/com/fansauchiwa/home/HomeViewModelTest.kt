@@ -2,13 +2,13 @@ package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.DecorationColors
-import com.fansauchiwa.data.LocalDatabaseRepository
-import com.fansauchiwa.data.MasterpieceRepository
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.LocalDatabaseRepository
+import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
@@ -70,7 +70,6 @@ class HomeViewModelTest {
 
     private fun createTemplate(): Template = Template(
         id = "template-id",
-        previewImageResId = 0,
         savedUchiwa = SavedUchiwa(
             decorations = emptyList(),
             uchiwaColor = Color.White,
@@ -98,7 +97,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun loadTemplates_initializesSelectedMemberColorFromFirstTemplate() = runTest {
+    fun loadTemplates_firstTemplateHasOtherColor_keepsDefaultMainColor() = runTest {
         val template = createTemplate().copy(
             savedUchiwa = createTemplate().savedUchiwa.copy(uchiwaColor = DecorationColors.BLUE.value)
         )
@@ -108,7 +107,8 @@ class HomeViewModelTest {
         viewModel.loadTemplates()
         advanceUntilIdle()
 
-        assertEquals(DecorationColors.BLUE, viewModel.uiState.value.selectedMainColor)
+        // メインカラーはテンプレートの色ではなく、ホームのカラー選択（初期値 PINK）で決まる
+        assertEquals(DecorationColors.PINK, viewModel.uiState.value.selectedMainColor)
     }
 
     @Test

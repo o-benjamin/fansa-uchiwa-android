@@ -1,7 +1,8 @@
-package com.fansauchiwa.data
+package com.fansauchiwa.data.repository
 
 import app.cash.turbine.test
-import com.fansauchiwa.data.source.FansaUchiwaDao
+import com.fansauchiwa.data.Decoration
+import com.fansauchiwa.data.infra.LocalDatabaseDataSource
 import com.fansauchiwa.data.source.FansaUchiwaEntity
 import io.mockk.every
 import io.mockk.mockk
@@ -15,13 +16,13 @@ import org.junit.Test
 
 class LocalDatabaseRepositoryImplTest {
 
-    private lateinit var mockDao: FansaUchiwaDao
+    private lateinit var mockLocalDatabaseDataSource: LocalDatabaseDataSource
     private lateinit var repository: LocalDatabaseRepositoryImpl
 
     @Before
     fun setUp() {
-        mockDao = mockk<FansaUchiwaDao>()
-        repository = LocalDatabaseRepositoryImpl(mockDao)
+        mockLocalDatabaseDataSource = mockk<LocalDatabaseDataSource>()
+        repository = LocalDatabaseRepositoryImpl(mockLocalDatabaseDataSource)
     }
 
     // region isImageUsedInAnyUchiwa
@@ -30,7 +31,7 @@ class LocalDatabaseRepositoryImplTest {
     fun isImageUsedInAnyUchiwa_imageUsedInUchiwa_returnsTrue() = runTest {
         val targetImageId = "image-001"
 
-        every { mockDao.getAllUchiwasStream() } returns flowOf(
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(
             listOf(
                 FansaUchiwaEntity(
                     id = "uchiwa-A",
@@ -55,7 +56,7 @@ class LocalDatabaseRepositoryImplTest {
     fun isImageUsedInAnyUchiwa_imageNotUsed_returnsFalse() = runTest {
         val targetImageId = "image-001"
 
-        every { mockDao.getAllUchiwasStream() } returns flowOf(
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(
             listOf(
                 FansaUchiwaEntity(
                     id = "uchiwa-A",
@@ -80,7 +81,7 @@ class LocalDatabaseRepositoryImplTest {
     fun isImageUsedInAnyUchiwa_multipleUchiwas_imageUsedInSecond_returnsTrue() = runTest {
         val targetImageId = "image-001"
 
-        every { mockDao.getAllUchiwasStream() } returns flowOf(
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(
             listOf(
                 FansaUchiwaEntity(
                     id = "uchiwa-A",
@@ -114,7 +115,7 @@ class LocalDatabaseRepositoryImplTest {
 
     @Test
     fun isImageUsedInAnyUchiwa_noUchiwasExist_returnsFalse() = runTest {
-        every { mockDao.getAllUchiwasStream() } returns flowOf(emptyList())
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(emptyList())
 
         val result = repository.isImageUsedInAnyUchiwa("image-001")
 
@@ -125,7 +126,7 @@ class LocalDatabaseRepositoryImplTest {
     fun isImageUsedInAnyUchiwa_onlyNonImageDecorations_returnsFalse() = runTest {
         val targetImageId = "image-001"
 
-        every { mockDao.getAllUchiwasStream() } returns flowOf(
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(
             listOf(
                 FansaUchiwaEntity(
                     id = "uchiwa-B",
@@ -148,7 +149,7 @@ class LocalDatabaseRepositoryImplTest {
 
     @Test
     fun isImageUsedInAnyUchiwa_emptyDecorationsList_returnsFalse() = runTest {
-        every { mockDao.getAllUchiwasStream() } returns flowOf(
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(
             listOf(
                 FansaUchiwaEntity(
                     id = "uchiwa-C",
@@ -172,7 +173,7 @@ class LocalDatabaseRepositoryImplTest {
     // region getAllUchiwasStream
 
     @Test
-    fun getAllUchiwasStream_emitsEntitiesFromDao() = runTest {
+    fun getAllUchiwasStream_emitsEntitiesFromDataSource() = runTest {
         val entities = listOf(
             FansaUchiwaEntity(
                 id = "uchiwa-1",
@@ -196,7 +197,7 @@ class LocalDatabaseRepositoryImplTest {
             )
         )
 
-        every { mockDao.getAllUchiwasStream() } returns flowOf(entities)
+        every { mockLocalDatabaseDataSource.getAllUchiwasStream() } returns flowOf(entities)
 
         repository.getAllUchiwasStream().test {
             val emitted = awaitItem()

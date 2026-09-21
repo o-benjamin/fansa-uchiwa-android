@@ -9,14 +9,18 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_URI_ARG
-import com.fansauchiwa.data.AdMobRepository
+import com.fansauchiwa.data.BackgroundRemovalException
+import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.BackgroundRemovalParams
+import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,7 +28,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 
 @HiltViewModel
@@ -38,14 +41,18 @@ class ImagePreviewViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ImagePreviewUiState>(ImagePreviewUiState.Loading)
     val uiState: StateFlow<ImagePreviewUiState> = _uiState.asStateFlow()
 
-    private val _errorEvent = MutableSharedFlow<Unit>()
-    val errorEvent: SharedFlow<Unit> = _errorEvent.asSharedFlow()
+    private val _errorEvent = MutableSharedFlow<BackgroundRemovalFailureReason>()
+    val errorEvent: SharedFlow<BackgroundRemovalFailureReason> = _errorEvent.asSharedFlow()
 
     private val _confirmEvent = MutableSharedFlow<String>()
     val confirmEvent: SharedFlow<String> = _confirmEvent.asSharedFlow()
 
     // 背景透過処理の結果をキャッシュ
     private var transparentUri: Uri? = null
+
+    // モジュールのダウンロードを待つと時間がかかるため、処理中にもう一度押されても重ねて始めない。
+    // 結果が出た時点で false に戻す（そのあとのログ送信やエラー通知の待ちの間は、次の処理を始めてよい）
+    private var isRemovingBackground = false
 
     // 手動修正用のパスリスト
     private val _paths = mutableStateListOf<EraserPath>()
@@ -78,26 +85,53 @@ class ImagePreviewViewModel @Inject constructor(
             return
         }
 
+        // 読み込み中の表示にする。処理中なら新しく始めず、結果は実行中の処理の完了時に反映する
+        _uiState.value =
+            ImagePreviewUiState.Ready.ShowingTransparent.Loading(currentState.originalUri)
+        if (isRemovingBackground) return
+        isRemovingBackground = true
+
         // 背景透過処理を実行
         viewModelScope.launch {
-            _uiState.value =
-                ImagePreviewUiState.Ready.ShowingTransparent.Loading(currentState.originalUri)
-
-            val result = imageProcessingRepository.removeBackground(currentState.originalUri)
+            val result = try {
+                imageProcessingRepository.removeBackground(currentState.originalUri)
+            } finally {
+                isRemovingBackground = false
+            }
+            // 待っている間に「オリジナル」が選ばれていたら、表示は切り替えない。
+            // isStillWaiting は中断をはさむと古くなり、中断中の操作による表示を上書きしてしまうため、
+            // 表示の更新はログ送信やエラー通知（前のスナックバーが閉じるまで待つことがある）より前に行う
+            val isStillWaiting =
+                _uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Loading
 
             result.fold(
                 onSuccess = { uri ->
-                    adMobRepository.loadInterstitialAd()
                     transparentUri = uri
-                    _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
-                        originalUri = currentState.originalUri,
-                        transparentUri = uri
+                    if (isStillWaiting) {
+                        _uiState.value = ImagePreviewUiState.Ready.ShowingTransparent.Success(
+                            originalUri = currentState.originalUri,
+                            transparentUri = uri
+                        )
+                    }
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(AnalyticsActions.BACKGROUND_REMOVAL_SUCCESS)
                     )
+                    adMobRepository.loadInterstitialAd()
                 },
-                onFailure = {
-                    _errorEvent.emit(Unit)
-                    _uiState.value =
-                        ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
+                onFailure = { error ->
+                    val reason = (error as? BackgroundRemovalException)?.reason
+                        ?: BackgroundRemovalFailureReason.PROCESS_FAILED
+                    if (isStillWaiting) {
+                        _uiState.value =
+                            ImagePreviewUiState.Ready.ShowingOriginal(currentState.originalUri)
+                    }
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(
+                            name = AnalyticsActions.BACKGROUND_REMOVAL_FAILURE,
+                            params = mapOf(BackgroundRemovalParams.PARAM_REASON to reason.analyticsValue)
+                        )
+                    )
+                    _errorEvent.emit(reason)
                 }
             )
         }
@@ -148,6 +182,7 @@ class ImagePreviewViewModel @Inject constructor(
     private fun showInterstitialAdAndConfirm(activity: Activity, imageUri: String) {
         adMobRepository.showInterstitialAd(
             activity = activity,
+            placement = AnalyticsScreens.IMAGE_PREVIEW_SCREEN,
             onAdClosed = {
                 // 広告が閉じられたら遷移
                 viewModelScope.launch {
@@ -215,9 +250,10 @@ class ImagePreviewViewModel @Inject constructor(
                     )
                 },
                 onFailure = {
-                    _errorEvent.emit(Unit)
-                    // 元の ManualCorrection 状態に戻す
+                    // 元の ManualCorrection 状態に戻す。エラー通知は前のスナックバーが閉じるまで待つことがあるため、先に戻す
                     _uiState.value = currentState
+                    // 手動修正も背景透過の一部なので、同じエラー表示にする
+                    _errorEvent.emit(BackgroundRemovalFailureReason.PROCESS_FAILED)
                 }
             )
         }

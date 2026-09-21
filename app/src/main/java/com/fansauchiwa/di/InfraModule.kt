@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.fansauchiwa.data.infra.AnalyticsDataSource
+import com.fansauchiwa.data.infra.AppInstallDataSource
+import com.fansauchiwa.data.infra.AppInstallLocalSource
 import com.fansauchiwa.data.infra.EventDataSource
 import com.fansauchiwa.data.infra.EventLocalSource
 import com.fansauchiwa.data.infra.FirebaseAnalyticsRemoteSource
@@ -72,6 +74,12 @@ abstract class SettingsModule {
     abstract fun bindSettingsDataSource(
         impl: SettingsLocalSource
     ): SettingsDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindAppInstallDataSource(
+        impl: AppInstallLocalSource
+    ): AppInstallDataSource
 
     @Binds
     @Singleton

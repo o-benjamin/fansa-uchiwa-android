@@ -1,15 +1,17 @@
-## Commit Message Guidelines
+# コミットメッセージ規約
 
 When generating a commit message, strictly follow the format below:
 
-### Format
+## Format
 
+```text
 <branch-name>[<type>]: <short_summary_in_title_case>
 
 * <change_detail_1>
 * <change_detail_2>
+```
 
-### Rules
+## Rules
 
 1. **Branch Name**: Use the name of the current git branch.
 2. **Type**: Use one of the following:
@@ -24,10 +26,12 @@ When generating a commit message, strictly follow the format below:
 4. **Body**: Use bullet points (*) to describe specific changes.
 5. **Language**: Always generate the message in English.
 
-### Example
+## Example
 
+```text
 feature/add-stamps[feat]: Add New Animal Stamps To Edit Screen
 
 * Add cat and dog svg assets to StickerAssets.kt
 * Update EditViewModel to include new categories
 * Implement horizontal scroll for stamp picker
+```
