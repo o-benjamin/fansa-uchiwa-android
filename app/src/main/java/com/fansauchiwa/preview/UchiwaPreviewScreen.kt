@@ -73,6 +73,7 @@ import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.ShareAnalyticsParams
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
 
@@ -89,12 +90,26 @@ fun UchiwaPreviewScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var pendingRewardConsentAction by remember { mutableStateOf<RewardConsentAction?>(null) }
+    // 広告の確認ダイアログを挟んでも、どの導線から共有したかを tap_preview_share に残すために覚えておく（#244）
+    var pendingShareEntryPoint by remember {
+        mutableStateOf(ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+    }
 
     fun performRewardedAction(action: RewardConsentAction) {
         val activity = context as? Activity ?: return
         when (action) {
             RewardConsentAction.Save -> viewModel.showRewardedAdAndSave(activity)
-            RewardConsentAction.Share -> viewModel.showRewardedAdAndShare(activity)
+            RewardConsentAction.Share ->
+                viewModel.showRewardedAdAndShare(activity, pendingShareEntryPoint)
+        }
+    }
+
+    fun requestShare(entryPoint: String) {
+        pendingShareEntryPoint = entryPoint
+        if (viewModel.hasEarnedReward) {
+            performRewardedAction(RewardConsentAction.Share)
+        } else {
+            pendingRewardConsentAction = RewardConsentAction.Share
         }
     }
 
@@ -129,6 +144,7 @@ fun UchiwaPreviewScreen(
 
     // 共有シートの発火
     val shareChooserTitle = stringResource(R.string.share_chooser_title)
+    val shareDefaultText = stringResource(R.string.share_default_text)
     LaunchedEffect(uiState.shareImagePath) {
         val shareImagePath = uiState.shareImagePath ?: return@LaunchedEffect
         val sourceFile = File(shareImagePath)
@@ -147,6 +163,7 @@ fun UchiwaPreviewScreen(
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, contentUri)
+            putExtra(Intent.EXTRA_TEXT, shareDefaultText)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
@@ -207,13 +224,7 @@ fun UchiwaPreviewScreen(
                     pendingRewardConsentAction = RewardConsentAction.Save
                 }
             },
-            onShareClick = {
-                if (viewModel.hasEarnedReward) {
-                    performRewardedAction(RewardConsentAction.Share)
-                } else {
-                    pendingRewardConsentAction = RewardConsentAction.Share
-                }
-            },
+            onShareClick = { requestShare(ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON) },
             onBackToHomeClick = {
                 viewModel.logEvent(AnalyticsActions.TAP_PREVIEW_GO_HOME)
                 onBackToHome()
@@ -275,6 +286,18 @@ fun UchiwaPreviewScreen(
                     }
                 ) {
                     Text(text = stringResource(R.string.ok))
+                }
+            },
+            // 保存した直後の人にも共有の機会を出す（#244）。共有後はホームへ戻らずこの画面に残る。
+            // 保存で広告を視聴済みなら hasEarnedRewardInSession により共有で広告は出ない
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearSaveStatus()
+                        requestShare(ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE)
+                    }
+                ) {
+                    Text(text = stringResource(R.string.save_success_share))
                 }
             }
         )

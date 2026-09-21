@@ -31,12 +31,16 @@
     <string name="save_as_image">画像として保存</string>
     <string name="send_to_print_app">印刷アプリ等に送る</string>
     <string name="share_chooser_title">送信先を選択</string>
+    <!-- 共有時に画像に添える既定の文（#244）。X で見た人がアプリにたどり着けるよう、アプリ名とハッシュタグを入れる。
+         X は外部リンク付きの投稿を伸ばしにくく、宣伝くさい文は利用者に消されるため、ストアのリンクは入れない -->
+    <string name="share_default_text">ファンサうちわで作ったよ！ #ファンサうちわ</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
     <string name="save_success_title">保存成功</string>
     <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
     <string name="ok">OK</string>
+    <string name="save_success_share">SNSでシェア</string>
     <string name="edit_completion_tooltip_title">完成したらタップ</string>
     <string name="edit_completion_tooltip_message">写真フォルダへの保存や、プリントアプリ連携ができます</string>
     <string name="ad_failed_to_load">広告を読み込めませんでした</string>
