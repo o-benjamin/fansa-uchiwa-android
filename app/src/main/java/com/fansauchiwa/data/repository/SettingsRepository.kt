@@ -42,6 +42,17 @@ interface SettingsRepository {
     suspend fun fetchHasSeenApologyDialog()
 
     suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
+
+    /**
+     * 最後に保存したうちわの最終的なフォント名を取得する（#242: font_same_as_last の比較用）
+     * 一度も保存していない場合は null
+     */
+    suspend fun getLastSavedFontName(): String?
+
+    /**
+     * 最後に保存したうちわの最終的なフォント名を保存する
+     */
+    suspend fun setLastSavedFontName(fontName: String)
 }
 
 class SettingsRepositoryImpl @Inject constructor(
@@ -96,5 +107,13 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
         settingsDataSource.setHasSeenApologyDialog(hasSeen)
+    }
+
+    override suspend fun getLastSavedFontName(): String? {
+        return settingsDataSource.getLastSavedFontName()
+    }
+
+    override suspend fun setLastSavedFontName(fontName: String) {
+        settingsDataSource.setLastSavedFontName(fontName)
     }
 }

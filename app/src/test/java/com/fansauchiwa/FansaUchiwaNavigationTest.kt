@@ -24,4 +24,34 @@ class FansaUchiwaNavigationTest {
         val encodedArg = route.substringAfter("inputArg=")
         assertEquals(inputArg, EditScreenInputArg.fromRouteArgument(encodedArg))
     }
+
+    // region フォント計測（#242）
+
+    @Test
+    fun previewDestinationCreateRoute_withFinalFontName_includesAllArgs() {
+        val route = PreviewDestination.createRoute(
+            imagePath = "/data/masterpiece.png",
+            fontSwitchCount = 12,
+            finalFontName = "KEI_FONT",
+            editStartTimeMillis = 1_700_000_000_000L
+        )
+
+        assertTrue(route.startsWith("preview//data/masterpiece.png?"))
+        assertTrue(route.contains("fontSwitchCount=12"))
+        assertTrue(route.contains("finalFontName=KEI_FONT"))
+        assertTrue(route.contains("editStartTimeMillis=1700000000000"))
+    }
+
+    @Test
+    fun previewDestinationCreateRoute_finalFontNameNull_omitsFinalFontNameArg() {
+        val route = PreviewDestination.createRoute(
+            imagePath = "/data/masterpiece.png",
+            fontSwitchCount = 0,
+            finalFontName = null,
+            editStartTimeMillis = 0L
+        )
+
+        assertTrue(route.contains("fontSwitchCount=0"))
+        assertTrue(!route.contains("finalFontName="))
+    }
 }
