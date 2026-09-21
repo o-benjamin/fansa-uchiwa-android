@@ -12,9 +12,8 @@ import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
-import com.fansauchiwa.data.analytics.editDurationBucket
+import com.fansauchiwa.data.analytics.baseFontSessionParams
 import com.fansauchiwa.data.analytics.finalFontRankBucket
-import com.fansauchiwa.data.analytics.fontSwitchBucket
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
@@ -114,6 +113,16 @@ class UchiwaPreviewViewModel @Inject constructor(
                 },
                 onAdFailedOrSkipped = {
                     saveToGallery()
+                },
+                onAdDismissed = {
+                    // 報酬を獲得せずに広告を閉じた場合は、onUserEarnedReward/onAdFailedOrSkippedの
+                    // どちらも呼ばれず saveToGallery が実行されない。連打防止用のフラグを戻さないと
+                    // 再タップできなくなってしまうため、ここで戻す
+                    // （報酬を獲得済みなら isSaveButtonPressed は saveToGallery 側で戻すのでここでは戻さない）
+                    if (!hasEarnedRewardInSession) {
+                        val state = uiState.value
+                        savedStateHandle[UI_STATE_KEY] = state.copy(isSaveButtonPressed = false)
+                    }
                 }
             )
         }
@@ -137,9 +146,9 @@ class UchiwaPreviewViewModel @Inject constructor(
     private fun buildFontSessionAnalyticsParams(lastSavedFontName: String?): Map<String, Any> {
         val state = uiState.value
         val elapsedMillis = System.currentTimeMillis() - state.editStartTimeMillis
-        val baseParams = mapOf<String, Any>(
-            FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to fontSwitchBucket(state.fontSwitchCount),
-            FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to editDurationBucket(elapsedMillis)
+        val baseParams = baseFontSessionParams(
+            switchCount = state.fontSwitchCount,
+            elapsedMillis = elapsedMillis
         )
         val finalFont = resolveFinalFont(state.finalFontName) ?: return baseParams
 

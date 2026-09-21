@@ -52,3 +52,13 @@ fun editDurationBucket(elapsedMillis: Long): String {
         else -> "10m+"
     }
 }
+
+/**
+ * font_switch_bucket と edit_duration_bucket のペアを返す（#242）。
+ * tap_preview_export と tap_edit_back_dialog（action=delete）の両方で共通して送るパラメータで、
+ * EditViewModel と UchiwaPreviewViewModel の双方から呼ばれる（実装を2箇所に重複させないための共通化）。
+ */
+fun baseFontSessionParams(switchCount: Int, elapsedMillis: Long): Map<String, Any> = mapOf(
+    FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to fontSwitchBucket(switchCount),
+    FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to editDurationBucket(elapsedMillis)
+)

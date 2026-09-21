@@ -37,9 +37,7 @@ import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.data.analytics.BackGroundColorParams
 import com.fansauchiwa.data.analytics.EditStickerTargetParams
 import com.fansauchiwa.data.analytics.EditTextTargetParams
-import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
-import com.fansauchiwa.data.analytics.editDurationBucket
-import com.fansauchiwa.data.analytics.fontSwitchBucket
+import com.fansauchiwa.data.analytics.baseFontSessionParams
 import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
@@ -555,11 +553,9 @@ class EditViewModel @Inject constructor(
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるフォント計測パラメータを返す（#242）。
      * このセッションはここで終わる（画面が破棄されるため）のでリセットは不要。
      */
-    fun currentFontSessionParams(): Map<String, Any> = mapOf(
-        FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to
-            fontSwitchBucket(fontSwitchCountInSession),
-        FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to
-            editDurationBucket(System.currentTimeMillis() - editStartTimeMillis)
+    fun currentFontSessionParams(): Map<String, Any> = baseFontSessionParams(
+        switchCount = fontSwitchCountInSession,
+        elapsedMillis = System.currentTimeMillis() - editStartTimeMillis
     )
 
     /**

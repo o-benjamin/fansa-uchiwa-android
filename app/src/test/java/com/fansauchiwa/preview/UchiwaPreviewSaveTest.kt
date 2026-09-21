@@ -103,7 +103,7 @@ class UchiwaPreviewSaveTest {
                 waitForLoad = true,
                 onUserEarnedReward = capture(onUserEarnedRewardSlot),
                 onAdFailedOrSkipped = any(),
-                onAdDismissed = null
+                onAdDismissed = any()
             )
         } answers {
             onUserEarnedRewardSlot.captured.invoke()
@@ -135,7 +135,7 @@ class UchiwaPreviewSaveTest {
                 waitForLoad = true,
                 onUserEarnedReward = capture(onUserEarnedRewardSlot),
                 onAdFailedOrSkipped = any(),
-                onAdDismissed = null
+                onAdDismissed = any()
             )
         } answers {
             onUserEarnedRewardSlot.captured.invoke()
@@ -157,7 +157,7 @@ class UchiwaPreviewSaveTest {
                 waitForLoad = true,
                 onUserEarnedReward = any(),
                 onAdFailedOrSkipped = any(),
-                onAdDismissed = null
+                onAdDismissed = any()
             )
         }
         verify(exactly = 2) { masterpieceRepository.saveMasterpieceToGallery(imagePath) }
@@ -265,7 +265,7 @@ class UchiwaPreviewSaveTest {
                 waitForLoad = true,
                 onUserEarnedReward = capture(onUserEarnedRewardSlot),
                 onAdFailedOrSkipped = any(),
-                onAdDismissed = null
+                onAdDismissed = any()
             )
         } answers {
             onUserEarnedRewardSlot.captured.invoke()
@@ -298,7 +298,7 @@ class UchiwaPreviewSaveTest {
                 waitForLoad = true,
                 onUserEarnedReward = capture(onUserEarnedRewardSlot),
                 onAdFailedOrSkipped = any(),
-                onAdDismissed = null
+                onAdDismissed = any()
             )
         } answers {
             onUserEarnedRewardSlot.captured.invoke()
@@ -334,7 +334,7 @@ class UchiwaPreviewSaveTest {
                     waitForLoad = true,
                     onUserEarnedReward = capture(onUserEarnedRewardSlot),
                     onAdFailedOrSkipped = any(),
-                    onAdDismissed = null
+                    onAdDismissed = any()
                 )
             } answers {
                 onUserEarnedRewardSlot.captured.invoke()
@@ -383,7 +383,57 @@ class UchiwaPreviewSaveTest {
                 waitForLoad = true,
                 onUserEarnedReward = any(),
                 onAdFailedOrSkipped = any(),
-                onAdDismissed = null
+                onAdDismissed = any()
+            )
+        }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_adDismissedWithoutReward_reEnablesSaveButtonForRetry() = runTest {
+        // 広告を最後まで見ずに閉じた場合（報酬未獲得）は保存処理が実行されないため、
+        // 連打防止用のフラグを戻して再タップできるようにする
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = FontFamilies.KEI_FONT.name,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+
+        val onAdDismissedSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = any(),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = capture(onAdDismissedSlot)
+            )
+        } answers {
+            // 報酬を獲得せずに広告が閉じられた状況を再現する
+            onAdDismissedSlot.captured.invoke()
+        }
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.uiState.value.isSaveButtonPressed)
+
+        // 再タップできること（連打防止のガードで弾かれていないこと）
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        verify(exactly = 2) {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = any(),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = any()
             )
         }
     }
