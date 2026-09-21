@@ -438,5 +438,43 @@ class UchiwaPreviewSaveTest {
         }
     }
 
+    @Test
+    fun showRewardedAdAndSave_adFailedAndDismissedFireTogether_stillSavesExactlyOnce() = runTest {
+        // AdMobRepositoryの実装では、広告の表示に失敗した場合 onAdFailedOrSkipped と onAdDismissed の
+        // 両方が呼ばれる。この場合に保存処理が重複したり、状態が壊れたりしないことを確かめる
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = FontFamilies.KEI_FONT.name,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+
+        val onAdFailedOrSkippedSlot = slot<() -> Unit>()
+        val onAdDismissedSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = any(),
+                onAdFailedOrSkipped = capture(onAdFailedOrSkippedSlot),
+                onAdDismissed = capture(onAdDismissedSlot)
+            )
+        } answers {
+            onAdFailedOrSkippedSlot.captured.invoke()
+            onAdDismissedSlot.captured.invoke()
+        }
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.uiState.value.isSaveButtonPressed)
+        assertEquals(true, viewModel.uiState.value.saveSuccess)
+        verify(exactly = 1) { masterpieceRepository.saveMasterpieceToGallery(imagePath) }
+    }
+
     // endregion
 }

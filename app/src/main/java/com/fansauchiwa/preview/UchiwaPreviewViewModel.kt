@@ -103,23 +103,30 @@ class UchiwaPreviewViewModel @Inject constructor(
                 return@launch
             }
 
+            // このタップで既に saveToGallery を呼んだかどうか。
+            // onAdFailedOrSkipped と onAdDismissed は同時に呼ばれることがある（AdMobRepository参照）ため、
+            // 「まだ呼んでいなければ」で判定しないと、保存処理の完了を待たずに連打防止フラグを戻してしまう
+            var saveTriggered = false
             adMobRepository.showRewardedAd(
                 activity = activity,
                 placement = AnalyticsScreens.PREVIEW_SCREEN,
                 waitForLoad = true,
                 onUserEarnedReward = {
                     hasEarnedRewardInSession = true
+                    saveTriggered = true
                     saveToGallery()
                 },
                 onAdFailedOrSkipped = {
+                    saveTriggered = true
                     saveToGallery()
                 },
                 onAdDismissed = {
                     // 報酬を獲得せずに広告を閉じた場合は、onUserEarnedReward/onAdFailedOrSkippedの
                     // どちらも呼ばれず saveToGallery が実行されない。連打防止用のフラグを戻さないと
                     // 再タップできなくなってしまうため、ここで戻す
-                    // （報酬を獲得済みなら isSaveButtonPressed は saveToGallery 側で戻すのでここでは戻さない）
-                    if (!hasEarnedRewardInSession) {
+                    // （このタップで既に保存処理を始めていれば、isSaveButtonPressed は
+                    // saveToGallery 側で戻すのでここでは戻さない）
+                    if (!saveTriggered) {
                         val state = uiState.value
                         savedStateHandle[UI_STATE_KEY] = state.copy(isSaveButtonPressed = false)
                     }
