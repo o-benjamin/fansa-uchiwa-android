@@ -91,6 +91,10 @@ fun EventTimelineScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+    }
+
     when (val state = uiState) {
         EventTimelineUiState.Loading -> {
             Box(
