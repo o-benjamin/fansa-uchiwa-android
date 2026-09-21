@@ -8,6 +8,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 - コードは最新の Kotlin 記法（Trailing Lambdas 等）で書いてください。
 - 他ファイルのオブジェクトを `com.fansauchiwa~` から始まる完全修飾名で書かず、import してください。
 - class / interface / object / enum class / data class は原則1ファイルに1つだけ定義してください。
+- タスクと関係ない変更（リファクタリング・整形・命名の変更）は同じ PR に混ぜず、Issue を立てて別の PR にしてください（`.agents/coding-style.md`）。
 
 ## 作業内容に応じて参照するドキュメント
 
@@ -17,7 +18,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 |---|---|
 | 色・文字列・dp サイズを扱う | `.agents/resources.md` |
 | ViewModel / UiState / Repository / DataSource を作成・変更する | `.agents/architecture.md` |
-| Kotlin コードを新規作成・変更する（メソッド分割・共通化・ファイル構成） | `.agents/coding-style.md` |
+| Kotlin コードを新規作成・変更する（メソッド分割・共通化・ファイル構成・変更の範囲） | `.agents/coding-style.md` |
 | コンポーザブル・Preview・Haptic・Semantics を作成・変更する | `.agents/ui.md` |
 | テストを作成・変更する、ロジックを追加する | `.agents/testing.md` |
 | リリースビルド設定・ProGuard ルール・`@Keep` を扱う | `.agents/r8.md` |
