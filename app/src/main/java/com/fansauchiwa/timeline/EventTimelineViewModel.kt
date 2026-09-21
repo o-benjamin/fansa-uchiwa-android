@@ -117,17 +117,20 @@ class EventTimelineViewModel @Inject constructor(
                 )
                 eventRepository.replaceEventUchiwas(resolvedEventId, selectedUchiwaIds.toList())
             }.onSuccess {
-                analyticsRepository.logEvent(
-                    AnalyticsEvent(
-                        name = AnalyticsActions.SAVE_EVENT,
-                        params = mapOf(
-                            // GA4 のイベントパラメータは文字列か数値だけなので、真偽値は文字列で送る
-                            EventAnalyticsParams.IS_NEW to (eventId == null).toString(),
-                            EventAnalyticsParams.REMIND_ENABLED to remindEnabled.toString(),
-                            EventAnalyticsParams.UCHIWA_COUNT to selectedUchiwaIds.size
+                // 計測の失敗で保存の結果を変えない
+                runCatching {
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(
+                            name = AnalyticsActions.SAVE_EVENT,
+                            params = mapOf(
+                                // GA4 のイベントパラメータは文字列か数値だけなので、真偽値は文字列で送る
+                                EventAnalyticsParams.IS_NEW to (eventId == null).toString(),
+                                EventAnalyticsParams.REMIND_ENABLED to remindEnabled.toString(),
+                                EventAnalyticsParams.UCHIWA_COUNT to selectedUchiwaIds.size
+                            )
                         )
                     )
-                )
+                }
             }.onFailure { error ->
                 _uiState.value = EventTimelineUiState.Error(
                     error.message ?: "Unknown error"

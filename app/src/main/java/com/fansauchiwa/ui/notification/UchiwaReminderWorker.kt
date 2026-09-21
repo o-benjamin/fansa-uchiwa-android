@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.os.Build
 import androidx.annotation.Keep
 import androidx.core.app.ActivityCompat
@@ -37,6 +38,7 @@ private const val EVENT_REMINDER_WORK_NAME = "event-reminder-work"
 private const val EVENT_REMINDER_CHANNEL_ID = "event-reminder-channel"
 private const val EVENT_REMINDER_HOUR = 20
 private const val EVENT_REMINDER_MINUTE = 0
+private const val TAG = "UchiwaReminderWorker"
 
 // 通知のタップで起動したことを MainActivity が計測するための Intent の extra（#249）
 const val EXTRA_REMINDER_DAYS_UNTIL = "reminder_days_until"
@@ -92,7 +94,7 @@ class UchiwaReminderWorker @AssistedInject constructor(
                         params = mapOf(EventAnalyticsParams.DAYS_UNTIL to daysUntil)
                     )
                 )
-            }
+            }.onFailure { Log.w(TAG, "reminder_show の送信に失敗", it) }
         }
 
         return Result.success()

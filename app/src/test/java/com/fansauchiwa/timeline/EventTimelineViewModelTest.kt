@@ -9,6 +9,7 @@ import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.source.EventEntity
 import com.fansauchiwa.data.source.EventWithUchiwas
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import java.time.LocalDate
@@ -172,6 +173,32 @@ class EventTimelineViewModelTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun saveEvent_計測が失敗しても_保存は成功しエラー画面にならない() = runTest {
+        val repository = FakeEventRepository()
+        coEvery { analyticsRepository.logEvent(any()) } throws IllegalStateException("analytics")
+        val viewModel = EventTimelineViewModel(
+            eventRepository = repository,
+            masterpieceRepository = FakeMasterpieceRepository(),
+            analyticsRepository = analyticsRepository,
+            uuidProvider = FakeUuidProvider(),
+            context = mockk(relaxed = true),
+            savedStateHandle = SavedStateHandle()
+        )
+
+        viewModel.saveEvent(
+            eventId = null,
+            name = "アリーナ公演",
+            eventDate = LocalDate.of(2026, 8, 1),
+            remindEnabled = false,
+            selectedUchiwaIds = emptySet()
+        )
+        advanceUntilIdle()
+
+        assertEquals(1, repository.savedEvents.size)
+        assertTrue(viewModel.uiState.value is EventTimelineUiState.Success)
     }
 
     @Test
