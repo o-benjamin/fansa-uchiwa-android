@@ -135,5 +135,7 @@ class SettingsRepositoryImplTest {
 
     private inner class FakeAppInstallDataSource : AppInstallDataSource {
         override fun getIsFreshInstallStream(): Flow<Boolean> = flowOf(fakeIsFreshInstall)
+
+        override fun getFirstInstallTimeMillisStream(): Flow<Long?> = flowOf(null)
     }
 }

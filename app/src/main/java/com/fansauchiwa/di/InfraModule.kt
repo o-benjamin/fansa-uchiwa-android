@@ -13,7 +13,11 @@ import com.fansauchiwa.data.infra.EventLocalSource
 import com.fansauchiwa.data.infra.FirebaseAnalyticsRemoteSource
 import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
+import com.fansauchiwa.data.infra.InAppReviewDataSource
+import com.fansauchiwa.data.infra.InAppReviewHistoryDataSource
+import com.fansauchiwa.data.infra.InAppReviewHistoryLocalSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
+import com.fansauchiwa.data.infra.PlayInAppReviewRemoteSource
 import com.fansauchiwa.data.infra.SettingsDataSource
 import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.ImageProcessingRepository
@@ -108,6 +112,18 @@ abstract class SettingsModule {
     abstract fun bindEventDataSource(
         impl: EventLocalSource
     ): EventDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindInAppReviewHistoryDataSource(
+        impl: InAppReviewHistoryLocalSource
+    ): InAppReviewHistoryDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindInAppReviewDataSource(
+        impl: PlayInAppReviewRemoteSource
+    ): InAppReviewDataSource
 
     companion object {
         @Provides

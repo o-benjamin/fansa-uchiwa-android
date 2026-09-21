@@ -17,6 +17,7 @@ import com.fansauchiwa.data.analytics.finalFontRankBucket
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.edit.FontFamilies
@@ -34,6 +35,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val adMobRepository: AdMobRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val settingsRepository: SettingsRepository,
+    private val inAppReviewRepository: InAppReviewRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -180,6 +182,8 @@ class UchiwaPreviewViewModel @Inject constructor(
                     resolveFinalFont(state.finalFontName)?.let {
                         settingsRepository.setLastSavedFontName(it.name)
                     }
+                    // レビュー依頼（#243）の「保存成功の回数」を、saveSuccess を流す前に数えておく
+                    inAppReviewRepository.recordSaveSuccess()
                 }
                 val currentState = uiState.value
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
@@ -187,6 +191,16 @@ class UchiwaPreviewViewModel @Inject constructor(
                     isSaveButtonPressed = false
                 )
             }
+        }
+    }
+
+    /**
+     * 保存成功の直後に、条件を満たしていればアプリ内レビュー依頼を出す（#243）
+     * 広告の画面が閉じてこの画面が前面に戻ってから呼ぶこと
+     */
+    fun requestInAppReviewIfEligible(activity: Activity) {
+        viewModelScope.launch {
+            inAppReviewRepository.requestReviewIfEligible(activity)
         }
     }
 

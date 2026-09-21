@@ -21,4 +21,14 @@ class AppInstallLocalSource @Inject constructor(
         }
         emit(isFreshInstall)
     }
+
+    override fun getFirstInstallTimeMillisStream(): Flow<Long?> = flow {
+        val firstInstallTime = try {
+            context.packageManager.getPackageInfo(context.packageName, 0).firstInstallTime
+        } catch (e: Exception) {
+            // getIsFreshInstallStream と同じく、PackageManager の例外では落とさない
+            null
+        }
+        emit(firstInstallTime)
+    }
 }

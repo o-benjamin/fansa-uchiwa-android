@@ -28,6 +28,8 @@ import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.LocalImageRepositoryImpl
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.MasterpieceRepositoryImpl
+import com.fansauchiwa.data.repository.InAppReviewRepository
+import com.fansauchiwa.data.repository.InAppReviewRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
@@ -98,6 +100,12 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         impl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindInAppReviewRepository(
+        impl: InAppReviewRepositoryImpl
+    ): InAppReviewRepository
 
     @Binds
     @Singleton

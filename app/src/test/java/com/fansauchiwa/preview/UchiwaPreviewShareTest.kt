@@ -6,6 +6,7 @@ import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import io.mockk.every
@@ -36,6 +37,7 @@ class UchiwaPreviewShareTest {
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var inAppReviewRepository: InAppReviewRepository
 
     @Before
     fun setUp() {
@@ -44,6 +46,7 @@ class UchiwaPreviewShareTest {
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
+        inAppReviewRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
     }
@@ -65,6 +68,7 @@ class UchiwaPreviewShareTest {
             adMobRepository = adMobRepository,
             analyticsRepository = analyticsRepository,
             settingsRepository = settingsRepository,
+            inAppReviewRepository = inAppReviewRepository,
             savedStateHandle = savedStateHandle
         )
     }
