@@ -169,6 +169,9 @@ dependencies {
     // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
     implementation(libs.play.services.base)
 
+    // アプリ内レビュー依頼（In-App Review API）
+    implementation(libs.play.review.ktx)
+
     // ColorPicker
     implementation(libs.compose.colorpicker)
 

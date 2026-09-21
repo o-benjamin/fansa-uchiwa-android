@@ -62,7 +62,9 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.withResumed
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.addLastModifiedToFileCacheKey
@@ -111,6 +113,17 @@ fun UchiwaPreviewScreen(
         if (uiState.saveSuccess == false) {
             snackbarHostState.showSnackbar("保存に失敗しました")
             viewModel.clearSaveStatus()
+        }
+    }
+
+    // 失敗時の Snackbar とは別に、保存成功の直後にアプリ内レビュー依頼を出す（#243）。報酬獲得時の保存は広告の表示中に終わるため、
+    // 広告が閉じてこの画面が前面（RESUMED）に戻るのを待ってから出し、広告と重ならないようにする
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(uiState.saveSuccess) {
+        if (uiState.saveSuccess != true) return@LaunchedEffect
+        val activity = context as? Activity ?: return@LaunchedEffect
+        lifecycleOwner.lifecycle.withResumed {
+            viewModel.requestInAppReviewIfEligible(activity)
         }
     }
 

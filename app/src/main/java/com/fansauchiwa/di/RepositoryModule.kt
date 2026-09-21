@@ -22,6 +22,8 @@ import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.EventRepositoryImpl
+import com.fansauchiwa.data.repository.InAppReviewRepository
+import com.fansauchiwa.data.repository.InAppReviewRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepositoryImpl
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -98,6 +100,12 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         impl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindInAppReviewRepository(
+        impl: InAppReviewRepositoryImpl
+    ): InAppReviewRepository
 
     @Binds
     @Singleton

@@ -69,6 +69,9 @@ object AnalyticsActions {
     const val REMINDER_SHOW = "reminder_show"
     const val REMINDER_TAP = "reminder_tap"
 
+    // アプリ内レビュー依頼を試みた回数（#243）。Play の仕様上、実際に表示されたかはわからない
+    const val IN_APP_REVIEW_REQUEST = "in_app_review_request"
+
     const val AD_REWARD_SHOW = "ad_reward_show"
     const val AD_REWARD_COMPLETE = "ad_reward_complete"
     const val AD_REWARD_DISMISSED = "ad_reward_dismissed"

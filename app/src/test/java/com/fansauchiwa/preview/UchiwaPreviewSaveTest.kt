@@ -12,6 +12,7 @@ import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.edit.FontFamilies
@@ -45,6 +46,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var inAppReviewRepository: InAppReviewRepository
 
     @Before
     fun setUp() {
@@ -53,6 +55,7 @@ class UchiwaPreviewSaveTest {
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
+        inAppReviewRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
         coEvery { settingsRepository.getLastSavedFontName() } returns null
@@ -83,6 +86,7 @@ class UchiwaPreviewSaveTest {
             adMobRepository = adMobRepository,
             analyticsRepository = analyticsRepository,
             settingsRepository = settingsRepository,
+            inAppReviewRepository = inAppReviewRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -243,6 +247,18 @@ class UchiwaPreviewSaveTest {
             )
         }
         coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
+        coVerify(exactly = 0) { inAppReviewRepository.recordSaveSuccess() }
+    }
+
+    @Test
+    fun requestInAppReviewIfEligible_called_delegatesToRepositoryWithActivity() = runTest {
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        val activity = mockk<Activity>()
+
+        viewModel.requestInAppReviewIfEligible(activity)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { inAppReviewRepository.requestReviewIfEligible(activity) }
     }
 
     @Test
@@ -276,6 +292,8 @@ class UchiwaPreviewSaveTest {
 
         // ギャラリーへの保存が成功したときだけ、次回のfont_same_as_last比較用に上書きされる
         coVerify(exactly = 1) { settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name) }
+        // レビュー依頼（#243）の条件に使う保存成功の回数も数える
+        coVerify(exactly = 1) { inAppReviewRepository.recordSaveSuccess() }
     }
 
     @Test
