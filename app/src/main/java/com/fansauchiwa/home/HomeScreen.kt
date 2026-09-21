@@ -84,6 +84,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -803,10 +804,12 @@ private fun TemplateItem(
     isPreview: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val templateDescription = stringResource(R.string.template_item_description)
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(1.2f),
+            .aspectRatio(1.2f)
+            .semantics { contentDescription = templateDescription },
         onClick = onClick
     ) {
         ComponentTemplateItem(
@@ -1074,15 +1077,18 @@ private fun MasterpieceItem(
     modifier: Modifier = Modifier,
     isPreview: Boolean = false
 ) {
+    val masterpieceDescription = stringResource(R.string.masterpiece_item_description)
     Card(
         modifier = modifier
             .fillMaxWidth()
     ) {
         Box(
-            modifier = Modifier.fansaCombinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
+            modifier = Modifier
+                .fansaCombinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                )
+                .semantics { contentDescription = masterpieceDescription }
         ) {
             if (isPreview) {
                 Box(

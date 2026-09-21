@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -64,6 +66,7 @@ fun ColorPickerRow(
     ) {
         if (includeCustomColorPicker) {
             item {
+                val customColorPickerDescription = stringResource(R.string.custom_color_picker_title)
                 Box(
                     modifier = Modifier
                         .size(chipSize)
@@ -83,6 +86,7 @@ fun ColorPickerRow(
                             )
                         )
                         .clickable { showColorPickerDialog = true }
+                        .semantics { contentDescription = customColorPickerDescription }
                 )
             }
         }
@@ -93,6 +97,12 @@ fun ColorPickerRow(
                 targetValue = if (isSelected) 1.15f else 1f,
                 label = "colorPickerChipScale"
             )
+            val decorationColor = remember(color) {
+                DecorationColors.entries.find { it.value == color }
+            }
+            val chipDescription = decorationColor?.let {
+                stringResource(R.string.color_picker_chip_description, stringResource(it.nameResId))
+            }
 
             var chipModifier = Modifier
                 .size(chipSize)
@@ -113,6 +123,9 @@ fun ColorPickerRow(
                 .background(color)
                 .clickable { onColorSelected(color) }
 
+            if (chipDescription != null) {
+                chipModifier = chipModifier.semantics { contentDescription = chipDescription }
+            }
             if (applySelectedSemantics) {
                 chipModifier = chipModifier.semantics { selected = isSelected }
             }
@@ -143,6 +156,23 @@ fun ColorPickerRow(
         )
     }
 }
+
+/** 色チップの `contentDescription` に使う、色名の文字列リソースID。 */
+private val DecorationColors.nameResId: Int
+    get() = when (this) {
+        DecorationColors.RED -> R.string.color_name_red
+        DecorationColors.PINK -> R.string.color_name_pink
+        DecorationColors.ORANGE -> R.string.color_name_orange
+        DecorationColors.YELLOW -> R.string.color_name_yellow
+        DecorationColors.LIGHT_GREEN -> R.string.color_name_light_green
+        DecorationColors.GREEN -> R.string.color_name_green
+        DecorationColors.LIGHT_BLUE -> R.string.color_name_light_blue
+        DecorationColors.BLUE -> R.string.color_name_blue
+        DecorationColors.PURPLE -> R.string.color_name_purple
+        DecorationColors.GRAY -> R.string.color_name_gray
+        DecorationColors.WHITE -> R.string.color_name_white
+        DecorationColors.BLACK -> R.string.color_name_black
+    }
 
 @Preview(showBackground = true)
 @Composable
