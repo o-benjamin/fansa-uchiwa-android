@@ -8,7 +8,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 - コードは最新の Kotlin 記法（Trailing Lambdas 等）で書いてください。
 - 他ファイルのオブジェクトを `com.fansauchiwa~` から始まる完全修飾名で書かず、import してください。
 - class / interface / object / enum class / data class は原則1ファイルに1つだけ定義してください。
-- タスクと関係ない変更（リファクタリング・整形・命名の変更）は同じ PR に混ぜず、Issue を立てて別の PR にしてください（`.agents/coding-style.md`）。
+- タスクと関係ないリファクタリング（命名の変更・書き直し・整形）は同じ PR に混ぜず、Issue を立てて別の PR にしてください。タスクに必要な整理は同じ PR でかまいません（`.agents/coding-style.md`）。
 
 ## 作業内容に応じて参照するドキュメント
 
