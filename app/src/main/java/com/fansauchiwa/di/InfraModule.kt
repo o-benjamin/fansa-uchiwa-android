@@ -7,9 +7,11 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.fansauchiwa.data.infra.AnalyticsDataSource
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.AppInstallLocalSource
+import com.fansauchiwa.data.infra.CrashReportingDataSource
 import com.fansauchiwa.data.infra.EventDataSource
 import com.fansauchiwa.data.infra.EventLocalSource
 import com.fansauchiwa.data.infra.FirebaseAnalyticsRemoteSource
+import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
 import com.fansauchiwa.data.infra.SettingsDataSource
@@ -17,6 +19,7 @@ import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -44,6 +47,25 @@ abstract class AnalyticsModule {
             @ApplicationContext context: Context
         ): FirebaseAnalytics {
             return FirebaseAnalytics.getInstance(context)
+        }
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class CrashReportingModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindCrashReportingDataSource(
+        impl: FirebaseCrashlyticsRemoteSource
+    ): CrashReportingDataSource
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideFirebaseCrashlytics(): FirebaseCrashlytics {
+            return FirebaseCrashlytics.getInstance()
         }
     }
 }

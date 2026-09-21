@@ -53,3 +53,4 @@
     - "~Screen"というファイルにはロジックを持たせず、UIの宣言だけを行なうようにしてください。
     - "~ViewModel"というファイルはUIの情報を持たず、ロジックだけを持足せるようにしてください。
     - ScreenからNavGraphにコールバックを伝えるときも、一度ViewModelを経由するようにしてください。
+- **非致命の例外の記録**: Crashlytics へ `recordException` を送るときは、`AnalyticsRepository` と同様に `CrashReportingRepository`（`CrashReportingDataSource` / `FirebaseCrashlyticsRemoteSource`）を経由してください（`Firebase.crashlytics` を直接呼ばない）。
