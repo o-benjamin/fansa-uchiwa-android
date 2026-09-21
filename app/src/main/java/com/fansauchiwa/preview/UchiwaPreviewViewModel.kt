@@ -12,6 +12,7 @@ import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
+import com.fansauchiwa.data.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.analytics.baseFontSessionParams
 import com.fansauchiwa.data.analytics.finalFontRankBucket
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
@@ -216,9 +217,14 @@ class UchiwaPreviewViewModel @Inject constructor(
      * リワード広告を表示し、広告視聴後（または失敗時）に共有用パスをセットする
      * 広告のロードに失敗している場合は即座に共有を実行（UX低下を防ぐ）
      * この画面で既に広告を視聴済みの場合は広告をスキップして共有を実行
+     *
+     * @param entryPoint どの導線から共有したか（[ShareAnalyticsParams] の ENTRY_POINT_*）
      */
-    fun showRewardedAdAndShare(activity: Activity) {
-        logEvent(AnalyticsActions.TAP_PREVIEW_SHARE)
+    fun showRewardedAdAndShare(activity: Activity, entryPoint: String) {
+        logEvent(
+            AnalyticsActions.TAP_PREVIEW_SHARE,
+            mapOf(ShareAnalyticsParams.PARAM_ENTRY_POINT to entryPoint)
+        )
 
         if (hasEarnedRewardInSession) {
             setShareImagePath()
