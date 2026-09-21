@@ -15,3 +15,10 @@
 
 # 保存データやリフレクションで名前が参照されるクラスは、ここにクラス名を書かず
 # クラス側に androidx.annotation.Keep を付与して保持すること。
+
+# ---------------------------------------------------------------------------
+# Play In-App Review（review-ktx）
+# review-ktx がコンパイル時だけの注釈 NoNullnessRewrite を参照しており、
+# クラスパスにないため R8 が Missing class で止まる。実行時には参照されないので警告を抑止する。
+# ---------------------------------------------------------------------------
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
