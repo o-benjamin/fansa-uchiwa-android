@@ -89,13 +89,13 @@ class UchiwaPreviewViewModel @Inject constructor(
      */
     fun showRewardedAdAndSave(activity: Activity) {
         val currentState = uiState.value
+        // 連打などで多重に実行しない。isSaveButtonPressedは一連の保存処理が終わるまでtrueのままなので、
+        // これによりfont_same_as_last用の読み取り/上書き（下記）が重ならないことも保証される
+        if (currentState.isSaveButtonPressed) return
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
 
         viewModelScope.launch {
-            // font_same_as_last の比較用に、保存処理（saveToGallery）で上書きされるより先に読んでおく。
-            // ここを読んでからのちにログ送信と保存を行うことで、
-            // 同じ画面で連続してエクスポートしたときの読み取り/上書きの競合を避ける
-            // （2回目以降は広告をスキップしてすぐ保存されるため、順序を保証しないと自分自身と比較しうる）。
+            // font_same_as_last の比較用に、保存処理（saveToGallery）で上書きされるより先に読んでおく
             val lastSavedFontName = settingsRepository.getLastSavedFontName()
             logExportEvent(lastSavedFontName)
 
@@ -121,15 +121,17 @@ class UchiwaPreviewViewModel @Inject constructor(
 
     /**
      * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）付きで送る。
+     * 呼び出し元（[showRewardedAdAndSave]）のコルーチンの中から直接呼ぶsuspend関数。
+     * ここで別のコルーチンを起動しないのは、[showRewardedAdAndSave] が既にコルーチンの中で
+     * このメソッドを呼んでおり、二重に起動する必要が無いため。
+     *
      * 「前回保存したフォント」の上書きはここではしない（実際にギャラリーへの保存が成功した
      * ときだけ [saveToGallery] で上書きする。ここで上書きすると、保存に失敗したケースや
      * タップしただけで広告表示中に離脱したケースも「保存した」ことになってしまうため）。
      */
-    private fun logExportEvent(lastSavedFontName: String?) {
-        viewModelScope.launch {
-            val params = buildFontSessionAnalyticsParams(lastSavedFontName)
-            analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
-        }
+    private suspend fun logExportEvent(lastSavedFontName: String?) {
+        val params = buildFontSessionAnalyticsParams(lastSavedFontName)
+        analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
     }
 
     private fun buildFontSessionAnalyticsParams(lastSavedFontName: String?): Map<String, Any> {

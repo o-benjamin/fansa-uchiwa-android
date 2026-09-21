@@ -1192,5 +1192,46 @@ class EditViewModelTest {
         assertEquals(1, secondSnapshot.fontSwitchCount)
     }
 
+    @Test
+    fun consumeFontSessionForPreview_switchedDecorationLaterDeleted_fallsBackToRemainingTextDecoration() =
+        runTest {
+            val uchiwaId = "test-uchiwa-id"
+            val switchedDecorationId = "text-1"
+            val remainingDecorationId = "text-2"
+            val switchedDecoration = Decoration.Text(
+                id = switchedDecorationId,
+                text = "テスト1",
+                font = FontFamilies.HACHI_MARU_POP
+            )
+            val remainingDecoration = Decoration.Text(
+                id = remainingDecorationId,
+                text = "テスト2",
+                font = FontFamilies.KOSUGI
+            )
+            val savedUchiwa = Uchiwa(
+                id = "test-id",
+                decorations = listOf(switchedDecoration, remainingDecoration),
+                uchiwaColor = Color.Black,
+                backgroundColor = Color.White
+            )
+            coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+            every { localImageRepository.getAllImages() } returns emptyList()
+
+            val viewModel = createViewModel(uchiwaId = uchiwaId)
+            advanceUntilIdle()
+
+            // switchedDecorationId のフォントを切り替えたあと、その装飾自体を削除する
+            viewModel.updateFont(switchedDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
+            viewModel.deleteDecoration(switchedDecorationId)
+            advanceUntilIdle()
+
+            val snapshot = viewModel.consumeFontSessionForPreview()
+
+            // 切り替え回数は保持しつつ、最終的なフォントは残っている装飾のものにフォールバックする
+            // （削除済みの装飾が最後に切り替えたフォント= ZEN_MARU_GOTHIC を報告してはいけない）
+            assertEquals(1, snapshot.fontSwitchCount)
+            assertEquals(FontFamilies.KOSUGI.name, snapshot.finalFontName)
+        }
+
     // endregion
 }

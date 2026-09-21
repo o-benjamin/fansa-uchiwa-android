@@ -92,7 +92,11 @@ class EditViewModel @Inject constructor(
     // undoStack/redoStack等と同じく SavedStateHandle には乗せていないため、バックグラウンドで
     // プロセスが再生成されると失われる（既知の限界。長時間編集のセッションを一部過小に見積もる）。
     private var fontSwitchCountInSession = 0
-    private var lastSwitchedFont: FontFamilies? = null
+
+    // フォントを最後に切り替えたテキスト装飾のID（フォント自体ではなくIDを持つのは、
+    // その装飾が削除された場合に古いフォントを参照し続けないようにするため。
+    // 最終的なフォントは参照時に現在の decorations から解決する）
+    private var lastSwitchedDecorationId: String? = null
     private var editStartTimeMillis = System.currentTimeMillis()
 
     init {
@@ -534,7 +538,7 @@ class EditViewModel @Inject constructor(
             when (decoration) {
                 is Decoration.Text -> {
                     fontSwitchCountInSession++
-                    lastSwitchedFont = newFont
+                    lastSwitchedDecorationId = id
                     logEvent(
                         AnalyticsActions.SELECT_EDIT_TEXT_FONT,
                         mapOf("font_family" to newFont.name)
@@ -562,14 +566,15 @@ class EditViewModel @Inject constructor(
      * Preview画面（tap_preview_export）へ渡すためのフォント計測データのスナップショットを返し、
      * 次の編集に備えてセッションをリセットする（#242: 保存または破棄でリセット）。
      *
-     * 最終的なフォントは、このセッションで最後に切り替えたフォント。一度も切り替えていなければ、
-     * 最初のテキスト装飾の（テンプレートまたは初期値の）フォント。テキスト装飾が無ければ null。
+     * 最終的なフォントは、このセッションで最後に切り替えたテキスト装飾の現在のフォント。
+     * その装飾が既に削除されていれば（切り替え後に削除された場合）、最初のテキスト装飾の
+     * （テンプレートまたは初期値の）フォントにフォールバックする。テキスト装飾が無ければ null。
      */
     fun consumeFontSessionForPreview(): FontSessionAnalyticsSnapshot {
+        val textDecorations = uiState.value.decorations.filterIsInstance<Decoration.Text>()
         val finalFontName = (
-            lastSwitchedFont ?: uiState.value.decorations
-                .filterIsInstance<Decoration.Text>()
-                .firstOrNull()?.font
+            textDecorations.find { it.id == lastSwitchedDecorationId }?.font
+                ?: textDecorations.firstOrNull()?.font
             )?.name
         val snapshot = FontSessionAnalyticsSnapshot(
             fontSwitchCount = fontSwitchCountInSession,
@@ -577,7 +582,7 @@ class EditViewModel @Inject constructor(
             editStartTimeMillis = editStartTimeMillis
         )
         fontSwitchCountInSession = 0
-        lastSwitchedFont = null
+        lastSwitchedDecorationId = null
         editStartTimeMillis = System.currentTimeMillis()
         return snapshot
     }

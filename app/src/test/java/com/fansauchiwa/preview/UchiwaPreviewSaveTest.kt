@@ -357,5 +357,36 @@ class UchiwaPreviewSaveTest {
             }
         }
 
+    @Test
+    fun showRewardedAdAndSave_calledAgainWhileSavePending_ignoresSecondCall() = runTest {
+        // 1回目の保存処理が終わる前（isSaveButtonPressed=trueのまま）に連打されても、
+        // 多重に実行されない（font_same_as_lastの読み取り/上書きが重ならない）ことを確かめる
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = FontFamilies.KEI_FONT.name,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        // adMobRepositoryはrelaxedモックなので、showRewardedAdはスタブしなければ何もしない
+        // （広告のコールバックが呼ばれず、保存処理が保留中の状態を維持する）
+
+        viewModel.showRewardedAdAndSave(activity)
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        verify(exactly = 1) {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = any(),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = null
+            )
+        }
+    }
+
     // endregion
 }
