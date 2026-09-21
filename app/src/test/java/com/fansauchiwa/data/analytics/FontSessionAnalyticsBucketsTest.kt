@@ -40,7 +40,7 @@ class FontSessionAnalyticsBucketsTest {
     @Test
     fun finalFontRankBucket_firstFont_returnsTopBucket() {
         // FontFamilies宣言順の1番目（ordinal 0 → rank 1）
-        assertEquals("1-5", finalFontRankBucket(FontFamilies.KEI_FONT))
+        assertEquals("1-5", finalFontRankBucket(FontFamilies.entries.first()))
     }
 
     @Test
