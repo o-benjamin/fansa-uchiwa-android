@@ -20,9 +20,8 @@ fun fontSwitchBucket(switchCount: Int): String = when {
  * 最終的に選ばれたフォントの表示順位（1始まり）を GA4 のバケット文字列に変換する（#242）。
  *
  * 順位はフォント選択画面の表示順（[FontFamilies] の宣言順）を使う。
- * 実使用データ順への並べ替え（#241）は本Issueの時点では未実装で、
- * v2.7.0.md によれば手書きの表示順は実使用データ順とほぼ一致しているため、
- * 現状の表示順をそのまま「上位/下位」の基準として使う。
+ * 実使用データ順への並べ替え（#241）は本Issueの時点では未実装なため、
+ * 現状の表示順を暫定の基準として使う。#241対応時にこの前提を見直すこと。
  */
 fun finalFontRankBucket(font: FontFamilies): String {
     val rank = font.ordinal + 1

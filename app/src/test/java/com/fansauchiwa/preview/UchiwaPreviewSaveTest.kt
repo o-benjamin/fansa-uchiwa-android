@@ -189,7 +189,32 @@ class UchiwaPreviewSaveTest {
                 }
             )
         }
-        coVerify { settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name) }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_firstSaveEver_logsFontSameAsLastFalse() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = FontFamilies.KEI_FONT.name,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        // 前回保存したフォントがまだ無い（初回保存）
+        coEvery { settingsRepository.getLastSavedFontName() } returns null
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                match<AnalyticsEvent> {
+                    it.name == AnalyticsActions.TAP_PREVIEW_EXPORT &&
+                        it.params[FontSessionAnalyticsParams.FONT_SAME_AS_LAST] == "false"
+                }
+            )
+        }
     }
 
     @Test
@@ -216,6 +241,72 @@ class UchiwaPreviewSaveTest {
                 }
             )
         }
+        coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_gallerySaveSucceeds_savesFinalFontAsLastSavedFontName() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = FontFamilies.KEI_FONT.name,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+
+        val onUserEarnedRewardSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = null
+            )
+        } answers {
+            onUserEarnedRewardSlot.captured.invoke()
+        }
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        // ギャラリーへの保存が成功したときだけ、次回のfont_same_as_last比較用に上書きされる
+        coVerify(exactly = 1) { settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name) }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_gallerySaveFails_doesNotOverwriteLastSavedFontName() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = FontFamilies.KEI_FONT.name,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns false
+
+        val onUserEarnedRewardSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = null
+            )
+        } answers {
+            onUserEarnedRewardSlot.captured.invoke()
+        }
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        // ギャラリーへの保存が失敗した場合は、保存したことにしない
         coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
     }
 

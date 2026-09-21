@@ -184,7 +184,7 @@ fun EditScreen(
                 URLEncoder.encode(it, "UTF-8"),
                 fontSession.fontSwitchCount,
                 fontSession.finalFontName,
-                fontSession.sessionStartTimeMillis
+                fontSession.editStartTimeMillis
             )
         }
     }

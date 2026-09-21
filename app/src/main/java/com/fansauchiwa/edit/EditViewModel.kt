@@ -89,9 +89,11 @@ class EditViewModel @Inject constructor(
 
     // フォントが「迷い」か「楽しみ」かを見分けるための計測（#242）。
     // このうちわの編集セッション中の状態で、保存または破棄でリセットする。
+    // undoStack/redoStack等と同じく SavedStateHandle には乗せていないため、バックグラウンドで
+    // プロセスが再生成されると失われる（既知の限界。長時間編集のセッションを一部過小に見積もる）。
     private var fontSwitchCountInSession = 0
     private var lastSwitchedFont: FontFamilies? = null
-    private var fontSessionStartTimeMillis = System.currentTimeMillis()
+    private var editStartTimeMillis = System.currentTimeMillis()
 
     init {
         observeCompletionTooltip()
@@ -553,7 +555,7 @@ class EditViewModel @Inject constructor(
         FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to
             fontSwitchBucket(fontSwitchCountInSession),
         FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to
-            editDurationBucket(System.currentTimeMillis() - fontSessionStartTimeMillis)
+            editDurationBucket(System.currentTimeMillis() - editStartTimeMillis)
     )
 
     /**
@@ -572,11 +574,11 @@ class EditViewModel @Inject constructor(
         val snapshot = FontSessionAnalyticsSnapshot(
             fontSwitchCount = fontSwitchCountInSession,
             finalFontName = finalFontName,
-            sessionStartTimeMillis = fontSessionStartTimeMillis
+            editStartTimeMillis = editStartTimeMillis
         )
         fontSwitchCountInSession = 0
         lastSwitchedFont = null
-        fontSessionStartTimeMillis = System.currentTimeMillis()
+        editStartTimeMillis = System.currentTimeMillis()
         return snapshot
     }
 

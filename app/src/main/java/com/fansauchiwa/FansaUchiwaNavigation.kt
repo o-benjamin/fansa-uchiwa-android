@@ -70,12 +70,15 @@ data object PreviewDestination : FansaUchiwaNavigationDestination {
         finalFontName: String?,
         editStartTimeMillis: Long
     ): String {
-        val query = listOfNotNull(
-            "$FONT_SWITCH_COUNT_ARG=$fontSwitchCount",
-            finalFontName?.let { "$FINAL_FONT_NAME_ARG=${encodeQueryValue(it)}" },
-            "$EDIT_START_TIME_ARG=$editStartTimeMillis"
-        ).joinToString("&")
-        return "${buildPathRoute(screen = screen, argument = imagePath)}?$query"
+        val path = buildPathRoute(screen = screen, argument = imagePath)
+        val query = buildQueryString(
+            arguments = arrayOf(
+                FONT_SWITCH_COUNT_ARG to fontSwitchCount.toString(),
+                FINAL_FONT_NAME_ARG to finalFontName,
+                EDIT_START_TIME_ARG to editStartTimeMillis.toString()
+            )
+        )
+        return "$path$query"
     }
 }
 
@@ -104,15 +107,18 @@ data object EventTimelineDestination : FansaUchiwaNavigationDestination {
 
 private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"
 
-private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String?>>): String {
+private fun buildQueryRoute(screen: String, arguments: Array<Pair<String, String?>>): String =
+    "$screen${buildQueryString(arguments)}"
+
+/**
+ * key=value を作り & で結合したクエリ文字列を返す（null の引数は除外する）。
+ * 引数が1つも無ければ空文字列を返す（先頭に ? は付かない）。
+ */
+private fun buildQueryString(arguments: Array<Pair<String, String?>>): String {
     val query = arguments.mapNotNull { (key, value) ->
         value?.let { "$key=${encodeQueryValue(it)}" }
     }
-    return if (query.isEmpty()) {
-        screen
-    } else {
-        "$screen?${query.joinToString("&")}"
-    }
+    return if (query.isEmpty()) "" else "?${query.joinToString("&")}"
 }
 
 private fun encodeQueryValue(value: String): String =
