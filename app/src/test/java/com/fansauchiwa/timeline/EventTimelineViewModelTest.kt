@@ -3,10 +3,13 @@ package com.fansauchiwa.timeline
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.source.EventEntity
 import com.fansauchiwa.data.source.EventWithUchiwas
+import io.mockk.coVerify
 import io.mockk.mockk
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +31,7 @@ import org.junit.Test
 class EventTimelineViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private val analyticsRepository = mockk<AnalyticsRepository>(relaxed = true)
 
     private class FakeUuidProvider : UuidProvider {
         override fun generate(): String = "generated-event-id"
@@ -97,6 +101,7 @@ class EventTimelineViewModelTest {
         val viewModel = EventTimelineViewModel(
             eventRepository = repository,
             masterpieceRepository = FakeMasterpieceRepository(),
+            analyticsRepository = analyticsRepository,
             uuidProvider = FakeUuidProvider(),
             context = mockk(relaxed = true),
             savedStateHandle = SavedStateHandle(mapOf(UCHIWA_ID_ARG to "uchiwa-1"))
@@ -115,6 +120,7 @@ class EventTimelineViewModelTest {
         val viewModel = EventTimelineViewModel(
             eventRepository = repository,
             masterpieceRepository = FakeMasterpieceRepository(),
+            analyticsRepository = analyticsRepository,
             uuidProvider = FakeUuidProvider(),
             context = mockk(relaxed = true),
             savedStateHandle = SavedStateHandle(mapOf(UCHIWA_ID_ARG to "uchiwa-1"))
@@ -135,6 +141,40 @@ class EventTimelineViewModelTest {
     }
 
     @Test
+    fun saveEvent_新規作成_save_eventをパラメータ付きで送る() = runTest {
+        val viewModel = EventTimelineViewModel(
+            eventRepository = FakeEventRepository(),
+            masterpieceRepository = FakeMasterpieceRepository(),
+            analyticsRepository = analyticsRepository,
+            uuidProvider = FakeUuidProvider(),
+            context = mockk(relaxed = true),
+            savedStateHandle = SavedStateHandle()
+        )
+
+        viewModel.saveEvent(
+            eventId = null,
+            name = "アリーナ公演",
+            eventDate = LocalDate.of(2026, 8, 1),
+            remindEnabled = true,
+            selectedUchiwaIds = setOf("uchiwa-1", "uchiwa-2")
+        )
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = "save_event",
+                    params = mapOf(
+                        "is_new" to "true",
+                        "remind_enabled" to "true",
+                        "uchiwa_count" to 2
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
     fun deleteEvent_既存イベント_Repositoryに削除を委譲する() = runTest {
         val repository = FakeEventRepository().apply {
             savedEvents += EventEntity(
@@ -147,6 +187,7 @@ class EventTimelineViewModelTest {
         val viewModel = EventTimelineViewModel(
             eventRepository = repository,
             masterpieceRepository = FakeMasterpieceRepository(),
+            analyticsRepository = analyticsRepository,
             uuidProvider = FakeUuidProvider(),
             context = mockk(relaxed = true),
             savedStateHandle = SavedStateHandle()

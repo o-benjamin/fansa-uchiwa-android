@@ -11,6 +11,7 @@ import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.source.EventEntity
 import com.fansauchiwa.data.source.EventWithUchiwas
 import com.fansauchiwa.data.source.FansaUchiwaEntity
+import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
@@ -56,7 +57,12 @@ class UchiwaReminderWorkerTest {
             appContext: Context,
             workerClassName: String,
             workerParameters: WorkerParameters
-        ): ListenableWorker = UchiwaReminderWorker(appContext, workerParameters, eventRepository)
+        ): ListenableWorker = UchiwaReminderWorker(
+            appContext,
+            workerParameters,
+            eventRepository,
+            mockk(relaxed = true)
+        )
     }
 
     private fun context(): Context = InstrumentationRegistry.getInstrumentation().targetContext

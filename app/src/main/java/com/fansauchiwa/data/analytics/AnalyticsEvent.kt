@@ -64,6 +64,11 @@ object AnalyticsActions {
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
 
+    // イベント予定・リマインド通知が戻ってくる理由になっているかを測る（#249）
+    const val SAVE_EVENT = "save_event"
+    const val REMINDER_SHOW = "reminder_show"
+    const val REMINDER_TAP = "reminder_tap"
+
     const val AD_REWARD_SHOW = "ad_reward_show"
     const val AD_REWARD_COMPLETE = "ad_reward_complete"
     const val AD_REWARD_DISMISSED = "ad_reward_dismissed"
@@ -115,4 +120,14 @@ object AnalyticsBackDialogActions {
 object AnalyticsUndoRedoActions {
     const val ACTION_UNDO = "undo"
     const val ACTION_REDO = "redo"
+}
+
+/**
+ * イベント保存・リマインド通知のパラメータ
+ */
+object EventAnalyticsParams {
+    const val IS_NEW = "is_new"
+    const val REMIND_ENABLED = "remind_enabled"
+    const val UCHIWA_COUNT = "uchiwa_count"
+    const val DAYS_UNTIL = "days_until"
 }
