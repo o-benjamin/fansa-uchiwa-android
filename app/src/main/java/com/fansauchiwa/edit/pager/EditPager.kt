@@ -50,6 +50,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -445,6 +447,16 @@ private fun LayerItem(
     modifier: Modifier = Modifier,
     allImages: List<ImageReference>
 ) {
+    val layerTypeNameResId = when (decoration) {
+        is Decoration.Text -> R.string.layer_text
+        is Decoration.Sticker -> R.string.layer_sticker
+        is Decoration.Image -> R.string.layer_image
+    }
+    val layerItemDescription = stringResource(
+        R.string.layer_item_description,
+        stringResource(layerTypeNameResId)
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -463,6 +475,7 @@ private fun LayerItem(
                 }
             )
             .clickable(onClick = onClick)
+            .semantics { contentDescription = layerItemDescription }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

@@ -45,6 +45,19 @@
     <string name="sticker_color">ステッカー色</string>
     <string name="custom_color_picker_title">カスタム色を選択</string>
     <string name="decide">決定</string>
+    <string name="color_picker_chip_description">%1$sを選ぶ</string>
+    <string name="color_name_red">赤</string>
+    <string name="color_name_pink">ピンク</string>
+    <string name="color_name_orange">オレンジ</string>
+    <string name="color_name_yellow">黄色</string>
+    <string name="color_name_light_green">黄緑</string>
+    <string name="color_name_green">緑</string>
+    <string name="color_name_light_blue">水色</string>
+    <string name="color_name_blue">青</string>
+    <string name="color_name_purple">紫</string>
+    <string name="color_name_gray">グレー</string>
+    <string name="color_name_white">白</string>
+    <string name="color_name_black">黒</string>
     <string name="save_after_ad">広告のあとに保存されます</string>
     <string name="rewarded_save_dialog_title">デザインの保存</string>
     <string name="rewarded_save_dialog_message">広告の後にデザインが保存されます</string>
@@ -62,6 +75,8 @@
     <string name="layer_text">テキスト</string>
     <string name="layer_sticker">ステッカー</string>
     <string name="layer_image">画像</string>
+    <string name="layer_item_description">%1$sレイヤーを選ぶ</string>
+    <string name="image_page_item_description">画像を選ぶ</string>
     <string name="image_preview_title">画像プレビュー</string>
     <string name="image_preview_error">背景透過処理に失敗しました</string>
     <string name="image_preview_error_preparing">背景透過の準備中です。少し待ってからもう一度お試しください</string>
@@ -75,6 +90,8 @@
     <string name="delete_image_warning_confirm">削除する</string>
     <string name="main_color_section_title">メインカラーを選択</string>
     <string name="template_section_title">テンプレートから作成</string>
+    <string name="template_item_description">テンプレートを選ぶ</string>
+    <string name="masterpiece_item_description">マイデザインを選ぶ</string>
     <string name="my_design_section_title">マイデザイン</string>
     <string name="name_template_dialog_title">名前を入力</string>
     <string name="name_template_last_name">名字</string>
