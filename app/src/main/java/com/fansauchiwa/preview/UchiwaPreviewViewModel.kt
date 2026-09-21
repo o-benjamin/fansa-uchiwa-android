@@ -182,7 +182,8 @@ class UchiwaPreviewViewModel @Inject constructor(
                     resolveFinalFont(state.finalFontName)?.let {
                         settingsRepository.setLastSavedFontName(it.name)
                     }
-                    // レビュー依頼（#243）の「保存成功の回数」を、saveSuccess を流す前に数えておく
+                    // Screen が saveSuccess=true を受けてレビュー依頼の条件を判定するため、
+                    // 今回の保存を回数に含めてから saveSuccess を流す（#243）
                     inAppReviewRepository.recordSaveSuccess()
                 }
                 val currentState = uiState.value

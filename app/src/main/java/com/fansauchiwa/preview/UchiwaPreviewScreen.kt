@@ -116,7 +116,7 @@ fun UchiwaPreviewScreen(
         }
     }
 
-    // 保存成功の直後にアプリ内レビュー依頼を出す（#243）。報酬獲得時の保存は広告の表示中に終わるため、
+    // 失敗時の Snackbar とは別に、保存成功の直後にアプリ内レビュー依頼を出す（#243）。報酬獲得時の保存は広告の表示中に終わるため、
     // 広告が閉じてこの画面が前面（RESUMED）に戻るのを待ってから出し、広告と重ならないようにする
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(uiState.saveSuccess) {

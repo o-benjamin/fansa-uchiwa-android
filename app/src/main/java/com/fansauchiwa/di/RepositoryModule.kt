@@ -22,14 +22,14 @@ import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.EventRepositoryImpl
+import com.fansauchiwa.data.repository.InAppReviewRepository
+import com.fansauchiwa.data.repository.InAppReviewRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepositoryImpl
 import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.LocalImageRepositoryImpl
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.MasterpieceRepositoryImpl
-import com.fansauchiwa.data.repository.InAppReviewRepository
-import com.fansauchiwa.data.repository.InAppReviewRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository

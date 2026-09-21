@@ -1,4 +1,4 @@
-package com.fansauchiwa.review
+package com.fansauchiwa.inappreview
 
 import java.util.concurrent.TimeUnit
 

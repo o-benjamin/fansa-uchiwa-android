@@ -1,6 +1,7 @@
 package com.fansauchiwa.data.infra
 
 import android.content.Context
+import android.content.pm.PackageInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -11,24 +12,20 @@ class AppInstallLocalSource @Inject constructor(
 ) : AppInstallDataSource {
 
     override fun getIsFreshInstallStream(): Flow<Boolean> = flow {
-        val isFreshInstall = try {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            packageInfo.firstInstallTime == packageInfo.lastUpdateTime
-        } catch (e: Exception) {
-            // PackageManager は別プロセスのため、NameNotFoundException 以外の RuntimeException も起こりうる。
-            // ここで落とさず、ダイアログを出す側（false）に倒す
-            false
-        }
-        emit(isFreshInstall)
+        // 判定できない場合は、ダイアログを出す側（false）に倒す
+        val packageInfo = getPackageInfoOrNull()
+        emit(packageInfo != null && packageInfo.firstInstallTime == packageInfo.lastUpdateTime)
     }
 
     override fun getFirstInstallTimeMillisStream(): Flow<Long?> = flow {
-        val firstInstallTime = try {
-            context.packageManager.getPackageInfo(context.packageName, 0).firstInstallTime
-        } catch (e: Exception) {
-            // getIsFreshInstallStream と同じく、PackageManager の例外では落とさない
-            null
-        }
-        emit(firstInstallTime)
+        emit(getPackageInfoOrNull()?.firstInstallTime)
+    }
+
+    private fun getPackageInfoOrNull(): PackageInfo? = try {
+        context.packageManager.getPackageInfo(context.packageName, 0)
+    } catch (e: Exception) {
+        // PackageManager は別プロセスのため、NameNotFoundException 以外の RuntimeException も起こりうる。
+        // ここで落とさず、呼び出し側で判定できない場合の値に倒す
+        null
     }
 }
