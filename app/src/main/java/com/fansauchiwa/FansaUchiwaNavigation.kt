@@ -28,6 +28,12 @@ const val HONORIFIC_ARG = "honorific"
 const val IMAGE_PATH_ARG = "imagePath"
 const val IMAGE_URI_ARG = "imageUri"
 
+// フォントが「迷い」か「楽しみ」かを見分けるための計測（#242）。
+// Edit画面からPreview画面へ、tap_preview_export のログに使う値を渡すための引数。
+const val FONT_SWITCH_COUNT_ARG = "fontSwitchCount"
+const val FINAL_FONT_NAME_ARG = "finalFontName"
+const val EDIT_START_TIME_ARG = "editStartTimeMillis"
+
 data object HomeDestination : FansaUchiwaNavigationDestination {
     override val screen: String = FansaUchiwaScreens.HOME_SCREEN
     override val route: String = screen
@@ -48,10 +54,29 @@ data object EditDestination : FansaUchiwaNavigationDestination {
 
 data object PreviewDestination : FansaUchiwaNavigationDestination {
     override val screen: String = FansaUchiwaScreens.PREVIEW_SCREEN
-    override val route: String = "$screen/{$IMAGE_PATH_ARG}"
+    override val route: String = "$screen/{$IMAGE_PATH_ARG}" +
+        "?$FONT_SWITCH_COUNT_ARG={$FONT_SWITCH_COUNT_ARG}" +
+        "&$FINAL_FONT_NAME_ARG={$FINAL_FONT_NAME_ARG}" +
+        "&$EDIT_START_TIME_ARG={$EDIT_START_TIME_ARG}"
 
-    fun createRoute(imagePath: String): String =
-        buildPathRoute(screen = screen, argument = imagePath)
+    /**
+     * @param fontSwitchCount 編集セッション中のフォント切り替え回数（#242 font_switch_bucket 用）
+     * @param finalFontName 最終的に選ばれたフォントの名前（#242 final_font_rank_bucket/font_same_as_last 用。null可）
+     * @param editStartTimeMillis 編集画面を開いた時刻（#242 edit_duration_bucket 用）
+     */
+    fun createRoute(
+        imagePath: String,
+        fontSwitchCount: Int,
+        finalFontName: String?,
+        editStartTimeMillis: Long
+    ): String {
+        val query = listOfNotNull(
+            "$FONT_SWITCH_COUNT_ARG=$fontSwitchCount",
+            finalFontName?.let { "$FINAL_FONT_NAME_ARG=${encodeQueryValue(it)}" },
+            "$EDIT_START_TIME_ARG=$editStartTimeMillis"
+        ).joinToString("&")
+        return "${buildPathRoute(screen = screen, argument = imagePath)}?$query"
+    }
 }
 
 data object ImagePreviewDestination : FansaUchiwaNavigationDestination {

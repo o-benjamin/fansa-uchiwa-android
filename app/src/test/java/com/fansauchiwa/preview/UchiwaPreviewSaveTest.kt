@@ -2,11 +2,21 @@ package com.fansauchiwa.preview
 
 import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.EDIT_START_TIME_ARG
+import com.fansauchiwa.FINAL_FONT_NAME_ARG
+import com.fansauchiwa.FONT_SWITCH_COUNT_ARG
 import com.fansauchiwa.IMAGE_PATH_ARG
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
+import com.fansauchiwa.data.repository.SettingsRepository
+import com.fansauchiwa.edit.FontFamilies
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -33,6 +43,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var settingsRepository: SettingsRepository
 
     @Before
     fun setUp() {
@@ -40,8 +51,10 @@ class UchiwaPreviewSaveTest {
         masterpieceRepository = mockk(relaxed = true)
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        settingsRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
+        coEvery { settingsRepository.getLastSavedFontName() } returns null
     }
 
     @After
@@ -49,17 +62,26 @@ class UchiwaPreviewSaveTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(imagePath: String?): UchiwaPreviewViewModel {
+    private fun createViewModel(
+        imagePath: String?,
+        fontSwitchCount: Int = 0,
+        finalFontName: String? = null,
+        editStartTimeMillis: Long = 0L
+    ): UchiwaPreviewViewModel {
         val savedStateHandle = SavedStateHandle().apply {
             if (imagePath != null) {
                 val encoded = URLEncoder.encode(imagePath, "UTF-8")
                 set(IMAGE_PATH_ARG, encoded)
             }
+            set(FONT_SWITCH_COUNT_ARG, fontSwitchCount)
+            set(FINAL_FONT_NAME_ARG, finalFontName)
+            set(EDIT_START_TIME_ARG, editStartTimeMillis)
         }
         return UchiwaPreviewViewModel(
             masterpieceRepository = masterpieceRepository,
             adMobRepository = adMobRepository,
             analyticsRepository = analyticsRepository,
+            settingsRepository = settingsRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -139,4 +161,63 @@ class UchiwaPreviewSaveTest {
         }
         verify(exactly = 2) { masterpieceRepository.saveMasterpieceToGallery(imagePath) }
     }
+
+    // region フォント計測（#242）
+
+    @Test
+    fun showRewardedAdAndSave_hasFontData_logsFontSwitchAndRankAndSameAsLastBuckets() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 12,
+            finalFontName = FontFamilies.KEI_FONT.name, // ordinal 0 → rank 1 → "1-5"
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+        coEvery { settingsRepository.getLastSavedFontName() } returns FontFamilies.KEI_FONT.name
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                match<AnalyticsEvent> {
+                    it.name == AnalyticsActions.TAP_PREVIEW_EXPORT &&
+                        it.params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET] == "11-20" &&
+                        it.params[FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET] == "1-5" &&
+                        it.params[FontSessionAnalyticsParams.FONT_SAME_AS_LAST] == "true"
+                }
+            )
+        }
+        coVerify { settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name) }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_noTextDecoration_logsOnlySwitchAndDurationBuckets() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(
+            imagePath = imagePath,
+            fontSwitchCount = 0,
+            finalFontName = null,
+            editStartTimeMillis = 0L
+        )
+        val activity = mockk<Activity>()
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                match<AnalyticsEvent> {
+                    it.name == AnalyticsActions.TAP_PREVIEW_EXPORT &&
+                        it.params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET] == "0" &&
+                        !it.params.containsKey(FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET) &&
+                        !it.params.containsKey(FontSessionAnalyticsParams.FONT_SAME_AS_LAST)
+                }
+            )
+        }
+        coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
+    }
+
+    // endregion
 }

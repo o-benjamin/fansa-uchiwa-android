@@ -47,6 +47,10 @@ class SettingsViewModelTest {
 
         override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) = Unit
 
+        override suspend fun getLastSavedFontName(): String? = null
+
+        override suspend fun setLastSavedFontName(fontName: String) = Unit
+
         fun isHapticEnabled(): Boolean = hapticEnabled
     }
 

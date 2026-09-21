@@ -4,14 +4,23 @@ import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.EDIT_START_TIME_ARG
+import com.fansauchiwa.FINAL_FONT_NAME_ARG
+import com.fansauchiwa.FONT_SWITCH_COUNT_ARG
 import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
+import com.fansauchiwa.data.analytics.editDurationBucket
+import com.fansauchiwa.data.analytics.finalFontRankBucket
+import com.fansauchiwa.data.analytics.fontSwitchBucket
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
+import com.fansauchiwa.data.repository.SettingsRepository
+import com.fansauchiwa.edit.FontFamilies
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.net.URLDecoder
 import javax.inject.Inject
@@ -25,6 +34,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val adMobRepository: AdMobRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val settingsRepository: SettingsRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -53,6 +63,13 @@ class UchiwaPreviewViewModel @Inject constructor(
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(imagePath = decodedImagePath)
         }
+        // Navigation引数からフォント計測データ（#242）を取得してUI Stateに設定
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            fontSwitchCount = savedStateHandle.get<Int>(FONT_SWITCH_COUNT_ARG) ?: 0,
+            finalFontName = savedStateHandle.get<String>(FINAL_FONT_NAME_ARG),
+            editStartTimeMillis = savedStateHandle.get<Long>(EDIT_START_TIME_ARG) ?: 0L
+        )
     }
 
     fun logScreenView() {
@@ -75,7 +92,7 @@ class UchiwaPreviewViewModel @Inject constructor(
      * この画面で既に広告を視聴済みの場合は広告をスキップして保存を実行
      */
     fun showRewardedAdAndSave(activity: Activity) {
-        logEvent(AnalyticsActions.TAP_PREVIEW_EXPORT)
+        logExportEvent()
 
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
@@ -96,6 +113,39 @@ class UchiwaPreviewViewModel @Inject constructor(
             onAdFailedOrSkipped = {
                 saveToGallery()
             }
+        )
+    }
+
+    /**
+     * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）付きで送る。
+     * font_same_as_last の判定に端末側の保存が必要なため suspend で計算してから送る。
+     */
+    private fun logExportEvent() {
+        viewModelScope.launch {
+            val params = buildFontSessionAnalyticsParams()
+            analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
+        }
+    }
+
+    private suspend fun buildFontSessionAnalyticsParams(): Map<String, Any> {
+        val state = uiState.value
+        val elapsedMillis = System.currentTimeMillis() - state.editStartTimeMillis
+        val baseParams = mapOf<String, Any>(
+            FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to fontSwitchBucket(state.fontSwitchCount),
+            FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to editDurationBucket(elapsedMillis)
+        )
+        val finalFont = state.finalFontName?.let { name ->
+            FontFamilies.entries.find { it.name == name }
+        } ?: return baseParams
+
+        // 比較のため、上書きする前に前回の値を読む
+        val lastSavedFontName = settingsRepository.getLastSavedFontName()
+        settingsRepository.setLastSavedFontName(finalFont.name)
+
+        return baseParams + mapOf(
+            FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to finalFontRankBucket(finalFont),
+            FontSessionAnalyticsParams.FONT_SAME_AS_LAST to
+                (finalFont.name == lastSavedFontName).toString()
         )
     }
 

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -107,6 +108,30 @@ class SettingsRepositoryImplTest {
 
         assertTrue(repository.getHasSeenApologyDialogStream().first())
     }
+
+    // region フォント計測（#242）
+
+    @Test
+    fun getLastSavedFontName_notYetSaved_returnsNull() = runTest {
+        assertEquals(null, repository.getLastSavedFontName())
+    }
+
+    @Test
+    fun setLastSavedFontName_thenGet_returnsSavedValue() = runTest {
+        repository.setLastSavedFontName("KEI_FONT")
+
+        assertEquals("KEI_FONT", repository.getLastSavedFontName())
+    }
+
+    @Test
+    fun setLastSavedFontName_calledTwice_overwritesPreviousValue() = runTest {
+        repository.setLastSavedFontName("KEI_FONT")
+        repository.setLastSavedFontName("ZEN_MARU_GOTHIC")
+
+        assertEquals("ZEN_MARU_GOTHIC", repository.getLastSavedFontName())
+    }
+
+    // endregion
 
     private inner class FakeAppInstallDataSource : AppInstallDataSource {
         override fun getIsFreshInstallStream(): Flow<Boolean> = flowOf(fakeIsFreshInstall)

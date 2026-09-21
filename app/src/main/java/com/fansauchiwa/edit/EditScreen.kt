@@ -149,7 +149,7 @@ import androidx.compose.ui.graphics.Canvas as ComposeCanvas
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel(),
     onBack: () -> Unit,
-    onPreview: (String) -> Unit,
+    onPreview: (path: String, fontSwitchCount: Int, finalFontName: String?, editStartTimeMillis: Long) -> Unit,
     onNavigateToImagePreview: (String) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
@@ -179,7 +179,13 @@ fun EditScreen(
     LaunchedEffect(uiState.savedPath) {
         uiState.savedPath?.let {
             viewModel.resetIsUchiwaSaved()
-            onPreview(URLEncoder.encode(it, "UTF-8"))
+            val fontSession = viewModel.consumeFontSessionForPreview()
+            onPreview(
+                URLEncoder.encode(it, "UTF-8"),
+                fontSession.fontSwitchCount,
+                fontSession.finalFontName,
+                fontSession.sessionStartTimeMillis
+            )
         }
     }
 
@@ -540,7 +546,8 @@ fun EditScreen(
                     onClick = {
                         viewModel.logEvent(
                             AnalyticsActions.TAP_EDIT_BACK_DIALOG,
-                            mapOf("action" to AnalyticsBackDialogActions.ACTION_DELETE)
+                            mapOf("action" to AnalyticsBackDialogActions.ACTION_DELETE) +
+                                viewModel.currentFontSessionParams()
                         )
                         showBackDialog.value = false
                         onBack()

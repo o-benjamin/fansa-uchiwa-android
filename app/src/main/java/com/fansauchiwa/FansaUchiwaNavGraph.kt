@@ -53,8 +53,15 @@ fun FansaUchiwaNavGraph(
             EditScreen(
                 viewModel = viewModel,
                 onBack = { navController.navigateUp() },
-                onPreview = { path ->
-                    navController.navigate(PreviewDestination.createRoute(path))
+                onPreview = { path, fontSwitchCount, finalFontName, editStartTimeMillis ->
+                    navController.navigate(
+                        PreviewDestination.createRoute(
+                            imagePath = path,
+                            fontSwitchCount = fontSwitchCount,
+                            finalFontName = finalFontName,
+                            editStartTimeMillis = editStartTimeMillis
+                        )
+                    )
                 },
                 onNavigateToImagePreview = { uri ->
                     navController.navigate(ImagePreviewDestination.createRoute(uri))
@@ -67,7 +74,20 @@ fun FansaUchiwaNavGraph(
         composable(
             route = PreviewDestination.route,
             arguments = listOf(
-                navArgument(IMAGE_PATH_ARG) { type = NavType.StringType }
+                navArgument(IMAGE_PATH_ARG) { type = NavType.StringType },
+                navArgument(FONT_SWITCH_COUNT_ARG) {
+                    type = NavType.IntType
+                    defaultValue = 0
+                },
+                navArgument(FINAL_FONT_NAME_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+                navArgument(EDIT_START_TIME_ARG) {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
             )
         ) {
             val viewModel: UchiwaPreviewViewModel = hiltViewModel()
