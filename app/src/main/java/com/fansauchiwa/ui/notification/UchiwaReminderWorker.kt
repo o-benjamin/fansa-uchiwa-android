@@ -84,12 +84,15 @@ class UchiwaReminderWorker @AssistedInject constructor(
                 daysUntil = daysUntil,
                 notificationManager = notificationManager
             )
-            analyticsRepository.logEvent(
-                AnalyticsEvent(
-                    name = AnalyticsActions.REMINDER_SHOW,
-                    params = mapOf(EventAnalyticsParams.DAYS_UNTIL to daysUntil)
+            // 計測の失敗で通知のジョブ自体を失敗させない
+            runCatching {
+                analyticsRepository.logEvent(
+                    AnalyticsEvent(
+                        name = AnalyticsActions.REMINDER_SHOW,
+                        params = mapOf(EventAnalyticsParams.DAYS_UNTIL to daysUntil)
+                    )
                 )
-            )
+            }
         }
 
         return Result.success()

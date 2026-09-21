@@ -68,8 +68,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun logReminderTap() {
-        if (!intent.hasExtra(EXTRA_REMINDER_DAYS_UNTIL)) return
-        val daysUntil = intent.getIntExtra(EXTRA_REMINDER_DAYS_UNTIL, 0)
+        val daysUntil = intent.getIntExtra(EXTRA_REMINDER_DAYS_UNTIL, -1)
+            .takeIf { it >= 0 } ?: return
         lifecycleScope.launch {
             analyticsRepository.logEvent(
                 AnalyticsEvent(

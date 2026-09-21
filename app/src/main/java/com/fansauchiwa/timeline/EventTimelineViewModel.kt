@@ -116,11 +116,12 @@ class EventTimelineViewModel @Inject constructor(
                     )
                 )
                 eventRepository.replaceEventUchiwas(resolvedEventId, selectedUchiwaIds.toList())
+            }.onSuccess {
                 analyticsRepository.logEvent(
                     AnalyticsEvent(
                         name = AnalyticsActions.SAVE_EVENT,
                         params = mapOf(
-                            // Firebase は真偽値を扱えないため文字列にする
+                            // GA4 のイベントパラメータは文字列か数値だけなので、真偽値は文字列で送る
                             EventAnalyticsParams.IS_NEW to (eventId == null).toString(),
                             EventAnalyticsParams.REMIND_ENABLED to remindEnabled.toString(),
                             EventAnalyticsParams.UCHIWA_COUNT to selectedUchiwaIds.size
