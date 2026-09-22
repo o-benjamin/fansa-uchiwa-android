@@ -89,5 +89,10 @@ jobs:
       - name: Delete old release branch
         run: |
           OLD_BRANCH="${{ github.event.pull_request.head.ref }}"
-          git push origin --delete "$OLD_BRANCH"
-          echo "古いブランチ ($OLD_BRANCH) を削除しました。"
+          # PR のマージ時に --delete-branch で消えていることがあるので、残っているときだけ消す
+          if git ls-remote --exit-code --heads origin "$OLD_BRANCH" > /dev/null; then
+            git push origin --delete "$OLD_BRANCH"
+            echo "古いブランチ ($OLD_BRANCH) を削除しました。"
+          else
+            echo "古いブランチ ($OLD_BRANCH) は既に削除されています。"
+          fi
