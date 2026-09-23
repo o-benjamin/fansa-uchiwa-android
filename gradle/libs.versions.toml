@@ -1,6 +1,6 @@
 [versions]
-agp = "8.13.0"
-kotlin = "2.1.10"
+agp = "8.13.2"
+kotlin = "2.3.21"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 espressoCore = "3.7.0"
@@ -10,17 +10,19 @@ activityCompose = "1.8.0"
 composeBom = "2025.12.01"
 androidxNavigation = "2.9.4"
 androidxBrowser = "1.5.0"
-hilt = "2.57.2"
+hilt = "2.58"
 androidxHilt = "1.2.0"
-ksp = "2.1.10-1.0.30"
-room = "2.6.1"
+ksp = "2.3.12"
+room = "2.8.5"
 kotlinxSerialization = "1.6.3"
 kotlinxCoroutinesTest = "1.10.2"
 mockk = "1.14.9"
 turbine = "1.2.1"
 coil3 = "3.3.0"
 footprint = "2.0.0"
-playServiceAds = "24.9.0"
+playServiceAds = "25.4.0"
+unityAdsMediation = "4.20.0.1"
+unityAds = "4.20.0"
 playServicesMlkitSubjectSegmentation = "16.0.0-beta1"
 playServicesBase = "18.5.0"
 colorPicker = "1.1.3"
@@ -66,6 +68,8 @@ coil3-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref
 coil3-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil3" }
 footprint = { group = "io.github.morayl", name = "footprint", version.ref = "footprint" }
 play-service-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServiceAds" }
+unity-ads-mediation = { group = "com.google.ads.mediation", name = "unity", version.ref = "unityAdsMediation" }
+unity-ads = { group = "com.unity3d.ads", name = "unity-ads", version.ref = "unityAds" }
 play-services-base = { group = "com.google.android.gms", name = "play-services-base", version.ref = "playServicesBase" }
 play-services-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "playServicesMlkitSubjectSegmentation" }
 compose-colorpicker = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorPicker" }
