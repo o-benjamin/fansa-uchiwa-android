@@ -31,9 +31,10 @@
     <string name="save_as_image">画像として保存</string>
     <string name="send_to_print_app">印刷アプリ等に送る</string>
     <string name="share_chooser_title">送信先を選択</string>
-    <!-- 共有時に画像に添える既定の文（#244）。X で見た人がアプリにたどり着けるよう、アプリ名とハッシュタグを入れる。
-         X は外部リンク付きの投稿を伸ばしにくく、宣伝くさい文は利用者に消されるため、ストアのリンクは入れない -->
-    <string name="share_default_text">ファンサうちわで作ったよ！ #ファンサうちわ</string>
+    <!-- 共有時に画像に添える既定の文（#244, #269）。見た人がアプリにたどり着けるよう、アプリ名・ハッシュタグ・ストアのリンクを3行で入れる。
+         リンクの referrer（utm_source=app_share）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える。
+         URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く -->
+    <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
