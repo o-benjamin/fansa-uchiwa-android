@@ -10,6 +10,7 @@ import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -45,6 +46,7 @@ class ImagePreviewBackgroundRemovalTest {
     private lateinit var imageProcessingRepository: ImageProcessingRepository
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var crashReportingRepository: CrashReportingRepository
 
     private val originalUri: Uri = mockk()
     private val transparentUri: Uri = mockk()
@@ -57,6 +59,7 @@ class ImagePreviewBackgroundRemovalTest {
         imageProcessingRepository = mockk()
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        crashReportingRepository = mockk(relaxed = true)
     }
 
     @After
@@ -69,7 +72,8 @@ class ImagePreviewBackgroundRemovalTest {
         savedStateHandle = SavedStateHandle(mapOf(IMAGE_URI_ARG to ORIGINAL_URI_STRING)),
         imageProcessingRepository = imageProcessingRepository,
         adMobRepository = adMobRepository,
-        analyticsRepository = analyticsRepository
+        analyticsRepository = analyticsRepository,
+        crashReportingRepository = crashReportingRepository
     )
 
     @Test
@@ -91,6 +95,7 @@ class ImagePreviewBackgroundRemovalTest {
             analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.BACKGROUND_REMOVAL_SUCCESS))
         }
         verify { adMobRepository.loadInterstitialAd() }
+        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
     }
 
     @Test
@@ -205,6 +210,34 @@ class ImagePreviewBackgroundRemovalTest {
         assertTrue(viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.Success)
     }
 
+    @Test
+    fun completeManualCorrection_Failure_RecordsExceptionAndEmitsProcessFailed() = runTest(testDispatcher) {
+        coEvery { imageProcessingRepository.removeBackground(originalUri) } returns
+            Result.success(transparentUri)
+        val correctionError = IllegalStateException("manual correction failed")
+        coEvery {
+            imageProcessingRepository.applyManualCorrection(any(), any(), any(), any())
+        } returns Result.failure(correctionError)
+        val viewModel = createViewModel()
+        var emittedReason: BackgroundRemovalFailureReason? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            emittedReason = viewModel.errorEvent.first()
+        }
+
+        viewModel.showTransparent()
+        advanceUntilIdle()
+        viewModel.startManualCorrection()
+        viewModel.addPath(mockk(relaxed = true), 1f)
+        viewModel.completeManualCorrection(containerWidth = 100, containerHeight = 100)
+        advanceUntilIdle()
+
+        assertEquals(BackgroundRemovalFailureReason.PROCESS_FAILED, emittedReason)
+        assertTrue(
+            viewModel.uiState.value is ImagePreviewUiState.Ready.ShowingTransparent.ManualCorrection
+        )
+        verify { crashReportingRepository.recordException(correctionError) }
+    }
+
     private fun TestScope.assertFailureHandled(
         error: Throwable,
         expectedReason: BackgroundRemovalFailureReason
@@ -231,6 +264,7 @@ class ImagePreviewBackgroundRemovalTest {
             )
         }
         verify(exactly = 0) { adMobRepository.loadInterstitialAd() }
+        verify { crashReportingRepository.recordException(error) }
     }
 
     private companion object {

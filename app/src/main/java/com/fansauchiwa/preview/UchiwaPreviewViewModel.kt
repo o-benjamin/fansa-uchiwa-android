@@ -4,14 +4,24 @@ import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.EDIT_START_TIME_ARG
+import com.fansauchiwa.FINAL_FONT_NAME_ARG
+import com.fansauchiwa.FONT_SWITCH_COUNT_ARG
 import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
+import com.fansauchiwa.data.analytics.ShareAnalyticsParams
+import com.fansauchiwa.data.analytics.baseFontSessionParams
+import com.fansauchiwa.data.analytics.finalFontRankBucket
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
+import com.fansauchiwa.data.repository.SettingsRepository
+import com.fansauchiwa.edit.FontFamilies
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.net.URLDecoder
 import javax.inject.Inject
@@ -25,6 +35,8 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val adMobRepository: AdMobRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val settingsRepository: SettingsRepository,
+    private val inAppReviewRepository: InAppReviewRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -46,13 +58,16 @@ class UchiwaPreviewViewModel @Inject constructor(
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(isLoadingAd = isLoading)
             }
         }
-        // Navigation引数からimagePathを取得してUI Stateに設定
+        // Navigation引数からimagePathとフォント計測データ（#242）を取得してUI Stateに設定
         val encodedImagePath = savedStateHandle.get<String>(IMAGE_PATH_ARG)
-        if (encodedImagePath != null) {
-            val decodedImagePath = URLDecoder.decode(encodedImagePath, "UTF-8")
-            val currentState = uiState.value
-            savedStateHandle[UI_STATE_KEY] = currentState.copy(imagePath = decodedImagePath)
-        }
+        val decodedImagePath = encodedImagePath?.let { URLDecoder.decode(it, "UTF-8") }
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            imagePath = decodedImagePath ?: currentState.imagePath,
+            fontSwitchCount = savedStateHandle.get<Int>(FONT_SWITCH_COUNT_ARG) ?: 0,
+            finalFontName = savedStateHandle.get<String>(FINAL_FONT_NAME_ARG),
+            editStartTimeMillis = savedStateHandle.get<Long>(EDIT_START_TIME_ARG) ?: 0L
+        )
     }
 
     fun logScreenView() {
@@ -75,41 +90,119 @@ class UchiwaPreviewViewModel @Inject constructor(
      * この画面で既に広告を視聴済みの場合は広告をスキップして保存を実行
      */
     fun showRewardedAdAndSave(activity: Activity) {
-        logEvent(AnalyticsActions.TAP_PREVIEW_EXPORT)
-
         val currentState = uiState.value
+        // 連打などで多重に実行しない。isSaveButtonPressedは一連の保存処理が終わるまでtrueのままなので、
+        // これによりfont_same_as_last用の読み取り/上書き（下記）が重ならないことも保証される
+        if (currentState.isSaveButtonPressed) return
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
 
-        if (hasEarnedRewardInSession) {
-            saveToGallery()
-            return
-        }
+        viewModelScope.launch {
+            // font_same_as_last の比較用に、保存処理（saveToGallery）で上書きされるより先に読んでおく
+            val lastSavedFontName = settingsRepository.getLastSavedFontName()
+            logExportEvent(lastSavedFontName)
 
-        adMobRepository.showRewardedAd(
-            activity = activity,
-            placement = AnalyticsScreens.PREVIEW_SCREEN,
-            waitForLoad = true,
-            onUserEarnedReward = {
-                hasEarnedRewardInSession = true
+            if (hasEarnedRewardInSession) {
                 saveToGallery()
-            },
-            onAdFailedOrSkipped = {
-                saveToGallery()
+                return@launch
             }
+
+            // このタップで既に saveToGallery を呼んだかどうか。
+            // onAdFailedOrSkipped と onAdDismissed は同時に呼ばれることがある（AdMobRepository参照）ため、
+            // 「まだ呼んでいなければ」で判定しないと、保存処理の完了を待たずに連打防止フラグを戻してしまう
+            var saveTriggered = false
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = {
+                    hasEarnedRewardInSession = true
+                    saveTriggered = true
+                    saveToGallery()
+                },
+                onAdFailedOrSkipped = {
+                    saveTriggered = true
+                    saveToGallery()
+                },
+                onAdDismissed = {
+                    // 報酬を獲得せずに広告を閉じた場合は、onUserEarnedReward/onAdFailedOrSkippedの
+                    // どちらも呼ばれず saveToGallery が実行されない。連打防止用のフラグを戻さないと
+                    // 再タップできなくなってしまうため、ここで戻す
+                    // （このタップで既に保存処理を始めていれば、isSaveButtonPressed は
+                    // saveToGallery 側で戻すのでここでは戻さない）
+                    if (!saveTriggered) {
+                        val state = uiState.value
+                        savedStateHandle[UI_STATE_KEY] = state.copy(isSaveButtonPressed = false)
+                    }
+                }
+            )
+        }
+    }
+
+    /**
+     * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）付きで送る。
+     * 呼び出し元（[showRewardedAdAndSave]）のコルーチンの中から直接呼ぶsuspend関数。
+     * ここで別のコルーチンを起動しないのは、[showRewardedAdAndSave] が既にコルーチンの中で
+     * このメソッドを呼んでおり、二重に起動する必要が無いため。
+     *
+     * 「前回保存したフォント」の上書きはここではしない（実際にギャラリーへの保存が成功した
+     * ときだけ [saveToGallery] で上書きする。ここで上書きすると、保存に失敗したケースや
+     * タップしただけで広告表示中に離脱したケースも「保存した」ことになってしまうため）。
+     */
+    private suspend fun logExportEvent(lastSavedFontName: String?) {
+        val params = buildFontSessionAnalyticsParams(lastSavedFontName)
+        analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
+    }
+
+    private fun buildFontSessionAnalyticsParams(lastSavedFontName: String?): Map<String, Any> {
+        val state = uiState.value
+        val elapsedMillis = System.currentTimeMillis() - state.editStartTimeMillis
+        val baseParams = baseFontSessionParams(
+            switchCount = state.fontSwitchCount,
+            elapsedMillis = elapsedMillis
+        )
+        val finalFont = resolveFinalFont(state.finalFontName) ?: return baseParams
+
+        return baseParams + mapOf(
+            FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to finalFontRankBucket(finalFont),
+            FontSessionAnalyticsParams.FONT_SAME_AS_LAST to
+                (finalFont.name == lastSavedFontName).toString()
         )
     }
 
+    private fun resolveFinalFont(finalFontName: String?): FontFamilies? =
+        finalFontName?.let { name -> FontFamilies.entries.find { it.name == name } }
+
     private fun saveToGallery() {
         viewModelScope.launch {
-            val imagePath = uiState.value.imagePath
+            val state = uiState.value
+            val imagePath = state.imagePath
             if (imagePath != null) {
                 val success = masterpieceRepository.saveMasterpieceToGallery(imagePath)
+                if (success) {
+                    // 保存が成功したうちわの最終的なフォントを、次回のfont_same_as_last比較用に保存する
+                    resolveFinalFont(state.finalFontName)?.let {
+                        settingsRepository.setLastSavedFontName(it.name)
+                    }
+                    // Screen が saveSuccess=true を受けてレビュー依頼の条件を判定するため、
+                    // 今回の保存を回数に含めてから saveSuccess を流す（#243）
+                    inAppReviewRepository.recordSaveSuccess()
+                }
                 val currentState = uiState.value
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(
                     saveSuccess = success,
                     isSaveButtonPressed = false
                 )
             }
+        }
+    }
+
+    /**
+     * 保存成功の直後に、条件を満たしていればアプリ内レビュー依頼を出す（#243）
+     * 広告の画面が閉じてこの画面が前面に戻ってから呼ぶこと
+     */
+    fun requestInAppReviewIfEligible(activity: Activity) {
+        viewModelScope.launch {
+            inAppReviewRepository.requestReviewIfEligible(activity)
         }
     }
 
@@ -124,9 +217,14 @@ class UchiwaPreviewViewModel @Inject constructor(
      * リワード広告を表示し、広告視聴後（または失敗時）に共有用パスをセットする
      * 広告のロードに失敗している場合は即座に共有を実行（UX低下を防ぐ）
      * この画面で既に広告を視聴済みの場合は広告をスキップして共有を実行
+     *
+     * @param entryPoint どの導線から共有したか（[ShareAnalyticsParams] の ENTRY_POINT_*）
      */
-    fun showRewardedAdAndShare(activity: Activity) {
-        logEvent(AnalyticsActions.TAP_PREVIEW_SHARE)
+    fun showRewardedAdAndShare(activity: Activity, entryPoint: String) {
+        logEvent(
+            AnalyticsActions.TAP_PREVIEW_SHARE,
+            mapOf(ShareAnalyticsParams.PARAM_ENTRY_POINT to entryPoint)
+        )
 
         if (hasEarnedRewardInSession) {
             setShareImagePath()

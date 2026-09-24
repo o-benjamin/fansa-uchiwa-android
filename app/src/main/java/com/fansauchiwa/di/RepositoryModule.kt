@@ -15,11 +15,15 @@ import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AdMobRepositoryImpl
 import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.AnalyticsRepositoryImpl
+import com.fansauchiwa.data.repository.CrashReportingRepository
+import com.fansauchiwa.data.repository.CrashReportingRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.EventRepositoryImpl
+import com.fansauchiwa.data.repository.InAppReviewRepository
+import com.fansauchiwa.data.repository.InAppReviewRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepositoryImpl
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -75,6 +79,12 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindCrashReportingRepository(
+        impl: CrashReportingRepositoryImpl
+    ): CrashReportingRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTemplateRepository(
         impl: DefaultTemplateRepository
     ): TemplateRepository
@@ -90,6 +100,12 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         impl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindInAppReviewRepository(
+        impl: InAppReviewRepositoryImpl
+    ): InAppReviewRepository
 
     @Binds
     @Singleton

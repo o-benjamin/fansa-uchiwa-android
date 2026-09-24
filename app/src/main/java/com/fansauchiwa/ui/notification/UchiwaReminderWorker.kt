@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.os.Build
 import androidx.annotation.Keep
 import androidx.core.app.ActivityCompat
@@ -19,6 +20,10 @@ import androidx.work.WorkerParameters
 import androidx.work.WorkManager
 import com.fansauchiwa.MainActivity
 import com.fansauchiwa.R
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.EventAnalyticsParams
+import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EventRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -33,6 +38,10 @@ private const val EVENT_REMINDER_WORK_NAME = "event-reminder-work"
 private const val EVENT_REMINDER_CHANNEL_ID = "event-reminder-channel"
 private const val EVENT_REMINDER_HOUR = 20
 private const val EVENT_REMINDER_MINUTE = 0
+private const val TAG = "UchiwaReminderWorker"
+
+// 通知のタップで起動したことを MainActivity が計測するための Intent の extra（#249）
+const val EXTRA_REMINDER_DAYS_UNTIL = "reminder_days_until"
 
 // WorkManager がクラス名を DB に永続化し、HiltWorkerFactory もそのクラス名で生成方法を引くため R8 から保護する。
 // 端末に登録済みの定期ジョブが生成できなくなるので、クラス名・パッケージも変更しないこと
@@ -41,7 +50,8 @@ private const val EVENT_REMINDER_MINUTE = 0
 class UchiwaReminderWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    private val analyticsRepository: AnalyticsRepository
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -76,6 +86,15 @@ class UchiwaReminderWorker @AssistedInject constructor(
                 daysUntil = daysUntil,
                 notificationManager = notificationManager
             )
+            // 計測の失敗で通知のジョブ自体を失敗させない
+            runCatching {
+                analyticsRepository.logEvent(
+                    AnalyticsEvent(
+                        name = AnalyticsActions.REMINDER_SHOW,
+                        params = mapOf(EventAnalyticsParams.DAYS_UNTIL to daysUntil)
+                    )
+                )
+            }.onFailure { Log.w(TAG, "reminder_show の送信に失敗", it) }
         }
 
         return Result.success()
@@ -125,6 +144,7 @@ object UchiwaReminderNotifier {
             return
         }
         val openAppIntent = Intent(context, MainActivity::class.java)
+            .putExtra(EXTRA_REMINDER_DAYS_UNTIL, daysUntil)
         val pendingIntent = PendingIntent.getActivity(
             context,
             eventId.hashCode(),
