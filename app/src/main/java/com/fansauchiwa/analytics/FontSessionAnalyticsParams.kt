@@ -1,4 +1,4 @@
-package com.fansauchiwa.data.analytics
+package com.fansauchiwa.analytics
 
 /**
  * フォント選びが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）

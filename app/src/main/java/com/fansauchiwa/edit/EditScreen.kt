@@ -114,11 +114,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsBackDialogActions
+import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.ImageReference
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsBackDialogActions
-import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.captureHighResBitmap
 import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
@@ -149,7 +149,7 @@ import androidx.compose.ui.graphics.Canvas as ComposeCanvas
 fun EditScreen(
     viewModel: EditViewModel = hiltViewModel(),
     onBack: () -> Unit,
-    onPreview: (path: String, fontSwitchCount: Int, finalFontName: String?, editStartTimeMillis: Long) -> Unit,
+    onPreview: (String) -> Unit,
     onNavigateToImagePreview: (String) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
@@ -179,13 +179,8 @@ fun EditScreen(
     LaunchedEffect(uiState.savedPath) {
         uiState.savedPath?.let {
             viewModel.resetIsUchiwaSaved()
-            val fontSession = viewModel.consumeFontSessionForPreview()
-            onPreview(
-                URLEncoder.encode(it, "UTF-8"),
-                fontSession.fontSwitchCount,
-                fontSession.finalFontName,
-                fontSession.editStartTimeMillis
-            )
+            viewModel.finishFontSessionForPreview()
+            onPreview(URLEncoder.encode(it, "UTF-8"))
         }
     }
 

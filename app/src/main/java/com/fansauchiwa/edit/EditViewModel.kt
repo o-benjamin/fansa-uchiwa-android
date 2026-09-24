@@ -24,22 +24,22 @@ import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.AnalyticsUndoRedoActions
+import com.fansauchiwa.analytics.BackGroundColorParams
+import com.fansauchiwa.analytics.EditStickerTargetParams
+import com.fansauchiwa.analytics.EditTextTargetParams
+import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
-import com.fansauchiwa.data.analytics.BackGroundColorParams
-import com.fansauchiwa.data.analytics.EditStickerTargetParams
-import com.fansauchiwa.data.analytics.EditTextTargetParams
-import com.fansauchiwa.data.analytics.baseFontSessionParams
 import com.fansauchiwa.data.applyTemplateMainColor
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -68,6 +68,7 @@ class EditViewModel @Inject constructor(
     private val editDecorationRepository: EditDecorationRepository,
     private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
+    private val fontSessionTracker: FontSessionTracker,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val inputArg: EditScreenInputArg? =
@@ -85,19 +86,8 @@ class EditViewModel @Inject constructor(
     private var pendingSliderSnapshot: HistorySnapshot? = null
     private var hasShownCompletionTooltipInSession = false
 
-    // フォントが「迷い」か「楽しみ」かを見分けるための計測（#242）。
-    // このうちわの編集セッション中の状態で、保存または破棄でリセットする。
-    // undoStack/redoStack等と同じく SavedStateHandle には乗せていないため、バックグラウンドで
-    // プロセスが再生成されると失われる（既知の限界。長時間編集のセッションを一部過小に見積もる）。
-    private var fontSwitchCountInSession = 0
-
-    // フォントを最後に切り替えたテキスト装飾のID（フォント自体ではなくIDを持つのは、
-    // その装飾が削除された場合に古いフォントを参照し続けないようにするため。
-    // 最終的なフォントは参照時に現在の decorations から解決する）
-    private var lastSwitchedDecorationId: String? = null
-    private var editStartTimeMillis = System.currentTimeMillis()
-
     init {
+        fontSessionTracker.startSession()
         observeCompletionTooltip()
         fetchCompletionTooltip()
         loadExistingDecorations()
@@ -535,8 +525,7 @@ class EditViewModel @Inject constructor(
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> {
-                    fontSwitchCountInSession++
-                    lastSwitchedDecorationId = id
+                    fontSessionTracker.onFontSwitched(id)
                     logEvent(
                         AnalyticsActions.SELECT_EDIT_TEXT_FONT,
                         mapOf("font_family" to newFont.name)
@@ -551,36 +540,15 @@ class EditViewModel @Inject constructor(
 
     /**
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるフォント計測パラメータを返す（#242）。
-     * このセッションはここで終わる（画面が破棄されるため）のでリセットは不要。
      */
-    fun currentFontSessionParams(): Map<String, Any> = baseFontSessionParams(
-        switchCount = fontSwitchCountInSession,
-        elapsedMillis = System.currentTimeMillis() - editStartTimeMillis
-    )
+    fun currentFontSessionParams(): Map<String, Any> = fontSessionTracker.discardParams()
 
     /**
-     * Preview画面（tap_preview_export）へ渡すためのフォント計測データのスナップショットを返し、
-     * 次の編集に備えてセッションをリセットする（#242: 保存または破棄でリセット）。
-     *
-     * 最終的なフォントは、このセッションで最後に切り替えたテキスト装飾の現在のフォント。
-     * その装飾が既に削除されていれば（切り替え後に削除された場合）、最初のテキスト装飾の
-     * （テンプレートまたは初期値の）フォントにフォールバックする。テキスト装飾が無ければ null。
+     * 保存してPreview画面へ進むときに呼ぶ。tap_preview_export 用のフォント計測（#242）の値を
+     * [FontSessionTracker] に取っておく。
      */
-    fun consumeFontSessionForPreview(): FontSessionAnalyticsSnapshot {
-        val textDecorations = uiState.value.decorations.filterIsInstance<Decoration.Text>()
-        val finalFontName = (
-            textDecorations.find { it.id == lastSwitchedDecorationId }?.font
-                ?: textDecorations.firstOrNull()?.font
-            )?.name
-        val snapshot = FontSessionAnalyticsSnapshot(
-            fontSwitchCount = fontSwitchCountInSession,
-            finalFontName = finalFontName,
-            editStartTimeMillis = editStartTimeMillis
-        )
-        fontSwitchCountInSession = 0
-        lastSwitchedDecorationId = null
-        editStartTimeMillis = System.currentTimeMillis()
-        return snapshot
+    fun finishFontSessionForPreview() {
+        fontSessionTracker.finishSessionForPreview(uiState.value.decorations)
     }
 
     fun updateWidth(id: String, newWidth: Int) {

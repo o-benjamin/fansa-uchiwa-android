@@ -103,11 +103,11 @@ import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
-import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.applyTemplateMainColor
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.decorationitem.PuffyShaderParams

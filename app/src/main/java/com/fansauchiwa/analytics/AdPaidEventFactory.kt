@@ -1,8 +1,5 @@
-package com.fansauchiwa.ads
+package com.fansauchiwa.analytics
 
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.google.android.gms.ads.AdValue
 
 /**

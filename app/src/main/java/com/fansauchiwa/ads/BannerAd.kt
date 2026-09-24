@@ -26,7 +26,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.R
-import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.AdFormat
+import com.fansauchiwa.analytics.AnalyticsScreens
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize

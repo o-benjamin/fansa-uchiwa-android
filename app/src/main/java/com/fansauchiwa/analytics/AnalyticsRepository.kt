@@ -1,7 +1,5 @@
-package com.fansauchiwa.data.repository
+package com.fansauchiwa.analytics
 
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.infra.AnalyticsDataSource
 import javax.inject.Inject
 
 interface AnalyticsRepository {

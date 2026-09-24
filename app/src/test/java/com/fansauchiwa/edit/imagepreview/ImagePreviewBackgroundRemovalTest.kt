@@ -3,13 +3,13 @@ package com.fansauchiwa.edit.imagepreview
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.IMAGE_URI_ARG
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.BackgroundRemovalFailureReason
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.repository.AdMobRepository
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import io.mockk.coEvery

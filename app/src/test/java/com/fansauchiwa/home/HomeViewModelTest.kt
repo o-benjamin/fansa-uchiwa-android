@@ -1,12 +1,12 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository

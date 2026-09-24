@@ -1,4 +1,4 @@
-package com.fansauchiwa.data.analytics
+package com.fansauchiwa.analytics
 
 /**
  * [AnalyticsActions.TAP_PREVIEW_SHARE] のパラメータ（#244）

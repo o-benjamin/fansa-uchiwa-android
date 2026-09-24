@@ -5,10 +5,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import javax.inject.Inject
@@ -72,25 +70,6 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
-    override suspend fun getLastSavedFontName(): String? {
-        return dataStore.data
-            .catch { exception ->
-                if (exception is IOException) {
-                    emit(emptyPreferences())
-                } else {
-                    throw exception
-                }
-            }
-            .map { preferences -> preferences[KEY_LAST_SAVED_FONT_NAME] }
-            .first()
-    }
-
-    override suspend fun setLastSavedFontName(fontName: String) {
-        dataStore.edit { preferences ->
-            preferences[KEY_LAST_SAVED_FONT_NAME] = fontName
-        }
-    }
-
     companion object {
         private val KEY_HAPTIC_FEEDBACK_ENABLED =
             booleanPreferencesKey("haptic_feedback_enabled")
@@ -98,8 +77,6 @@ class SettingsLocalSource @Inject constructor(
             booleanPreferencesKey("has_seen_edit_completion_tooltip")
         private val KEY_HAS_SEEN_APOLOGY_DIALOG =
             booleanPreferencesKey("has_seen_apology_dialog")
-        private val KEY_LAST_SAVED_FONT_NAME =
-            stringPreferencesKey("last_saved_font_name")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
         private const val DEFAULT_HAS_SEEN_EDIT_COMPLETION_TOOLTIP = false
         private const val DEFAULT_HAS_SEEN_APOLOGY_DIALOG = false

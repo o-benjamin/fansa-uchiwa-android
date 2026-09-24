@@ -71,9 +71,9 @@ import coil3.request.addLastModifiedToFileCacheKey
 import coil3.size.SizeResolver
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.analytics.ShareAnalyticsParams
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.ShareAnalyticsParams
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
 
