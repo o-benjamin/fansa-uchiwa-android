@@ -1,5 +1,6 @@
 import com.android.build.api.dsl.ApplicationBuildType
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
@@ -104,12 +105,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
@@ -163,6 +167,9 @@ dependencies {
 
     // Ads
     implementation(libs.play.service.ads)
+    // Unity Ads（AdMob メディエーション、issue #213）
+    implementation(libs.unity.ads.mediation)
+    implementation(libs.unity.ads)
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)

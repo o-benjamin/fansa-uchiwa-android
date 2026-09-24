@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 
@@ -67,7 +68,7 @@ internal fun TransformHandleIcon(
 ) {
     Icon(
         painter = painterResource(R.drawable.outline_arrows_outward_24),
-        contentDescription = "Zoom and Rotate",
+        contentDescription = stringResource(R.string.decoration_transform_handle_description),
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)
@@ -82,7 +83,7 @@ internal fun DeleteIcon(
 ) {
     Icon(
         imageVector = Icons.Default.Delete,
-        contentDescription = "Delete",
+        contentDescription = stringResource(R.string.decoration_delete_handle_description),
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)
@@ -97,7 +98,7 @@ internal fun DuplicateIcon(
 ) {
     Icon(
         imageVector = Icons.Default.ContentCopy,
-        contentDescription = "Duplicate",
+        contentDescription = stringResource(R.string.decoration_duplicate_handle_description),
         tint = MaterialTheme.colorScheme.onPrimary,
         modifier = modifier
             .background(MaterialTheme.colorScheme.primary, CircleShape)

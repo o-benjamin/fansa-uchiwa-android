@@ -31,9 +31,12 @@
     <string name="save_as_image">画像として保存</string>
     <string name="send_to_print_app">印刷アプリ等に送る</string>
     <string name="share_chooser_title">送信先を選択</string>
-    <!-- 共有時に画像に添える既定の文（#244）。X で見た人がアプリにたどり着けるよう、アプリ名とハッシュタグを入れる。
-         X は外部リンク付きの投稿を伸ばしにくく、宣伝くさい文は利用者に消されるため、ストアのリンクは入れない -->
-    <string name="share_default_text">ファンサうちわで作ったよ！ #ファンサうちわ</string>
+    <!-- 共有時に画像に添える既定の文（#244, #269）。見た人がアプリにたどり着けるよう、アプリ名・ハッシュタグ・ストアのリンクを3行で入れる。
+         #244 では「X は外部リンク付きの投稿を伸ばしにくい」ためリンクを入れなかったが、#269 で見た人がストアへ行ける導線を優先する方針に変えた。
+         効果は共有経由のインストール数で公開4週間後に判断し、増えていなければリンクを外す案に戻す。
+         リンクの referrer（utm_source=app_share と utm_campaign=share_default_text）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える（Play Console は utm_source と utm_campaign の両方がそろったものだけを集計する）。
+         URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く -->
+    <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share%26utm_campaign%3Dshare_default_text</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
@@ -50,6 +53,7 @@
     <string name="custom_color_picker_title">カスタム色を選択</string>
     <string name="decide">決定</string>
     <string name="color_picker_chip_description">%1$sを選ぶ</string>
+    <string name="custom_color_picker_close_description">カスタム色の選択を閉じる</string>
     <string name="color_name_red">赤</string>
     <string name="color_name_pink">ピンク</string>
     <string name="color_name_orange">オレンジ</string>
@@ -81,6 +85,11 @@
     <string name="layer_image">画像</string>
     <string name="layer_item_description">%1$sレイヤーを選ぶ</string>
     <string name="image_page_item_description">画像を選ぶ</string>
+    <string name="add_image_description">画像を追加する</string>
+    <string name="layer_reorder_description">ドラッグして並べ替え</string>
+    <string name="decoration_transform_handle_description">装飾を拡大・回転する</string>
+    <string name="decoration_delete_handle_description">装飾を削除する</string>
+    <string name="decoration_duplicate_handle_description">装飾を複製する</string>
     <string name="image_preview_title">画像プレビュー</string>
     <string name="image_preview_error">背景透過処理に失敗しました</string>
     <string name="image_preview_error_preparing">背景透過の準備中です。少し待ってからもう一度お試しください</string>
@@ -121,8 +130,8 @@
     <string name="overall_border">全体の縁</string>
 
     <!-- SelectionCircleIcon -->
-    <string name="selection_circle_icon_selected">Selected</string>
-    <string name="selection_circle_icon_not_selected">Not selected</string>
+    <string name="selection_circle_icon_selected">選択中</string>
+    <string name="selection_circle_icon_not_selected">未選択</string>
 
     <!-- Settings -->
     <string name="settings">設定</string>
