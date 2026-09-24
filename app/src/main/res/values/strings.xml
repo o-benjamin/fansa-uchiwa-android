@@ -32,9 +32,11 @@
     <string name="send_to_print_app">印刷アプリ等に送る</string>
     <string name="share_chooser_title">送信先を選択</string>
     <!-- 共有時に画像に添える既定の文（#244, #269）。見た人がアプリにたどり着けるよう、アプリ名・ハッシュタグ・ストアのリンクを3行で入れる。
-         リンクの referrer（utm_source=app_share）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える。
+         #244 では「X は外部リンク付きの投稿を伸ばしにくい」ためリンクを入れなかったが、#269 で見た人がストアへ行ける導線を優先する方針に変えた。
+         効果は共有経由のインストール数で公開4週間後に判断し、増えていなければリンクを外す案に戻す。
+         リンクの referrer（utm_source=app_share と utm_campaign=share_default_text）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える（Play Console は utm_source と utm_campaign の両方がそろったものだけを集計する）。
          URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く -->
-    <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share</string>
+    <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share%26utm_campaign%3Dshare_default_text</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
