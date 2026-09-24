@@ -82,11 +82,11 @@
     <string name="layer_image">画像</string>
     <string name="layer_item_description">%1$sレイヤーを選ぶ</string>
     <string name="image_page_item_description">画像を選ぶ</string>
-    <string name="add_image_description">画像を追加</string>
+    <string name="add_image_description">画像を追加する</string>
     <string name="layer_reorder_description">ドラッグして並べ替え</string>
-    <string name="decoration_transform_handle_description">拡大・回転</string>
-    <string name="decoration_delete_handle_description">削除</string>
-    <string name="decoration_duplicate_handle_description">複製</string>
+    <string name="decoration_transform_handle_description">装飾を拡大・回転する</string>
+    <string name="decoration_delete_handle_description">装飾を削除する</string>
+    <string name="decoration_duplicate_handle_description">装飾を複製する</string>
     <string name="image_preview_title">画像プレビュー</string>
     <string name="image_preview_error">背景透過処理に失敗しました</string>
     <string name="image_preview_error_preparing">背景透過の準備中です。少し待ってからもう一度お試しください</string>
