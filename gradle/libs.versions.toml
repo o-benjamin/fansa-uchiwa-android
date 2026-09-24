@@ -10,8 +10,10 @@ activityCompose = "1.8.0"
 composeBom = "2025.12.01"
 androidxNavigation = "2.9.4"
 androidxBrowser = "1.5.0"
+# 2.59 以降は AGP 9 が必要なため、AGP 8.x の間は 2.58 で据え置く
 hilt = "2.58"
 androidxHilt = "1.2.0"
+# KSP2 以降は Kotlin と独立した版番号
 ksp = "2.3.12"
 room = "2.8.5"
 kotlinxSerialization = "1.6.3"
@@ -20,8 +22,10 @@ mockk = "1.14.9"
 turbine = "1.2.1"
 coil3 = "3.3.0"
 footprint = "2.0.0"
+# Unity Ads のメディエーションアダプタが 25.x を要求する（25.x は Kotlin 2.3 以上が必要）
 playServiceAds = "25.4.0"
 unityAdsMediation = "4.20.0.1"
+# unityAds はアダプタ（unityAdsMediation）の末尾の番号を除いた版にそろえ、必ず一緒に上げる
 unityAds = "4.20.0"
 playServicesMlkitSubjectSegmentation = "16.0.0-beta1"
 playServicesBase = "18.5.0"
