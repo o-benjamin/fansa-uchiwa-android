@@ -38,8 +38,8 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 25
-        versionName = "2.6.0"
+        versionCode = 27
+        versionName = "2.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -175,6 +175,9 @@ dependencies {
     implementation(libs.play.services.mlkit.subject.segmentation)
     // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
     implementation(libs.play.services.base)
+
+    // アプリ内レビュー依頼（In-App Review API）
+    implementation(libs.play.review.ktx)
 
     // ColorPicker
     implementation(libs.compose.colorpicker)

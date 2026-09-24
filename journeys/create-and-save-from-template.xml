@@ -18,6 +18,7 @@
     <action>「画像として保存」をタップする</action>
     <action>「デザインの保存」のダイアログで「保存する」をタップする</action>
     <action>テスト広告が表示されたら、閉じるボタンが出るまで待ってから閉じる</action>
+    <action>Google Play のレビュー依頼が表示されていたら閉じる</action>
     <action>「保存成功」と表示されていることを確かめる</action>
     <action>「OK」をタップする</action>
   </actions>

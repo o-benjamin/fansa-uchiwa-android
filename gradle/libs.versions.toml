@@ -25,6 +25,7 @@ unityAdsMediation = "4.20.0.1"
 unityAds = "4.20.0"
 playServicesMlkitSubjectSegmentation = "16.0.0-beta1"
 playServicesBase = "18.5.0"
+playReview = "2.0.2"
 colorPicker = "1.1.3"
 reorderable = "3.0.0"
 googleServices = "4.4.4"
@@ -71,6 +72,7 @@ play-service-ads = { group = "com.google.android.gms", name = "play-services-ads
 unity-ads-mediation = { group = "com.google.ads.mediation", name = "unity", version.ref = "unityAdsMediation" }
 unity-ads = { group = "com.unity3d.ads", name = "unity-ads", version.ref = "unityAds" }
 play-services-base = { group = "com.google.android.gms", name = "play-services-base", version.ref = "playServicesBase" }
+play-review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "playReview" }
 play-services-mlkit-subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "playServicesMlkitSubjectSegmentation" }
 compose-colorpicker = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorPicker" }
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidxBrowser" }

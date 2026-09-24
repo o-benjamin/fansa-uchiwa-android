@@ -55,6 +55,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -90,6 +92,10 @@ fun EventTimelineScreen(
     viewModel: EventTimelineViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.logScreenView()
+    }
 
     when (val state = uiState) {
         EventTimelineUiState.Loading -> {
@@ -450,6 +456,7 @@ private fun EventTimelineCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val selectThumbnailDescription = stringResource(R.string.event_select_thumbnail_title)
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -458,6 +465,7 @@ private fun EventTimelineCard(
                             isSelectDialogVisible = true
                         }
                     }
+                    .semantics { contentDescription = selectThumbnailDescription }
             ) {
                 TimelineUchiwaThumbnail(
                     imagePath = selectedImagePath,
