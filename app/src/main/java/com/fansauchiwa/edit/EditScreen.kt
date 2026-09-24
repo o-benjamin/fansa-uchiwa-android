@@ -158,6 +158,7 @@ fun EditScreen(
     val graphicsLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
     val showBackDialog = remember { mutableStateOf(false) }
+    val showDiscardReasonDialog = remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
@@ -545,11 +546,26 @@ fun EditScreen(
                                 viewModel.currentFontSessionParams()
                         )
                         showBackDialog.value = false
-                        onBack()
+                        if (viewModel.shouldAskDiscardReason()) {
+                            showDiscardReasonDialog.value = true
+                        } else {
+                            onBack()
+                        }
                     }
                 ) {
                     Text(text = stringResource(R.string.discard))
                 }
+            }
+        )
+    }
+
+    // 破棄した理由を聞くダイアログ（#265・一時的な調査）。答えても答えなくても、閉じたら戻る
+    if (showDiscardReasonDialog.value) {
+        DiscardReasonSurveyDialog(
+            onAnswer = { reason ->
+                viewModel.answerDiscardReason(reason)
+                showDiscardReasonDialog.value = false
+                onBack()
             }
         )
     }
