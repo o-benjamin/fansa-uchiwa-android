@@ -6,7 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.EventAnalyticsParams
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.source.EventEntity
@@ -28,6 +33,7 @@ import kotlinx.coroutines.launch
 class EventTimelineViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val masterpieceRepository: MasterpieceRepository,
+    private val analyticsRepository: AnalyticsRepository,
     private val uuidProvider: UuidProvider,
     @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle
@@ -44,6 +50,12 @@ class EventTimelineViewModel @Inject constructor(
         observeEvents()
         fetchAvailableUchiwas()
         fetchEvents()
+    }
+
+    fun logScreenView() {
+        viewModelScope.launch {
+            analyticsRepository.logScreenView(AnalyticsScreens.EVENT_TIMELINE_SCREEN)
+        }
     }
 
     private fun fetchEvents() {
@@ -104,6 +116,21 @@ class EventTimelineViewModel @Inject constructor(
                     )
                 )
                 eventRepository.replaceEventUchiwas(resolvedEventId, selectedUchiwaIds.toList())
+            }.onSuccess {
+                // 計測の失敗で保存の結果を変えない
+                runCatching {
+                    analyticsRepository.logEvent(
+                        AnalyticsEvent(
+                            name = AnalyticsActions.SAVE_EVENT,
+                            params = mapOf(
+                                // GA4 のイベントパラメータは文字列か数値だけなので、真偽値は文字列で送る
+                                EventAnalyticsParams.IS_NEW to (eventId == null).toString(),
+                                EventAnalyticsParams.REMIND_ENABLED to remindEnabled.toString(),
+                                EventAnalyticsParams.UCHIWA_COUNT to selectedUchiwaIds.size
+                            )
+                        )
+                    )
+                }
             }.onFailure { error ->
                 _uiState.value = EventTimelineUiState.Error(
                     error.message ?: "Unknown error"

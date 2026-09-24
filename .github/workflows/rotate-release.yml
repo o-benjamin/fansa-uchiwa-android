@@ -89,5 +89,16 @@ jobs:
       - name: Delete old release branch
         run: |
           OLD_BRANCH="${{ github.event.pull_request.head.ref }}"
-          git push origin --delete "$OLD_BRANCH"
-          echo "古いブランチ ($OLD_BRANCH) を削除しました。"
+          # PR のマージ時に --delete-branch で消えていることがあるので（v2.6.0 の #237 で発生）、残っているときだけ消す。
+          # ls-remote は、ブランチがなければ 2、認証・通信のエラーなら 128 を返す。エラーは失敗として扱う
+          STATUS=0
+          git ls-remote --exit-code --heads origin "$OLD_BRANCH" > /dev/null || STATUS=$?
+          if [ "$STATUS" -eq 0 ]; then
+            git push origin --delete "$OLD_BRANCH"
+            echo "古いブランチ ($OLD_BRANCH) を削除しました。"
+          elif [ "$STATUS" -eq 2 ]; then
+            echo "古いブランチ ($OLD_BRANCH) は既に削除されています。"
+          else
+            echo "古いブランチ ($OLD_BRANCH) の確認に失敗しました（終了コード $STATUS）。"
+            exit 1
+          fi

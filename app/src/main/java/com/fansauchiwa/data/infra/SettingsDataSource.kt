@@ -29,4 +29,14 @@ interface SettingsDataSource {
      * バージョンアップ後初回起動のお詫びダイアログを見たかどうかを設定する
      */
     suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
+
+    /**
+     * 最後に保存したうちわの最終的なフォント名を取得する（#242: font_same_as_last の比較用）
+     */
+    suspend fun getLastSavedFontName(): String?
+
+    /**
+     * 最後に保存したうちわの最終的なフォント名を保存する
+     */
+    suspend fun setLastSavedFontName(fontName: String)
 }

@@ -83,6 +83,14 @@ class DuplicateDecorationTest {
         override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
             hasSeenApologyDialogStream.emit(hasSeen)
         }
+
+        private var lastSavedFontName: String? = null
+
+        override suspend fun getLastSavedFontName(): String? = lastSavedFontName
+
+        override suspend fun setLastSavedFontName(fontName: String) {
+            lastSavedFontName = fontName
+        }
     }
 
     @Before

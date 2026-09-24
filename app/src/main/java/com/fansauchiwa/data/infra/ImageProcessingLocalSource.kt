@@ -97,7 +97,10 @@ class ImageProcessingLocalSource @Inject constructor(
             when (update.installState) {
                 InstallState.STATE_COMPLETED -> installResult.complete(Unit)
                 InstallState.STATE_FAILED, InstallState.STATE_CANCELED -> installResult.completeExceptionally(
-                    BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE)
+                    BackgroundRemovalException(
+                        BackgroundRemovalFailureReason.MODULE_UNAVAILABLE,
+                        Exception("InstallStatusListener errorCode=${update.errorCode}")
+                    )
                 )
             }
         }
@@ -120,7 +123,10 @@ class ImageProcessingLocalSource @Inject constructor(
     private suspend fun <T> Task<T>.awaitOrModuleUnavailable(): T = try {
         await()
     } catch (e: ApiException) {
-        throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_UNAVAILABLE, e)
+        throw BackgroundRemovalException(
+            BackgroundRemovalFailureReason.MODULE_UNAVAILABLE,
+            Exception("ApiException statusCode=${e.statusCode}", e)
+        )
     }
 
     override suspend fun applyManualCorrection(

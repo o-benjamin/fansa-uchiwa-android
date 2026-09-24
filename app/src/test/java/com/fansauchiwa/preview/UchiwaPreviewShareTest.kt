@@ -3,10 +3,17 @@ package com.fansauchiwa.preview
 import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.IMAGE_PATH_ARG
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.fansauchiwa.data.analytics.AnalyticsScreens
+import com.fansauchiwa.data.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
+import com.fansauchiwa.data.repository.SettingsRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -34,6 +41,8 @@ class UchiwaPreviewShareTest {
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var inAppReviewRepository: InAppReviewRepository
 
     @Before
     fun setUp() {
@@ -41,6 +50,8 @@ class UchiwaPreviewShareTest {
         masterpieceRepository = mockk(relaxed = true)
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
+        settingsRepository = mockk(relaxed = true)
+        inAppReviewRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
     }
@@ -61,6 +72,8 @@ class UchiwaPreviewShareTest {
             masterpieceRepository = masterpieceRepository,
             adMobRepository = adMobRepository,
             analyticsRepository = analyticsRepository,
+            settingsRepository = settingsRepository,
+            inAppReviewRepository = inAppReviewRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -92,7 +105,7 @@ class UchiwaPreviewShareTest {
 
             assertEquals(false, viewModel.hasEarnedReward)
 
-            viewModel.showRewardedAdAndShare(activity)
+            viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
             advanceUntilIdle()
 
             assertEquals(true, viewModel.hasEarnedReward)
@@ -121,7 +134,7 @@ class UchiwaPreviewShareTest {
                 onUserEarnedRewardSlot.captured.invoke()
             }
 
-            viewModel.showRewardedAdAndShare(activity)
+            viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
             advanceUntilIdle()
 
             // 広告が閉じられるまで shareImagePath はセットされない
@@ -152,7 +165,7 @@ class UchiwaPreviewShareTest {
             onAdFailedOrSkippedSlot.captured.invoke()
         }
 
-        viewModel.showRewardedAdAndShare(activity)
+        viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
         advanceUntilIdle()
 
         assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
@@ -183,7 +196,7 @@ class UchiwaPreviewShareTest {
             onAdDismissedSlot.captured.invoke()
         }
 
-        viewModel.showRewardedAdAndShare(activity)
+        viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.shareImagePath)
@@ -215,13 +228,13 @@ class UchiwaPreviewShareTest {
             onUserEarnedRewardSlot.captured.invoke()
             onAdDismissedSlot.captured.invoke()
         }
-        viewModel.showRewardedAdAndShare(activity)
+        viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
         advanceUntilIdle()
         viewModel.clearShareImage()
         advanceUntilIdle()
 
         // 2回目：視聴済みのため広告なしで即座に shareImagePath がセットされる
-        viewModel.showRewardedAdAndShare(activity)
+        viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
         advanceUntilIdle()
 
         assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
@@ -263,7 +276,7 @@ class UchiwaPreviewShareTest {
             onAdDismissedSlot.captured.invoke()
         }
 
-        viewModel.showRewardedAdAndShare(activity)
+        viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
         advanceUntilIdle()
         assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
 
@@ -281,6 +294,104 @@ class UchiwaPreviewShareTest {
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.shareImagePath)
+    }
+
+    // endregion
+
+    // region showRewardedAdAndShare - tap_preview_share の entry_point（#244）
+
+    @Test
+    fun showRewardedAdAndShare_fromPreviewButton_logsTapPreviewShareWithPreviewButtonEntryPoint() =
+        runTest {
+            val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+
+            viewModel.showRewardedAdAndShare(
+                mockk<Activity>(),
+                ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON
+            )
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                analyticsRepository.logEvent(
+                    AnalyticsEvent(
+                        AnalyticsActions.TAP_PREVIEW_SHARE,
+                        mapOf(
+                            ShareAnalyticsParams.PARAM_ENTRY_POINT to
+                                ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON
+                        )
+                    )
+                )
+            }
+        }
+
+    @Test
+    fun showRewardedAdAndShare_fromSaveSuccessDialog_logsTapPreviewShareWithAfterSaveEntryPoint() =
+        runTest {
+            val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+
+            viewModel.showRewardedAdAndShare(
+                mockk<Activity>(),
+                ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE
+            )
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                analyticsRepository.logEvent(
+                    AnalyticsEvent(
+                        AnalyticsActions.TAP_PREVIEW_SHARE,
+                        mapOf(
+                            ShareAnalyticsParams.PARAM_ENTRY_POINT to
+                                ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE
+                        )
+                    )
+                )
+            }
+        }
+
+    // endregion
+
+    // region 保存の直後の共有（#244）
+
+    @Test
+    fun showRewardedAdAndShare_afterSaveEarnedReward_sharesWithoutShowingAdAgain() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+        val viewModel = createViewModel(imagePath)
+        val activity = mockk<Activity>()
+        coEvery { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+
+        // 保存で広告を視聴して報酬を獲得する
+        val onUserEarnedRewardSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = any()
+            )
+        } answers {
+            onUserEarnedRewardSlot.captured.invoke()
+        }
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+        viewModel.clearSaveStatus()
+
+        // 保存完了のダイアログから共有する
+        viewModel.showRewardedAdAndShare(activity, ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE)
+        advanceUntilIdle()
+
+        assertEquals(imagePath, viewModel.uiState.value.shareImagePath)
+        verify(exactly = 1) {
+            adMobRepository.showRewardedAd(
+                activity = activity,
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = any(),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = any()
+            )
+        }
     }
 
     // endregion

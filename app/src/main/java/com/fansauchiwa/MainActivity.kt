@@ -8,12 +8,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import com.fansauchiwa.data.analytics.AnalyticsActions
+import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.data.analytics.EventAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
+import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.SettingsRepository
+import com.fansauchiwa.ui.notification.EXTRA_REMINDER_DAYS_UNTIL
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.LocalHapticFeedbackEnabled
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -24,8 +31,16 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var settingsRepository: SettingsRepository
 
+    @Inject
+    lateinit var analyticsRepository: AnalyticsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 画面の回転などで作り直されたときに、同じ通知タップを二重に数えない
+        if (savedInstanceState == null) {
+            logReminderTap()
+        }
 
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
@@ -49,6 +64,19 @@ class MainActivity : ComponentActivity() {
                     FansaUchiwaNavGraph()
                 }
             }
+        }
+    }
+
+    private fun logReminderTap() {
+        val daysUntil = intent.getIntExtra(EXTRA_REMINDER_DAYS_UNTIL, -1)
+            .takeIf { it >= 0 } ?: return
+        lifecycleScope.launch {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.REMINDER_TAP,
+                    params = mapOf(EventAnalyticsParams.DAYS_UNTIL to daysUntil)
+                )
+            )
         }
     }
 }

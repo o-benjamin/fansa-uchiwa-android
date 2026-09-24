@@ -18,6 +18,7 @@ import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.analytics.BackgroundRemovalParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -35,7 +36,8 @@ class ImagePreviewViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val imageProcessingRepository: ImageProcessingRepository,
     private val adMobRepository: AdMobRepository,
-    private val analyticsRepository: AnalyticsRepository
+    private val analyticsRepository: AnalyticsRepository,
+    private val crashReportingRepository: CrashReportingRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ImagePreviewUiState>(ImagePreviewUiState.Loading)
@@ -131,6 +133,8 @@ class ImagePreviewViewModel @Inject constructor(
                             params = mapOf(BackgroundRemovalParams.PARAM_REASON to reason.analyticsValue)
                         )
                     )
+                    // 原因の例外を非致命として記録し、process_failed の増加時に原因を追えるようにする
+                    crashReportingRepository.recordException(error)
                     _errorEvent.emit(reason)
                 }
             )
@@ -249,10 +253,11 @@ class ImagePreviewViewModel @Inject constructor(
                         transparentUri = uri
                     )
                 },
-                onFailure = {
+                onFailure = { error ->
                     // 元の ManualCorrection 状態に戻す。エラー通知は前のスナックバーが閉じるまで待つことがあるため、先に戻す
                     _uiState.value = currentState
                     // 手動修正も背景透過の一部なので、同じエラー表示にする
+                    crashReportingRepository.recordException(error)
                     _errorEvent.emit(BackgroundRemovalFailureReason.PROCESS_FAILED)
                 }
             )
