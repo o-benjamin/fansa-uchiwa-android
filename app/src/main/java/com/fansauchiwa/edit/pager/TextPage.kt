@@ -60,9 +60,6 @@ fun TextPage(
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
     onSecondBorderWeightChangedFinished: () -> Unit,
-    onPuffyEnabledChanged: (Boolean) -> Unit,
-    onPuffyUnsupportedClick: () -> Unit,
-    isPukuPukuSupported: Boolean,
     selectedTextDecoration: Decoration.Text? = null
 ) {
     FontFamilySelectionGrid(
@@ -77,9 +74,6 @@ fun TextPage(
         onSecondBorderColorSelected = onSecondBorderColorSelected,
         onSecondBorderWeightChanged = onSecondBorderWeightChanged,
         onSecondBorderWeightChangedFinished = onSecondBorderWeightChangedFinished,
-        onPuffyEnabledChanged = onPuffyEnabledChanged,
-        onPuffyUnsupportedClick = onPuffyUnsupportedClick,
-        isPukuPukuSupported = isPukuPukuSupported,
         selectedTextDecoration = selectedTextDecoration,
         modifier = Modifier.fillMaxSize()
     )
@@ -96,16 +90,12 @@ fun TextDecorationControls(
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
     onSecondBorderWeightChangedFinished: () -> Unit,
-    onPuffyEnabledChanged: (Boolean) -> Unit,
-    onPuffyUnsupportedClick: () -> Unit,
     textColor: Color,
     textWidth: Int,
     strokeColor: Color,
     strokeWidth: Float,
     secondBorderColor: Color,
-    secondBorderWidth: Float,
-    isPuffyEnabled: Boolean,
-    isPukuPukuSupported: Boolean
+    secondBorderWidth: Float
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         ColorAndWeightControl(
@@ -142,24 +132,15 @@ fun TextDecorationControls(
             onWeightChanged = onSecondBorderWeightChanged,
             onWeightChangedFinished = onSecondBorderWeightChangedFinished
         )
-
-        PuffyEffectToggleRow(
-            label = stringResource(R.string.text_puffy_enabled),
-            isEnabled = isPukuPukuSupported,
-            isChecked = isPuffyEnabled,
-            onCheckedChange = onPuffyEnabledChanged,
-            onUnsupportedClick = onPuffyUnsupportedClick,
-            modifier = Modifier.testTag(TestTags.PUFFY_TEXT_ROW),
-            switchModifier = Modifier.testTag(TestTags.PUFFY_TEXT_SWITCH)
-        )
     }
 }
 
 /**
- * Shared puffy toggle row used by both text and sticker edit controls.
+ * Puffy toggle row shown in the uchiwa page. It switches the whole uchiwa (texts, stickers and
+ * the overall border) at once (#268).
  *
  * [isEnabled] represents whether the current device supports the AGSL effect at all,
- * while [isChecked] represents the current on/off state for the selected decoration.
+ * while [isChecked] represents whether everything on the uchiwa is currently puffy.
  */
 @Composable
 fun PuffyEffectToggleRow(
@@ -208,9 +189,6 @@ fun FontFamilySelectionGrid(
     onSecondBorderColorSelected: (Color) -> Unit,
     onSecondBorderWeightChanged: (Float) -> Unit,
     onSecondBorderWeightChangedFinished: () -> Unit,
-    onPuffyEnabledChanged: (Boolean) -> Unit,
-    onPuffyUnsupportedClick: () -> Unit,
-    isPukuPukuSupported: Boolean,
     selectedTextDecoration: Decoration.Text?,
     modifier: Modifier = Modifier
 ) {
@@ -242,16 +220,12 @@ fun FontFamilySelectionGrid(
                     onSecondBorderColorSelected = onSecondBorderColorSelected,
                     onSecondBorderWeightChanged = onSecondBorderWeightChanged,
                     onSecondBorderWeightChangedFinished = onSecondBorderWeightChangedFinished,
-                    onPuffyEnabledChanged = onPuffyEnabledChanged,
-                    onPuffyUnsupportedClick = onPuffyUnsupportedClick,
                     textColor = selectedTextDecoration.color,
                     strokeColor = selectedTextDecoration.strokeColor,
                     textWidth = selectedTextDecoration.width,
                     strokeWidth = selectedTextDecoration.strokeWidth,
                     secondBorderColor = selectedTextDecoration.secondBorderColor,
-                    secondBorderWidth = selectedTextDecoration.secondBorderWidth,
-                    isPuffyEnabled = selectedTextDecoration.isPuffyEnabled,
-                    isPukuPukuSupported = isPukuPukuSupported
+                    secondBorderWidth = selectedTextDecoration.secondBorderWidth
                 )
             }
         }
@@ -315,9 +289,6 @@ fun TextPagePreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onSecondBorderWeightChangedFinished = {},
-            onPuffyEnabledChanged = {},
-            onPuffyUnsupportedClick = {},
-            isPukuPukuSupported = true,
             selectedTextDecoration = Decoration.Text(
                 id = "preview-id",
                 font = FontFamilies.HACHI_MARU_POP,
@@ -325,8 +296,7 @@ fun TextPagePreview() {
                 color = Color(0xFF000000),
                 strokeColor = Color(0xFFFFFFFF),
                 width = 700,
-                strokeWidth = 2.5f,
-                isPuffyEnabled = true
+                strokeWidth = 2.5f
             )
         )
     }
@@ -348,9 +318,6 @@ fun FontFamilySelectionGridNarrowPreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onSecondBorderWeightChangedFinished = {},
-            onPuffyEnabledChanged = {},
-            onPuffyUnsupportedClick = {},
-            isPukuPukuSupported = true,
             selectedTextDecoration = null
         )
     }
@@ -372,9 +339,6 @@ fun FontFamilySelectionGridMediumPreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onSecondBorderWeightChangedFinished = {},
-            onPuffyEnabledChanged = {},
-            onPuffyUnsupportedClick = {},
-            isPukuPukuSupported = true,
             selectedTextDecoration = null
         )
     }
@@ -396,9 +360,6 @@ fun FontFamilySelectionGridWidePreview() {
             onSecondBorderColorSelected = {},
             onSecondBorderWeightChanged = {},
             onSecondBorderWeightChangedFinished = {},
-            onPuffyEnabledChanged = {},
-            onPuffyUnsupportedClick = {},
-            isPukuPukuSupported = true,
             selectedTextDecoration = null
         )
     }

@@ -274,12 +274,20 @@ class EditViewModel @Inject constructor(
         )
     }
 
+    /**
+     * 装飾を足す。うちわ全体がぷくぷく（トグルがオン）の間に足した文字・ステッカーはぷくぷくにする（#268）
+     */
     fun addDecoration(decoration: Decoration) {
         saveSnapshot()
         val currentState = uiState.value
+        val isAllPuffy = PuffyState.of(
+            currentState.decorations,
+            currentState.isOverallBorderPuffyEnabled
+        ) == PuffyState.ON
+        val addedDecoration = if (isAllPuffy) decoration.withPuffy(true) else decoration
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = currentState.decorations + decoration,
-            selectedDecorationId = decoration.id
+            decorations = currentState.decorations + addedDecoration,
+            selectedDecorationId = addedDecoration.id
         )
         when (decoration) {
             is Decoration.Text -> {
@@ -661,17 +669,6 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun updatePuffyEnabled(id: String, isPuffyEnabled: Boolean) {
-        saveSnapshot()
-        updateDecoration(id) { decoration ->
-            when (decoration) {
-                is Decoration.Text -> decoration.copy(isPuffyEnabled = isPuffyEnabled)
-                is Decoration.Sticker -> decoration.copy(isPukupuku = isPuffyEnabled)
-                else -> decoration
-            }
-        }
-    }
-
     fun updateUchiwaColor(color: Color) {
         saveSnapshot()
         logEvent(
@@ -708,10 +705,14 @@ class EditViewModel @Inject constructor(
         savePendingSliderSnapshot()
     }
 
-    fun updateOverallBorderPuffyEnabled(isEnabled: Boolean) {
+    /**
+     * うちわ全体のぷくぷくのトグル（#268）。文字・ステッカー・フチのぷくぷくをすべて [isEnabled] にそろえる
+     */
+    fun updateAllPuffyEnabled(isEnabled: Boolean) {
         saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = currentState.decorations.map { it.withPuffy(isEnabled) },
             isOverallBorderPuffyEnabled = isEnabled
         )
     }
