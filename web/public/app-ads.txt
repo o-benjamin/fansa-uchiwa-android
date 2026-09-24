@@ -1,6 +1,7 @@
 google.com, pub-5607744397346703, DIRECT, f08c47fec0942fa0
 
 # Unity Ads（issue #213、ビディングのメディエーションパートナー追加）
+# Unity ダッシュボードの app-ads.txt 推奨行をそのまま貼り付けたもの（Unity 自身の DIRECT 行を含む）。Unity 側が推奨行を更新したらこのブロックごと差し替える
 triplelift.com, 12158, RESELLER, 6c33edb13117fd86
 triplelift.com, 8614, RESELLER, 6c33edb13117fd86
 triplelift.com, 14798, RESELLER, 6c33edb13117fd86
