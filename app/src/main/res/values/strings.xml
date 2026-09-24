@@ -50,6 +50,7 @@
     <string name="custom_color_picker_title">カスタム色を選択</string>
     <string name="decide">決定</string>
     <string name="color_picker_chip_description">%1$sを選ぶ</string>
+    <string name="custom_color_picker_close_description">カスタム色の選択を閉じる</string>
     <string name="color_name_red">赤</string>
     <string name="color_name_pink">ピンク</string>
     <string name="color_name_orange">オレンジ</string>
@@ -81,6 +82,11 @@
     <string name="layer_image">画像</string>
     <string name="layer_item_description">%1$sレイヤーを選ぶ</string>
     <string name="image_page_item_description">画像を選ぶ</string>
+    <string name="add_image_description">画像を追加</string>
+    <string name="layer_reorder_description">ドラッグして並べ替え</string>
+    <string name="decoration_transform_handle_description">拡大・回転</string>
+    <string name="decoration_delete_handle_description">削除</string>
+    <string name="decoration_duplicate_handle_description">複製</string>
     <string name="image_preview_title">画像プレビュー</string>
     <string name="image_preview_error">背景透過処理に失敗しました</string>
     <string name="image_preview_error_preparing">背景透過の準備中です。少し待ってからもう一度お試しください</string>
@@ -121,8 +127,8 @@
     <string name="overall_border">全体の縁</string>
 
     <!-- SelectionCircleIcon -->
-    <string name="selection_circle_icon_selected">Selected</string>
-    <string name="selection_circle_icon_not_selected">Not selected</string>
+    <string name="selection_circle_icon_selected">選択中</string>
+    <string name="selection_circle_icon_not_selected">未選択</string>
 
     <!-- Settings -->
     <string name="settings">設定</string>

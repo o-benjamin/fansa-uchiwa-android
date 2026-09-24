@@ -503,7 +503,7 @@ private fun LayerItem(
         // ドラッグハンドル
         Icon(
             imageVector = Icons.Default.DragHandle,
-            contentDescription = "Reorder",
+            contentDescription = stringResource(R.string.layer_reorder_description),
             modifier = modifier.size(24.dp)
         )
     }
