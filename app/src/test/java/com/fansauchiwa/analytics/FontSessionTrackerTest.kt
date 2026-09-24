@@ -3,14 +3,18 @@ package com.fansauchiwa.analytics
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Uchiwa
+import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.edit.FontFamilies
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.serialization.SerializationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -19,6 +23,7 @@ class FontSessionTrackerTest {
 
     private lateinit var localDatabaseRepository: LocalDatabaseRepository
     private lateinit var masterpieceRepository: MasterpieceRepository
+    private lateinit var crashReportingRepository: CrashReportingRepository
     private var nowMillis = 0L
     private lateinit var tracker: FontSessionTracker
 
@@ -26,9 +31,12 @@ class FontSessionTrackerTest {
     fun setUp() {
         localDatabaseRepository = mockk(relaxed = true)
         masterpieceRepository = mockk(relaxed = true)
+        crashReportingRepository = mockk(relaxed = true)
         every { masterpieceRepository.loadAllMasterpieces() } returns emptyList()
         nowMillis = 0L
-        tracker = FontSessionTracker(localDatabaseRepository, masterpieceRepository) { nowMillis }
+        tracker = FontSessionTracker(localDatabaseRepository, masterpieceRepository, crashReportingRepository) {
+            nowMillis
+        }
         tracker.startSession()
     }
 
@@ -49,10 +57,10 @@ class FontSessionTrackerTest {
     }
 
     @Test
-    fun discardParams_noSwitch_returnsZeroSwitchBucketAndElapsedDuration() {
+    fun paramsForDiscardEvent_noSwitch_returnsZeroSwitchBucketAndElapsedDuration() {
         nowMillis = 30_000L
 
-        val params = tracker.discardParams()
+        val params = tracker.paramsForDiscardEvent()
 
         assertEquals("0", params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
         assertEquals("0-1m", params[FontSessionAnalyticsParams.EDIT_DURATION_BUCKET])
@@ -60,10 +68,10 @@ class FontSessionTrackerTest {
     }
 
     @Test
-    fun discardParams_afterThreeSwitches_returnsThreeToFiveBucket() {
+    fun paramsForDiscardEvent_afterThreeSwitches_returnsThreeToFiveBucket() {
         repeat(3) { tracker.onFontSwitched("text-1") }
 
-        val params = tracker.discardParams()
+        val params = tracker.paramsForDiscardEvent()
 
         assertEquals("3-5", params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
     }
@@ -163,7 +171,7 @@ class FontSessionTrackerTest {
 
         tracker.onFontSwitched("text-1")
 
-        assertEquals("1-2", tracker.discardParams()[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
+        assertEquals("1-2", tracker.paramsForDiscardEvent()[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
     }
 
     @Test
@@ -173,5 +181,42 @@ class FontSessionTrackerTest {
         tracker.startSession()
 
         assertTrue(tracker.exportParams(currentUchiwaId = "current").isEmpty())
+    }
+
+    @Test
+    fun exportParams_previousUchiwaUnreadable_omitsSameAsLastAndRecordsException() = runTest {
+        // 直前のうちわの装飾データが読めなくても保存の操作を止めず、font_same_as_last だけ付けない
+        every { masterpieceRepository.loadAllMasterpieces() } returns
+            listOf("/data/masterpiece/current.png", "/data/masterpiece/prev.png")
+        val error = SerializationException("broken decorations")
+        coEvery { localDatabaseRepository.getUchiwa("prev") } throws error
+        tracker.finishSessionForPreview(listOf(text("text-1", FontFamilies.KEI_FONT)))
+
+        val params = tracker.exportParams(currentUchiwaId = "current")
+
+        assertFalse(params.containsKey(FontSessionAnalyticsParams.FONT_SAME_AS_LAST))
+        assertEquals(
+            finalFontRankBucket(FontFamilies.KEI_FONT),
+            params[FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET]
+        )
+        verify(exactly = 1) { crashReportingRepository.recordException(error) }
+    }
+
+    @Test
+    fun exportParams_masterpieceListFails_omitsSameAsLastAndRecordsException() = runTest {
+        val error = IllegalStateException("io")
+        every { masterpieceRepository.loadAllMasterpieces() } throws error
+        tracker.finishSessionForPreview(listOf(text("text-1", FontFamilies.KEI_FONT)))
+
+        val params = tracker.exportParams(currentUchiwaId = "current")
+
+        assertFalse(params.containsKey(FontSessionAnalyticsParams.FONT_SAME_AS_LAST))
+        assertEquals("0", params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
+        // IO スレッドをまたぐと、コルーチンのスタックトレース復元で例外が複製されることがあるため型とメッセージで確かめる
+        verify(exactly = 1) {
+            crashReportingRepository.recordException(
+                match { it is IllegalStateException && it.message == error.message }
+            )
+        }
     }
 }
