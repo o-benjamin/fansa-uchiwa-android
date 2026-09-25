@@ -546,8 +546,11 @@ class EditViewModel @Inject constructor(
      */
     fun fontSessionParamsForDiscardEvent(): Map<String, Any> = fontSessionTracker.paramsForDiscardEvent()
 
-    /** 破棄を選んだときに、理由を聞くダイアログを出すかどうかを返す（#265・一時的な調査） */
-    fun shouldAskDiscardReason(): Boolean = discardReasonSurvey.shouldAsk()
+    /**
+     * 破棄を選んだときに、理由を聞くダイアログを出すかどうかを返す（#265・一時的な調査）。
+     * true を返すと聞いたものとして記録するため、ダイアログは必ず出すこと。
+     */
+    fun consumeDiscardReasonAskChance(): Boolean = discardReasonSurvey.tryConsumeAskChance()
 
     /** 破棄した理由の答えを送る（#265・一時的な調査） */
     fun answerDiscardReason(reason: DiscardReason) {

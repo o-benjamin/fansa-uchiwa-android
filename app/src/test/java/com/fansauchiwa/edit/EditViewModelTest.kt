@@ -10,6 +10,7 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.DiscardReason
+import com.fansauchiwa.analytics.DiscardReasonParams
 import com.fansauchiwa.analytics.DiscardReasonSurvey
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
@@ -1128,7 +1129,7 @@ class EditViewModelTest {
             analyticsRepository.logEvent(
                 AnalyticsEvent(
                     name = AnalyticsActions.ANSWER_DISCARD_REASON,
-                    params = mapOf(DiscardReasonSurvey.PARAM_REASON to "no_time")
+                    params = mapOf(DiscardReasonParams.PARAM_DISCARD_REASON to "no_time")
                 )
             )
         }

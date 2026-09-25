@@ -9,19 +9,19 @@ import org.junit.Test
 class DiscardReasonSurveyTest {
 
     @Test
-    fun shouldAsk_FirstDiscard_ReturnsTrue() {
+    fun tryConsumeAskChance_FirstDiscard_ReturnsTrue() {
         val survey = DiscardReasonSurvey()
 
-        assertTrue(survey.shouldAsk())
+        assertTrue(survey.tryConsumeAskChance())
     }
 
     @Test
-    fun shouldAsk_SecondAndLaterDiscards_ReturnsFalse() {
+    fun tryConsumeAskChance_SecondAndLaterDiscards_ReturnsFalse() {
         val survey = DiscardReasonSurvey()
-        survey.shouldAsk()
+        survey.tryConsumeAskChance()
 
-        assertFalse(survey.shouldAsk())
-        assertFalse(survey.shouldAsk())
+        assertFalse(survey.tryConsumeAskChance())
+        assertFalse(survey.tryConsumeAskChance())
     }
 
     @Test
@@ -31,14 +31,14 @@ class DiscardReasonSurveyTest {
         val event = survey.answerEvent(DiscardReason.NOT_ENOUGH_MATERIALS)
 
         assertEquals("answer_discard_reason", event.name)
-        assertEquals(mapOf("reason" to "not_enough_materials"), event.params)
+        assertEquals(mapOf("discard_reason" to "not_enough_materials"), event.params)
     }
 
     @Test
     fun answerEvent_NoAnswer_SendsNoAnswer() {
         val event = DiscardReasonSurvey().answerEvent(DiscardReason.NO_ANSWER)
 
-        assertEquals(mapOf("reason" to "no_answer"), event.params)
+        assertEquals(mapOf("discard_reason" to "no_answer"), event.params)
     }
 
     @Test

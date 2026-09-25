@@ -6,7 +6,7 @@ import com.fansauchiwa.R
 /**
  * 編集を破棄した理由の選択肢（#265・一時的な調査。消し方は [DiscardReasonSurvey] の KDoc を参照）。
  *
- * @param paramValue answer_discard_reason の reason に送る値。GA4 で集計するため、送り始めたら変えない
+ * @param paramValue answer_discard_reason の discard_reason に送る値。GA4 で集計するため、送り始めたら変えない
  * @param labelRes ダイアログに出す文言
  */
 enum class DiscardReason(val paramValue: String, @param:StringRes val labelRes: Int) {

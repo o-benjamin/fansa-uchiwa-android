@@ -68,6 +68,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -158,7 +159,7 @@ fun EditScreen(
     val graphicsLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
     val showBackDialog = remember { mutableStateOf(false) }
-    val showDiscardReasonDialog = remember { mutableStateOf(false) }
+    val showDiscardReasonDialog = rememberSaveable { mutableStateOf(false) }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
@@ -546,7 +547,7 @@ fun EditScreen(
                                 viewModel.fontSessionParamsForDiscardEvent()
                         )
                         showBackDialog.value = false
-                        if (viewModel.shouldAskDiscardReason()) {
+                        if (viewModel.consumeDiscardReasonAskChance()) {
                             showDiscardReasonDialog.value = true
                         } else {
                             onBack()
