@@ -393,10 +393,10 @@ fun EditScreen(
                         backgroundColor = uiState.backgroundColor,
                         overallBorderColor = uiState.overallBorderColor,
                         overallBorderWidth = uiState.overallBorderWidth,
-                        isAllPuffyEnabled = PuffyState.of(
+                        isAllPuffyEnabled = PuffyState.isAllPuffy(
                             uiState.decorations,
                             uiState.isOverallBorderPuffyEnabled
-                        ) == PuffyState.ON,
+                        ),
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported

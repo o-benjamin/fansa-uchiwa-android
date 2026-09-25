@@ -280,10 +280,10 @@ class EditViewModel @Inject constructor(
     fun addDecoration(decoration: Decoration) {
         saveSnapshot()
         val currentState = uiState.value
-        val isAllPuffy = PuffyState.of(
+        val isAllPuffy = PuffyState.isAllPuffy(
             currentState.decorations,
             currentState.isOverallBorderPuffyEnabled
-        ) == PuffyState.ON
+        )
         val addedDecoration = if (isAllPuffy) decoration.withPuffy(true) else decoration
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
             decorations = currentState.decorations + addedDecoration,

@@ -33,6 +33,10 @@ enum class PuffyState {
                 else -> MIXED
             }
         }
+
+        /** 文字・ステッカー・フチがすべてぷくぷく（全体のトグルがオン表示）かどうか */
+        fun isAllPuffy(decorations: List<Decoration>, isOverallBorderPuffyEnabled: Boolean): Boolean =
+            of(decorations, isOverallBorderPuffyEnabled) == ON
     }
 }
 
