@@ -12,7 +12,7 @@ import com.fansauchiwa.edit.FontFamilies
  * @param finalFont 最終的に選ばれたフォント（テキスト装飾が無い場合は null）
  * @param editStartTimeMillis 編集画面を開いた（このセッションが始まった）時刻
  */
-data class FontSessionAnalyticsSnapshot(
+internal data class FontSessionAnalyticsSnapshot(
     val fontSwitchCount: Int,
     val finalFont: FontFamilies?,
     val editStartTimeMillis: Long

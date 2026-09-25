@@ -1080,14 +1080,14 @@ class EditViewModelTest {
     }
 
     @Test
-    fun currentFontSessionParams_always_returnsTrackerDiscardParams() = runTest {
+    fun fontSessionParamsForDiscardEvent_always_returnsTrackerParamsForDiscardEvent() = runTest {
         every { localImageRepository.getAllImages() } returns emptyList()
         val discardParams = mapOf<String, Any>("font_switch_bucket" to "3-5")
-        every { fontSessionTracker.discardParams() } returns discardParams
+        every { fontSessionTracker.paramsForDiscardEvent() } returns discardParams
         val viewModel = createViewModel(uchiwaId = null)
         advanceUntilIdle()
 
-        assertEquals(discardParams, viewModel.currentFontSessionParams())
+        assertEquals(discardParams, viewModel.fontSessionParamsForDiscardEvent())
     }
 
     @Test

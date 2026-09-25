@@ -71,6 +71,9 @@ class SettingsLocalSource @Inject constructor(
     }
 
     companion object {
+        // "last_saved_font_name" は v2.7.x が分析（#242 font_same_as_last）用に書き込んでいたキー。
+        // v2.8.0 で使うのをやめた（#267）。既存の端末には値が残るが読まない。
+        // 意味の違う値を読んでしまわないよう、このキー名を別の用途に再利用しないこと
         private val KEY_HAPTIC_FEEDBACK_ENABLED =
             booleanPreferencesKey("haptic_feedback_enabled")
         private val KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP =

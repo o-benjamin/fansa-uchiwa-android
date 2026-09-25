@@ -544,7 +544,7 @@ class EditViewModel @Inject constructor(
     /**
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるフォント計測パラメータを返す（#242）。
      */
-    fun currentFontSessionParams(): Map<String, Any> = fontSessionTracker.discardParams()
+    fun fontSessionParamsForDiscardEvent(): Map<String, Any> = fontSessionTracker.paramsForDiscardEvent()
 
     /** 破棄を選んだときに、理由を聞くダイアログを出すかどうかを返す（#265・一時的な調査） */
     fun shouldAskDiscardReason(): Boolean = discardReasonSurvey.shouldAsk()

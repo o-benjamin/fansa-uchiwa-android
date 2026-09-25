@@ -543,7 +543,7 @@ fun EditScreen(
                         viewModel.logEvent(
                             AnalyticsActions.TAP_EDIT_BACK_DIALOG,
                             mapOf("action" to AnalyticsBackDialogActions.ACTION_DELETE) +
-                                viewModel.currentFontSessionParams()
+                                viewModel.fontSessionParamsForDiscardEvent()
                         )
                         showBackDialog.value = false
                         if (viewModel.shouldAskDiscardReason()) {
