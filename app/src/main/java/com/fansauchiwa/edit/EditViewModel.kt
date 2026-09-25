@@ -549,7 +549,7 @@ class EditViewModel @Inject constructor(
     /**
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるフォント計測パラメータを返す（#242）。
      */
-    fun currentFontSessionParams(): Map<String, Any> = fontSessionTracker.discardParams()
+    fun fontSessionParamsForDiscardEvent(): Map<String, Any> = fontSessionTracker.paramsForDiscardEvent()
 
     /**
      * 保存してPreview画面へ進むときに呼ぶ。tap_preview_export 用のフォント計測（#242）の値を

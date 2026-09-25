@@ -2,9 +2,11 @@ package com.fansauchiwa.analytics
 
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.edit.FontFamilies
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -18,20 +20,36 @@ import javax.inject.Singleton
  * 値はメモリにだけ持ち、設定（DataStore）・DB・ナビゲーション引数には入れない。
  * そのため、プロセスが再生成されると失われる（その場合、tap_preview_export には #242 のパラメータを付けない）。
  *
- * 計測をやめるときは、このクラスと [FontSessionAnalyticsSnapshot]・[FontSessionAnalyticsParams]・
- * FontSessionAnalyticsBuckets.kt を消し、EditViewModel・UchiwaPreviewViewModel からの呼び出しを消す。
+ * 計測をやめるときに消すもの：
+ * - このクラス、[FontSessionAnalyticsSnapshot]、[FontSessionAnalyticsParams]、FontSessionAnalyticsBuckets.kt
+ * - EditViewModel の呼び出し（init の startSession、updateFont の onFontSwitched、
+ *   fontSessionParamsForDiscardEvent、finishFontSessionForPreview）
+ * - EditScreen の呼び出し（保存後の finishFontSessionForPreview、破棄ダイアログで
+ *   tap_edit_back_dialog のパラメータに fontSessionParamsForDiscardEvent を足しているところ）
+ * - UchiwaPreviewViewModel の logExportEvent で exportParams を付けているところ
+ * - テスト：FontSessionTrackerTest、FontSessionAnalyticsBucketsTest、EditViewModelTest と
+ *   UchiwaPreviewSaveTest のフォント計測のテスト
  */
 @Singleton
 class FontSessionTracker internal constructor(
     private val localDatabaseRepository: LocalDatabaseRepository,
     private val masterpieceRepository: MasterpieceRepository,
+    private val crashReportingRepository: CrashReportingRepository,
     private val currentTimeMillis: () -> Long
 ) {
+    // コンストラクタが2つあるのは、テストでは時刻を差し替えたいが、Hilt には関数型の引数を
+    // 渡す登録が無いため。アプリでは下の @Inject のもの（現在時刻を使う）が使われる
     @Inject
     constructor(
         localDatabaseRepository: LocalDatabaseRepository,
-        masterpieceRepository: MasterpieceRepository
-    ) : this(localDatabaseRepository, masterpieceRepository, System::currentTimeMillis)
+        masterpieceRepository: MasterpieceRepository,
+        crashReportingRepository: CrashReportingRepository
+    ) : this(
+        localDatabaseRepository,
+        masterpieceRepository,
+        crashReportingRepository,
+        System::currentTimeMillis
+    )
 
     private var fontSwitchCount = 0
 
@@ -44,9 +62,7 @@ class FontSessionTracker internal constructor(
 
     /** 編集画面を開いたときに呼ぶ。前の編集セッションの値を捨てて数え直す */
     fun startSession() {
-        fontSwitchCount = 0
-        lastSwitchedDecorationId = null
-        editStartTimeMillis = currentTimeMillis()
+        resetCounting()
         snapshotForPreview = null
     }
 
@@ -60,7 +76,7 @@ class FontSessionTracker internal constructor(
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるパラメータを返す。
      * 保存側にだけ付けると、諦めた人のデータが丸ごと欠けるため（選択バイアス）。
      */
-    fun discardParams(): Map<String, Any> = baseFontSessionParams(
+    fun paramsForDiscardEvent(): Map<String, Any> = baseFontSessionParams(
         switchCount = fontSwitchCount,
         elapsedMillis = currentTimeMillis() - editStartTimeMillis
     )
@@ -84,6 +100,10 @@ class FontSessionTracker internal constructor(
             finalFont = finalFont,
             editStartTimeMillis = editStartTimeMillis
         )
+        resetCounting()
+    }
+
+    private fun resetCounting() {
         fontSwitchCount = 0
         lastSwitchedDecorationId = null
         editStartTimeMillis = currentTimeMillis()
@@ -96,6 +116,8 @@ class FontSessionTracker internal constructor(
      * font_same_as_last は、保存済みのうちわのうち今回のうちわの直前に保存したもの
      * （ホーム画面の並びと同じく、うちわ画像の更新日時が新しい順で今回のうちわを除いた先頭）の
      * テキスト装飾に、今回の最終的なフォントが使われているかどうか。直前のうちわが無ければ "false"。
+     * 直前のうちわを読めなかった（装飾のデータが壊れている等）ときは、保存の操作を止めないよう
+     * 例外を Crashlytics に記録して、font_same_as_last だけ付けずに返す。
      *
      * @param currentUchiwaId Preview画面で表示しているうちわのID
      */
@@ -106,15 +128,23 @@ class FontSessionTracker internal constructor(
             elapsedMillis = currentTimeMillis() - snapshot.editStartTimeMillis
         )
         val finalFont = snapshot.finalFont ?: return baseParams
-        val isSameAsLast = finalFont in fontsOfPreviousUchiwa(currentUchiwaId)
+        val paramsWithRank = baseParams +
+            (FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to finalFontRankBucket(finalFont))
+        val previousFonts = try {
+            fontsOfPreviousUchiwa(currentUchiwaId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            crashReportingRepository.recordException(e)
+            return paramsWithRank
+        }
 
-        return baseParams + mapOf(
-            FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to finalFontRankBucket(finalFont),
-            FontSessionAnalyticsParams.FONT_SAME_AS_LAST to isSameAsLast.toString()
-        )
+        return paramsWithRank +
+            (FontSessionAnalyticsParams.FONT_SAME_AS_LAST to (finalFont in previousFonts).toString())
     }
 
     private suspend fun fontsOfPreviousUchiwa(currentUchiwaId: String?): Set<FontFamilies> {
+        // うちわ画像のファイル一覧を読むため、メインスレッドを止めないよう IO で行う
         val previousUchiwaId = withContext(Dispatchers.IO) {
             masterpieceRepository.loadAllMasterpieces()
                 .map(::extractUchiwaIdFromImagePath)
