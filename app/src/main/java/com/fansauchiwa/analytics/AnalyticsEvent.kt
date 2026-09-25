@@ -81,6 +81,13 @@ object AnalyticsActions {
 
     // 自動収集の ad_impression と重複しないよう別名にする
     const val AD_PAID_EVENT = "ad_paid_event"
+
+    // 毎日開く機能の需要調査（#270・一時的）。パラメータは FeatureDoorAnalytics を参照
+    const val TAP_FEATURE_DOOR = "tap_feature_door"
+    const val ANSWER_FEATURE_DOOR = "answer_feature_door"
+
+    // 編集を破棄した理由（#265・一時的な調査。消し方は DiscardReasonSurvey の KDoc を参照）
+    const val ANSWER_DISCARD_REASON = "answer_discard_reason"
 }
 
 /**
