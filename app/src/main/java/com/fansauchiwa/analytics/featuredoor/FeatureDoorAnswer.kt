@@ -6,7 +6,7 @@ import com.fansauchiwa.R
 /**
  * 準備中のダイアログで聞く「この機能ができたら使いたいか」の答え（#270・一時的）
  *
- * @param paramValue GA4 の `answer` パラメータに送る値。レポートの集計に使うので変えない
+ * @param paramValue GA4 の `feature_door_answer` パラメータに送る値。レポートの集計に使うので変えない
  */
 enum class FeatureDoorAnswer(
     val paramValue: String,

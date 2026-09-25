@@ -1,4 +1,4 @@
-package com.fansauchiwa.analytics.featuredoor
+package com.fansauchiwa.home.featuredoor
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +22,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fansauchiwa.R
 import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.featuredoor.FeatureDoor
+import com.fansauchiwa.analytics.featuredoor.FeatureDoorAnalytics
+import com.fansauchiwa.analytics.featuredoor.FeatureDoorAnswer
+import com.fansauchiwa.analytics.featuredoor.FeatureDoorOrder
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 /**

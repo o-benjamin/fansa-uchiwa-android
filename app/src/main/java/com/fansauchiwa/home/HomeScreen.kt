@@ -106,7 +106,6 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.featuredoor.FeatureDoorOrder
-import com.fansauchiwa.analytics.featuredoor.FeatureDoorSection
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
@@ -120,6 +119,7 @@ import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.home.featuredoor.FeatureDoorSection
 import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
@@ -556,6 +556,7 @@ internal fun HomeTabContent(
     modifier: Modifier = Modifier,
     lazyGridState: LazyGridState = rememberLazyGridState(),
     isPreview: Boolean = false,
+    // 毎日開く機能の需要調査（#270・一時的）。既定値は、消すときに既存テストの呼び出しまで直さずに済むようにするため
     onFeatureDoorEvent: (AnalyticsEvent) -> Unit = {}
 ) {
     when (selectedTab) {

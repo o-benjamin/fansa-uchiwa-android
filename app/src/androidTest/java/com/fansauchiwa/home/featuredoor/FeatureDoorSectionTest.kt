@@ -1,4 +1,4 @@
-package com.fansauchiwa.analytics.featuredoor
+package com.fansauchiwa.home.featuredoor
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -8,6 +8,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.fansauchiwa.R
 import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.featuredoor.FeatureDoor
+import com.fansauchiwa.analytics.featuredoor.FeatureDoorAnalytics
+import com.fansauchiwa.analytics.featuredoor.FeatureDoorAnswer
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

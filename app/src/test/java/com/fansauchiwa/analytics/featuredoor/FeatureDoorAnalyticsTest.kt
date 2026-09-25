@@ -7,20 +7,20 @@ import org.junit.Test
 class FeatureDoorAnalyticsTest {
 
     @Test
-    fun tapEvent_countdown_sendsFeatureA() {
+    fun tapEvent_countdown_sendsCountdown() {
         val event = FeatureDoorAnalytics.tapEvent(FeatureDoor.COUNTDOWN)
 
         assertEquals(AnalyticsActions.TAP_FEATURE_DOOR, event.name)
-        assertEquals(mapOf(FeatureDoorAnalytics.PARAM_FEATURE to "a"), event.params)
+        assertEquals(mapOf(FeatureDoorAnalytics.PARAM_FEATURE_DOOR to "countdown"), event.params)
     }
 
     @Test
     fun tapEvent_eachDoor_sendsItsOwnValue() {
         val values = FeatureDoor.entries.map {
-            FeatureDoorAnalytics.tapEvent(it).params[FeatureDoorAnalytics.PARAM_FEATURE]
+            FeatureDoorAnalytics.tapEvent(it).params[FeatureDoorAnalytics.PARAM_FEATURE_DOOR]
         }
 
-        assertEquals(listOf("a", "b", "c"), values)
+        assertEquals(listOf("countdown", "daily_prompt", "anniversary"), values)
     }
 
     @Test
@@ -30,8 +30,8 @@ class FeatureDoorAnalyticsTest {
         assertEquals(AnalyticsActions.ANSWER_FEATURE_DOOR, event.name)
         assertEquals(
             mapOf(
-                FeatureDoorAnalytics.PARAM_FEATURE to "b",
-                FeatureDoorAnalytics.PARAM_ANSWER to "daily"
+                FeatureDoorAnalytics.PARAM_FEATURE_DOOR to "daily_prompt",
+                FeatureDoorAnalytics.PARAM_FEATURE_DOOR_ANSWER to "daily"
             ),
             event.params
         )
@@ -41,7 +41,7 @@ class FeatureDoorAnalyticsTest {
     fun answerEvent_eachAnswer_sendsItsOwnValue() {
         val values = FeatureDoorAnswer.entries.map {
             FeatureDoorAnalytics.answerEvent(FeatureDoor.ANNIVERSARY, it)
-                .params[FeatureDoorAnalytics.PARAM_ANSWER]
+                .params[FeatureDoorAnalytics.PARAM_FEATURE_DOOR_ANSWER]
         }
 
         assertEquals(listOf("daily", "sometimes", "not_needed"), values)
