@@ -103,7 +103,9 @@ import coil3.request.addLastModifiedToFileCacheKey
 import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
+import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.featuredoor.FeatureDoorOrder
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
@@ -117,6 +119,7 @@ import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.home.featuredoor.FeatureDoorSection
 import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
 import com.fansauchiwa.ui.composable.SelectionCircleIcon
@@ -527,6 +530,8 @@ fun HomeScreen(
             onImageLongPress = {
                 viewModel.enterSelectionMode()
             },
+            // 毎日開く機能の需要調査（#270・一時的）
+            onFeatureDoorEvent = { event -> viewModel.logEvent(event.name, event.params) },
             statusBarPadding = innerPadding.calculateTopPadding(),
             bottomPadding = innerPadding.calculateBottomPadding()
         )
@@ -550,7 +555,9 @@ internal fun HomeTabContent(
     bottomPadding: Dp,
     modifier: Modifier = Modifier,
     lazyGridState: LazyGridState = rememberLazyGridState(),
-    isPreview: Boolean = false
+    isPreview: Boolean = false,
+    // 毎日開く機能の需要調査（#270・一時的）。既定値は、消すときに既存テストの呼び出しまで直さずに済むようにするため
+    onFeatureDoorEvent: (AnalyticsEvent) -> Unit = {}
 ) {
     when (selectedTab) {
         HomeTab.HOME -> HomeTabHomeContent(
@@ -558,6 +565,7 @@ internal fun HomeTabContent(
             selectedMainColor = selectedMainColor,
             onMainColorSelected = onMainColorSelected,
             onTemplateClick = onTemplateClick,
+            onFeatureDoorEvent = onFeatureDoorEvent,
             statusBarPadding = statusBarPadding,
             bottomPadding = bottomPadding,
             modifier = modifier,
@@ -585,6 +593,7 @@ private fun HomeTabHomeContent(
     selectedMainColor: DecorationColors,
     onMainColorSelected: (DecorationColors) -> Unit,
     onTemplateClick: (Template) -> Unit,
+    onFeatureDoorEvent: (AnalyticsEvent) -> Unit,
     statusBarPadding: Dp,
     bottomPadding: Dp,
     modifier: Modifier = Modifier,
@@ -615,6 +624,14 @@ private fun HomeTabHomeContent(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // 毎日開く機能の需要調査（#270・一時的）。調査が終わったらこの item ごと消す
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            FeatureDoorSection(
+                doors = FeatureDoorOrder.forThisLaunch,
+                onEvent = onFeatureDoorEvent,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
         item(span = { GridItemSpan(maxLineSpan) }) {
             SectionHeader(
                 title = stringResource(R.string.main_color_section_title),
@@ -1158,6 +1175,7 @@ private fun HomeTabHomeContentPreview() {
         selectedMainColor = DecorationColors.PINK,
         onMainColorSelected = {},
         onTemplateClick = {},
+        onFeatureDoorEvent = {},
         statusBarPadding = 0.dp,
         bottomPadding = 0.dp,
         isPreview = true

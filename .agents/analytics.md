@@ -9,6 +9,7 @@
     - パラメータの計算（`FontSessionAnalyticsBuckets.kt`、`AdPaidEventFactory`）。ViewModel が手元の値（選んだフォント名など）をそのまま `mapOf` に詰めて送るのはかまわない。バケット化・過去の値との比較・画面をまたぐ状態の保持など、値を加工したり分析のために持ったりする処理は `analytics` に置く
     - 分析用データの保持（`FontSessionTracker`）
     - 送信（`AnalyticsRepository` / `AnalyticsDataSource` / `FirebaseAnalyticsRemoteSource`）と DI（`AnalyticsModule`）
+- 調査用の画面部品（フェイクドアの入口やダイアログなど）は、表示する機能のパッケージ（例：`home/featuredoor/`）に置き、計測の定義・計算だけを `analytics` に置いてください（#270）。
 - `.agents/architecture.md` の「Repository は `data/repository`、DataSource は `data/infra`」は、分析については適用しません（このパッケージにまとめる）。
 - テストは `app/src/test/java/com/fansauchiwa/analytics/` に置いてください。
 
