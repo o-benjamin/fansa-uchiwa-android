@@ -1,6 +1,5 @@
-package com.fansauchiwa.data.infra
+package com.fansauchiwa.analytics
 
-import com.fansauchiwa.data.analytics.AnalyticsEvent
 
 interface AnalyticsDataSource {
     /**

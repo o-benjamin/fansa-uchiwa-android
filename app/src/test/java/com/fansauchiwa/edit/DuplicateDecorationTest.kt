@@ -5,9 +5,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
+import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -83,14 +83,6 @@ class DuplicateDecorationTest {
         override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
             hasSeenApologyDialogStream.emit(hasSeen)
         }
-
-        private var lastSavedFontName: String? = null
-
-        override suspend fun getLastSavedFontName(): String? = lastSavedFontName
-
-        override suspend fun setLastSavedFontName(fontName: String) {
-            lastSavedFontName = fontName
-        }
     }
 
     @Before
@@ -126,6 +118,7 @@ class DuplicateDecorationTest {
             editDecorationRepository = editDecorationRepository,
             settingsRepository = settingsRepository,
             templateRepository = templateRepository,
+            fontSessionTracker = mockk(relaxed = true),
             savedStateHandle = savedStateHandle
         )
     }

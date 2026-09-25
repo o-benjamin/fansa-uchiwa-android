@@ -1,4 +1,4 @@
-package com.fansauchiwa.ads
+package com.fansauchiwa.analytics
 
 /**
  * Analyticsに送信する広告フォーマット名

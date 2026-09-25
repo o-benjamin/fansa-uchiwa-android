@@ -1,4 +1,4 @@
-package com.fansauchiwa.data.analytics
+package com.fansauchiwa.analytics
 
 /**
  * Analyticsに送信するイベントデータ
