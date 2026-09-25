@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
 import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.DiscardReasonSurvey
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.repository.EditDecorationRepository
@@ -119,6 +120,7 @@ class DuplicateDecorationTest {
             settingsRepository = settingsRepository,
             templateRepository = templateRepository,
             fontSessionTracker = mockk(relaxed = true),
+            discardReasonSurvey = DiscardReasonSurvey(),
             savedStateHandle = savedStateHandle
         )
     }

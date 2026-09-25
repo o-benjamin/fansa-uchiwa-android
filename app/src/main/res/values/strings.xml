@@ -40,6 +40,14 @@
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
+    <!-- 編集を破棄した理由を聞くダイアログ（#265・一時的な調査。消し方は DiscardReasonSurvey の KDoc を参照） -->
+    <string name="discard_reason_title">よければ、破棄した理由を教えてください</string>
+    <string name="discard_reason_not_as_imagined">思った通りに作れなかった</string>
+    <string name="discard_reason_not_enough_materials">フォントやステッカーが足りなかった</string>
+    <string name="discard_reason_no_time">時間がなくなった</string>
+    <string name="discard_reason_just_trying">試しに触っただけ</string>
+    <string name="discard_reason_other">その他</string>
+    <string name="discard_reason_no_answer">答えない</string>
     <string name="save_success_title">保存成功</string>
     <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
     <string name="ok">OK</string>

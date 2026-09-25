@@ -81,6 +81,9 @@ object AnalyticsActions {
 
     // 自動収集の ad_impression と重複しないよう別名にする
     const val AD_PAID_EVENT = "ad_paid_event"
+
+    // 編集を破棄した理由（#265・一時的な調査。消し方は DiscardReasonSurvey の KDoc を参照）
+    const val ANSWER_DISCARD_REASON = "answer_discard_reason"
 }
 
 /**
