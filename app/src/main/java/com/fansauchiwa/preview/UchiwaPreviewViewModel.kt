@@ -10,6 +10,7 @@ import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.FontSessionTracker
+import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
@@ -30,6 +31,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
     private val inAppReviewRepository: InAppReviewRepository,
     private val fontSessionTracker: FontSessionTracker,
+    private val puffyStateAnalytics: PuffyStateAnalytics,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -126,11 +128,14 @@ class UchiwaPreviewViewModel @Inject constructor(
     }
 
     /**
-     * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）付きで送る。
+     * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）と
+     * ぷくぷくの状態（#268）付きで送る。
      * 呼び出し元（[showRewardedAdAndSave]）のコルーチンの中から直接呼ぶsuspend関数。
      */
     private suspend fun logExportEvent() {
-        val params = fontSessionTracker.exportParams(currentUchiwaId = getCurrentUchiwaId())
+        val uchiwaId = getCurrentUchiwaId()
+        val params = fontSessionTracker.exportParams(currentUchiwaId = uchiwaId) +
+            puffyStateAnalytics.exportParams(uchiwaId)
         analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
     }
 

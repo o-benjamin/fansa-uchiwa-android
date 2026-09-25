@@ -9,6 +9,8 @@ import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.FontSessionAnalyticsParams
 import com.fansauchiwa.analytics.FontSessionTracker
+import com.fansauchiwa.analytics.PuffyStateAnalytics
+import com.fansauchiwa.analytics.PuffyStateParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
@@ -42,6 +44,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var inAppReviewRepository: InAppReviewRepository
     private lateinit var fontSessionTracker: FontSessionTracker
+    private lateinit var puffyStateAnalytics: PuffyStateAnalytics
 
     @Before
     fun setUp() {
@@ -51,9 +54,11 @@ class UchiwaPreviewSaveTest {
         analyticsRepository = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
         fontSessionTracker = mockk(relaxed = true)
+        puffyStateAnalytics = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
         coEvery { fontSessionTracker.exportParams(any()) } returns emptyMap()
+        coEvery { puffyStateAnalytics.exportParams(any()) } returns emptyMap()
     }
 
     @After
@@ -74,6 +79,7 @@ class UchiwaPreviewSaveTest {
             analyticsRepository = analyticsRepository,
             inAppReviewRepository = inAppReviewRepository,
             fontSessionTracker = fontSessionTracker,
+            puffyStateAnalytics = puffyStateAnalytics,
             savedStateHandle = savedStateHandle
         )
     }
@@ -172,6 +178,28 @@ class UchiwaPreviewSaveTest {
 
         coVerify(exactly = 1) {
             analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, fontParams))
+        }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_puffyStateFound_logsExportEventWithFontAndPuffyParams() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        val activity = mockk<Activity>()
+        val fontParams = mapOf<String, Any>(FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to "0")
+        val puffyParams = mapOf<String, Any>(
+            PuffyStateParams.PARAM_PUFFY_STATE to PuffyStateParams.PUFFY_STATE_ON
+        )
+        coEvery { fontSessionTracker.exportParams("uchiwa-1") } returns fontParams
+        coEvery { puffyStateAnalytics.exportParams("uchiwa-1") } returns puffyParams
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, fontParams + puffyParams)
+            )
         }
     }
 

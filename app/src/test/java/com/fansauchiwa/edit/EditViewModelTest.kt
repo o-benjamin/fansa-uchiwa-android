@@ -37,6 +37,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -646,6 +647,105 @@ class EditViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.decorations.contains(newDecoration))
         assertEquals(newDecoration.id, state.selectedDecorationId)
+    }
+
+    private fun TestScope.createViewModelWithPuffy(
+        textPuffy: Boolean,
+        stickerPuffy: Boolean,
+        borderPuffy: Boolean
+    ): EditViewModel {
+        val uchiwaId = "puffy-uchiwa-id"
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns Uchiwa(
+            id = uchiwaId,
+            decorations = listOf(
+                Decoration.Text(
+                    id = "text-1",
+                    text = "テスト",
+                    font = FontFamilies.HACHI_MARU_POP,
+                    isPuffyEnabled = textPuffy
+                ),
+                Decoration.Sticker(id = "sticker-1", label = "heart", isPukupuku = stickerPuffy),
+                Decoration.Image(id = "image-decoration-1", imageId = "image-1")
+            ),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White,
+            isOverallBorderPuffyEnabled = borderPuffy
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+        return viewModel
+    }
+
+    @Test
+    fun loadUchiwa_mixedPuffy_keepsEachFlag() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = false, borderPuffy = false)
+
+        assertEquals(true, viewModel.findTextDecoration("text-1")?.isPuffyEnabled)
+        assertEquals(false, viewModel.findStickerDecoration("sticker-1")?.isPukupuku)
+        assertFalse(viewModel.uiState.value.isOverallBorderPuffyEnabled)
+    }
+
+    @Test
+    fun updateAllPuffyEnabled_true_makesTextStickerAndBorderPuffy() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = false, borderPuffy = false)
+
+        viewModel.updateAllPuffyEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.findTextDecoration("text-1")?.isPuffyEnabled)
+        assertEquals(true, viewModel.findStickerDecoration("sticker-1")?.isPukupuku)
+        assertTrue(viewModel.uiState.value.isOverallBorderPuffyEnabled)
+        assertTrue(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllPuffyEnabled_false_turnsOffTextStickerAndBorder() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = true, borderPuffy = true)
+
+        viewModel.updateAllPuffyEnabled(false)
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.findTextDecoration("text-1")?.isPuffyEnabled)
+        assertEquals(false, viewModel.findStickerDecoration("sticker-1")?.isPukupuku)
+        assertFalse(viewModel.uiState.value.isOverallBorderPuffyEnabled)
+    }
+
+    @Test
+    fun addTextDecoration_whileAllPuffy_addsPuffyText() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = true, borderPuffy = true)
+        every { editDecorationRepository.createText(FontFamilies.HACHI_MARU_POP) } returns
+            Decoration.Text(id = "text-2", text = "テスト", font = FontFamilies.HACHI_MARU_POP)
+
+        viewModel.addTextDecoration(FontFamilies.HACHI_MARU_POP)
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.findTextDecoration("text-2")?.isPuffyEnabled)
+        assertEquals("text-2", viewModel.uiState.value.selectedDecorationId)
+    }
+
+    @Test
+    fun addStickerDecoration_whileAllPuffy_addsPuffySticker() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = true, borderPuffy = true)
+        every { editDecorationRepository.createSticker("star") } returns
+            Decoration.Sticker(id = "sticker-2", label = "star")
+
+        viewModel.addStickerDecoration("star")
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.findStickerDecoration("sticker-2")?.isPukupuku)
+    }
+
+    @Test
+    fun addStickerDecoration_whileMixedPuffy_addsNonPuffySticker() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = false, borderPuffy = true)
+        every { editDecorationRepository.createSticker("star") } returns
+            Decoration.Sticker(id = "sticker-2", label = "star")
+
+        viewModel.addStickerDecoration("star")
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.findStickerDecoration("sticker-2")?.isPukupuku)
     }
 
     @Test

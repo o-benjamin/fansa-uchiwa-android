@@ -395,7 +395,10 @@ fun EditScreen(
                         backgroundColor = uiState.backgroundColor,
                         overallBorderColor = uiState.overallBorderColor,
                         overallBorderWidth = uiState.overallBorderWidth,
-                        isOverallBorderPuffyEnabled = uiState.isOverallBorderPuffyEnabled,
+                        isAllPuffyEnabled = PuffyState.isAllPuffy(
+                            uiState.decorations,
+                            uiState.isOverallBorderPuffyEnabled
+                        ),
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported
@@ -447,11 +450,6 @@ fun EditScreen(
                         onSecondBorderWeightChangedFinished = {
                             uiState.selectedDecorationId?.let(viewModel::finishSecondBorderWidthChange)
                         },
-                        onPuffyEnabledChanged = { isPuffyEnabled ->
-                            uiState.selectedDecorationId?.let { decorationId ->
-                                viewModel.updatePuffyEnabled(decorationId, isPuffyEnabled)
-                            }
-                        },
                         onUnsupportedPuffyClick = viewModel::notifyPukuPukuUnsupported,
                         onImagePicked = { uri ->
                             val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
@@ -465,7 +463,7 @@ fun EditScreen(
                         onOverallBorderColorSelected = viewModel::updateOverallBorderColor,
                         onOverallBorderWeightChanged = viewModel::updateOverallBorderWidth,
                         onOverallBorderWeightChangedFinished = viewModel::finishOverallBorderWidthChange,
-                        onOverallBorderPuffyEnabledChanged = viewModel::updateOverallBorderPuffyEnabled,
+                        onAllPuffyEnabledChanged = viewModel::updateAllPuffyEnabled,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->
                             hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
