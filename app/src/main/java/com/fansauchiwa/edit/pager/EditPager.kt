@@ -91,7 +91,7 @@ data class EditPagerUiState(
     val backgroundColor: Color,
     val overallBorderColor: Color,
     val overallBorderWidth: Float,
-    val isOverallBorderPuffyEnabled: Boolean,
+    val isAllPuffyEnabled: Boolean,
     val decorations: List<Decoration> = emptyList(),
     val selectedDecorationId: String? = null,
     val isPukuPukuSupported: Boolean = false
@@ -110,7 +110,6 @@ data class EditPagerActions(
     val onSecondBorderColorSelected: (Color) -> Unit,
     val onSecondBorderWeightChanged: (Float) -> Unit,
     val onSecondBorderWeightChangedFinished: () -> Unit,
-    val onPuffyEnabledChanged: (Boolean) -> Unit,
     val onUnsupportedPuffyClick: () -> Unit,
     val onImageSelected: (String) -> Unit,
     val onImageLongPress: () -> Unit,
@@ -121,7 +120,7 @@ data class EditPagerActions(
     val onOverallBorderColorSelected: (Color) -> Unit,
     val onOverallBorderWeightChanged: (Float) -> Unit,
     val onOverallBorderWeightChangedFinished: () -> Unit,
-    val onOverallBorderPuffyEnabledChanged: (Boolean) -> Unit,
+    val onAllPuffyEnabledChanged: (Boolean) -> Unit,
     val onDecorationClick: (String) -> Unit,
     val onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
 )
@@ -186,9 +185,6 @@ fun EditPager(
                         onSecondBorderColorSelected = actions.onSecondBorderColorSelected,
                         onSecondBorderWeightChanged = actions.onSecondBorderWeightChanged,
                         onSecondBorderWeightChangedFinished = actions.onSecondBorderWeightChangedFinished,
-                        onPuffyEnabledChanged = actions.onPuffyEnabledChanged,
-                        onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
-                        isPukuPukuSupported = state.isPukuPukuSupported,
                         selectedTextDecoration = selectedTextDecoration
                     )
                 }
@@ -217,9 +213,6 @@ fun EditPager(
                         onSecondStrokeColorSelected = actions.onSecondBorderColorSelected,
                         onSecondStrokeWeightChanged = actions.onSecondBorderWeightChanged,
                         onSecondStrokeWeightChangedFinished = actions.onSecondBorderWeightChangedFinished,
-                        onPuffyEnabledChanged = actions.onPuffyEnabledChanged,
-                        onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
-                        isPukuPukuSupported = state.isPukuPukuSupported,
                         selectedStickerDecoration = selectedStickerDecoration
                     )
                 }
@@ -231,13 +224,13 @@ fun EditPager(
                         onOverallBorderColorSelected = actions.onOverallBorderColorSelected,
                         onOverallBorderWeightChanged = actions.onOverallBorderWeightChanged,
                         onOverallBorderWeightChangedFinished = actions.onOverallBorderWeightChangedFinished,
-                        onOverallBorderPuffyEnabledChanged = actions.onOverallBorderPuffyEnabledChanged,
+                        onAllPuffyEnabledChanged = actions.onAllPuffyEnabledChanged,
                         onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
                         currentUchiwaColor = state.uchiwaColor,
                         currentBackgroundColor = state.backgroundColor,
                         currentOverallBorderColor = state.overallBorderColor,
                         currentOverallBorderWidth = state.overallBorderWidth,
-                        isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled,
+                        isAllPuffyEnabled = state.isAllPuffyEnabled,
                         isPukuPukuSupported = state.isPukuPukuSupported
                     )
                 }
@@ -296,9 +289,6 @@ fun StickerPage(
     onSecondStrokeColorSelected: (Color) -> Unit,
     onSecondStrokeWeightChanged: (Float) -> Unit,
     onSecondStrokeWeightChangedFinished: () -> Unit,
-    onPuffyEnabledChanged: (Boolean) -> Unit,
-    onPuffyUnsupportedClick: () -> Unit,
-    isPukuPukuSupported: Boolean,
     modifier: Modifier = Modifier,
     selectedStickerDecoration: Decoration.Sticker? = null,
 ) {
@@ -345,16 +335,6 @@ fun StickerPage(
                 onColorSelected = onSecondStrokeColorSelected,
                 onWeightChanged = onSecondStrokeWeightChanged,
                 onWeightChangedFinished = onSecondStrokeWeightChangedFinished
-            )
-
-            PuffyEffectToggleRow(
-                label = stringResource(R.string.sticker_puffy_enabled),
-                isEnabled = isPukuPukuSupported,
-                isChecked = selectedStickerDecoration.isPukupuku,
-                onCheckedChange = onPuffyEnabledChanged,
-                onUnsupportedClick = onPuffyUnsupportedClick,
-                modifier = Modifier.testTag(TestTags.PUFFY_STICKER_ROW),
-                switchModifier = Modifier.testTag(TestTags.PUFFY_STICKER_SWITCH)
             )
         }
 
@@ -503,7 +483,7 @@ private fun LayerItem(
         // ドラッグハンドル
         Icon(
             imageVector = Icons.Default.DragHandle,
-            contentDescription = "Reorder",
+            contentDescription = stringResource(R.string.layer_reorder_description),
             modifier = modifier.size(24.dp)
         )
     }
@@ -568,9 +548,6 @@ fun StickerPagePreview() {
             onSecondStrokeColorSelected = {},
             onSecondStrokeWeightChanged = {},
             onSecondStrokeWeightChangedFinished = {},
-            onPuffyEnabledChanged = {},
-            onPuffyUnsupportedClick = {},
-            isPukuPukuSupported = true,
             selectedStickerDecoration = Decoration.Sticker(
                 id = "preview-id",
                 label = "star",
@@ -617,13 +594,13 @@ fun UchiwaBackgroundPage(
     onOverallBorderColorSelected: (Color) -> Unit,
     onOverallBorderWeightChanged: (Float) -> Unit,
     onOverallBorderWeightChangedFinished: () -> Unit,
-    onOverallBorderPuffyEnabledChanged: (Boolean) -> Unit,
+    onAllPuffyEnabledChanged: (Boolean) -> Unit,
     onPuffyUnsupportedClick: () -> Unit,
     currentUchiwaColor: Color,
     currentBackgroundColor: Color,
     currentOverallBorderColor: Color,
     currentOverallBorderWidth: Float,
-    isOverallBorderPuffyEnabled: Boolean,
+    isAllPuffyEnabled: Boolean,
     isPukuPukuSupported: Boolean
 ) {
     val scrollState = rememberScrollState()
@@ -669,11 +646,13 @@ fun UchiwaBackgroundPage(
             onWeightChangedFinished = onOverallBorderWeightChangedFinished
         )
         PuffyEffectToggleRow(
-            label = stringResource(R.string.overall_border_puffy_enabled),
+            label = stringResource(R.string.puffy_enabled),
             isEnabled = isPukuPukuSupported,
-            isChecked = isOverallBorderPuffyEnabled,
-            onCheckedChange = onOverallBorderPuffyEnabledChanged,
-            onUnsupportedClick = onPuffyUnsupportedClick
+            isChecked = isAllPuffyEnabled,
+            onCheckedChange = onAllPuffyEnabledChanged,
+            onUnsupportedClick = onPuffyUnsupportedClick,
+            modifier = Modifier.testTag(TestTags.PUFFY_ROW),
+            switchModifier = Modifier.testTag(TestTags.PUFFY_SWITCH)
         )
     }
 }
@@ -688,13 +667,13 @@ fun UchiwaBackgroundPagePreview() {
             onOverallBorderColorSelected = {},
             onOverallBorderWeightChanged = {},
             onOverallBorderWeightChangedFinished = {},
-            onOverallBorderPuffyEnabledChanged = {},
+            onAllPuffyEnabledChanged = {},
             onPuffyUnsupportedClick = {},
             currentUchiwaColor = DecorationColors.RED.value,
             currentBackgroundColor = DecorationColors.BLUE.value,
             currentOverallBorderColor = DecorationColors.WHITE.value,
             currentOverallBorderWidth = 8f,
-            isOverallBorderPuffyEnabled = true,
+            isAllPuffyEnabled = true,
             isPukuPukuSupported = true
         )
     }

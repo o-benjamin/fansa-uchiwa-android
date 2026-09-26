@@ -1,4 +1,4 @@
-package com.fansauchiwa.data.analytics
+package com.fansauchiwa.analytics
 
 import com.fansauchiwa.edit.FontFamilies
 import org.junit.Assert.assertEquals

@@ -2,15 +2,15 @@ package com.fansauchiwa.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
