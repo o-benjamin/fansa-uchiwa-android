@@ -86,7 +86,7 @@ fun ColorAndWeightControl(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ExpandLess,
-                        contentDescription = "Color picker toggle"
+                        contentDescription = stringResource(R.string.custom_color_picker_close_description)
                     )
                 }
                 this@Column.AnimatedVisibility(

@@ -1,6 +1,5 @@
-package com.fansauchiwa.ads
+package com.fansauchiwa.analytics
 
-import com.fansauchiwa.data.analytics.AnalyticsActions
 import com.google.android.gms.ads.AdValue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

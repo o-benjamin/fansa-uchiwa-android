@@ -6,17 +6,21 @@ import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.EDIT_INPUT_ARG
 import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.DiscardReason
+import com.fansauchiwa.analytics.DiscardReasonParams
+import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditStickerTargetParams
+import com.fansauchiwa.analytics.EditTextTargetParams
+import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.EditStickerTargetParams
-import com.fansauchiwa.data.analytics.EditTextTargetParams
-import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -27,11 +31,13 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -55,6 +61,7 @@ class EditViewModelTest {
     private lateinit var editDecorationRepository: EditDecorationRepository
     private lateinit var settingsRepository: FakeSettingsRepository
     private lateinit var templateRepository: TemplateRepository
+    private lateinit var fontSessionTracker: FontSessionTracker
 
     private class FakeSettingsRepository(
         private var hasSeenEditCompletionTooltip: Boolean = false
@@ -95,14 +102,6 @@ class EditViewModelTest {
             hasSeenApologyDialogStream.emit(hasSeen)
         }
 
-        private var lastSavedFontName: String? = null
-
-        override suspend fun getLastSavedFontName(): String? = lastSavedFontName
-
-        override suspend fun setLastSavedFontName(fontName: String) {
-            lastSavedFontName = fontName
-        }
-
         fun hasSeenEditCompletionTooltip(): Boolean = hasSeenEditCompletionTooltip
     }
 
@@ -116,6 +115,7 @@ class EditViewModelTest {
         editDecorationRepository = mockk(relaxed = true)
         settingsRepository = FakeSettingsRepository()
         templateRepository = mockk(relaxed = true)
+        fontSessionTracker = mockk(relaxed = true)
     }
 
     @After
@@ -160,6 +160,8 @@ class EditViewModelTest {
             editDecorationRepository = editDecorationRepository,
             settingsRepository = settingsRepository,
             templateRepository = templateRepository,
+            fontSessionTracker = fontSessionTracker,
+            discardReasonSurvey = DiscardReasonSurvey(),
             savedStateHandle = savedStateHandle
         )
     }
@@ -647,6 +649,105 @@ class EditViewModelTest {
         assertEquals(newDecoration.id, state.selectedDecorationId)
     }
 
+    private fun TestScope.createViewModelWithPuffy(
+        textPuffy: Boolean,
+        stickerPuffy: Boolean,
+        borderPuffy: Boolean
+    ): EditViewModel {
+        val uchiwaId = "puffy-uchiwa-id"
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns Uchiwa(
+            id = uchiwaId,
+            decorations = listOf(
+                Decoration.Text(
+                    id = "text-1",
+                    text = "テスト",
+                    font = FontFamilies.HACHI_MARU_POP,
+                    isPuffyEnabled = textPuffy
+                ),
+                Decoration.Sticker(id = "sticker-1", label = "heart", isPukupuku = stickerPuffy),
+                Decoration.Image(id = "image-decoration-1", imageId = "image-1")
+            ),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White,
+            isOverallBorderPuffyEnabled = borderPuffy
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+        return viewModel
+    }
+
+    @Test
+    fun loadUchiwa_mixedPuffy_keepsEachFlag() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = false, borderPuffy = false)
+
+        assertEquals(true, viewModel.findTextDecoration("text-1")?.isPuffyEnabled)
+        assertEquals(false, viewModel.findStickerDecoration("sticker-1")?.isPukupuku)
+        assertFalse(viewModel.uiState.value.isOverallBorderPuffyEnabled)
+    }
+
+    @Test
+    fun updateAllPuffyEnabled_true_makesTextStickerAndBorderPuffy() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = false, borderPuffy = false)
+
+        viewModel.updateAllPuffyEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.findTextDecoration("text-1")?.isPuffyEnabled)
+        assertEquals(true, viewModel.findStickerDecoration("sticker-1")?.isPukupuku)
+        assertTrue(viewModel.uiState.value.isOverallBorderPuffyEnabled)
+        assertTrue(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllPuffyEnabled_false_turnsOffTextStickerAndBorder() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = true, borderPuffy = true)
+
+        viewModel.updateAllPuffyEnabled(false)
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.findTextDecoration("text-1")?.isPuffyEnabled)
+        assertEquals(false, viewModel.findStickerDecoration("sticker-1")?.isPukupuku)
+        assertFalse(viewModel.uiState.value.isOverallBorderPuffyEnabled)
+    }
+
+    @Test
+    fun addTextDecoration_whileAllPuffy_addsPuffyText() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = true, borderPuffy = true)
+        every { editDecorationRepository.createText(FontFamilies.HACHI_MARU_POP) } returns
+            Decoration.Text(id = "text-2", text = "テスト", font = FontFamilies.HACHI_MARU_POP)
+
+        viewModel.addTextDecoration(FontFamilies.HACHI_MARU_POP)
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.findTextDecoration("text-2")?.isPuffyEnabled)
+        assertEquals("text-2", viewModel.uiState.value.selectedDecorationId)
+    }
+
+    @Test
+    fun addStickerDecoration_whileAllPuffy_addsPuffySticker() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = true, borderPuffy = true)
+        every { editDecorationRepository.createSticker("star") } returns
+            Decoration.Sticker(id = "sticker-2", label = "star")
+
+        viewModel.addStickerDecoration("star")
+        advanceUntilIdle()
+
+        assertEquals(true, viewModel.findStickerDecoration("sticker-2")?.isPukupuku)
+    }
+
+    @Test
+    fun addStickerDecoration_whileMixedPuffy_addsNonPuffySticker() = runTest {
+        val viewModel = createViewModelWithPuffy(textPuffy = true, stickerPuffy = false, borderPuffy = true)
+        every { editDecorationRepository.createSticker("star") } returns
+            Decoration.Sticker(id = "sticker-2", label = "star")
+
+        viewModel.addStickerDecoration("star")
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.findStickerDecoration("sticker-2")?.isPukupuku)
+    }
+
     @Test
     fun updateFont_existingTextDecoration_fontPropertyUpdated() = runTest {
         val uchiwaId = "test-uchiwa-id"
@@ -1045,25 +1146,55 @@ class EditViewModelTest {
     // region フォント計測（#242）
 
     @Test
-    fun currentFontSessionParams_noSwitch_returnsZeroBucket() = runTest {
+    fun init_always_startsFontSession() = runTest {
         every { localImageRepository.getAllImages() } returns emptyList()
+
+        createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { fontSessionTracker.startSession() }
+    }
+
+    @Test
+    fun updateFont_textDecoration_notifiesTrackerOfEachSwitch() = runTest {
+        val uchiwaId = "test-uchiwa-id"
+        val textDecorationId = "text-1"
+        val savedUchiwa = Uchiwa(
+            id = "test-id",
+            decorations = listOf(
+                Decoration.Text(id = textDecorationId, text = "テスト", font = FontFamilies.HACHI_MARU_POP)
+            ),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
+        every { localImageRepository.getAllImages() } returns emptyList()
+
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+
+        viewModel.updateFont(textDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
+        viewModel.updateFont(textDecorationId, FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        verify(exactly = 2) { fontSessionTracker.onFontSwitched(textDecorationId) }
+    }
+
+    @Test
+    fun fontSessionParamsForDiscardEvent_always_returnsTrackerParamsForDiscardEvent() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val discardParams = mapOf<String, Any>("font_switch_bucket" to "3-5")
+        every { fontSessionTracker.paramsForDiscardEvent() } returns discardParams
         val viewModel = createViewModel(uchiwaId = null)
         advanceUntilIdle()
 
-        val params = viewModel.currentFontSessionParams()
-
-        assertEquals("0", params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
+        assertEquals(discardParams, viewModel.fontSessionParamsForDiscardEvent())
     }
 
     @Test
-    fun currentFontSessionParams_afterMultipleSwitches_countsEachUpdateFontCall() = runTest {
+    fun finishFontSessionForPreview_always_passesCurrentDecorationsToTracker() = runTest {
         val uchiwaId = "test-uchiwa-id"
-        val textDecorationId = "text-1"
-        val textDecoration = Decoration.Text(
-            id = textDecorationId,
-            text = "テスト",
-            font = FontFamilies.HACHI_MARU_POP
-        )
+        val textDecoration = Decoration.Text(id = "text-1", text = "テスト", font = FontFamilies.HACHI_MARU_POP)
         val savedUchiwa = Uchiwa(
             id = "test-id",
             decorations = listOf(textDecoration),
@@ -1072,166 +1203,37 @@ class EditViewModelTest {
         )
         coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
         every { localImageRepository.getAllImages() } returns emptyList()
-
         val viewModel = createViewModel(uchiwaId = uchiwaId)
         advanceUntilIdle()
 
-        // 3回切り替える（select_edit_text_font が3回起きるのと同じ回数）
-        viewModel.updateFont(textDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
-        viewModel.updateFont(textDecorationId, FontFamilies.DELA_GOTHIC_ONE)
-        viewModel.updateFont(textDecorationId, FontFamilies.KOSUGI)
-        advanceUntilIdle()
+        viewModel.finishFontSessionForPreview()
 
-        val params = viewModel.currentFontSessionParams()
-
-        assertEquals("3-5", params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET])
-    }
-
-    @Test
-    fun consumeFontSessionForPreview_afterSwitches_returnsSwitchCountAndFinalFont() = runTest {
-        val uchiwaId = "test-uchiwa-id"
-        val textDecorationId = "text-1"
-        val textDecoration = Decoration.Text(
-            id = textDecorationId,
-            text = "テスト",
-            font = FontFamilies.HACHI_MARU_POP
-        )
-        val savedUchiwa = Uchiwa(
-            id = "test-id",
-            decorations = listOf(textDecoration),
-            uchiwaColor = Color.Black,
-            backgroundColor = Color.White
-        )
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
-        every { localImageRepository.getAllImages() } returns emptyList()
-
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        viewModel.updateFont(textDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
-        viewModel.updateFont(textDecorationId, FontFamilies.DELA_GOTHIC_ONE)
-        advanceUntilIdle()
-
-        val snapshot = viewModel.consumeFontSessionForPreview()
-
-        assertEquals(2, snapshot.fontSwitchCount)
-        assertEquals(FontFamilies.DELA_GOTHIC_ONE.name, snapshot.finalFontName)
-    }
-
-    @Test
-    fun consumeFontSessionForPreview_noSwitch_fallsBackToFirstTextDecorationFont() = runTest {
-        val uchiwaId = "test-uchiwa-id"
-        val textDecoration = Decoration.Text(
-            id = "text-1",
-            text = "テスト",
-            font = FontFamilies.HACHI_MARU_POP
-        )
-        val savedUchiwa = Uchiwa(
-            id = "test-id",
-            decorations = listOf(textDecoration),
-            uchiwaColor = Color.Black,
-            backgroundColor = Color.White
-        )
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
-        every { localImageRepository.getAllImages() } returns emptyList()
-
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        val snapshot = viewModel.consumeFontSessionForPreview()
-
-        assertEquals(0, snapshot.fontSwitchCount)
-        assertEquals(FontFamilies.HACHI_MARU_POP.name, snapshot.finalFontName)
-    }
-
-    @Test
-    fun consumeFontSessionForPreview_noTextDecoration_finalFontNameIsNull() = runTest {
-        every { localImageRepository.getAllImages() } returns emptyList()
-        val viewModel = createViewModel(uchiwaId = null)
-        advanceUntilIdle()
-
-        val snapshot = viewModel.consumeFontSessionForPreview()
-
-        assertEquals(0, snapshot.fontSwitchCount)
-        assertEquals(null, snapshot.finalFontName)
-    }
-
-    @Test
-    fun consumeFontSessionForPreview_calledTwice_resetsCountAfterFirstCall() = runTest {
-        val uchiwaId = "test-uchiwa-id"
-        val textDecorationId = "text-1"
-        val textDecoration = Decoration.Text(
-            id = textDecorationId,
-            text = "テスト",
-            font = FontFamilies.HACHI_MARU_POP
-        )
-        val savedUchiwa = Uchiwa(
-            id = "test-id",
-            decorations = listOf(textDecoration),
-            uchiwaColor = Color.Black,
-            backgroundColor = Color.White
-        )
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
-        every { localImageRepository.getAllImages() } returns emptyList()
-
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        viewModel.updateFont(textDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
-        viewModel.updateFont(textDecorationId, FontFamilies.DELA_GOTHIC_ONE)
-        advanceUntilIdle()
-
-        val firstSnapshot = viewModel.consumeFontSessionForPreview()
-        assertEquals(2, firstSnapshot.fontSwitchCount)
-
-        // 続けて編集してから離脱した2回目は、1回目の切り替え回数を引きずらない
-        viewModel.updateFont(textDecorationId, FontFamilies.KOSUGI)
-        advanceUntilIdle()
-
-        val secondSnapshot = viewModel.consumeFontSessionForPreview()
-        assertEquals(1, secondSnapshot.fontSwitchCount)
-    }
-
-    @Test
-    fun consumeFontSessionForPreview_switchedDecorationLaterDeleted_fallsBackToRemainingTextDecoration() =
-        runTest {
-            val uchiwaId = "test-uchiwa-id"
-            val switchedDecorationId = "text-1"
-            val remainingDecorationId = "text-2"
-            val switchedDecoration = Decoration.Text(
-                id = switchedDecorationId,
-                text = "テスト1",
-                font = FontFamilies.HACHI_MARU_POP
-            )
-            val remainingDecoration = Decoration.Text(
-                id = remainingDecorationId,
-                text = "テスト2",
-                font = FontFamilies.KOSUGI
-            )
-            val savedUchiwa = Uchiwa(
-                id = "test-id",
-                decorations = listOf(switchedDecoration, remainingDecoration),
-                uchiwaColor = Color.Black,
-                backgroundColor = Color.White
-            )
-            coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns savedUchiwa
-            every { localImageRepository.getAllImages() } returns emptyList()
-
-            val viewModel = createViewModel(uchiwaId = uchiwaId)
-            advanceUntilIdle()
-
-            // switchedDecorationId のフォントを切り替えたあと、その装飾自体を削除する
-            viewModel.updateFont(switchedDecorationId, FontFamilies.ZEN_MARU_GOTHIC)
-            viewModel.deleteDecoration(switchedDecorationId)
-            advanceUntilIdle()
-
-            val snapshot = viewModel.consumeFontSessionForPreview()
-
-            // 切り替え回数は保持しつつ、最終的なフォントは残っている装飾のものにフォールバックする
-            // （削除済みの装飾が最後に切り替えたフォント= ZEN_MARU_GOTHIC を報告してはいけない）
-            assertEquals(1, snapshot.fontSwitchCount)
-            assertEquals(FontFamilies.KOSUGI.name, snapshot.finalFontName)
+        verify(exactly = 1) {
+            fontSessionTracker.finishSessionForPreview(viewModel.uiState.value.decorations)
         }
+    }
+
+    // endregion
+
+    // region 破棄した理由の調査（#265・一時的）
+
+    @Test
+    fun answerDiscardReason_ReasonSelected_LogsReasonParamValue() = runTest {
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.answerDiscardReason(DiscardReason.NO_TIME)
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.ANSWER_DISCARD_REASON,
+                    params = mapOf(DiscardReasonParams.PARAM_DISCARD_REASON to "no_time")
+                )
+            )
+        }
+    }
 
     // endregion
 }

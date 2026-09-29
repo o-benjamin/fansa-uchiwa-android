@@ -2,23 +2,20 @@ package com.fansauchiwa.preview
 
 import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
-import com.fansauchiwa.EDIT_START_TIME_ARG
-import com.fansauchiwa.FINAL_FONT_NAME_ARG
-import com.fansauchiwa.FONT_SWITCH_COUNT_ARG
 import com.fansauchiwa.IMAGE_PATH_ARG
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.FontSessionAnalyticsParams
+import com.fansauchiwa.analytics.FontSessionTracker
+import com.fansauchiwa.analytics.PuffyStateAnalytics
+import com.fansauchiwa.analytics.PuffyStateParams
 import com.fansauchiwa.data.repository.AdMobRepository
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
-import com.fansauchiwa.edit.FontFamilies
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -45,8 +42,9 @@ class UchiwaPreviewSaveTest {
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
-    private lateinit var settingsRepository: SettingsRepository
     private lateinit var inAppReviewRepository: InAppReviewRepository
+    private lateinit var fontSessionTracker: FontSessionTracker
+    private lateinit var puffyStateAnalytics: PuffyStateAnalytics
 
     @Before
     fun setUp() {
@@ -54,11 +52,13 @@ class UchiwaPreviewSaveTest {
         masterpieceRepository = mockk(relaxed = true)
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
-        settingsRepository = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
+        fontSessionTracker = mockk(relaxed = true)
+        puffyStateAnalytics = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
-        coEvery { settingsRepository.getLastSavedFontName() } returns null
+        coEvery { fontSessionTracker.exportParams(any()) } returns emptyMap()
+        coEvery { puffyStateAnalytics.exportParams(any()) } returns emptyMap()
     }
 
     @After
@@ -66,27 +66,20 @@ class UchiwaPreviewSaveTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(
-        imagePath: String?,
-        fontSwitchCount: Int = 0,
-        finalFontName: String? = null,
-        editStartTimeMillis: Long = 0L
-    ): UchiwaPreviewViewModel {
+    private fun createViewModel(imagePath: String?): UchiwaPreviewViewModel {
         val savedStateHandle = SavedStateHandle().apply {
             if (imagePath != null) {
                 val encoded = URLEncoder.encode(imagePath, "UTF-8")
                 set(IMAGE_PATH_ARG, encoded)
             }
-            set(FONT_SWITCH_COUNT_ARG, fontSwitchCount)
-            set(FINAL_FONT_NAME_ARG, finalFontName)
-            set(EDIT_START_TIME_ARG, editStartTimeMillis)
         }
         return UchiwaPreviewViewModel(
             masterpieceRepository = masterpieceRepository,
             adMobRepository = adMobRepository,
             analyticsRepository = analyticsRepository,
-            settingsRepository = settingsRepository,
             inAppReviewRepository = inAppReviewRepository,
+            fontSessionTracker = fontSessionTracker,
+            puffyStateAnalytics = puffyStateAnalytics,
             savedStateHandle = savedStateHandle
         )
     }
@@ -167,86 +160,61 @@ class UchiwaPreviewSaveTest {
         verify(exactly = 2) { masterpieceRepository.saveMasterpieceToGallery(imagePath) }
     }
 
-    // region フォント計測（#242）
-
     @Test
-    fun showRewardedAdAndSave_hasFontData_logsFontSwitchAndRankAndSameAsLastBuckets() = runTest {
-        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 12,
-            finalFontName = FontFamilies.KEI_FONT.name, // ordinal 0 → rank 1 → "1-5"
-            editStartTimeMillis = 0L
-        )
+    fun showRewardedAdAndSave_trackerHasFontData_logsExportEventWithTrackerParams() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
-        coEvery { settingsRepository.getLastSavedFontName() } returns FontFamilies.KEI_FONT.name
+        val fontParams = mapOf<String, Any>(
+            FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to "11-20",
+            FontSessionAnalyticsParams.EDIT_DURATION_BUCKET to "1-3m",
+            FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to "1-5",
+            FontSessionAnalyticsParams.FONT_SAME_AS_LAST to "true"
+        )
+        coEvery { fontSessionTracker.exportParams("uchiwa-1") } returns fontParams
 
         viewModel.showRewardedAdAndSave(activity)
         advanceUntilIdle()
 
-        coVerify {
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, fontParams))
+        }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_puffyStateFound_logsExportEventWithFontAndPuffyParams() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        val activity = mockk<Activity>()
+        val fontParams = mapOf<String, Any>(FontSessionAnalyticsParams.FONT_SWITCH_BUCKET to "0")
+        val puffyParams = mapOf<String, Any>(
+            PuffyStateParams.PARAM_PUFFY_STATE to PuffyStateParams.PUFFY_STATE_ON
+        )
+        coEvery { fontSessionTracker.exportParams("uchiwa-1") } returns fontParams
+        coEvery { puffyStateAnalytics.exportParams("uchiwa-1") } returns puffyParams
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
             analyticsRepository.logEvent(
-                match<AnalyticsEvent> {
-                    it.name == AnalyticsActions.TAP_PREVIEW_EXPORT &&
-                        it.params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET] == "11-20" &&
-                        it.params[FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET] == "1-5" &&
-                        it.params[FontSessionAnalyticsParams.FONT_SAME_AS_LAST] == "true"
-                }
+                AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, fontParams + puffyParams)
             )
         }
     }
 
     @Test
-    fun showRewardedAdAndSave_firstSaveEver_logsFontSameAsLastFalse() = runTest {
-        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = FontFamilies.KEI_FONT.name,
-            editStartTimeMillis = 0L
-        )
-        val activity = mockk<Activity>()
-        // 前回保存したフォントがまだ無い（初回保存）
-        coEvery { settingsRepository.getLastSavedFontName() } returns null
-
-        viewModel.showRewardedAdAndSave(activity)
-        advanceUntilIdle()
-
-        coVerify {
-            analyticsRepository.logEvent(
-                match<AnalyticsEvent> {
-                    it.name == AnalyticsActions.TAP_PREVIEW_EXPORT &&
-                        it.params[FontSessionAnalyticsParams.FONT_SAME_AS_LAST] == "false"
-                }
-            )
-        }
-    }
-
-    @Test
-    fun showRewardedAdAndSave_noTextDecoration_logsOnlySwitchAndDurationBuckets() = runTest {
-        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = null,
-            editStartTimeMillis = 0L
-        )
+    fun showRewardedAdAndSave_trackerHasNoSession_logsExportEventWithoutParams() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
 
         viewModel.showRewardedAdAndSave(activity)
         advanceUntilIdle()
 
-        coVerify {
-            analyticsRepository.logEvent(
-                match<AnalyticsEvent> {
-                    it.name == AnalyticsActions.TAP_PREVIEW_EXPORT &&
-                        it.params[FontSessionAnalyticsParams.FONT_SWITCH_BUCKET] == "0" &&
-                        !it.params.containsKey(FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET) &&
-                        !it.params.containsKey(FontSessionAnalyticsParams.FONT_SAME_AS_LAST)
-                }
-            )
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, emptyMap()))
         }
-        coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
         coVerify(exactly = 0) { inAppReviewRepository.recordSaveSuccess() }
     }
 
@@ -262,14 +230,9 @@ class UchiwaPreviewSaveTest {
     }
 
     @Test
-    fun showRewardedAdAndSave_gallerySaveSucceeds_savesFinalFontAsLastSavedFontName() = runTest {
+    fun showRewardedAdAndSave_gallerySaveSucceeds_recordsSaveSuccess() = runTest {
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = FontFamilies.KEI_FONT.name,
-            editStartTimeMillis = 0L
-        )
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
         every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
 
@@ -290,21 +253,14 @@ class UchiwaPreviewSaveTest {
         viewModel.showRewardedAdAndSave(activity)
         advanceUntilIdle()
 
-        // ギャラリーへの保存が成功したときだけ、次回のfont_same_as_last比較用に上書きされる
-        coVerify(exactly = 1) { settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name) }
         // レビュー依頼（#243）の条件に使う保存成功の回数も数える
         coVerify(exactly = 1) { inAppReviewRepository.recordSaveSuccess() }
     }
 
     @Test
-    fun showRewardedAdAndSave_gallerySaveFails_doesNotOverwriteLastSavedFontName() = runTest {
+    fun showRewardedAdAndSave_gallerySaveFails_doesNotRecordSaveSuccess() = runTest {
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = FontFamilies.KEI_FONT.name,
-            editStartTimeMillis = 0L
-        )
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
         every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns false
 
@@ -326,66 +282,15 @@ class UchiwaPreviewSaveTest {
         advanceUntilIdle()
 
         // ギャラリーへの保存が失敗した場合は、保存したことにしない
-        coVerify(exactly = 0) { settingsRepository.setLastSavedFontName(any()) }
+        coVerify(exactly = 0) { inAppReviewRepository.recordSaveSuccess() }
     }
-
-    @Test
-    fun showRewardedAdAndSave_alreadyEarnedReward_readsLastSavedFontNameBeforeOverwritingIt() =
-        runTest {
-            // 広告を視聴済みの状態で連続してエクスポートしたとき、font_same_as_last の比較用の読み取りが
-            // 保存処理による上書きより先に行われること（読み取り/上書きの競合が無いこと）を確かめる
-            val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-            val viewModel = createViewModel(
-                imagePath = imagePath,
-                fontSwitchCount = 0,
-                finalFontName = FontFamilies.KEI_FONT.name,
-                editStartTimeMillis = 0L
-            )
-            val activity = mockk<Activity>()
-            every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
-
-            val onUserEarnedRewardSlot = slot<() -> Unit>()
-            every {
-                adMobRepository.showRewardedAd(
-                    activity = activity,
-                    placement = AnalyticsScreens.PREVIEW_SCREEN,
-                    waitForLoad = true,
-                    onUserEarnedReward = capture(onUserEarnedRewardSlot),
-                    onAdFailedOrSkipped = any(),
-                    onAdDismissed = any()
-                )
-            } answers {
-                onUserEarnedRewardSlot.captured.invoke()
-            }
-
-            // 1回目：広告を視聴して保存（広告視聴済みフラグが立つ）
-            viewModel.showRewardedAdAndSave(activity)
-            advanceUntilIdle()
-
-            // 2回目：広告をスキップしてすぐ保存される。読み取りが先に終わっていなければ
-            // 1回目の書き込みと競合し、自分自身と比較してしまう
-            viewModel.showRewardedAdAndSave(activity)
-            advanceUntilIdle()
-
-            coVerifyOrder {
-                settingsRepository.getLastSavedFontName()
-                settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name)
-                settingsRepository.getLastSavedFontName()
-                settingsRepository.setLastSavedFontName(FontFamilies.KEI_FONT.name)
-            }
-        }
 
     @Test
     fun showRewardedAdAndSave_calledAgainWhileSavePending_ignoresSecondCall() = runTest {
         // 1回目の保存処理が終わる前（isSaveButtonPressed=trueのまま）に連打されても、
-        // 多重に実行されない（font_same_as_lastの読み取り/上書きが重ならない）ことを確かめる
+        // 多重に実行されないことを確かめる
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = FontFamilies.KEI_FONT.name,
-            editStartTimeMillis = 0L
-        )
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
         // adMobRepositoryはrelaxedモックなので、showRewardedAdはスタブしなければ何もしない
         // （広告のコールバックが呼ばれず、保存処理が保留中の状態を維持する）
@@ -411,12 +316,7 @@ class UchiwaPreviewSaveTest {
         // 広告を最後まで見ずに閉じた場合（報酬未獲得）は保存処理が実行されないため、
         // 連打防止用のフラグを戻して再タップできるようにする
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = FontFamilies.KEI_FONT.name,
-            editStartTimeMillis = 0L
-        )
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
         every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
 
@@ -461,12 +361,7 @@ class UchiwaPreviewSaveTest {
         // AdMobRepositoryの実装では、広告の表示に失敗した場合 onAdFailedOrSkipped と onAdDismissed の
         // 両方が呼ばれる。この場合に保存処理が重複したり、状態が壊れたりしないことを確かめる
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
-        val viewModel = createViewModel(
-            imagePath = imagePath,
-            fontSwitchCount = 0,
-            finalFontName = FontFamilies.KEI_FONT.name,
-            editStartTimeMillis = 0L
-        )
+        val viewModel = createViewModel(imagePath)
         val activity = mockk<Activity>()
         every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
 
@@ -494,5 +389,4 @@ class UchiwaPreviewSaveTest {
         verify(exactly = 1) { masterpieceRepository.saveMasterpieceToGallery(imagePath) }
     }
 
-    // endregion
 }

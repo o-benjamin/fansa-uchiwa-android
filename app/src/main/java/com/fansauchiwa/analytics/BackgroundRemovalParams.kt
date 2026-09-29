@@ -1,4 +1,4 @@
-package com.fansauchiwa.data.analytics
+package com.fansauchiwa.analytics
 
 /**
  * 背景透過の失敗イベントのパラメータ

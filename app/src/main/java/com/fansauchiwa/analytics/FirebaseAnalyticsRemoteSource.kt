@@ -1,8 +1,7 @@
-package com.fansauchiwa.data.infra
+package com.fansauchiwa.analytics
 
 import android.os.Bundle
 import androidx.core.os.bundleOf
-import com.fansauchiwa.data.analytics.AnalyticsEvent
 import com.google.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

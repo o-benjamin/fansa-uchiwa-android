@@ -2,8 +2,9 @@ package com.fansauchiwa.data.repository
 
 import android.app.Activity
 import android.util.Log
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.InAppReviewDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryDataSource

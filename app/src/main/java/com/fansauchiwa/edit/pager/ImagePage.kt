@@ -84,7 +84,7 @@ private fun AddImageButton(
     ) {
         Icon(
             imageVector = Icons.Default.Add,
-            contentDescription = "Add",
+            contentDescription = stringResource(R.string.add_image_description),
         )
     }
 }

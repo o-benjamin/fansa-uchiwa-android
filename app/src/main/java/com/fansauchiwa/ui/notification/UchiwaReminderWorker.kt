@@ -20,10 +20,10 @@ import androidx.work.WorkerParameters
 import androidx.work.WorkManager
 import com.fansauchiwa.MainActivity
 import com.fansauchiwa.R
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.EventAnalyticsParams
-import com.fansauchiwa.data.repository.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.EventAnalyticsParams
 import com.fansauchiwa.data.repository.EventRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject

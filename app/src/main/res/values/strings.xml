@@ -16,9 +16,7 @@
     <string name="text_color_and_weight">文字色・太さ</string>
     <string name="stroke_color_and_weight">枠線色・太さ</string>
     <string name="second_stroke_color_and_weight">枠線色・太さ2</string>
-    <string name="text_puffy_enabled">ぷくぷく文字（ベータ版）</string>
-    <string name="sticker_puffy_enabled">ぷくぷくステッカー（ベータ版）</string>
-    <string name="overall_border_puffy_enabled">ぷくぷくフチ（ベータ版）</string>
+    <string name="puffy_enabled">ぷくぷく</string>
     <string name="snackbar_input_too_short">1文字以上入力してください</string>
     <string name="snackbar_puku_puku_unsupported">このエフェクトはAndroid 13以上の端末でのみご利用いただけます</string>
     <string name="snackbar_saved">画像を保存しました</string>
@@ -31,12 +29,23 @@
     <string name="save_as_image">画像として保存</string>
     <string name="send_to_print_app">印刷アプリ等に送る</string>
     <string name="share_chooser_title">送信先を選択</string>
-    <!-- 共有時に画像に添える既定の文（#244）。X で見た人がアプリにたどり着けるよう、アプリ名とハッシュタグを入れる。
-         X は外部リンク付きの投稿を伸ばしにくく、宣伝くさい文は利用者に消されるため、ストアのリンクは入れない -->
-    <string name="share_default_text">ファンサうちわで作ったよ！ #ファンサうちわ</string>
+    <!-- 共有時に画像に添える既定の文（#244, #269）。見た人がアプリにたどり着けるよう、アプリ名・ハッシュタグ・ストアのリンクを3行で入れる。
+         #244 では「X は外部リンク付きの投稿を伸ばしにくい」ためリンクを入れなかったが、#269 で見た人がストアへ行ける導線を優先する方針に変えた。
+         効果は共有経由のインストール数で公開4週間後に判断し、増えていなければリンクを外す案に戻す。
+         リンクの referrer（utm_source=app_share と utm_campaign=share_default_text）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える（Play Console は utm_source と utm_campaign の両方がそろったものだけを集計する）。
+         URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く -->
+    <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share%26utm_campaign%3Dshare_default_text</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
+    <!-- 編集を破棄した理由を聞くダイアログ（#265・一時的な調査。消し方は DiscardReasonSurvey の KDoc を参照） -->
+    <string name="discard_reason_title">よければ、破棄した理由を教えてください</string>
+    <string name="discard_reason_not_as_imagined">思った通りに作れなかった</string>
+    <string name="discard_reason_not_enough_materials">フォントやステッカーが足りなかった</string>
+    <string name="discard_reason_no_time">時間がなくなった</string>
+    <string name="discard_reason_just_trying">試しに触っただけ</string>
+    <string name="discard_reason_other">その他</string>
+    <string name="discard_reason_no_answer">答えない</string>
     <string name="save_success_title">保存成功</string>
     <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
     <string name="ok">OK</string>
@@ -50,6 +59,7 @@
     <string name="custom_color_picker_title">カスタム色を選択</string>
     <string name="decide">決定</string>
     <string name="color_picker_chip_description">%1$sを選ぶ</string>
+    <string name="custom_color_picker_close_description">カスタム色の選択を閉じる</string>
     <string name="color_name_red">赤</string>
     <string name="color_name_pink">ピンク</string>
     <string name="color_name_orange">オレンジ</string>
@@ -81,6 +91,11 @@
     <string name="layer_image">画像</string>
     <string name="layer_item_description">%1$sレイヤーを選ぶ</string>
     <string name="image_page_item_description">画像を選ぶ</string>
+    <string name="add_image_description">画像を追加する</string>
+    <string name="layer_reorder_description">ドラッグして並べ替え</string>
+    <string name="decoration_transform_handle_description">装飾を拡大・回転する</string>
+    <string name="decoration_delete_handle_description">装飾を削除する</string>
+    <string name="decoration_duplicate_handle_description">装飾を複製する</string>
     <string name="image_preview_title">画像プレビュー</string>
     <string name="image_preview_error">背景透過処理に失敗しました</string>
     <string name="image_preview_error_preparing">背景透過の準備中です。少し待ってからもう一度お試しください</string>
@@ -121,8 +136,8 @@
     <string name="overall_border">全体の縁</string>
 
     <!-- SelectionCircleIcon -->
-    <string name="selection_circle_icon_selected">Selected</string>
-    <string name="selection_circle_icon_not_selected">Not selected</string>
+    <string name="selection_circle_icon_selected">選択中</string>
+    <string name="selection_circle_icon_not_selected">未選択</string>
 
     <!-- Settings -->
     <string name="settings">設定</string>
@@ -186,5 +201,19 @@
     <!-- お詫びダイアログ -->
     <string name="apology_dialog_title">お詫びとお知らせ</string>
     <string name="apology_dialog_message">いつもご利用いただきありがとうございます。\n\n前回のバージョンで発生していた、クラッシュする不具合を修正いたしました。ご不便をおかけして申し訳ありません。再発防止対策を講じ、今後はこのようなことが起こらないよう努めますので、どうか引き続きアプリをお楽しみください。</string>
+
+    <!-- 毎日開く機能の需要調査（#270・一時的。調査が終わったら消す） -->
+    <string name="feature_door_section_title">準備中の新機能</string>
+    <string name="feature_door_countdown_title">推し活カウントダウン</string>
+    <string name="feature_door_countdown_description">次のライブまでの日数を毎日チェック</string>
+    <string name="feature_door_daily_prompt_title">今日のファンサお題</string>
+    <string name="feature_door_daily_prompt_description">毎日ひとつ、うちわの文言のお題が届く</string>
+    <string name="feature_door_anniversary_title">推しの記念日帳</string>
+    <string name="feature_door_anniversary_description">推しの誕生日や記念日をまとめて残す</string>
+    <string name="feature_door_dialog_title">準備中です</string>
+    <string name="feature_door_dialog_message">「%1$s」はまだ使えません。今後の開発の参考にするため、1問だけ教えてください。\n\nこの機能ができたら使いたいですか？</string>
+    <string name="feature_door_answer_daily">使いたい（毎日）</string>
+    <string name="feature_door_answer_sometimes">たまに使いたい</string>
+    <string name="feature_door_answer_not_needed">いらない</string>
 
 </resources>

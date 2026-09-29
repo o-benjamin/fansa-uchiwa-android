@@ -24,22 +24,24 @@ import com.fansauchiwa.R
 import com.fansauchiwa.TEMPLATE_ID_ARG
 import com.fansauchiwa.TEMPLATE_MAIN_COLOR_ARG
 import com.fansauchiwa.UCHIWA_ID_ARG
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.AnalyticsUndoRedoActions
+import com.fansauchiwa.analytics.BackGroundColorParams
+import com.fansauchiwa.analytics.DiscardReason
+import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditStickerTargetParams
+import com.fansauchiwa.analytics.EditTextTargetParams
+import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.analytics.AnalyticsUndoRedoActions
-import com.fansauchiwa.data.analytics.BackGroundColorParams
-import com.fansauchiwa.data.analytics.EditStickerTargetParams
-import com.fansauchiwa.data.analytics.EditTextTargetParams
-import com.fansauchiwa.data.analytics.baseFontSessionParams
 import com.fansauchiwa.data.applyTemplateMainColor
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -68,6 +70,8 @@ class EditViewModel @Inject constructor(
     private val editDecorationRepository: EditDecorationRepository,
     private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
+    private val fontSessionTracker: FontSessionTracker,
+    private val discardReasonSurvey: DiscardReasonSurvey,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val inputArg: EditScreenInputArg? =
@@ -85,19 +89,8 @@ class EditViewModel @Inject constructor(
     private var pendingSliderSnapshot: HistorySnapshot? = null
     private var hasShownCompletionTooltipInSession = false
 
-    // フォントが「迷い」か「楽しみ」かを見分けるための計測（#242）。
-    // このうちわの編集セッション中の状態で、保存または破棄でリセットする。
-    // undoStack/redoStack等と同じく SavedStateHandle には乗せていないため、バックグラウンドで
-    // プロセスが再生成されると失われる（既知の限界。長時間編集のセッションを一部過小に見積もる）。
-    private var fontSwitchCountInSession = 0
-
-    // フォントを最後に切り替えたテキスト装飾のID（フォント自体ではなくIDを持つのは、
-    // その装飾が削除された場合に古いフォントを参照し続けないようにするため。
-    // 最終的なフォントは参照時に現在の decorations から解決する）
-    private var lastSwitchedDecorationId: String? = null
-    private var editStartTimeMillis = System.currentTimeMillis()
-
     init {
+        fontSessionTracker.startSession()
         observeCompletionTooltip()
         fetchCompletionTooltip()
         loadExistingDecorations()
@@ -284,12 +277,20 @@ class EditViewModel @Inject constructor(
         )
     }
 
+    /**
+     * 装飾を足す。うちわ全体がぷくぷく（トグルがオン）の間に足した文字・ステッカーはぷくぷくにする（#268）
+     */
     fun addDecoration(decoration: Decoration) {
         saveSnapshot()
         val currentState = uiState.value
+        val isAllPuffy = PuffyState.isAllPuffy(
+            currentState.decorations,
+            currentState.isOverallBorderPuffyEnabled
+        )
+        val addedDecoration = if (isAllPuffy) decoration.withPuffy(true) else decoration
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = currentState.decorations + decoration,
-            selectedDecorationId = decoration.id
+            decorations = currentState.decorations + addedDecoration,
+            selectedDecorationId = addedDecoration.id
         )
         when (decoration) {
             is Decoration.Text -> {
@@ -535,8 +536,7 @@ class EditViewModel @Inject constructor(
         updateDecoration(id) { decoration ->
             when (decoration) {
                 is Decoration.Text -> {
-                    fontSwitchCountInSession++
-                    lastSwitchedDecorationId = id
+                    fontSessionTracker.onFontSwitched(id)
                     logEvent(
                         AnalyticsActions.SELECT_EDIT_TEXT_FONT,
                         mapOf("font_family" to newFont.name)
@@ -551,36 +551,28 @@ class EditViewModel @Inject constructor(
 
     /**
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるフォント計測パラメータを返す（#242）。
-     * このセッションはここで終わる（画面が破棄されるため）のでリセットは不要。
      */
-    fun currentFontSessionParams(): Map<String, Any> = baseFontSessionParams(
-        switchCount = fontSwitchCountInSession,
-        elapsedMillis = System.currentTimeMillis() - editStartTimeMillis
-    )
+    fun fontSessionParamsForDiscardEvent(): Map<String, Any> = fontSessionTracker.paramsForDiscardEvent()
 
     /**
-     * Preview画面（tap_preview_export）へ渡すためのフォント計測データのスナップショットを返し、
-     * 次の編集に備えてセッションをリセットする（#242: 保存または破棄でリセット）。
-     *
-     * 最終的なフォントは、このセッションで最後に切り替えたテキスト装飾の現在のフォント。
-     * その装飾が既に削除されていれば（切り替え後に削除された場合）、最初のテキスト装飾の
-     * （テンプレートまたは初期値の）フォントにフォールバックする。テキスト装飾が無ければ null。
+     * 破棄を選んだときに、理由を聞くダイアログを出すかどうかを返す（#265・一時的な調査）。
+     * true を返すと聞いたものとして記録するため、ダイアログは必ず出すこと。
      */
-    fun consumeFontSessionForPreview(): FontSessionAnalyticsSnapshot {
-        val textDecorations = uiState.value.decorations.filterIsInstance<Decoration.Text>()
-        val finalFontName = (
-            textDecorations.find { it.id == lastSwitchedDecorationId }?.font
-                ?: textDecorations.firstOrNull()?.font
-            )?.name
-        val snapshot = FontSessionAnalyticsSnapshot(
-            fontSwitchCount = fontSwitchCountInSession,
-            finalFontName = finalFontName,
-            editStartTimeMillis = editStartTimeMillis
-        )
-        fontSwitchCountInSession = 0
-        lastSwitchedDecorationId = null
-        editStartTimeMillis = System.currentTimeMillis()
-        return snapshot
+    fun consumeDiscardReasonAskChance(): Boolean = discardReasonSurvey.tryConsumeAskChance()
+
+    /** 破棄した理由の答えを送る（#265・一時的な調査） */
+    fun answerDiscardReason(reason: DiscardReason) {
+        viewModelScope.launch {
+            analyticsRepository.logEvent(discardReasonSurvey.answerEvent(reason))
+        }
+    }
+
+    /**
+     * 保存してPreview画面へ進むときに呼ぶ。tap_preview_export 用のフォント計測（#242）の値を
+     * [FontSessionTracker] に取っておく。
+     */
+    fun finishFontSessionForPreview() {
+        fontSessionTracker.finishSessionForPreview(uiState.value.decorations)
     }
 
     fun updateWidth(id: String, newWidth: Int) {
@@ -693,17 +685,6 @@ class EditViewModel @Inject constructor(
         }
     }
 
-    fun updatePuffyEnabled(id: String, isPuffyEnabled: Boolean) {
-        saveSnapshot()
-        updateDecoration(id) { decoration ->
-            when (decoration) {
-                is Decoration.Text -> decoration.copy(isPuffyEnabled = isPuffyEnabled)
-                is Decoration.Sticker -> decoration.copy(isPukupuku = isPuffyEnabled)
-                else -> decoration
-            }
-        }
-    }
-
     fun updateUchiwaColor(color: Color) {
         saveSnapshot()
         logEvent(
@@ -740,10 +721,14 @@ class EditViewModel @Inject constructor(
         savePendingSliderSnapshot()
     }
 
-    fun updateOverallBorderPuffyEnabled(isEnabled: Boolean) {
+    /**
+     * うちわ全体のぷくぷくのトグル（#268）。文字・ステッカー・フチのぷくぷくをすべて [isEnabled] にそろえる
+     */
+    fun updateAllPuffyEnabled(isEnabled: Boolean) {
         saveSnapshot()
         val currentState = uiState.value
         savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = currentState.decorations.map { it.withPuffy(isEnabled) },
             isOverallBorderPuffyEnabled = isEnabled
         )
     }

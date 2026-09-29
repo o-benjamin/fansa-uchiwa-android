@@ -4,24 +4,18 @@ import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fansauchiwa.EDIT_START_TIME_ARG
-import com.fansauchiwa.FINAL_FONT_NAME_ARG
-import com.fansauchiwa.FONT_SWITCH_COUNT_ARG
 import com.fansauchiwa.IMAGE_PATH_ARG
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.analytics.FontSessionAnalyticsParams
-import com.fansauchiwa.data.analytics.ShareAnalyticsParams
-import com.fansauchiwa.data.analytics.baseFontSessionParams
-import com.fansauchiwa.data.analytics.finalFontRankBucket
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.FontSessionTracker
+import com.fansauchiwa.analytics.PuffyStateAnalytics
+import com.fansauchiwa.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
-import com.fansauchiwa.edit.FontFamilies
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.net.URLDecoder
 import javax.inject.Inject
@@ -35,8 +29,9 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val adMobRepository: AdMobRepository,
     private val analyticsRepository: AnalyticsRepository,
-    private val settingsRepository: SettingsRepository,
     private val inAppReviewRepository: InAppReviewRepository,
+    private val fontSessionTracker: FontSessionTracker,
+    private val puffyStateAnalytics: PuffyStateAnalytics,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -58,16 +53,13 @@ class UchiwaPreviewViewModel @Inject constructor(
                 savedStateHandle[UI_STATE_KEY] = currentState.copy(isLoadingAd = isLoading)
             }
         }
-        // Navigation引数からimagePathとフォント計測データ（#242）を取得してUI Stateに設定
+        // Navigation引数からimagePathを取得してUI Stateに設定
         val encodedImagePath = savedStateHandle.get<String>(IMAGE_PATH_ARG)
-        val decodedImagePath = encodedImagePath?.let { URLDecoder.decode(it, "UTF-8") }
-        val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            imagePath = decodedImagePath ?: currentState.imagePath,
-            fontSwitchCount = savedStateHandle.get<Int>(FONT_SWITCH_COUNT_ARG) ?: 0,
-            finalFontName = savedStateHandle.get<String>(FINAL_FONT_NAME_ARG),
-            editStartTimeMillis = savedStateHandle.get<Long>(EDIT_START_TIME_ARG) ?: 0L
-        )
+        if (encodedImagePath != null) {
+            val decodedImagePath = URLDecoder.decode(encodedImagePath, "UTF-8")
+            val currentState = uiState.value
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(imagePath = decodedImagePath)
+        }
     }
 
     fun logScreenView() {
@@ -91,15 +83,12 @@ class UchiwaPreviewViewModel @Inject constructor(
      */
     fun showRewardedAdAndSave(activity: Activity) {
         val currentState = uiState.value
-        // 連打などで多重に実行しない。isSaveButtonPressedは一連の保存処理が終わるまでtrueのままなので、
-        // これによりfont_same_as_last用の読み取り/上書き（下記）が重ならないことも保証される
+        // 連打などで多重に実行しない。isSaveButtonPressedは一連の保存処理が終わるまでtrueのまま
         if (currentState.isSaveButtonPressed) return
         savedStateHandle[UI_STATE_KEY] = currentState.copy(isSaveButtonPressed = true)
 
         viewModelScope.launch {
-            // font_same_as_last の比較用に、保存処理（saveToGallery）で上書きされるより先に読んでおく
-            val lastSavedFontName = settingsRepository.getLastSavedFontName()
-            logExportEvent(lastSavedFontName)
+            logExportEvent()
 
             if (hasEarnedRewardInSession) {
                 saveToGallery()
@@ -139,50 +128,23 @@ class UchiwaPreviewViewModel @Inject constructor(
     }
 
     /**
-     * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）付きで送る。
+     * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）と
+     * ぷくぷくの状態（#268）付きで送る。
      * 呼び出し元（[showRewardedAdAndSave]）のコルーチンの中から直接呼ぶsuspend関数。
-     * ここで別のコルーチンを起動しないのは、[showRewardedAdAndSave] が既にコルーチンの中で
-     * このメソッドを呼んでおり、二重に起動する必要が無いため。
-     *
-     * 「前回保存したフォント」の上書きはここではしない（実際にギャラリーへの保存が成功した
-     * ときだけ [saveToGallery] で上書きする。ここで上書きすると、保存に失敗したケースや
-     * タップしただけで広告表示中に離脱したケースも「保存した」ことになってしまうため）。
      */
-    private suspend fun logExportEvent(lastSavedFontName: String?) {
-        val params = buildFontSessionAnalyticsParams(lastSavedFontName)
+    private suspend fun logExportEvent() {
+        val uchiwaId = getCurrentUchiwaId()
+        val params = fontSessionTracker.exportParams(currentUchiwaId = uchiwaId) +
+            puffyStateAnalytics.exportParams(uchiwaId)
         analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
     }
 
-    private fun buildFontSessionAnalyticsParams(lastSavedFontName: String?): Map<String, Any> {
-        val state = uiState.value
-        val elapsedMillis = System.currentTimeMillis() - state.editStartTimeMillis
-        val baseParams = baseFontSessionParams(
-            switchCount = state.fontSwitchCount,
-            elapsedMillis = elapsedMillis
-        )
-        val finalFont = resolveFinalFont(state.finalFontName) ?: return baseParams
-
-        return baseParams + mapOf(
-            FontSessionAnalyticsParams.FINAL_FONT_RANK_BUCKET to finalFontRankBucket(finalFont),
-            FontSessionAnalyticsParams.FONT_SAME_AS_LAST to
-                (finalFont.name == lastSavedFontName).toString()
-        )
-    }
-
-    private fun resolveFinalFont(finalFontName: String?): FontFamilies? =
-        finalFontName?.let { name -> FontFamilies.entries.find { it.name == name } }
-
     private fun saveToGallery() {
         viewModelScope.launch {
-            val state = uiState.value
-            val imagePath = state.imagePath
+            val imagePath = uiState.value.imagePath
             if (imagePath != null) {
                 val success = masterpieceRepository.saveMasterpieceToGallery(imagePath)
                 if (success) {
-                    // 保存が成功したうちわの最終的なフォントを、次回のfont_same_as_last比較用に保存する
-                    resolveFinalFont(state.finalFontName)?.let {
-                        settingsRepository.setLastSavedFontName(it.name)
-                    }
                     // Screen が saveSuccess=true を受けてレビュー依頼の条件を判定するため、
                     // 今回の保存を回数に含めてから saveSuccess を流す（#243）
                     inAppReviewRepository.recordSaveSuccess()

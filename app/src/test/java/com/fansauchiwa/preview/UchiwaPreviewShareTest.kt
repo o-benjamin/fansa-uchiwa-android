@@ -3,15 +3,16 @@ package com.fansauchiwa.preview
 import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.IMAGE_PATH_ARG
-import com.fansauchiwa.data.analytics.AnalyticsActions
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.analytics.AnalyticsScreens
-import com.fansauchiwa.data.analytics.ShareAnalyticsParams
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.FontSessionTracker
+import com.fansauchiwa.analytics.PuffyStateAnalytics
+import com.fansauchiwa.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -41,7 +42,8 @@ class UchiwaPreviewShareTest {
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
-    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var fontSessionTracker: FontSessionTracker
+    private lateinit var puffyStateAnalytics: PuffyStateAnalytics
     private lateinit var inAppReviewRepository: InAppReviewRepository
 
     @Before
@@ -50,7 +52,8 @@ class UchiwaPreviewShareTest {
         masterpieceRepository = mockk(relaxed = true)
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
-        settingsRepository = mockk(relaxed = true)
+        fontSessionTracker = mockk(relaxed = true)
+        puffyStateAnalytics = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
@@ -72,8 +75,9 @@ class UchiwaPreviewShareTest {
             masterpieceRepository = masterpieceRepository,
             adMobRepository = adMobRepository,
             analyticsRepository = analyticsRepository,
-            settingsRepository = settingsRepository,
             inAppReviewRepository = inAppReviewRepository,
+            fontSessionTracker = fontSessionTracker,
+            puffyStateAnalytics = puffyStateAnalytics,
             savedStateHandle = savedStateHandle
         )
     }

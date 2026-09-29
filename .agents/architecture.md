@@ -39,6 +39,7 @@
     - インターフェースと実装クラスは、`~Repository.kt` という同一ファイルに記述してください。
     - `~Repository.kt` ファイルは必ず `app/src/main/java/com/fansauchiwa/data/repository`
       配下に作成してください。
+    - ただし分析（Analytics）の Repository / DataSource は `analytics` パッケージに置きます（`.agents/analytics.md`）。
 - **DataSourceパターン (Infra層)**:
     - `~Repository` の実装クラスは、データの永続化や外部APIアクセスなどのインフラ層処理を
       `~DataSource` インターフェースに委譲してください。

@@ -9,10 +9,6 @@ data class UchiwaPreviewUiState(
     val saveSuccess: Boolean? = null,
     val isLoadingAd: Boolean = false,
     val isSaveButtonPressed: Boolean = false,
-    val shareImagePath: String? = null,
-    // フォントが「迷い」か「楽しみ」かを見分けるための計測（#242）。Edit画面から渡される。
-    val fontSwitchCount: Int = 0,
-    val finalFontName: String? = null,
-    val editStartTimeMillis: Long = 0L
+    val shareImagePath: String? = null
 ) : Parcelable
 

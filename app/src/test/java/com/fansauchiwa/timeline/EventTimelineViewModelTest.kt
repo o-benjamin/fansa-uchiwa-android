@@ -2,9 +2,9 @@ package com.fansauchiwa.timeline
 
 import androidx.lifecycle.SavedStateHandle
 import com.fansauchiwa.UCHIWA_ID_ARG
+import com.fansauchiwa.analytics.AnalyticsEvent
+import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.data.UuidProvider
-import com.fansauchiwa.data.analytics.AnalyticsEvent
-import com.fansauchiwa.data.repository.AnalyticsRepository
 import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.source.EventEntity
