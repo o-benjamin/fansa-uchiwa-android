@@ -71,6 +71,7 @@ import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.edit.withPuffy
 import com.fansauchiwa.ui.StickerAsset
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
@@ -143,16 +144,15 @@ fun EditPager(
     val pagerState = rememberPagerState(pageCount = { DecorationTabType.entries.size })
     val scope = rememberCoroutineScope()
     val selectedTabIndex = pagerState.currentPage
-    val isLayerTabSelected = selectedTabIndex == DecorationTabType.LAYERS.ordinal
     val selectedTextDecoration = state.selectedDecoration as? Decoration.Text
     val selectedStickerDecoration = state.selectedDecoration as? Decoration.Sticker
 
-    LaunchedEffect(state.selectedDecoration, isLayerTabSelected) {
+    // タブを合わせるのは選択が変わったときだけ。キーに装飾そのものやタブの状態を入れると、
+    // 「全体」タブへのスクロール中に再起動して、選択中の装飾のタブへ上書きされてしまう
+    LaunchedEffect(state.selectedDecorationId) {
         val targetPage = state.selectedDecoration.toDecorationPageIndex() ?: return@LaunchedEffect
-        if (!isLayerTabSelected) {
-            scope.launch {
-                pagerState.animateScrollToPage(targetPage)
-            }
+        if (pagerState.currentPage != DecorationTabType.LAYERS.ordinal) {
+            pagerState.animateScrollToPage(targetPage)
         }
     }
 
@@ -472,7 +472,8 @@ private fun LayerItem(
 
         // プレビュー
         LayerItemPreview(
-            decoration = decoration,
+            // 一覧は見分けと並べ替えが目的。ぷくぷくは小さい枠だと欠けるので平面で描く
+            decoration = decoration.withPuffy(false),
             modifier = Modifier
                 .padding(horizontal = 24.dp)
                 .height(48.dp)
