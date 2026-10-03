@@ -1,4 +1,4 @@
-# ステッカー・フォントの並び順と NEW ラベル
+# ステッカー・フォントの並び順・NEW ラベル・ライセンス台帳
 
 `StickerAsset`（`ui/StickerAssets.kt`）と `FontFamilies`（`edit/FontFamilies.kt`）は、**enum の宣言順がそのまま選択画面の表示順と「1位〜5位」のバッジになる**。手で好みの順に並べないこと（バッジが実データと食い違うため）。
 
