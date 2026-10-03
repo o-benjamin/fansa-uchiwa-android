@@ -7,6 +7,8 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.ExportedFontAnalytics
+import com.fansauchiwa.analytics.ExportedFontParams
 import com.fansauchiwa.analytics.FontSessionAnalyticsParams
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
@@ -45,6 +47,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var inAppReviewRepository: InAppReviewRepository
     private lateinit var fontSessionTracker: FontSessionTracker
     private lateinit var puffyStateAnalytics: PuffyStateAnalytics
+    private lateinit var exportedFontAnalytics: ExportedFontAnalytics
 
     @Before
     fun setUp() {
@@ -55,10 +58,12 @@ class UchiwaPreviewSaveTest {
         inAppReviewRepository = mockk(relaxed = true)
         fontSessionTracker = mockk(relaxed = true)
         puffyStateAnalytics = mockk(relaxed = true)
+        exportedFontAnalytics = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
         coEvery { fontSessionTracker.exportParams(any()) } returns emptyMap()
         coEvery { puffyStateAnalytics.exportParams(any()) } returns emptyMap()
+        coEvery { exportedFontAnalytics.fontEvents(any()) } returns emptyList()
     }
 
     @After
@@ -80,6 +85,7 @@ class UchiwaPreviewSaveTest {
             inAppReviewRepository = inAppReviewRepository,
             fontSessionTracker = fontSessionTracker,
             puffyStateAnalytics = puffyStateAnalytics,
+            exportedFontAnalytics = exportedFontAnalytics,
             savedStateHandle = savedStateHandle
         )
     }
@@ -389,4 +395,76 @@ class UchiwaPreviewSaveTest {
         verify(exactly = 1) { masterpieceRepository.saveMasterpieceToGallery(imagePath) }
     }
 
+    private fun fontEvent(fontName: String) = AnalyticsEvent(
+        AnalyticsActions.EXPORT_UCHIWA_FONT,
+        mapOf(ExportedFontParams.PARAM_FONT_FAMILY to fontName)
+    )
+
+    private fun stubAdCallback(invokeCallback: (onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) -> Unit) {
+        val onUserEarnedRewardSlot = slot<() -> Unit>()
+        val onAdDismissedSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = any(),
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = capture(onAdDismissedSlot)
+            )
+        } answers {
+            invokeCallback(onUserEarnedRewardSlot.captured, onAdDismissedSlot.captured)
+        }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_gallerySaveSucceeds_logsFontEventsOfSavedUchiwa() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+        val fontEvents = listOf(fontEvent("NOTO_SANS_JP"), fontEvent("DELA_GOTHIC_ONE"))
+        coEvery { exportedFontAnalytics.fontEvents("uchiwa-1") } returns fontEvents
+        stubAdCallback { onUserEarnedReward, _ -> onUserEarnedReward() }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { analyticsRepository.logEvent(fontEvents[0]) }
+        coVerify(exactly = 1) { analyticsRepository.logEvent(fontEvents[1]) }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_gallerySaveFails_doesNotLogFontEvents() = runTest {
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns false
+        coEvery { exportedFontAnalytics.fontEvents("uchiwa-1") } returns listOf(fontEvent("NOTO_SANS_JP"))
+        stubAdCallback { onUserEarnedReward, _ -> onUserEarnedReward() }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { exportedFontAnalytics.fontEvents(any()) }
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.EXPORT_UCHIWA_FONT })
+        }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_adDismissedWithoutReward_doesNotLogFontEvents() = runTest {
+        // 広告を最後まで見ずに閉じると保存されないので、保存したうちわとして数えない
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        coEvery { exportedFontAnalytics.fontEvents("uchiwa-1") } returns listOf(fontEvent("NOTO_SANS_JP"))
+        stubAdCallback { _, onAdDismissed -> onAdDismissed() }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        verify(exactly = 0) { masterpieceRepository.saveMasterpieceToGallery(any()) }
+        coVerify(exactly = 0) { exportedFontAnalytics.fontEvents(any()) }
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.EXPORT_UCHIWA_FONT })
+        }
+    }
 }

@@ -9,6 +9,7 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.ExportedFontAnalytics
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.ShareAnalyticsParams
@@ -32,6 +33,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val inAppReviewRepository: InAppReviewRepository,
     private val fontSessionTracker: FontSessionTracker,
     private val puffyStateAnalytics: PuffyStateAnalytics,
+    private val exportedFontAnalytics: ExportedFontAnalytics,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -154,7 +156,21 @@ class UchiwaPreviewViewModel @Inject constructor(
                     saveSuccess = success,
                     isSaveButtonPressed = false
                 )
+                // 保存の結果を画面に出すのを待たせないよう、うちわを読み直す計測は後に回す
+                if (success) {
+                    logExportedFontEvents()
+                }
             }
+        }
+    }
+
+    /**
+     * ギャラリーへ保存できたうちわで使われているフォントを、フォントごとに1回ずつ送る（#288）。
+     * 保存に失敗したとき・広告を閉じて保存しなかったときは呼ばない。
+     */
+    private suspend fun logExportedFontEvents() {
+        exportedFontAnalytics.fontEvents(getCurrentUchiwaId()).forEach { event ->
+            analyticsRepository.logEvent(event)
         }
     }
 

@@ -7,6 +7,7 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.ExportedFontAnalytics
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.ShareAnalyticsParams
@@ -44,6 +45,7 @@ class UchiwaPreviewShareTest {
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var fontSessionTracker: FontSessionTracker
     private lateinit var puffyStateAnalytics: PuffyStateAnalytics
+    private lateinit var exportedFontAnalytics: ExportedFontAnalytics
     private lateinit var inAppReviewRepository: InAppReviewRepository
 
     @Before
@@ -54,6 +56,7 @@ class UchiwaPreviewShareTest {
         analyticsRepository = mockk(relaxed = true)
         fontSessionTracker = mockk(relaxed = true)
         puffyStateAnalytics = mockk(relaxed = true)
+        exportedFontAnalytics = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
@@ -78,6 +81,7 @@ class UchiwaPreviewShareTest {
             inAppReviewRepository = inAppReviewRepository,
             fontSessionTracker = fontSessionTracker,
             puffyStateAnalytics = puffyStateAnalytics,
+            exportedFontAnalytics = exportedFontAnalytics,
             savedStateHandle = savedStateHandle
         )
     }
