@@ -55,7 +55,8 @@ import kotlinx.serialization.Serializable
 /**
  * 文字入れで選べるフォント。宣言順がフォント選択画面の表示順と「1位〜5位」のバッジになる。
  * 並びは GA4 の `select_edit_text_font` の選択回数の多い順（#241、2026-08-23〜09-19 の28日間）。
- * `isNew = true` のフォントは先頭に置き、順位の対象から外している。
+ * `isNew = true` のフォントは先頭に置き、順位の対象から外している。NEW の中の並びは採用を決めたときの順で、データの順ではない。
+ * 今の NEW は v2.9.0 で追加した9個（#286）。外して並べ替える作業は #298。
  * 並べ替えの手順と `isNew` の運用ルールは `.agents/sticker-font-order.md` を参照。
  */
 @Serializable
