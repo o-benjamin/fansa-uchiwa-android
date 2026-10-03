@@ -37,26 +37,35 @@ class FontSessionAnalyticsBucketsTest {
 
     // region finalFontRankBucket
 
+    // NEW を除いた宣言順。フォント選択画面のバッジの順位と同じ
+    private val rankedFonts = FontFamilies.entries.filterNot { it.isNew }
+
     @Test
-    fun finalFontRankBucket_firstFont_returnsTopBucket() {
-        // FontFamilies宣言順の1番目（ordinal 0 → rank 1）
-        assertEquals("1-5", finalFontRankBucket(FontFamilies.entries.first()))
+    fun finalFontRankBucket_firstRankedFont_returnsTopBucket() {
+        // NEW を除いた1番目（rank 1）。NEW が先頭に並んでいても1位として数える
+        assertEquals("1-5", finalFontRankBucket(rankedFonts.first()))
     }
 
     @Test
     fun finalFontRankBucket_boundaries_returnExpectedBuckets() {
-        val entries = FontFamilies.entries
-        assertEquals("1-5", finalFontRankBucket(entries[4])) // rank 5
-        assertEquals("6-10", finalFontRankBucket(entries[5])) // rank 6
-        assertEquals("6-10", finalFontRankBucket(entries[9])) // rank 10
-        assertEquals("11-20", finalFontRankBucket(entries[10])) // rank 11
-        assertEquals("11-20", finalFontRankBucket(entries[19])) // rank 20
-        assertEquals("21+", finalFontRankBucket(entries[20])) // rank 21
+        assertEquals("1-5", finalFontRankBucket(rankedFonts[4])) // rank 5
+        assertEquals("6-10", finalFontRankBucket(rankedFonts[5])) // rank 6
+        assertEquals("6-10", finalFontRankBucket(rankedFonts[9])) // rank 10
+        assertEquals("11-20", finalFontRankBucket(rankedFonts[10])) // rank 11
+        assertEquals("11-20", finalFontRankBucket(rankedFonts[19])) // rank 20
+        assertEquals("21+", finalFontRankBucket(rankedFonts[20])) // rank 21
     }
 
     @Test
-    fun finalFontRankBucket_lastFont_returnsBottomBucket() {
-        assertEquals("21+", finalFontRankBucket(FontFamilies.entries.last()))
+    fun finalFontRankBucket_lastRankedFont_returnsBottomBucket() {
+        assertEquals("21+", finalFontRankBucket(rankedFonts.last()))
+    }
+
+    @Test
+    fun finalFontRankBucket_newFonts_returnNewBucket() {
+        FontFamilies.entries.filter { it.isNew }.forEach { font ->
+            assertEquals("new", finalFontRankBucket(font))
+        }
     }
 
     // endregion
