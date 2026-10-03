@@ -71,6 +71,7 @@ import com.fansauchiwa.edit.decorationitem.ImageItemContent
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.nonScaledSp
+import com.fansauchiwa.edit.withPuffy
 import com.fansauchiwa.ui.StickerAsset
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
@@ -143,17 +144,18 @@ fun EditPager(
     val pagerState = rememberPagerState(pageCount = { DecorationTabType.entries.size })
     val scope = rememberCoroutineScope()
     val selectedTabIndex = pagerState.currentPage
-    val isLayerTabSelected = selectedTabIndex == DecorationTabType.LAYERS.ordinal
     val selectedTextDecoration = state.selectedDecoration as? Decoration.Text
     val selectedStickerDecoration = state.selectedDecoration as? Decoration.Sticker
 
-    LaunchedEffect(state.selectedDecoration, isLayerTabSelected) {
-        val targetPage = state.selectedDecoration.toDecorationPageIndex() ?: return@LaunchedEffect
-        if (!isLayerTabSelected) {
-            scope.launch {
-                pagerState.animateScrollToPage(targetPage)
-            }
-        }
+    // タブを合わせるのは選択が変わったときだけ。キーに装飾そのものやタブの状態を入れると、
+    // 「全体」タブへのスクロール中に再起動して、選択中の装飾のタブへ上書きされてしまう。
+    // レイヤータブにいるかどうかは、再起動させずに効果の中で現在ページを読んで判断する
+    LaunchedEffect(state.selectedDecorationId) {
+        val targetPage = tabPageToSyncWithSelection(
+            selectedDecoration = state.selectedDecoration,
+            currentPage = pagerState.currentPage
+        ) ?: return@LaunchedEffect
+        pagerState.animateScrollToPage(targetPage)
     }
 
     Column(
@@ -247,6 +249,16 @@ fun EditPager(
             }
         }
     }
+}
+
+/**
+ * 装飾の選択が変わったときに移るタブのページ。移らないときは null。
+ * レイヤータブにいるあいだは、選択してもタブを動かさない（「全体」タブへの移動を邪魔しない）
+ */
+internal fun tabPageToSyncWithSelection(selectedDecoration: Decoration?, currentPage: Int): Int? {
+    val isOnLayerTab = currentPage == DecorationTabType.LAYERS.ordinal
+    if (isOnLayerTab) return null
+    return selectedDecoration.toDecorationPageIndex()
 }
 
 private fun Decoration?.toDecorationPageIndex(): Int? {
@@ -472,7 +484,9 @@ private fun LayerItem(
 
         // プレビュー
         LayerItemPreview(
-            decoration = decoration,
+            // 一覧は見分けと並べ替えが目的なので平面で描く。ぷくぷくだと SDF が小さい枠より大きくて欠け、
+            // タブを開くたびの SDF 再生成で表示も切り替わる（#285）
+            decoration = decoration.withPuffy(false),
             modifier = Modifier
                 .padding(horizontal = 24.dp)
                 .height(48.dp)
@@ -489,6 +503,7 @@ private fun LayerItem(
     }
 }
 
+/** 呼び出し側は [decoration] に `withPuffy(false)` を渡す。ぷくぷくのままだと 36dp の枠で欠ける（#285） */
 @Composable
 private fun LayerItemPreview(
     decoration: Decoration,
