@@ -158,7 +158,7 @@ class UchiwaPreviewViewModel @Inject constructor(
                 )
                 // 保存の結果を画面に出すのを待たせないよう、うちわを読み直す計測は後に回す
                 if (success) {
-                    logExportedFontEvents()
+                    logFontEventsOfSavedUchiwa()
                 }
             }
         }
@@ -168,7 +168,7 @@ class UchiwaPreviewViewModel @Inject constructor(
      * ギャラリーへ保存できたうちわで使われているフォントを、フォントごとに1回ずつ送る（#288）。
      * 保存に失敗したとき・広告を閉じて保存しなかったときは呼ばない。
      */
-    private suspend fun logExportedFontEvents() {
+    private suspend fun logFontEventsOfSavedUchiwa() {
         exportedFontAnalytics.fontEvents(getCurrentUchiwaId()).forEach { event ->
             analyticsRepository.logEvent(event)
         }

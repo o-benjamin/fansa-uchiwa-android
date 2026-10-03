@@ -64,7 +64,7 @@ object AnalyticsActions {
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
 
-    // ギャラリーへ保存できたうちわのフォント（#288）。フォントごとに1回送る。パラメータは ExportedFontParams を参照
+    // ギャラリーへ保存できたうちわのフォント（#288）。フォントごとに1回送る。パラメータは FontFamilyParams、送り方は ExportedFontAnalytics を参照
     const val EXPORT_UCHIWA_FONT = "export_uchiwa_font"
 
     // イベント予定・リマインド通知が戻ってくる理由になっているかを測る（#249）

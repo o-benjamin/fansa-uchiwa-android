@@ -34,6 +34,7 @@ import com.fansauchiwa.analytics.DiscardReason
 import com.fansauchiwa.analytics.DiscardReasonSurvey
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
+import com.fansauchiwa.analytics.FontFamilyParams
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
@@ -296,7 +297,7 @@ class EditViewModel @Inject constructor(
             is Decoration.Text -> {
                 logEvent(
                     AnalyticsActions.SELECT_EDIT_TEXT,
-                    mapOf("font_family" to decoration.font.name)
+                    mapOf(FontFamilyParams.PARAM_FONT_FAMILY to decoration.font.name)
                 )
             }
 
@@ -539,7 +540,7 @@ class EditViewModel @Inject constructor(
                     fontSessionTracker.onFontSwitched(id)
                     logEvent(
                         AnalyticsActions.SELECT_EDIT_TEXT_FONT,
-                        mapOf("font_family" to newFont.name)
+                        mapOf(FontFamilyParams.PARAM_FONT_FAMILY to newFont.name)
                     )
                     decoration.copy(font = newFont)
                 }

@@ -3,35 +3,27 @@ package com.fansauchiwa.analytics
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.Uchiwa
-import com.fansauchiwa.data.repository.CrashReportingRepository
-import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.edit.FontFamilies
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
 class ExportedFontAnalyticsTest {
 
-    private lateinit var localDatabaseRepository: LocalDatabaseRepository
-    private lateinit var crashReportingRepository: CrashReportingRepository
+    private lateinit var uchiwaReader: AnalyticsUchiwaReader
     private lateinit var analytics: ExportedFontAnalytics
 
     @Before
     fun setUp() {
-        localDatabaseRepository = mockk(relaxed = true)
-        crashReportingRepository = mockk(relaxed = true)
-        analytics = ExportedFontAnalytics(localDatabaseRepository, crashReportingRepository)
+        uchiwaReader = mockk()
+        analytics = ExportedFontAnalytics(uchiwaReader)
     }
 
     private fun givenUchiwa(decorations: List<Decoration>) {
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa-1") } returns Uchiwa(
+        coEvery { uchiwaReader.readOrNull("uchiwa-1") } returns Uchiwa(
             id = "uchiwa-1",
             decorations = decorations,
             uchiwaColor = Color.Black,
@@ -43,7 +35,7 @@ class ExportedFontAnalyticsTest {
 
     private fun fontEvent(font: FontFamilies) = AnalyticsEvent(
         AnalyticsActions.EXPORT_UCHIWA_FONT,
-        mapOf(ExportedFontParams.PARAM_FONT_FAMILY to font.name)
+        mapOf(FontFamilyParams.PARAM_FONT_FAMILY to font.name)
     )
 
     @Test
@@ -79,41 +71,10 @@ class ExportedFontAnalyticsTest {
     }
 
     @Test
-    fun fontEvents_uchiwaNotFound_returnsEmpty() = runTest {
-        coEvery { localDatabaseRepository.getUchiwa("missing") } returns null
+    fun fontEvents_uchiwaUnreadable_returnsEmpty() = runTest {
+        // 見つからない・IDが無い・読み込みに失敗した、のどれも reader は null を返す（AnalyticsUchiwaReaderTest）
+        coEvery { uchiwaReader.readOrNull(any()) } returns null
 
-        assertEquals(emptyList<AnalyticsEvent>(), analytics.fontEvents("missing"))
-    }
-
-    @Test
-    fun fontEvents_nullId_returnsEmptyWithoutReadingDatabase() = runTest {
-        assertEquals(emptyList<AnalyticsEvent>(), analytics.fontEvents(null))
-        coVerify(exactly = 0) { localDatabaseRepository.getUchiwa(any()) }
-    }
-
-    @Test
-    fun fontEvents_databaseThrows_returnsEmptyAndRecordsException() = runTest {
-        val error = IllegalStateException("db error")
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa-1") } throws error
-
-        val events = analytics.fontEvents("uchiwa-1")
-
-        assertEquals(emptyList<AnalyticsEvent>(), events)
-        verify(exactly = 1) { crashReportingRepository.recordException(error) }
-    }
-
-    @Test
-    fun fontEvents_cancelled_rethrowsWithoutRecording() = runTest {
-        coEvery { localDatabaseRepository.getUchiwa("uchiwa-1") } throws CancellationException("cancelled")
-
-        val isRethrown = try {
-            analytics.fontEvents("uchiwa-1")
-            false
-        } catch (e: CancellationException) {
-            true
-        }
-
-        assertTrue(isRethrown)
-        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
+        assertEquals(emptyList<AnalyticsEvent>(), analytics.fontEvents("uchiwa-1"))
     }
 }
