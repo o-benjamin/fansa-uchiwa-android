@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- debug ビルドだけ Crashlytics と Analytics の収集を止める。検証端末の利用やクラッシュが本番の数字に混ざらないようにするため。 -->
+<!-- beta は DebugView でイベントを確かめるために残すので、ここ（debug 専用のマニフェスト）にだけ書く。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+    </application>
+</manifest>
