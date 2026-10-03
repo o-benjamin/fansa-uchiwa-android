@@ -2,6 +2,7 @@ package com.fansauchiwa.analytics
 
 import com.fansauchiwa.edit.FontFamilies
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 class FontSessionAnalyticsBucketsTest {
@@ -63,9 +64,10 @@ class FontSessionAnalyticsBucketsTest {
 
     @Test
     fun finalFontRankBucket_newFonts_returnNewBucket() {
-        FontFamilies.entries.filter { it.isNew }.forEach { font ->
-            assertEquals("new", finalFontRankBucket(font))
-        }
+        val newFonts = FontFamilies.entries.filter { it.isNew }
+        // NEW を外したリリースでは確かめる対象がないので、成功ではなくスキップにする
+        assumeTrue(newFonts.isNotEmpty())
+        newFonts.forEach { font -> assertEquals("new", finalFontRankBucket(font)) }
     }
 
     // endregion

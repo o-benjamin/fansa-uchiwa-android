@@ -19,7 +19,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,7 +36,7 @@ import com.fansauchiwa.edit.ColorAndWeightControl
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.ItemBadge
 import com.fansauchiwa.edit.TestTags
-import com.fansauchiwa.edit.buildRankIndexMap
+import com.fansauchiwa.edit.fontRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @Composable
@@ -148,11 +147,6 @@ fun FontFamilySelectionGrid(
     val buttonHeight = 54.dp
     val spacing = 8.dp
 
-    // isNew = false のエントリだけで 0 始まりの通し番号を付与するマップ
-    val rankIndexMap = remember {
-        buildRankIndexMap(FontFamilies.entries) { it.isNew }
-    }
-
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = minButtonWidth),
         horizontalArrangement = Arrangement.spacedBy(spacing),
@@ -214,7 +208,7 @@ fun FontFamilySelectionGrid(
                         fontFamily = fontFamily.value
                     )
                 }
-                val rankIndex = rankIndexMap[fontFamily]
+                val rankIndex = fontRankIndexMap[fontFamily]
                 ItemBadge(
                     rankIndex = rankIndex,
                     isNew = fontFamily.isNew,

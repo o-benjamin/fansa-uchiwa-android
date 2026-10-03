@@ -55,7 +55,7 @@ import kotlinx.serialization.Serializable
 /**
  * 文字入れで選べるフォント。宣言順がフォント選択画面の表示順と「1位〜5位」のバッジになる。
  * 並びは GA4 の `select_edit_text_font` の選択回数の多い順（#241、2026-08-23〜09-19 の28日間）。
- * `isNew = true` のフォント（#286 で追加した Google Fonts）は先頭に置き、順位の対象から外している。
+ * `isNew = true` のフォントは先頭に置き、順位の対象から外している。
  * 並べ替えの手順と `isNew` の運用ルールは `.agents/sticker-font-order.md` を参照。
  */
 @Serializable
@@ -110,3 +110,9 @@ enum class FontFamilies(val value: FontFamily, val isNew: Boolean = false) {
     ZEN_KAKU_GOTHIC_ANTIQUE(zenKakuGothicAntiqueFontFamily),
     KLEE_ONE(kleeOneFontFamily),
 }
+
+/**
+ * フォント選択画面の「1位〜5位」のバッジと、GA4 の `final_font_rank_bucket` で使う順位（0始まり。NEW は null）。
+ * 2つの順位がずれないように、ここ1か所で求める。
+ */
+val fontRankIndexMap: Map<FontFamilies, Int?> = buildRankIndexMap(FontFamilies.entries) { it.isNew }
