@@ -287,6 +287,58 @@ val zenOldMinchoFontFamily = FontFamily(
     Font(googleFont = ZenOldMinchoFont, fontProvider = provider, weight = FontWeight.W400),
 )
 
+val CherryBombOneFont = GoogleFont(name = "Cherry Bomb One")
+val cherryBombOneFontFamily = FontFamily(
+    Font(googleFont = CherryBombOneFont, fontProvider = provider),
+)
+
+val DarumadropOneFont = GoogleFont(name = "Darumadrop One")
+val darumadropOneFontFamily = FontFamily(
+    Font(googleFont = DarumadropOneFont, fontProvider = provider),
+)
+
+val MonomaniacOneFont = GoogleFont(name = "Monomaniac One")
+val monomaniacOneFontFamily = FontFamily(
+    Font(googleFont = MonomaniacOneFont, fontProvider = provider),
+)
+
+val ChokokutaiFont = GoogleFont(name = "Chokokutai")
+val chokokutaiFontFamily = FontFamily(
+    Font(googleFont = ChokokutaiFont, fontProvider = provider),
+)
+
+val PaletteMosaicFont = GoogleFont(name = "Palette Mosaic")
+val paletteMosaicFontFamily = FontFamily(
+    Font(googleFont = PaletteMosaicFont, fontProvider = provider),
+)
+
+val WdxlLubrifontJpNFont = GoogleFont(name = "WDXL Lubrifont JP N")
+val wdxlLubrifontJpNFontFamily = FontFamily(
+    Font(googleFont = WdxlLubrifontJpNFont, fontProvider = provider),
+)
+
+val KaiseiDecolFont = GoogleFont(name = "Kaisei Decol")
+val kaiseiDecolFontFamily = FontFamily(
+    Font(googleFont = KaiseiDecolFont, fontProvider = provider),
+    Font(googleFont = KaiseiDecolFont, fontProvider = provider, weight = FontWeight.W700),
+    Font(googleFont = KaiseiDecolFont, fontProvider = provider, weight = FontWeight.W500),
+    Font(googleFont = KaiseiDecolFont, fontProvider = provider, weight = FontWeight.W400),
+)
+
+val KaiseiTokuminFont = GoogleFont(name = "Kaisei Tokumin")
+val kaiseiTokuminFontFamily = FontFamily(
+    Font(googleFont = KaiseiTokuminFont, fontProvider = provider),
+    Font(googleFont = KaiseiTokuminFont, fontProvider = provider, weight = FontWeight.W800),
+    Font(googleFont = KaiseiTokuminFont, fontProvider = provider, weight = FontWeight.W700),
+    Font(googleFont = KaiseiTokuminFont, fontProvider = provider, weight = FontWeight.W500),
+    Font(googleFont = KaiseiTokuminFont, fontProvider = provider, weight = FontWeight.W400),
+)
+
+val AoboshiOneFont = GoogleFont(name = "Aoboshi One")
+val aoboshiOneFontFamily = FontFamily(
+    Font(googleFont = AoboshiOneFont, fontProvider = provider),
+)
+
 val keiFontFamily = FontFamily(
     Font(R.font.keifont)
 )
