@@ -27,7 +27,7 @@ class PuffyStateAnalyticsTest {
     fun setUp() {
         localDatabaseRepository = mockk(relaxed = true)
         crashReportingRepository = mockk(relaxed = true)
-        analytics = PuffyStateAnalytics(localDatabaseRepository, crashReportingRepository)
+        analytics = PuffyStateAnalytics(AnalyticsUchiwaReader(localDatabaseRepository, crashReportingRepository))
     }
 
     private fun givenUchiwa(textPuffy: Boolean, borderPuffy: Boolean) {

@@ -9,7 +9,7 @@ package com.fansauchiwa.analytics
  * 済んだら消してよい。
  * 計測をやめるときは、このクラスと [PuffyStateAnalytics]・それぞれのテストを消し、
  * UchiwaPreviewViewModel の puffyStateAnalytics（コンストラクタ引数と logExportEvent での呼び出し）を消す。
- * edit/PuffyState.kt は編集画面のトグルでも使うので消さない。
+ * edit/PuffyState.kt は編集画面のトグルでも、AnalyticsUchiwaReader は ExportedFontAnalytics でも使うので消さない。
  */
 object PuffyStateParams {
     const val PARAM_PUFFY_STATE = "puffy_state"
