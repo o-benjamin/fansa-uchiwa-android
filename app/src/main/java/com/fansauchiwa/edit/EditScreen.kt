@@ -156,6 +156,7 @@ fun EditScreen(
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
     val hapticManager = rememberFansaHapticManager()
+
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
     }

@@ -47,7 +47,6 @@ import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -67,7 +66,6 @@ class EditViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val editDecorationRepository: EditDecorationRepository,
-    private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
     private val fontSessionTracker: FontSessionTracker,
     private val discardReasonSurvey: DiscardReasonSurvey,
