@@ -125,6 +125,7 @@ import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
 import com.fansauchiwa.edit.decorationitem.measureDecorationText
+import com.fansauchiwa.edit.decorationitem.resolveTextDecorationTypefaces
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.edit.pager.EditPagerActions
@@ -716,6 +717,8 @@ fun UchiwaPreview(
         }
     }
 
+    // フォントの取得が終わって文字の形が変わったときも、縁取りを作り直す
+    val textTypefaces = resolveTextDecorationTypefaces(decorations)
     LaunchedEffect(
         decorations,
         images,
@@ -723,7 +726,8 @@ fun UchiwaPreview(
         overallBorderColor,
         isOverallBorderPuffyEnabled,
         shouldRenderOverallBorder,
-        decorationLayerSize
+        decorationLayerSize,
+        textTypefaces
     ) {
         clearOverallBorderBitmaps()
         if (!shouldRenderOverallBorder) return@LaunchedEffect

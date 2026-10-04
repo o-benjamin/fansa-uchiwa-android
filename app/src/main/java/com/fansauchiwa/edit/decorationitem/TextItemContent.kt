@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -48,6 +49,7 @@ fun TextItemContent(
     val secondBorderColor = decoration.secondBorderColor
     val secondBorderWidth = decoration.secondBorderWidth
 
+    // layoutResult は、文字・書式が変わったときと、フォントの取得が終わったときだけ別の値になる（measureDecorationText の KDoc）
     val layoutResult = measureDecorationText(
         text = decoration.text,
         fontFamily = decoration.font.value,
@@ -197,12 +199,15 @@ fun TextItemContent(
 }
 
 /**
- * 文字の装飾を、キャンバスに描くときと同じ書式で測る。
+ * 文字の装飾を、描画（[TextItemContent]）とつかめる範囲（`EditScreen`）で共通の書式で測る。
  *
  * ダウンロード式フォント（`GoogleFont`）は、取得が終わるまで標準の書体で測られる。
  * 取得が終わると、測ったときに読んだフォントの状態が変わって呼び出し元が再コンポーズされ、
  * [TextMeasurer][androidx.compose.ui.text.TextMeasurer] は古くなったキャッシュを捨てて測り直す。
- * そのため、結果を文字・フォント・太さだけをキーにした `remember` に入れないこと（標準の書体のまま固まる。#305）。
+ * そのため結果を `remember` に入れないこと。フォントの取得が終わったことはキーにできず、標準の書体のまま固まる（#305）。
+ *
+ * 文字・書式・フォントの取得の状態が変わらないあいだは、キャッシュから等しい（`equals`）結果が返る。
+ * そのため結果を `LaunchedEffect` のキーにしても、再コンポーズのたびに動き直すことはない。キャッシュを無効にしないこと。
  */
 @Composable
 internal fun measureDecorationText(
@@ -222,6 +227,26 @@ internal fun measureDecorationText(
         )
     )
 }
+
+/**
+ * 文字の装飾それぞれが、いま描かれている書体。
+ *
+ * ダウンロード式フォントの取得が終わると別の値になる。文字の形を写し取って作るもの（全体の縁取り）は、
+ * これをキーにして作り直す。キーにしないと、文字は新しい書体なのに、縁取りは標準の書体の形のまま残る（#305）。
+ */
+@Composable
+internal fun resolveTextDecorationTypefaces(decorations: List<Decoration>): List<Any> =
+    decorations.filterIsInstance<Decoration.Text>().map { decoration ->
+        resolveDecorationTypeface(
+            fontFamily = decoration.font.value,
+            fontWeight = FontWeight(decoration.width)
+        )
+    }
+
+/** [fontFamily] の [fontWeight] で、いま描かれている書体。取得中のダウンロード式フォントは標準の書体になる。 */
+@Composable
+internal fun resolveDecorationTypeface(fontFamily: FontFamily, fontWeight: FontWeight): Any =
+    LocalFontFamilyResolver.current.resolve(fontFamily, fontWeight).value
 
 // region TextItemContent Previews
 
