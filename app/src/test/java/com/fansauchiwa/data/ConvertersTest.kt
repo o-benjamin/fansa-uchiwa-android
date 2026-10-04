@@ -36,8 +36,9 @@ class ConvertersTest {
         }
     }
 
-    // ステッカーは名前（label）で保存し、描画するリソースは読み込むたびに label から引き直す。
-    // R.drawable の値はステッカーを足すとずれるため、JSON に書かれていないことを確かめる（#287）。
+    // ステッカーは `label`（= StickerAsset.type の文字列）で保存し、描画する drawable は読み込むたびに label から引き直す。
+    // R.drawable の値はステッカーを足すとずれるため、resId が JSON に書かれていないことを確かめる。
+    // resId は本体で label から計算するプロパティで、値が初期化式と同じなので、Json の既定（encodeDefaults = false）では書かれない（#287）。
     @Test
     fun decorationsToJson_stickerDecoration_writesLabelWithoutResId() {
         val sticker = Decoration.Sticker(label = StickerAsset.HEART.type, id = "sticker-1")

@@ -79,6 +79,7 @@ private fun SettingsContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(text = stringResource(R.string.settings_license_message))
+                    Text(text = stringResource(R.string.settings_license_phosphor_intro))
                     Text(
                         text = stringResource(R.string.settings_license_phosphor_notice),
                         style = MaterialTheme.typography.bodySmall
