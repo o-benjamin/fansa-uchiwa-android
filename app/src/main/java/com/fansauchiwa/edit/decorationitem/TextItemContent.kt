@@ -49,7 +49,6 @@ fun TextItemContent(
     val secondBorderColor = decoration.secondBorderColor
     val secondBorderWidth = decoration.secondBorderWidth
 
-    // layoutResult は、文字・書式が変わったときと、フォントの取得が終わったときだけ別の値になる（measureDecorationText の KDoc）
     val layoutResult = measureDecorationText(
         text = decoration.text,
         fontFamily = decoration.font.value,
@@ -83,6 +82,7 @@ fun TextItemContent(
         )
     }
 
+    // layoutResult をキーにしてよい理由は measureDecorationText の KDoc
     LaunchedEffect(
         layoutResult,
         decoration.strokeWidth,
@@ -204,10 +204,14 @@ fun TextItemContent(
  * ダウンロード式フォント（`GoogleFont`）は、取得が終わるまで標準の書体で測られる。
  * 取得が終わると、測ったときに読んだフォントの状態が変わって呼び出し元が再コンポーズされ、
  * [TextMeasurer][androidx.compose.ui.text.TextMeasurer] は古くなったキャッシュを捨てて測り直す。
- * そのため結果を `remember` に入れないこと。フォントの取得が終わったことはキーにできず、標準の書体のまま固まる（#305）。
+ * そのため結果を `remember` に入れないこと。文字・フォント・太さ・大きさは取得の前後で変わらないので、
+ * それらをキーにした `remember` では標準の書体のまま固まる（#305）。
  *
  * 文字・書式・フォントの取得の状態が変わらないあいだは、キャッシュから等しい（`equals`）結果が返る。
- * そのため結果を `LaunchedEffect` のキーにしても、再コンポーズのたびに動き直すことはない。キャッシュを無効にしないこと。
+ * そのため結果を `LaunchedEffect` のキーにしても、再コンポーズのたびに動き直すことはない。
+ * `rememberTextMeasurer` の `cacheSize` を 0 にしないこと（毎回別の結果になり、`LaunchedEffect` が再コンポーズのたびに動き直す）。
+ *
+ * 書式（太さの求め方など）を変えたら、[resolveDecorationTypeface] も合わせること。
  */
 @Composable
 internal fun measureDecorationText(
@@ -243,7 +247,14 @@ internal fun resolveTextDecorationTypefaces(decorations: List<Decoration>): List
         )
     }
 
-/** [fontFamily] の [fontWeight] で、いま描かれている書体。取得中のダウンロード式フォントは標準の書体になる。 */
+/**
+ * [fontFamily] の [fontWeight] で、いま描かれている書体。取得中のダウンロード式フォントは標準の書体になる。
+ * `FontFamily.Resolver.resolve` が `Any` で返すため、型は `Any` のまま。値は比べるだけに使う。
+ *
+ * [measureDecorationText] と同じ fontFamily・fontWeight で解決すること（fontStyle・fontSynthesis も既定のまま）。
+ * このアプリのフォントは太さごとに別のファイルを取得するので、違うと描いている文字とは別のファイルの取得を追い、
+ * 全体の縁取りが作り直されなくなる（#305）。
+ */
 @Composable
 internal fun resolveDecorationTypeface(fontFamily: FontFamily, fontWeight: FontWeight): Any =
     LocalFontFamilyResolver.current.resolve(fontFamily, fontWeight).value
