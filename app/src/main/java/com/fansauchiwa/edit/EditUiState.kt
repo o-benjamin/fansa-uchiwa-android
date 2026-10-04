@@ -30,6 +30,5 @@ data class EditUiState(
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
     val showImageDeleteWarningDialog: Boolean = false,
-    val showCompletionTooltip: Boolean = false,
     val isPukuPukuSupported: Boolean = false
 ) : Parcelable

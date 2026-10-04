@@ -33,25 +33,6 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
-    override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
-        .map { preferences ->
-            preferences[KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP]
-                ?: DEFAULT_HAS_SEEN_EDIT_COMPLETION_TOOLTIP
-        }
-
-    override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP] = hasSeen
-        }
-    }
-
     override fun getHasSeenApologyDialogStream(): Flow<Boolean> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
@@ -74,14 +55,12 @@ class SettingsLocalSource @Inject constructor(
         // "last_saved_font_name" は v2.7.x が分析（#242 font_same_as_last）用に書き込んでいたキー。
         // v2.8.0 で使うのをやめた（#267）。既存の端末には値が残るが読まない。
         // 意味の違う値を読んでしまわないよう、このキー名を別の用途に再利用しないこと
+        // "has_seen_edit_completion_tooltip" も同様（完成ボタンの吹き出しを削除した #309。既存の端末には値が残るが読まない）
         private val KEY_HAPTIC_FEEDBACK_ENABLED =
             booleanPreferencesKey("haptic_feedback_enabled")
-        private val KEY_HAS_SEEN_EDIT_COMPLETION_TOOLTIP =
-            booleanPreferencesKey("has_seen_edit_completion_tooltip")
         private val KEY_HAS_SEEN_APOLOGY_DIALOG =
             booleanPreferencesKey("has_seen_apology_dialog")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
-        private const val DEFAULT_HAS_SEEN_EDIT_COMPLETION_TOOLTIP = false
         private const val DEFAULT_HAS_SEEN_APOLOGY_DIALOG = false
     }
 }

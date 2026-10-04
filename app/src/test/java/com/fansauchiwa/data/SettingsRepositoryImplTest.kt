@@ -55,21 +55,6 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun fetchHasSeenEditCompletionTooltip_defaultIsFalse() = runTest {
-        repository.fetchHasSeenEditCompletionTooltip()
-
-        assertFalse(repository.getHasSeenEditCompletionTooltipStream().first())
-    }
-
-    @Test
-    fun setHasSeenEditCompletionTooltip_updatesValue() = runTest {
-        repository.setHasSeenEditCompletionTooltip(true)
-        repository.fetchHasSeenEditCompletionTooltip()
-
-        assertTrue(repository.getHasSeenEditCompletionTooltipStream().first())
-    }
-
-    @Test
     fun fetchHasSeenApologyDialog_updatedInstallNotSeen_returnsFalse() = runTest {
         fakeIsFreshInstall = false
 

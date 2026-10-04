@@ -63,11 +63,8 @@ class EditViewModelTest {
     private lateinit var templateRepository: TemplateRepository
     private lateinit var fontSessionTracker: FontSessionTracker
 
-    private class FakeSettingsRepository(
-        private var hasSeenEditCompletionTooltip: Boolean = false
-    ) : SettingsRepository {
+    private class FakeSettingsRepository : SettingsRepository {
         private val hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
-        private val hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
         private val hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
 
         override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticFeedbackEnabledStream
@@ -80,17 +77,6 @@ class EditViewModelTest {
             hapticFeedbackEnabledStream.emit(enabled)
         }
 
-        override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> =
-            hasSeenEditCompletionTooltipStream
-
-        override suspend fun fetchHasSeenEditCompletionTooltip() {
-            hasSeenEditCompletionTooltipStream.emit(hasSeenEditCompletionTooltip)
-        }
-
-        override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
-            hasSeenEditCompletionTooltip = hasSeen
-        }
-
         override fun getHasSeenApologyDialogStream(): Flow<Boolean> = hasSeenApologyDialogStream
 
         override suspend fun fetchHasSeenApologyDialog() {
@@ -101,8 +87,6 @@ class EditViewModelTest {
         override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
             hasSeenApologyDialogStream.emit(hasSeen)
         }
-
-        fun hasSeenEditCompletionTooltip(): Boolean = hasSeenEditCompletionTooltip
     }
 
     @Before
@@ -130,12 +114,9 @@ class EditViewModelTest {
         lastName: String? = null,
         firstName1: String? = null,
         firstName2: String? = null,
-        honorific: String? = null,
-        hasSeenEditCompletionTooltip: Boolean = false
+        honorific: String? = null
     ): EditViewModel {
-        settingsRepository = FakeSettingsRepository(
-            hasSeenEditCompletionTooltip = hasSeenEditCompletionTooltip
-        )
+        settingsRepository = FakeSettingsRepository()
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
                 set(
@@ -1074,47 +1055,6 @@ class EditViewModelTest {
         coVerify(exactly = 0) {
             localDatabaseRepository.saveUchiwa(any())
         }
-    }
-
-    @Test
-    fun initialLoad_whenTooltipNotSeen_showsCompletionTooltipAndPersistsShownFlag() = runTest {
-        val uchiwaId = "new-uchiwa-id"
-        every { localImageRepository.getAllImages() } returns emptyList()
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        assertTrue(viewModel.uiState.value.showCompletionTooltip)
-        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
-    }
-
-    @Test
-    fun onTooltipDismissed_afterTooltipShown_hidesTooltipAndPersistsFlag() = runTest {
-        val uchiwaId = "new-uchiwa-id"
-        every { localImageRepository.getAllImages() } returns emptyList()
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        viewModel.onTooltipDismissed()
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.showCompletionTooltip)
-        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
-    }
-
-    @Test
-    fun initialLoad_whenTooltipAlreadySeen_doesNotShowCompletionTooltip() = runTest {
-        val uchiwaId = "new-uchiwa-id"
-        every { localImageRepository.getAllImages() } returns emptyList()
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(
-            uchiwaId = uchiwaId,
-            hasSeenEditCompletionTooltip = true
-        )
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.showCompletionTooltip)
     }
 
     @Test
