@@ -71,4 +71,59 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 
 ## ステッカー
 
-まだ書いていない（#287 で足す）。
+1色の VectorDrawable で、`app/src/main/res/drawable/` に入っている（`StickerAsset`、`ui/StickerAssets.kt`）。表は enum の ABC 順に並べている。「追加」が — のものは、台帳を作る前（v2.8.x 以前）から入っている。
+
+ライセンスの表示は、アプリの「設定 → 素材のライセンス」に載せている（Apache 2.0 は全文へのリンク、MIT は著作権表示と許諾文の全文）。出どころを足したら、この表示も同じ PR で直す。
+
+出どころの確かめ方：
+
+- v2.9.0（#287）で足した分は、アイコン集の版を固定して取り込み、パッケージの LICENSE を確かめた（2026-09-27）。Phosphor Icons は `@phosphor-icons/core@2.1.1`（[MIT](https://github.com/phosphor-icons/core/blob/main/LICENSE)、Fill の形）、Material Symbols は `@material-symbols/svg-400@0.47.5`（[Apache 2.0](https://github.com/google/material-design-icons/blob/master/LICENSE)、Rounded・Fill の形）
+- それより前の分は取り込みの記録がない。ファイル名の形（`baseline_`／`round_`〜`_24` は Android Studio の Vector Asset が Material Icons から作る名前、`〜_24px`／`rounded_〜_24` は Material Symbols から作る名前）とアイコン名から出どころを判断した。`STAR`・`THUMB_UP`・`BRIGHTNESS_2`・`BRIGHTNESS_3`・`HEART` は、Material Icons の SVG と形の数値が一致することも確かめた（2026-10-04）
+- 「自作」は Claude が SVG で描いたもの。ほかの素材を元にしていない
+
+| enum | ファイル | 出どころ（アイコン名） | ライセンス | 著作権表示 | 追加 |
+|---|---|---|---|---|---|
+| `AUDIO_TRACK` | `round_audiotrack_24.xml` | Material Icons（`audiotrack`、Round） | Apache 2.0 | Google | — |
+| `AUTO_AWESOME` | `round_auto_awesome_24.xml` | Material Icons（`auto_awesome`、Round） | Apache 2.0 | Google | — |
+| `BALLOON` | `sticker_balloon.xml` | Phosphor Icons（`balloon`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `BOLT` | `round_bolt_24.xml` | Material Icons（`bolt`、Round） | Apache 2.0 | Google | — |
+| `BRIGHTNESS_1` | `baseline_brightness_1_24.xml` | Material Icons（`brightness_1`、Filled） | Apache 2.0 | Google | — |
+| `BRIGHTNESS_2` | `baseline_brightness_2_24.xml` | Material Icons（`brightness_2`、Filled） | Apache 2.0 | Google | — |
+| `BRIGHTNESS_3` | `baseline_brightness_3_24.xml` | Material Icons（`brightness_3`、Filled） | Apache 2.0 | Google | — |
+| `BURST_BUBBLE` | `sticker_burst_bubble.xml` | 自作 | — | — | v2.9.0（#287） |
+| `CAKE` | `round_cake_24.xml` | Material Icons（`cake`、Round） | Apache 2.0 | Google | — |
+| `CELEBRATION` | `sticker_celebration.xml` | Material Symbols（`celebration`） | Apache 2.0 | Google | v2.9.0（#287） |
+| `CHESS` | `chess_24px.xml` | Material Symbols（`chess`） | Apache 2.0 | Google | — |
+| `CHESS_QUEEN` | `chess_queen_24px.xml` | Material Symbols（`chess_queen`） | Apache 2.0 | Google | — |
+| `CROWN` | `crown_24px.xml` | Material Symbols（`crown`） | Apache 2.0 | Google | — |
+| `CROWN_SIMPLE` | `sticker_crown_simple.xml` | Phosphor Icons（`crown-simple`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `CURVED_ARROW` | `sticker_curved_arrow.xml` | 自作 | — | — | v2.9.0（#287） |
+| `DIAMOND` | `sticker_diamond.xml` | Material Symbols（`diamond`） | Apache 2.0 | Google | v2.9.0（#287） |
+| `EMPHASIS_MARKS` | `sticker_emphasis_marks.xml` | 自作 | — | — | v2.9.0（#287） |
+| `EYEGLASSES` | `rounded_eyeglasses_2_24.xml` | Material Symbols（`eyeglasses_2`、Rounded） | Apache 2.0 | Google | — |
+| `FLOWER` | `sticker_flower.xml` | Phosphor Icons（`flower`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `GIFT` | `sticker_gift.xml` | Phosphor Icons（`gift`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `HAND_PEACE` | `sticker_hand_peace.xml` | Phosphor Icons（`hand-peace`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `HEART` | `sticker_heart.xml` | Material Icons（`favorite`、Filled） | Apache 2.0 | Google | — |
+| `HEART_ARROW` | `sticker_heart_arrow.xml` | 自作 | — | — | v2.9.0（#287） |
+| `HEART_CUTE` | `sticker_heart_cute.xml` | 記録なし（v2.0.0 で追加。確認中） | 確認中 | 確認中 | — |
+| `HEART_HORIZONTAL` | `sticker_heart_horizontal.xml` | 記録なし（v2.0.0 で追加。確認中） | 確認中 | 確認中 | — |
+| `HEART_VERTICAL` | `sticker_heart_vertical.xml` | 記録なし（v2.0.0 で追加。確認中） | 確認中 | 確認中 | — |
+| `KISS_LIPS` | `sticker_kiss_lips.xml` | 自作 | — | — | v2.9.0（#287） |
+| `LOCAL_FIRE_DEPARTMENT` | `round_local_fire_department_24.xml` | Material Icons（`local_fire_department`、Round） | Apache 2.0 | Google | — |
+| `MICROPHONE_STAGE` | `sticker_microphone_stage.xml` | Phosphor Icons（`microphone-stage`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `MUSIC_NOTES` | `sticker_music_notes.xml` | Phosphor Icons（`music-notes`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `PAN_TOOL_ALT` | `baseline_pan_tool_alt_24.xml` | Material Icons（`pan_tool_alt`、Filled） | Apache 2.0 | Google | — |
+| `PETS` | `round_pets_24.xml` | Material Icons（`pets`、Round） | Apache 2.0 | Google | — |
+| `RIBBON` | `sticker_ribbon.xml` | 自作 | — | — | v2.9.0（#287） |
+| `ROCKET` | `baseline_rocket_24.xml` | Material Icons（`rocket`、Filled） | Apache 2.0 | Google | — |
+| `ROCKET_LAUNCH` | `baseline_rocket_launch_24.xml` | Material Icons（`rocket_launch`、Filled） | Apache 2.0 | Google | — |
+| `SHOOTING_STAR` | `sticker_shooting_star.xml` | Phosphor Icons（`shooting-star`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
+| `SPEECH_BUBBLE` | `sticker_speech_bubble.xml` | 自作 | — | — | v2.9.0（#287） |
+| `STAR` | `baseline_star_24.xml` | Material Icons（`star`、Filled） | Apache 2.0 | Google | — |
+| `STAR_ROUNDED` | `round_star_24.xml` | Material Icons（`star`、Round） | Apache 2.0 | Google | — |
+| `THUMB_UP` | `round_thumb_up_24.xml` | Material Icons（`thumb_up`、Round） | Apache 2.0 | Google | — |
+| `WAVING_HAND` | `baseline_waving_hand_24.xml` | Material Icons（`waving_hand`、Filled） | Apache 2.0 | Google | — |
+| `WINGED_HEART` | `sticker_winged_heart.xml` | 自作 | — | — | v2.9.0（#287） |
+
+`HEART_CUTE`・`HEART_HORIZONTAL`・`HEART_VERTICAL` は、作った経緯（自分で描いたか、何かを元にしたか）の記録がない。オーナーに確かめて、この表を直す。
