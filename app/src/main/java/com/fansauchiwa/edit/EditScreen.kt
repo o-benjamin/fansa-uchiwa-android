@@ -97,10 +97,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
@@ -127,6 +124,7 @@ import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
+import com.fansauchiwa.edit.decorationitem.measureDecorationText
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.edit.pager.EditPagerActions
@@ -955,15 +953,12 @@ fun UchiwaPreview(
                         )
                         when (decoration) {
                             is Decoration.Text -> {
-                                val textMeasurer = rememberTextMeasurer()
-                                val layoutResult = textMeasurer.measure(
-                                    decoration.text,
-                                    TextStyle(
-                                        fontFamily = decoration.font.value,
-                                        fontWeight = FontWeight(decoration.width),
-                                        fontSize = 24.sp.nonScaledSp,
-                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                                    )
+                                // 見た目（TextItemContent）と同じ測り方にして、つかめる範囲を文字の形にそろえる
+                                val layoutResult = measureDecorationText(
+                                    text = decoration.text,
+                                    fontFamily = decoration.font.value,
+                                    fontWeight = FontWeight(decoration.width),
+                                    fontSize = 24.sp.nonScaledSp
                                 )
                                 val maxStroke =
                                     decoration.strokeWidth + decoration.secondBorderWidth

@@ -21,8 +21,10 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,24 +42,18 @@ fun TextItemContent(
     isPuffyEnabled: Boolean = decoration.isPuffyEnabled
 ) {
     val shouldRenderPuffyText = isPuffyEnabled && supportsPukuPukuEffect()
-    val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val textColor = decoration.color
     val strokeColor = decoration.strokeColor
     val secondBorderColor = decoration.secondBorderColor
     val secondBorderWidth = decoration.secondBorderWidth
 
-    val layoutResult = remember(decoration.text, decoration.font, decoration.width, textSize) {
-        measurer.measure(
-            text = AnnotatedString(decoration.text),
-            style = TextStyle(
-                fontFamily = decoration.font.value,
-                fontWeight = FontWeight(decoration.width),
-                fontSize = textSize,
-                platformStyle = PlatformTextStyle(includeFontPadding = false)
-            )
-        )
-    }
+    val layoutResult = measureDecorationText(
+        text = decoration.text,
+        fontFamily = decoration.font.value,
+        fontWeight = FontWeight(decoration.width),
+        fontSize = textSize
+    )
 
     val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
     val boxSize = with(density) {
@@ -198,6 +194,33 @@ fun TextItemContent(
             }
         }
     }
+}
+
+/**
+ * 文字の装飾を、キャンバスに描くときと同じ書式で測る。
+ *
+ * ダウンロード式フォント（`GoogleFont`）は、取得が終わるまで標準の書体で測られる。
+ * 取得が終わると、測ったときに読んだフォントの状態が変わって呼び出し元が再コンポーズされ、
+ * [TextMeasurer][androidx.compose.ui.text.TextMeasurer] は古くなったキャッシュを捨てて測り直す。
+ * そのため、結果を文字・フォント・太さだけをキーにした `remember` に入れないこと（標準の書体のまま固まる。#305）。
+ */
+@Composable
+internal fun measureDecorationText(
+    text: String,
+    fontFamily: FontFamily,
+    fontWeight: FontWeight,
+    fontSize: TextUnit
+): TextLayoutResult {
+    val measurer = rememberTextMeasurer()
+    return measurer.measure(
+        text = AnnotatedString(text),
+        style = TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = fontWeight,
+            fontSize = fontSize,
+            platformStyle = PlatformTextStyle(includeFontPadding = false)
+        )
+    )
 }
 
 // region TextItemContent Previews
