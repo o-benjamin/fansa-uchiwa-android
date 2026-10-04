@@ -19,10 +19,13 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,24 +43,18 @@ fun TextItemContent(
     isPuffyEnabled: Boolean = decoration.isPuffyEnabled
 ) {
     val shouldRenderPuffyText = isPuffyEnabled && supportsPukuPukuEffect()
-    val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val textColor = decoration.color
     val strokeColor = decoration.strokeColor
     val secondBorderColor = decoration.secondBorderColor
     val secondBorderWidth = decoration.secondBorderWidth
 
-    val layoutResult = remember(decoration.text, decoration.font, decoration.width, textSize) {
-        measurer.measure(
-            text = AnnotatedString(decoration.text),
-            style = TextStyle(
-                fontFamily = decoration.font.value,
-                fontWeight = FontWeight(decoration.width),
-                fontSize = textSize,
-                platformStyle = PlatformTextStyle(includeFontPadding = false)
-            )
-        )
-    }
+    val layoutResult = measureDecorationText(
+        text = decoration.text,
+        fontFamily = decoration.font.value,
+        fontWeight = FontWeight(decoration.width),
+        fontSize = textSize
+    )
 
     val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
     val boxSize = with(density) {
@@ -85,6 +82,7 @@ fun TextItemContent(
         )
     }
 
+    // layoutResult をキーにしてよい理由は measureDecorationText の KDoc
     LaunchedEffect(
         layoutResult,
         decoration.strokeWidth,
@@ -199,6 +197,67 @@ fun TextItemContent(
         }
     }
 }
+
+/**
+ * 文字の装飾を、描画（[TextItemContent]）とつかめる範囲（`EditScreen`）で共通の書式で測る。
+ *
+ * ダウンロード式フォント（`GoogleFont`）は、取得が終わるまで標準の書体で測られる。
+ * 取得が終わると、測ったときに読んだフォントの状態が変わって呼び出し元が再コンポーズされ、
+ * [TextMeasurer][androidx.compose.ui.text.TextMeasurer] は古くなったキャッシュを捨てて測り直す。
+ * そのため結果を `remember` に入れないこと。文字・フォント・太さ・大きさは取得の前後で変わらないので、
+ * それらをキーにした `remember` では標準の書体のまま固まる（#305）。
+ *
+ * 文字・書式・フォントの取得の状態が変わらないあいだは、キャッシュから等しい（`equals`）結果が返る。
+ * そのため結果を `LaunchedEffect` のキーにしても、再コンポーズのたびに動き直すことはない。
+ * `rememberTextMeasurer` の `cacheSize` を 0 にしないこと（毎回別の結果になり、`LaunchedEffect` が再コンポーズのたびに動き直す）。
+ *
+ * 書式（太さの求め方など）を変えたら、[resolveDecorationTypeface] も合わせること。
+ */
+@Composable
+internal fun measureDecorationText(
+    text: String,
+    fontFamily: FontFamily,
+    fontWeight: FontWeight,
+    fontSize: TextUnit
+): TextLayoutResult {
+    val measurer = rememberTextMeasurer()
+    return measurer.measure(
+        text = AnnotatedString(text),
+        style = TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = fontWeight,
+            fontSize = fontSize,
+            platformStyle = PlatformTextStyle(includeFontPadding = false)
+        )
+    )
+}
+
+/**
+ * 文字の装飾それぞれが、いま描かれている書体。
+ *
+ * ダウンロード式フォントの取得が終わると別の値になる。文字の形を写し取って作るもの（全体の縁取り）は、
+ * これをキーにして作り直す。キーにしないと、文字は新しい書体なのに、縁取りは標準の書体の形のまま残る（#305）。
+ */
+@Composable
+internal fun resolveTextDecorationTypefaces(decorations: List<Decoration>): List<Any> =
+    decorations.filterIsInstance<Decoration.Text>().map { decoration ->
+        resolveDecorationTypeface(
+            fontFamily = decoration.font.value,
+            fontWeight = FontWeight(decoration.width)
+        )
+    }
+
+/**
+ * [fontFamily] の [fontWeight] で、いま描かれている書体。取得中のダウンロード式フォントは標準の書体になる。
+ * `FontFamily.Resolver.resolve` が `Any` で返すため、型は `Any` のまま。値は比べるだけに使う。
+ *
+ * [measureDecorationText] と同じ fontFamily・fontWeight で解決すること（fontStyle・fontSynthesis も既定のまま）。
+ * このアプリのフォントは太さごとに別のファイルを取得するので、違うと描いている文字とは別のファイルの取得を追い、
+ * 全体の縁取りが作り直されなくなる（#305）。
+ */
+@Composable
+internal fun resolveDecorationTypeface(fontFamily: FontFamily, fontWeight: FontWeight): Any =
+    LocalFontFamilyResolver.current.resolve(fontFamily, fontWeight).value
 
 // region TextItemContent Previews
 

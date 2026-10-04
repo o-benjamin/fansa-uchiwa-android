@@ -117,6 +117,7 @@ import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
+import com.fansauchiwa.edit.decorationitem.resolveTextDecorationTypefaces
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.home.featuredoor.FeatureDoorSection
@@ -865,12 +866,15 @@ private fun ComponentTemplateItem(
         }
     }
 
+    // フォントの取得が終わって文字の形が変わったときも、縁取りを作り直す
+    val textTypefaces = resolveTextDecorationTypefaces(savedUchiwa.decorations)
     LaunchedEffect(
         savedUchiwa.decorations,
         savedUchiwa.overallBorderWidth,
         savedUchiwa.overallBorderColor,
         savedUchiwa.isOverallBorderPuffyEnabled,
-        decorationLayerSize
+        decorationLayerSize,
+        textTypefaces
     ) {
         clearOverallBorderBitmaps()
         val overallBorderWidth = savedUchiwa.overallBorderWidth
