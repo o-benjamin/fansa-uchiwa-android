@@ -110,9 +110,9 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `HAND_PEACE` | `sticker_hand_peace.xml` | Phosphor Icons（`hand-peace`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
 | `HEART` | `sticker_heart.xml` | Material Icons（`favorite`、Filled） | Apache 2.0 | Google | — |
 | `HEART_ARROW` | `sticker_heart_arrow.xml` | 自作 | なし（このアプリ用に作成） | 表示の義務なし | v2.9.0（#287） |
-| `HEART_CUTE` | `sticker_heart_cute.xml` | 記録なし（v2.0.0 で追加） | 未確認（#302） | 未確認（#302） | — |
-| `HEART_HORIZONTAL` | `sticker_heart_horizontal.xml` | 記録なし（v2.0.0 で追加） | 未確認（#302） | 未確認（#302） | — |
-| `HEART_VERTICAL` | `sticker_heart_vertical.xml` | 記録なし（v2.0.0 で追加） | 未確認（#302） | 未確認（#302） | — |
+| `HEART_CUTE` | `sticker_heart_cute.xml` | 自作（オーナー確認、2026-10-04） | なし（このアプリ用に作成） | 表示の義務なし | v2.0.0 |
+| `HEART_HORIZONTAL` | `sticker_heart_horizontal.xml` | 自作（オーナー確認、2026-10-04） | なし（このアプリ用に作成） | 表示の義務なし | v2.0.0 |
+| `HEART_VERTICAL` | `sticker_heart_vertical.xml` | 自作（オーナー確認、2026-10-04） | なし（このアプリ用に作成） | 表示の義務なし | v2.0.0 |
 | `KISS_LIPS` | `sticker_kiss_lips.xml` | 自作 | なし（このアプリ用に作成） | 表示の義務なし | v2.9.0（#287） |
 | `LOCAL_FIRE_DEPARTMENT` | `round_local_fire_department_24.xml` | Material Icons（`local_fire_department`、Round） | Apache 2.0 | Google | — |
 | `MICROPHONE_STAGE` | `sticker_microphone_stage.xml` | Phosphor Icons（`microphone-stage`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
@@ -130,4 +130,4 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `WAVING_HAND` | `baseline_waving_hand_24.xml` | Material Icons（`waving_hand`、Filled） | Apache 2.0 | Google | — |
 | `WINGED_HEART` | `sticker_winged_heart.xml` | 自作 | なし（このアプリ用に作成） | 表示の義務なし | v2.9.0（#287） |
 
-`HEART_CUTE`・`HEART_HORIZONTAL`・`HEART_VERTICAL` は、作った経緯（自分で描いたか、何かを元にしたか）の記録がない。出どころを確かめる作業は #302。
+`HEART_CUTE`・`HEART_HORIZONTAL`・`HEART_VERTICAL` は、作った経緯の記録がコミットになかった。オーナーが自作だと確認した（2026-10-04、#302）。
