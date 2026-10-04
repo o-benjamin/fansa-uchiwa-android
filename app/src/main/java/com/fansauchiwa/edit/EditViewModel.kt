@@ -47,15 +47,12 @@ import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 private const val UI_STATE_KEY = "ui_state"
@@ -69,7 +66,6 @@ class EditViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val editDecorationRepository: EditDecorationRepository,
-    private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
     private val fontSessionTracker: FontSessionTracker,
     private val discardReasonSurvey: DiscardReasonSurvey,
@@ -88,33 +84,11 @@ class EditViewModel @Inject constructor(
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private var pendingSliderSnapshot: HistorySnapshot? = null
-    private var hasShownCompletionTooltipInSession = false
 
     init {
         fontSessionTracker.startSession()
-        observeCompletionTooltip()
-        fetchCompletionTooltip()
         loadExistingDecorations()
         loadAllImages()
-    }
-
-    private fun observeCompletionTooltip() {
-        settingsRepository.getHasSeenEditCompletionTooltipStream()
-            .onEach { hasSeen ->
-                // Skip when already persisted, or after this screen instance has already displayed it once.
-                if (hasSeen || hasShownCompletionTooltipInSession) return@onEach
-
-                val currentState = uiState.value
-                savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = true)
-                markCompletionTooltipShown()
-            }
-            .launchIn(viewModelScope)
-    }
-
-    private fun fetchCompletionTooltip() {
-        viewModelScope.launch {
-            settingsRepository.fetchHasSeenEditCompletionTooltip()
-        }
     }
 
     fun logScreenView() {
@@ -1004,11 +978,6 @@ class EditViewModel @Inject constructor(
         )
     }
 
-    fun onTooltipDismissed() {
-        val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = false)
-    }
-
     fun resetDataFromTemplate(template: Template) {
         viewModelScope.launch {
             val currentState = uiState.value
@@ -1031,12 +1000,6 @@ class EditViewModel @Inject constructor(
                 overallBorderWidth = template.savedUchiwa.overallBorderWidth,
                 isOverallBorderPuffyEnabled = template.savedUchiwa.isOverallBorderPuffyEnabled
             )
-        }
-    }
-
-    private fun markCompletionTooltipShown() {
-        viewModelScope.launch {
-            settingsRepository.setHasSeenEditCompletionTooltip(true)
         }
     }
 }
