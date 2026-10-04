@@ -1,10 +1,13 @@
 package com.fansauchiwa.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -70,7 +73,18 @@ private fun SettingsContent(
                 Text(text = stringResource(R.string.settings_license_title))
             },
             text = {
-                Text(text = stringResource(R.string.settings_license_message))
+                // MIT License の全文が入り、小さい画面では収まらないためスクロールさせる
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(text = stringResource(R.string.settings_license_message))
+                    Text(text = stringResource(R.string.settings_license_phosphor_intro))
+                    Text(
+                        text = stringResource(R.string.settings_license_phosphor_notice),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = { uriHandler.openUri(APACHE_LICENSE_URL) }) {
@@ -185,6 +199,20 @@ private fun SettingsScreenPreview_Loading() {
     FansaUchiwaTheme {
         SettingsContent(
             uiState = SettingsUiState.Loading(),
+            onBack = {},
+            onToggleHapticFeedback = {},
+            onShowLicenseDialog = {},
+            onDismissLicenseDialog = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview_LicenseDialog() {
+    FansaUchiwaTheme {
+        SettingsContent(
+            uiState = SettingsUiState.Success(isHapticFeedbackEnabled = true, showLicenseDialog = true),
             onBack = {},
             onToggleHapticFeedback = {},
             onShowLicenseDialog = {},
