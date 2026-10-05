@@ -50,6 +50,11 @@
     <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
     <string name="ok">OK</string>
     <string name="save_success_share">SNSでシェア</string>
+    <!-- 保存完了のダイアログのうちわの材料のリンク（#311）。PR の表示とアソシエイトの表示文は、ステマ規制と Amazon アソシエイトの規約で必要 -->
+    <string name="affiliate_pr_label">PR</string>
+    <string name="affiliate_section_title">うちわの材料をそろえる</string>
+    <string name="affiliate_link_label">%1$sをAmazonで見る</string>
+    <string name="affiliate_disclosure">Amazonのアソシエイトとして、ファンサうちわは適格販売により収入を得ています。</string>
     <string name="ad_failed_to_load">広告を読み込めませんでした</string>
     <string name="uchiwa_color">うちわ色</string>
     <string name="background_color">背景色</string>

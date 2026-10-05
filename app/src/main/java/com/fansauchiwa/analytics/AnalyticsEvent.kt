@@ -64,6 +64,10 @@ object AnalyticsActions {
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
 
+    // 保存完了のダイアログのうちわの材料のリンク（#311）。表示はクリック率の分母。パラメータは AffiliateAnalyticsParams
+    const val VIEW_PREVIEW_AFFILIATE = "view_preview_affiliate"
+    const val TAP_PREVIEW_AFFILIATE = "tap_preview_affiliate"
+
     // ギャラリーへ保存できたうちわのフォント（#288）。フォントごとに1回送る。パラメータは FontFamilyParams、送り方は ExportedFontAnalytics を参照
     const val EXPORT_UCHIWA_FONT = "export_uchiwa_font"
 
