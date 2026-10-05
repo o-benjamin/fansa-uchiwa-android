@@ -12,6 +12,7 @@ import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
+import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import io.mockk.coEvery
@@ -24,6 +25,7 @@ import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -47,6 +49,7 @@ class UchiwaPreviewShareTest {
     private lateinit var puffyStateAnalytics: PuffyStateAnalytics
     private lateinit var exportedFontAnalytics: ExportedFontAnalytics
     private lateinit var inAppReviewRepository: InAppReviewRepository
+    private lateinit var affiliateRepository: AffiliateRepository
 
     @Before
     fun setUp() {
@@ -58,8 +61,10 @@ class UchiwaPreviewShareTest {
         puffyStateAnalytics = mockk(relaxed = true)
         exportedFontAnalytics = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
+        affiliateRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
+        every { affiliateRepository.getAffiliateLinksStream() } returns emptyFlow()
     }
 
     @After
@@ -82,6 +87,7 @@ class UchiwaPreviewShareTest {
             fontSessionTracker = fontSessionTracker,
             puffyStateAnalytics = puffyStateAnalytics,
             exportedFontAnalytics = exportedFontAnalytics,
+            affiliateRepository = affiliateRepository,
             savedStateHandle = savedStateHandle
         )
     }

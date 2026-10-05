@@ -1,7 +1,10 @@
 package com.fansauchiwa.preview
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,7 +27,6 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -74,6 +76,7 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.ShareAnalyticsParams
+import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
 
@@ -269,38 +272,42 @@ fun UchiwaPreviewScreen(
         }
     }
 
+    // リンク付きの保存完了のダイアログを出したら1回送る（クリック率の分母。#311）
+    val showsAffiliateLinks = uiState.saveSuccess == true && uiState.affiliateLinks.isNotEmpty()
+    LaunchedEffect(showsAffiliateLinks) {
+        if (showsAffiliateLinks) viewModel.logAffiliateLinksShown()
+    }
+
     if (uiState.saveSuccess == true) {
-        AlertDialog(
-            onDismissRequest = { viewModel.clearSaveStatus() },
-            title = {
-                Text(text = stringResource(R.string.save_success_title))
+        SaveSuccessDialog(
+            affiliateLinks = uiState.affiliateLinks,
+            onAffiliateLinkClick = { link ->
+                viewModel.logAffiliateLinkTap(link)
+                openAffiliateLink(context, link)
             },
-            text = {
-                Text(text = stringResource(R.string.save_success_message))
+            onConfirm = {
+                viewModel.clearSaveStatus()
+                onBackToHome()
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.clearSaveStatus()
-                        onBackToHome()
-                    }
-                ) {
-                    Text(text = stringResource(R.string.ok))
-                }
-            },
-            // 保存した直後の人にも共有の機会を出す（#244）。共有後はホームへ戻らずこの画面に残る。
+            // 共有後はホームへ戻らずこの画面に残る。
             // 保存で広告を視聴済みなら hasEarnedRewardInSession により共有で広告は出ない
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.clearSaveStatus()
-                        requestShare(ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE)
-                    }
-                ) {
-                    Text(text = stringResource(R.string.save_success_share))
-                }
-            }
+            onShare = {
+                viewModel.clearSaveStatus()
+                requestShare(ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE)
+            },
+            onDismissRequest = { viewModel.clearSaveStatus() }
         )
+    }
+}
+
+/**
+ * Amazon アソシエイトの規約で WebView では開けないため、外部（Amazon アプリかブラウザ）に渡す（#311）
+ */
+private fun openAffiliateLink(context: Context, link: AffiliateLink) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, link.url.toUri()))
+    } catch (e: ActivityNotFoundException) {
+        Log.w("Affiliate", "リンクを開けるアプリがない: ${link.id}", e)
     }
 }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.IMAGE_PATH_ARG
+import com.fansauchiwa.analytics.AffiliateAnalyticsParams
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
@@ -13,14 +14,18 @@ import com.fansauchiwa.analytics.ExportedFontAnalytics
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.ShareAnalyticsParams
+import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
+import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.net.URLDecoder
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 private const val UI_STATE_KEY = "ui_state"
@@ -34,6 +39,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val fontSessionTracker: FontSessionTracker,
     private val puffyStateAnalytics: PuffyStateAnalytics,
     private val exportedFontAnalytics: ExportedFontAnalytics,
+    private val affiliateRepository: AffiliateRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -61,6 +67,26 @@ class UchiwaPreviewViewModel @Inject constructor(
             val decodedImagePath = URLDecoder.decode(encodedImagePath, "UTF-8")
             val currentState = uiState.value
             savedStateHandle[UI_STATE_KEY] = currentState.copy(imagePath = decodedImagePath)
+        }
+        observeAffiliateLinks()
+        fetchAffiliateLinks()
+    }
+
+    private fun observeAffiliateLinks() {
+        affiliateRepository.getAffiliateLinksStream()
+            .onEach { links ->
+                savedStateHandle[UI_STATE_KEY] = uiState.value.copy(affiliateLinks = links)
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * 保存（広告の視聴を含む）が終わるまでに読み終わるよう、画面を開いたときに読む。
+     * 読めなければリンクを出さないだけなので、Error の状態は持たない
+     */
+    private fun fetchAffiliateLinks() {
+        viewModelScope.launch {
+            affiliateRepository.fetchAffiliateLinks()
         }
     }
 
@@ -182,6 +208,20 @@ class UchiwaPreviewViewModel @Inject constructor(
         viewModelScope.launch {
             inAppReviewRepository.requestReviewIfEligible(activity)
         }
+    }
+
+    /**
+     * リンク付きの保存完了のダイアログを出したとき（クリック率の分母。#311）
+     */
+    fun logAffiliateLinksShown() {
+        logEvent(AnalyticsActions.VIEW_PREVIEW_AFFILIATE)
+    }
+
+    fun logAffiliateLinkTap(link: AffiliateLink) {
+        logEvent(
+            AnalyticsActions.TAP_PREVIEW_AFFILIATE,
+            mapOf(AffiliateAnalyticsParams.PARAM_AFFILIATE_ITEM to link.id)
+        )
     }
 
     fun clearSaveStatus() {
