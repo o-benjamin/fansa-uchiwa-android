@@ -32,6 +32,9 @@ class AffiliateRepositoryImpl @Inject constructor(
 
     private val affiliateLinks = MutableSharedFlow<List<AffiliateLink>>(replay = 1)
 
+    // 画面を開くたびに読むので、同じ誤りを全員が毎回送らないよう1プロセスに1回だけ記録する
+    private var hasRecordedParseError = false
+
     override fun getAffiliateLinksStream(): Flow<List<AffiliateLink>> = affiliateLinks.asSharedFlow()
 
     override suspend fun fetchAffiliateLinks() {
@@ -42,7 +45,10 @@ class AffiliateRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             // Remote Config に置いた JSON の誤り。全員の端末で起きるので、Crashlytics で気づけるようにする
             Log.w(TAG, "affiliate_materials を読めない", e)
-            crashReportingRepository.recordException(e)
+            if (!hasRecordedParseError) {
+                hasRecordedParseError = true
+                crashReportingRepository.recordException(e)
+            }
             emptyList()
         }
         affiliateLinks.emit(links)

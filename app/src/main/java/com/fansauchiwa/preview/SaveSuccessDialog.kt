@@ -23,8 +23,10 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
  * リンクを押してもダイアログは閉じない（Amazon から戻ってきたあとに、共有や OK を押せるように）。
  *
  * @param affiliateLinks うちわの材料のリンク。空なら欄ごと出さない
+ * @param onAffiliateLinkClick リンクを押したとき。開く処理と計測は呼び出し側（UchiwaPreviewScreen）が行う
  * @param onConfirm 「OK」
  * @param onShare 「SNSでシェア」
+ * @param onDismissRequest ダイアログの外を押した・戻るを押したとき
  */
 @Composable
 fun SaveSuccessDialog(

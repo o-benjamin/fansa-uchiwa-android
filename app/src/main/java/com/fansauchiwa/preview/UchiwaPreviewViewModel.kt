@@ -184,6 +184,7 @@ class UchiwaPreviewViewModel @Inject constructor(
                 )
                 // 保存の結果を画面に出すのを待たせないよう、うちわを読み直す計測は後に回す
                 if (success) {
+                    logAffiliateLinksShownIfAny()
                     logFontEventsOfSavedUchiwa()
                 }
             }
@@ -211,10 +212,13 @@ class UchiwaPreviewViewModel @Inject constructor(
     }
 
     /**
-     * リンク付きの保存完了のダイアログを出したとき（クリック率の分母。#311）
+     * リンク付きの保存完了のダイアログを出すとき、1回だけ送る（クリック率の分母。#311）。
+     * 保存のたびに1回なので、端末を回してダイアログが作り直されても増えない
      */
-    fun logAffiliateLinksShown() {
-        logEvent(AnalyticsActions.VIEW_PREVIEW_AFFILIATE)
+    private fun logAffiliateLinksShownIfAny() {
+        if (uiState.value.affiliateLinks.isNotEmpty()) {
+            logEvent(AnalyticsActions.VIEW_PREVIEW_AFFILIATE)
+        }
     }
 
     fun logAffiliateLinkTap(link: AffiliateLink) {

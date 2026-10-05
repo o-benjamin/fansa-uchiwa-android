@@ -80,6 +80,8 @@ import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
 
+private const val AFFILIATE_LOG_TAG = "Affiliate"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UchiwaPreviewScreen(
@@ -272,12 +274,6 @@ fun UchiwaPreviewScreen(
         }
     }
 
-    // リンク付きの保存完了のダイアログを出したら1回送る（クリック率の分母。#311）
-    val showsAffiliateLinks = uiState.saveSuccess == true && uiState.affiliateLinks.isNotEmpty()
-    LaunchedEffect(showsAffiliateLinks) {
-        if (showsAffiliateLinks) viewModel.logAffiliateLinksShown()
-    }
-
     if (uiState.saveSuccess == true) {
         SaveSuccessDialog(
             affiliateLinks = uiState.affiliateLinks,
@@ -302,12 +298,14 @@ fun UchiwaPreviewScreen(
 
 /**
  * Amazon アソシエイトの規約で WebView では開けないため、外部（Amazon アプリかブラウザ）に渡す（#311）
+ *
+ * https を開けるアプリがない端末はほぼ無いので、開けないときはユーザーには何も出さずログだけにする
  */
 private fun openAffiliateLink(context: Context, link: AffiliateLink) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, link.url.toUri()))
     } catch (e: ActivityNotFoundException) {
-        Log.w("Affiliate", "リンクを開けるアプリがない: ${link.id}", e)
+        Log.w(AFFILIATE_LOG_TAG, "リンクを開けるアプリがない: ${link.id}", e)
     }
 }
 

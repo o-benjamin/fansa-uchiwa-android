@@ -75,6 +75,28 @@ class AffiliateRepositoryImplTest {
     }
 
     @Test
+    fun fetchAffiliateLinks_malformedJsonTwice_recordsExceptionOnlyOnce() = runTest {
+        every { remoteConfigDataSource.getAffiliateMaterialsJsonStream() } returns flowOf("""{"items": [""")
+
+        repository.fetchAffiliateLinks()
+        repository.fetchAffiliateLinks()
+
+        verify(exactly = 1) { crashReportingRepository.recordException(any()) }
+    }
+
+    @Test
+    fun fetchAffiliateLinks_allItemsUnusable_emitsEmptyListAndRecordsException() = runTest {
+        every { remoteConfigDataSource.getAffiliateMaterialsJsonStream() } returns flowOf(
+            """{"items": [{"id": "a", "label": "A", "url": "https://example.com/a"}]}"""
+        )
+
+        repository.fetchAffiliateLinks()
+
+        assertEquals(emptyList<AffiliateLink>(), repository.getAffiliateLinksStream().first())
+        verify(exactly = 1) { crashReportingRepository.recordException(any()) }
+    }
+
+    @Test
     fun fetchAffiliateLinks_dataSourceThrows_emitsEmptyListAndRecordsException() = runTest {
         val error = IOException("読めない")
         every { remoteConfigDataSource.getAffiliateMaterialsJsonStream() } returns flow { throw error }

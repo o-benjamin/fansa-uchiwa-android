@@ -62,10 +62,22 @@ class AffiliateLinksParserTest {
     }
 
     @Test
-    fun parse_httpUrl_skipsItem() {
+    fun parse_httpUrl_throwsIllegalArgumentException() {
         val json = """{"items": [{"id": "a", "label": "A", "url": "http://www.amazon.co.jp/dp/B000000000"}]}"""
 
-        assertEquals(emptyList<AffiliateLink>(), AffiliateLinksParser.parse(json))
+        assertThrows(IllegalArgumentException::class.java) { AffiliateLinksParser.parse(json) }
+    }
+
+    @Test
+    fun parse_allItemsUnusable_throwsIllegalArgumentException() {
+        val json = """
+            {"items": [
+              {"id": "a", "label": "A", "url": "https://example.com/a"},
+              {"label": "idなし", "url": "https://amzn.to/b"}
+            ]}
+        """.trimIndent()
+
+        assertThrows(IllegalArgumentException::class.java) { AffiliateLinksParser.parse(json) }
     }
 
     @Test

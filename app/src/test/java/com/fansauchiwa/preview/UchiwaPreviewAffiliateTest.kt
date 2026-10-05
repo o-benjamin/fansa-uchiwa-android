@@ -1,6 +1,8 @@
 package com.fansauchiwa.preview
 
+import android.app.Activity
 import androidx.lifecycle.SavedStateHandle
+import com.fansauchiwa.IMAGE_PATH_ARG
 import com.fansauchiwa.analytics.AffiliateAnalyticsParams
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
@@ -15,7 +17,9 @@ import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.slot
 import io.mockk.mockk
+import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -38,6 +42,7 @@ class UchiwaPreviewAffiliateTest {
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var affiliateRepository: AffiliateRepository
+    private lateinit var masterpieceRepository: MasterpieceRepository
     private val affiliateLinks = MutableSharedFlow<List<AffiliateLink>>(replay = 1)
 
     private val link = AffiliateLink(id = "jumbo_uchiwa", label = "ジャンボうちわ", url = "https://amzn.to/a")
@@ -48,6 +53,7 @@ class UchiwaPreviewAffiliateTest {
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
         affiliateRepository = mockk(relaxed = true)
+        masterpieceRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
         every { affiliateRepository.getAffiliateLinksStream() } returns affiliateLinks
@@ -58,8 +64,10 @@ class UchiwaPreviewAffiliateTest {
         Dispatchers.resetMain()
     }
 
+    private val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece.png"
+
     private fun createViewModel(): UchiwaPreviewViewModel = UchiwaPreviewViewModel(
-        masterpieceRepository = mockk<MasterpieceRepository>(relaxed = true),
+        masterpieceRepository = masterpieceRepository,
         adMobRepository = adMobRepository,
         analyticsRepository = analyticsRepository,
         inAppReviewRepository = mockk<InAppReviewRepository>(relaxed = true),
@@ -67,8 +75,19 @@ class UchiwaPreviewAffiliateTest {
         puffyStateAnalytics = mockk<PuffyStateAnalytics>(relaxed = true),
         exportedFontAnalytics = mockk<ExportedFontAnalytics>(relaxed = true),
         affiliateRepository = affiliateRepository,
-        savedStateHandle = SavedStateHandle()
+        savedStateHandle = SavedStateHandle().apply {
+            set(IMAGE_PATH_ARG, URLEncoder.encode(imagePath, "UTF-8"))
+        }
     )
+
+    /** 広告が出なかった（失敗した）扱いで、そのまま保存まで進める */
+    private fun saveImage(viewModel: UchiwaPreviewViewModel) {
+        val onFailedSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(any(), any(), any(), any(), capture(onFailedSlot), any())
+        } answers { onFailedSlot.captured.invoke() }
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+    }
 
     @Test
     fun init_fetchesAffiliateLinks() = runTest {
@@ -107,13 +126,45 @@ class UchiwaPreviewAffiliateTest {
     }
 
     @Test
-    fun logAffiliateLinksShown_sendsViewEvent() = runTest {
+    fun saveSuccess_withAffiliateLinks_sendsViewEventOnce() = runTest {
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
         val viewModel = createViewModel()
+        affiliateLinks.emit(listOf(link))
+        advanceUntilIdle()
 
-        viewModel.logAffiliateLinksShown()
+        saveImage(viewModel)
         advanceUntilIdle()
 
         coVerify(exactly = 1) {
+            analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.VIEW_PREVIEW_AFFILIATE))
+        }
+    }
+
+    @Test
+    fun saveSuccess_withoutAffiliateLinks_doesNotSendViewEvent() = runTest {
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        saveImage(viewModel)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.VIEW_PREVIEW_AFFILIATE))
+        }
+    }
+
+    @Test
+    fun saveFailure_withAffiliateLinks_doesNotSendViewEvent() = runTest {
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns false
+        val viewModel = createViewModel()
+        affiliateLinks.emit(listOf(link))
+        advanceUntilIdle()
+
+        saveImage(viewModel)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
             analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.VIEW_PREVIEW_AFFILIATE))
         }
     }
