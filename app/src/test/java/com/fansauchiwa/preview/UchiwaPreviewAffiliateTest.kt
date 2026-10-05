@@ -17,8 +17,8 @@ import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.slot
 import io.mockk.mockk
+import io.mockk.slot
 import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
