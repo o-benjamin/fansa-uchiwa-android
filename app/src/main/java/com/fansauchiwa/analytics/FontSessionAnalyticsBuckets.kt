@@ -1,6 +1,7 @@
 package com.fansauchiwa.analytics
 
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.fontRankIndexMap
 
 /**
  * フォント切り替え回数を GA4 のバケット文字列に変換する（#242）。
@@ -17,13 +18,17 @@ fun fontSwitchBucket(switchCount: Int): String = when {
 }
 
 /**
- * 最終的に選ばれたフォントの表示順位（1始まり）を GA4 のバケット文字列に変換する（#242）。
+ * 最終的に選ばれたフォントの順位（1始まり）を GA4 のバケット文字列に変換する（#242）。
  *
- * 順位はフォント選択画面の表示順（[FontFamilies] の宣言順）を使う。
- * #241 で宣言順を実使用データ順に並べ替えたため、表示順と人気順はそろっている。
+ * 順位はフォント選択画面の「1位〜5位」のバッジと同じ [fontRankIndexMap]（NEW を除いた [FontFamilies] の宣言順）を使う。
+ * #241 で宣言順を実使用データ順に並べ替えたため、この順位と人気順はそろっている。
+ * NEW のフォントは順位を持たないので "new" を返す。NEW は選択画面の先頭に並ぶため、
+ * 表示位置で数えると既存のフォントの順位が NEW の数だけずれ、#242 の判定（上位5件への着地）が
+ * NEW を足したリリースの前後で比べられなくなる（#286）。
  */
 fun finalFontRankBucket(font: FontFamilies): String {
-    val rank = font.ordinal + 1
+    val rankIndex = fontRankIndexMap[font] ?: return "new"
+    val rank = rankIndex + 1
     return when {
         rank <= 5 -> "1-5"
         rank <= 10 -> "6-10"

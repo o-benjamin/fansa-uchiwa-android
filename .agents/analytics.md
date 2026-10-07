@@ -32,6 +32,10 @@
 
 - 分析のための処理（パラメータの計算・データの読み込み・送信）が例外を出しても、保存や共有などの本体の操作を止めたり、アプリを落としたりしないでください。失敗した部分のパラメータは付けずに送り、例外は `CrashReportingRepository.recordException()` で記録してください（例：`FontSessionTracker.exportParams()`）。
 
+## debug ビルドは送信しない
+
+- debug ビルドは Analytics と Crashlytics を送らない（`app/src/debug/AndroidManifest.xml`）。debug で DebugView に何も出なくても故障ではない。新しいイベントは beta ビルドの DebugView で確かめてください。
+
 ## 調査用の計測の消し方を書く
 
 - 調査のために一時的に足す計測（消す前提のもの）は、そのクラスの KDoc に「計測をやめるときに消すもの」を書いてください（例：`FontSessionTracker` の KDoc）。

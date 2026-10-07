@@ -2,9 +2,15 @@ package com.fansauchiwa.edit
 
 import androidx.compose.ui.text.font.FontFamily
 import com.fansauchiwa.ui.theme.akazukinPopFontFamily
+import com.fansauchiwa.ui.theme.aoboshiOneFontFamily
+import com.fansauchiwa.ui.theme.cherryBombOneFontFamily
+import com.fansauchiwa.ui.theme.chokokutaiFontFamily
+import com.fansauchiwa.ui.theme.darumadropOneFontFamily
 import com.fansauchiwa.ui.theme.delaGothicOneFontFamily
 import com.fansauchiwa.ui.theme.dotGothic16FontFamily
 import com.fansauchiwa.ui.theme.hachiMaruPopFontFamily
+import com.fansauchiwa.ui.theme.kaiseiDecolFontFamily
+import com.fansauchiwa.ui.theme.kaiseiTokuminFontFamily
 import com.fansauchiwa.ui.theme.keiFontFamily
 import com.fansauchiwa.ui.theme.kiwiMaruFontFamily
 import com.fansauchiwa.ui.theme.kleeOneFontFamily
@@ -18,8 +24,10 @@ import com.fansauchiwa.ui.theme.mPlus2FontFamily
 import com.fansauchiwa.ui.theme.mPlusRounded1cFontFamily
 import com.fansauchiwa.ui.theme.mochiyPopOneFontFamily
 import com.fansauchiwa.ui.theme.mochiyPopPOneFontFamily
+import com.fansauchiwa.ui.theme.monomaniacOneFontFamily
 import com.fansauchiwa.ui.theme.notoSansJPFontFamily
 import com.fansauchiwa.ui.theme.notoSerifJPFontFamily
+import com.fansauchiwa.ui.theme.paletteMosaicFontFamily
 import com.fansauchiwa.ui.theme.pottaOneFontFamily
 import com.fansauchiwa.ui.theme.rampartOneFontFamily
 import com.fansauchiwa.ui.theme.reggaeOneFontFamily
@@ -32,6 +40,7 @@ import com.fansauchiwa.ui.theme.shipporiMinchoB1FontFamily
 import com.fansauchiwa.ui.theme.shipporiMinchoFontFamily
 import com.fansauchiwa.ui.theme.stickyFontFamily
 import com.fansauchiwa.ui.theme.trainOneFontFamily
+import com.fansauchiwa.ui.theme.wdxlLubrifontJpNFontFamily
 import com.fansauchiwa.ui.theme.yomogiFontFamily
 import com.fansauchiwa.ui.theme.yuseiMagicFontFamily
 import com.fansauchiwa.ui.theme.zenAntiqueFontFamily
@@ -46,10 +55,21 @@ import kotlinx.serialization.Serializable
 /**
  * 文字入れで選べるフォント。宣言順がフォント選択画面の表示順と「1位〜5位」のバッジになる。
  * 並びは GA4 の `select_edit_text_font` の選択回数の多い順（#241、2026-08-23〜09-19 の28日間）。
+ * `isNew = true` のフォントは先頭に置き、順位の対象から外している。NEW の中の並びは採用を決めたときの順で、データの順ではない。
+ * 今の NEW は v2.9.0 で追加した9個（#286）。外して並べ替える作業は #298。
  * 並べ替えの手順と `isNew` の運用ルールは `.agents/sticker-font-order.md` を参照。
  */
 @Serializable
 enum class FontFamilies(val value: FontFamily, val isNew: Boolean = false) {
+    CHERRY_BOMB_ONE(cherryBombOneFontFamily, isNew = true),
+    DARUMADROP_ONE(darumadropOneFontFamily, isNew = true),
+    MONOMANIAC_ONE(monomaniacOneFontFamily, isNew = true),
+    CHOKOKUTAI(chokokutaiFontFamily, isNew = true),
+    PALETTE_MOSAIC(paletteMosaicFontFamily, isNew = true),
+    WDXL_LUBRIFONT_JP_N(wdxlLubrifontJpNFontFamily, isNew = true),
+    KAISEI_DECOL(kaiseiDecolFontFamily, isNew = true),
+    KAISEI_TOKUMIN(kaiseiTokuminFontFamily, isNew = true),
+    AOBOSHI_ONE(aoboshiOneFontFamily, isNew = true),
     M_PLUS_ROUNDED_1C(mPlusRounded1cFontFamily),
     MOCHIY_POP_ONE(mochiyPopOneFontFamily),
     MOCHIY_POP_P_ONE(mochiyPopPOneFontFamily),
@@ -91,3 +111,9 @@ enum class FontFamilies(val value: FontFamily, val isNew: Boolean = false) {
     ZEN_KAKU_GOTHIC_ANTIQUE(zenKakuGothicAntiqueFontFamily),
     KLEE_ONE(kleeOneFontFamily),
 }
+
+/**
+ * フォント選択画面の「1位〜5位」のバッジと、GA4 の `final_font_rank_bucket` で使う順位（0始まり。NEW は null）。
+ * 2つの順位がずれないように、ここ1か所で求める。
+ */
+val fontRankIndexMap: Map<FontFamilies, Int?> = buildRankIndexMap(FontFamilies.entries) { it.isNew }
