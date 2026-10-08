@@ -42,9 +42,12 @@ import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.edit.ColorPickerDialog
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
+/**
+ * @param currentColor 選ばれている色。null なら、どの色も選ばれていない表示にする（「すべての文字」の欄で、文字ごとに色がちがうとき）
+ */
 @Composable
 fun ColorPickerRow(
-    currentColor: Color,
+    currentColor: Color?,
     onColorSelected: (Color) -> Unit,
     modifier: Modifier = Modifier,
     colors: List<Color> = DecorationColors.entries.map { it.value },
@@ -150,7 +153,8 @@ fun ColorPickerRow(
 
     if (showColorPickerDialog) {
         ColorPickerDialog(
-            initialColor = currentColor,
+            // 色が決まっていない（文字ごとにちがう）ときは、ダイアログの既定値と同じ白から始める
+            initialColor = currentColor ?: Color.White,
             onDismiss = { showColorPickerDialog = false },
             onColorSelected = onColorSelected
         )

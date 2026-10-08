@@ -12,8 +12,10 @@ import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.DiscardReason
 import com.fansauchiwa.analytics.DiscardReasonParams
 import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
+import com.fansauchiwa.analytics.FontFamilyParams
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
@@ -1117,6 +1119,239 @@ class EditViewModelTest {
 
         verify(exactly = 1) {
             fontSessionTracker.finishSessionForPreview(viewModel.uiState.value.decorations)
+        }
+    }
+
+    // endregion
+
+    // region すべての文字をまとめて変える（#308）
+
+    private fun TestScope.createViewModelWithTwoTextsAndSticker(): EditViewModel {
+        val uchiwaId = "all-text-uchiwa-id"
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns Uchiwa(
+            id = uchiwaId,
+            decorations = listOf(
+                Decoration.Text(
+                    id = "text-1",
+                    text = "名前",
+                    font = FontFamilies.HACHI_MARU_POP,
+                    color = Color.Black,
+                    strokeColor = Color.White,
+                    strokeWidth = 20f
+                ),
+                Decoration.Sticker(
+                    id = "sticker-1",
+                    label = "heart",
+                    color = Color.Red,
+                    strokeColor = Color.White,
+                    strokeWidth = 3f
+                ),
+                Decoration.Text(
+                    id = "text-2",
+                    text = "ピースして",
+                    font = FontFamilies.NOTO_SANS_JP,
+                    color = Color.Blue,
+                    strokeColor = Color.Yellow,
+                    strokeWidth = 40f
+                )
+            ),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+        return viewModel
+    }
+
+    @Test
+    fun updateAllTextFont_twoTexts_changesEveryTextAndKeepsSticker() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+        val stickerBefore = viewModel.findStickerDecoration("sticker-1")
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        assertEquals(FontFamilies.DELA_GOTHIC_ONE, viewModel.findTextDecoration("text-1")?.font)
+        assertEquals(FontFamilies.DELA_GOTHIC_ONE, viewModel.findTextDecoration("text-2")?.font)
+        assertEquals(stickerBefore, viewModel.findStickerDecoration("sticker-1"))
+        verify(exactly = 1) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf(
+                        "target" to EditAllTextTargetParams.FONT,
+                        FontFamilyParams.PARAM_FONT_FAMILY to FontFamilies.DELA_GOTHIC_ONE.name
+                    )
+                )
+            )
+        }
+        // フォントの並び順の集計に入れるため、select_edit_text_font も1回送る
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+                    params = mapOf(FontFamilyParams.PARAM_FONT_FAMILY to FontFamilies.DELA_GOTHIC_ONE.name)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_everyTextAlreadyThatFont_doesNotCountSwitchOrSendEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
+        }
+    }
+
+    @Test
+    fun updateAllTextColor_everyTextAlreadyThatColor_keepsRedoHistory() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+        viewModel.updateAllTextColor(Color.Green)
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        viewModel.undo()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.canRedo)
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canRedo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT &&
+                            it.params["target"] == EditAllTextTargetParams.TEXT_COLOR
+                }
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_thenUndoOnce_restoresEveryTextFont() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(FontFamilies.HACHI_MARU_POP, viewModel.findTextDecoration("text-1")?.font)
+        assertEquals(FontFamilies.NOTO_SANS_JP, viewModel.findTextDecoration("text-2")?.font)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextColor_twoTexts_changesEveryTextColorAndKeepsStickerColor() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertEquals(Color.Green, viewModel.findTextDecoration("text-1")?.color)
+        assertEquals(Color.Green, viewModel.findTextDecoration("text-2")?.color)
+        assertEquals(Color.Red, viewModel.findStickerDecoration("sticker-1")?.color)
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.TEXT_COLOR)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextStrokeColor_twoTexts_changesEveryTextStrokeColorAndKeepsSticker() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextStrokeColor(Color.Magenta)
+        advanceUntilIdle()
+
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-1")?.strokeColor)
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-2")?.strokeColor)
+        assertEquals(Color.White, viewModel.findStickerDecoration("sticker-1")?.strokeColor)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_1_COLOR)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextStrokeWidth_multipleDragUpdates_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextStrokeWidth(50f)
+        viewModel.updateAllTextStrokeWidth(60f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(60f, viewModel.findTextDecoration("text-1")?.strokeWidth)
+        assertEquals(60f, viewModel.findTextDecoration("text-2")?.strokeWidth)
+        assertEquals(3f, viewModel.findStickerDecoration("sticker-1")?.strokeWidth)
+
+        viewModel.finishAllTextStrokeWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_1_WEIGHT)
+                )
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(20f, viewModel.findTextDecoration("text-1")?.strokeWidth)
+        assertEquals(40f, viewModel.findTextDecoration("text-2")?.strokeWidth)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextColor_noText_doesNothing() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_noText_doesNothing() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        verify(exactly = 0) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
         }
     }
 

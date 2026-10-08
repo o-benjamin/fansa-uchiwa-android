@@ -5,6 +5,7 @@
 ## 並び順
 
 - GA4 の直近28日間の選択回数の多い順に並べる。ステッカーは `select_edit_sticker` の `label`、フォントは `select_edit_text_font` の `font_family`（どちらもカスタムディメンション登録済み）
+    - 「全体」タブで文字すべてのフォントをまとめて選んだとき（#308、v2.10.0 から）も、`select_edit_text_font` を1回送っている。`select_edit_all_text` を足して数えると二重になるので、`select_edit_text_font` だけを数える
 - 選択回数が同じものは、並べ替え前の相対順を保つ
 - `FontFamilies` は `finalFontRankBucket`（GA4 の `final_font_rank_bucket`）でも、バッジと同じ順位（NEW を除いた宣言順）を使う。NEW のフォントは `new` になる（#286）
 - 並べ替えても保存済みのうちわは壊れない。Room は `Decoration` を kotlinx.serialization の JSON で保存し、フォントは enum の名前（`KLEE_ONE`）、ステッカーは `Decoration.Sticker.label`（= `StickerAsset.type` の文字列、`heart`）で書かれるため（`ConvertersTest` で確認している）。ステッカーの `type` は保存のキーなので、enum の名前を変えるときも `type` は変えない。`FontFamiliesParceler` は ordinal を使うが、Parcel はプロセス内の一時的なもの

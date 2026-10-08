@@ -22,13 +22,14 @@ import javax.inject.Singleton
  *
  * 計測をやめるときに消すもの：
  * - このクラス、[FontSessionAnalyticsSnapshot]、[FontSessionAnalyticsParams]、FontSessionAnalyticsBuckets.kt
- * - EditViewModel の呼び出し（init の startSession、updateFont の onFontSwitched、
+ * - EditViewModel の呼び出し（init の startSession、updateFont と updateAllTextFont の onFontSwitched、
  *   fontSessionParamsForDiscardEvent、finishFontSessionForPreview）
  * - EditScreen の呼び出し（保存後の finishFontSessionForPreview、破棄ダイアログで
  *   tap_edit_back_dialog のパラメータに fontSessionParamsForDiscardEvent を足しているところ）
  * - UchiwaPreviewViewModel の logExportEvent で exportParams を付けているところ
  * - テスト：FontSessionTrackerTest、FontSessionAnalyticsBucketsTest、EditViewModelTest と
- *   UchiwaPreviewSaveTest のフォント計測のテスト
+ *   UchiwaPreviewSaveTest のフォント計測のテスト、EditViewModelTest の「すべての文字をまとめて変える（#308）」の
+ *   onFontSwitched を確かめているところ
  */
 @Singleton
 class FontSessionTracker internal constructor(
@@ -66,7 +67,10 @@ class FontSessionTracker internal constructor(
         snapshotForPreview = null
     }
 
-    /** テキスト装飾のフォントを切り替えたときに呼ぶ */
+    /**
+     * テキスト装飾のフォントを切り替えたときに呼ぶ。
+     * 「全体」タブで文字すべてのフォントをまとめて変えたとき（#308、v2.10.0 から）は、文字の数によらず1回と数える
+     */
     fun onFontSwitched(decorationId: String) {
         fontSwitchCount++
         lastSwitchedDecorationId = decorationId

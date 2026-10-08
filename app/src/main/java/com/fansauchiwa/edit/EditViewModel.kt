@@ -32,6 +32,7 @@ import com.fansauchiwa.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.analytics.BackGroundColorParams
 import com.fansauchiwa.analytics.DiscardReason
 import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
 import com.fansauchiwa.analytics.FontFamilyParams
@@ -658,6 +659,83 @@ class EditViewModel @Inject constructor(
 
             else -> Unit
         }
+    }
+
+    /** うちわの中の文字すべてのフォントを変える（#308） */
+    fun updateAllTextFont(newFont: FontFamilies) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(font = newFont) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        // 文字の数によらず1回の切り替えとして数える。どの文字も同じフォントになるので、記録する文字は先頭の1つでよい
+        val firstText = decorations.first { it is Decoration.Text }
+        fontSessionTracker.onFontSwitched(firstText.id)
+        // フォントの並び順（#241）は select_edit_text_font の回数で決めるので、まとめて選んだときも1回送る
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+            mapOf(FontFamilyParams.PARAM_FONT_FAMILY to newFont.name)
+        )
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf(
+                "target" to EditAllTextTargetParams.FONT,
+                FontFamilyParams.PARAM_FONT_FAMILY to newFont.name
+            )
+        )
+    }
+
+    /** うちわの中の文字すべての文字色を変える（#308） */
+    fun updateAllTextColor(newColor: Color) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(color = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.TEXT_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線（1つめの縁）の色を変える（#308） */
+    fun updateAllTextStrokeColor(newColor: Color) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(strokeColor = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_1_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線（1つめの縁）の太さを変える（#308）。スライダーを離したら [finishAllTextStrokeWidthChange] */
+    fun updateAllTextStrokeWidth(newWidth: Float) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(strokeWidth = newWidth) } ?: return
+        capturePendingSliderSnapshot()
+        setDecorations(decorations)
+    }
+
+    fun finishAllTextStrokeWidthChange() {
+        if (!savePendingSliderSnapshot()) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_1_WEIGHT)
+        )
+    }
+
+    /**
+     * 文字すべてに [transform] を当てた装飾の一覧。変わる文字がない（文字がない・すでに全部その値）ときは null。
+     * 何も変わらない操作で「元に戻す」の履歴を積んだり、イベントを送ったりしないため
+     */
+    private fun decorationsWithAllTextsChanged(
+        transform: (Decoration.Text) -> Decoration.Text
+    ): List<Decoration>? {
+        val decorations = uiState.value.decorations
+        val changedDecorations = decorations.map { decoration ->
+            if (decoration is Decoration.Text) transform(decoration) else decoration
+        }
+        return changedDecorations.takeIf { it != decorations }
+    }
+
+    private fun setDecorations(decorations: List<Decoration>) {
+        savedStateHandle[UI_STATE_KEY] = uiState.value.copy(decorations = decorations)
     }
 
     fun updateUchiwaColor(color: Color) {

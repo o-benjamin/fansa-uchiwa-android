@@ -39,6 +39,13 @@ import com.fansauchiwa.edit.TestTags
 import com.fansauchiwa.edit.fontRankIndexMap
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
+/** 文字の枠線（1つめ・2つめの縁）の太さのスライダーの範囲。文字タブと「全体」タブの「すべての文字」で共通 */
+internal val TEXT_STROKE_WIDTH_RANGE = 0f..90f
+internal const val TEXT_STROKE_WIDTH_STEPS = 17
+
+/** フォントのボタンを並べるグリッドの列の最小幅。文字タブと「全体」タブで共通 */
+internal val FONT_BUTTON_MIN_WIDTH = 88.dp
+
 @Composable
 fun TextPage(
     onAddText: (FontFamilies) -> Unit,
@@ -107,8 +114,8 @@ fun TextDecorationControls(
             title = stringResource(R.string.stroke_color_and_weight),
             color = strokeColor,
             width = strokeWidth,
-            valueRange = 0f..90f,
-            steps = 17,
+            valueRange = TEXT_STROKE_WIDTH_RANGE,
+            steps = TEXT_STROKE_WIDTH_STEPS,
             onColorSelected = onStrokeColorSelected,
             onWeightChanged = onStrokeWeightChanged,
             onWeightChangedFinished = onStrokeWeightChangedFinished
@@ -118,8 +125,8 @@ fun TextDecorationControls(
             title = stringResource(R.string.second_stroke_color_and_weight),
             color = secondBorderColor,
             width = secondBorderWidth,
-            valueRange = 0f..90f,
-            steps = 17,
+            valueRange = TEXT_STROKE_WIDTH_RANGE,
+            steps = TEXT_STROKE_WIDTH_STEPS,
             onColorSelected = onSecondBorderColorSelected,
             onWeightChanged = onSecondBorderWeightChanged,
             onWeightChangedFinished = onSecondBorderWeightChangedFinished
@@ -143,12 +150,10 @@ fun FontFamilySelectionGrid(
     selectedTextDecoration: Decoration.Text?,
     modifier: Modifier = Modifier
 ) {
-    val minButtonWidth = 88.dp
-    val buttonHeight = 54.dp
     val spacing = 8.dp
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = minButtonWidth),
+        columns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
         contentPadding = PaddingValues(start = 32.dp, end = 32.dp, bottom = 32.dp),
@@ -181,41 +186,65 @@ fun FontFamilySelectionGrid(
         }
 
         items(FontFamilies.entries.toList()) { fontFamily ->
-            val isSelected = selectedTextDecoration?.font == fontFamily
-            Box(contentAlignment = Alignment.Center) {
-                FilledTonalButton(
-                    onClick = {
-                        if (selectedTextDecoration != null) {
-                            onFontChanged(fontFamily)
-                        } else {
-                            onAddText(fontFamily)
-                        }
-                    },
-                    shape = RoundedCornerShape(8.dp),
-                    border = if (isSelected) BorderStroke(
-                        2.dp,
-                        MaterialTheme.colorScheme.primary
-                    ) else null,
-                    modifier = Modifier
-                        .height(buttonHeight)
-                        .testTag(TestTags.FONT_BUTTON_PREFIX + fontFamily.name)
-                        .semantics { selected = isSelected }
-                ) {
-                    val density = LocalDensity.current
-                    Text(
-                        text = "あA!",
-                        fontSize = (20.dp.value / density.fontScale).sp,
-                        fontFamily = fontFamily.value
-                    )
-                }
-                val rankIndex = fontRankIndexMap[fontFamily]
-                ItemBadge(
-                    rankIndex = rankIndex,
-                    isNew = fontFamily.isNew,
-                    modifier = Modifier.align(Alignment.TopStart)
-                )
-            }
+            FontFamilyButton(
+                fontFamily = fontFamily,
+                isSelected = selectedTextDecoration?.font == fontFamily,
+                onClick = {
+                    if (selectedTextDecoration != null) {
+                        onFontChanged(fontFamily)
+                    } else {
+                        onAddText(fontFamily)
+                    }
+                },
+                testTag = TestTags.FONT_BUTTON_PREFIX + fontFamily.name
+            )
         }
+    }
+}
+
+/**
+ * フォントを選ぶボタン。順位・NEW のバッジを左上に重ねる。
+ * 文字タブのフォントの一覧と、「全体」タブの「すべての文字」（#308）で共通
+ *
+ * @param testTag ボタンに付ける testTag。一覧ごとに別の接頭辞にする
+ */
+@Composable
+fun FontFamilyButton(
+    fontFamily: FontFamilies,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    testTag: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
+    ) {
+        FilledTonalButton(
+            onClick = onClick,
+            shape = RoundedCornerShape(8.dp),
+            border = if (isSelected) BorderStroke(
+                2.dp,
+                MaterialTheme.colorScheme.primary
+            ) else null,
+            modifier = Modifier
+                .height(54.dp)
+                .testTag(testTag)
+                .semantics { selected = isSelected }
+        ) {
+            val density = LocalDensity.current
+            Text(
+                text = "あA!",
+                fontSize = (20.dp.value / density.fontScale).sp,
+                fontFamily = fontFamily.value
+            )
+        }
+        val rankIndex = fontRankIndexMap[fontFamily]
+        ItemBadge(
+            rankIndex = rankIndex,
+            isNew = fontFamily.isNew,
+            modifier = Modifier.align(Alignment.TopStart)
+        )
     }
 }
 
@@ -307,6 +336,32 @@ fun FontFamilySelectionGridWidePreview() {
             onSecondBorderWeightChanged = {},
             onSecondBorderWeightChangedFinished = {},
             selectedTextDecoration = null
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FontFamilyButtonSelectedPreview() {
+    FansaUchiwaTheme {
+        FontFamilyButton(
+            fontFamily = FontFamilies.HACHI_MARU_POP,
+            isSelected = true,
+            onClick = {},
+            testTag = ""
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FontFamilyButtonNotSelectedPreview() {
+    FansaUchiwaTheme {
+        FontFamilyButton(
+            fontFamily = FontFamilies.HACHI_MARU_POP,
+            isSelected = false,
+            onClick = {},
+            testTag = ""
         )
     }
 }

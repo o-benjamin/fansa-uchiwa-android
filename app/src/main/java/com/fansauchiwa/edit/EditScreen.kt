@@ -382,6 +382,9 @@ fun EditScreen(
                             uiState.decorations,
                             uiState.isOverallBorderPuffyEnabled
                         ),
+                        allTextStyle = remember(uiState.decorations) {
+                            AllTextStyle.of(uiState.decorations)
+                        },
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported
@@ -447,6 +450,11 @@ fun EditScreen(
                         onOverallBorderWeightChanged = viewModel::updateOverallBorderWidth,
                         onOverallBorderWeightChangedFinished = viewModel::finishOverallBorderWidthChange,
                         onAllPuffyEnabledChanged = viewModel::updateAllPuffyEnabled,
+                        onAllTextFontSelected = viewModel::updateAllTextFont,
+                        onAllTextColorSelected = viewModel::updateAllTextColor,
+                        onAllTextStrokeColorSelected = viewModel::updateAllTextStrokeColor,
+                        onAllTextStrokeWeightChanged = viewModel::updateAllTextStrokeWidth,
+                        onAllTextStrokeWeightChangedFinished = viewModel::finishAllTextStrokeWidthChange,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->
                             hapticManager.perform(FansaHapticType.VIRTUAL_KEY)

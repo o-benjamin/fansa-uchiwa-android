@@ -1,13 +1,17 @@
 package com.fansauchiwa.edit
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fansauchiwa.edit.pager.UchiwaBackgroundPage
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -27,7 +31,9 @@ class UchiwaBackgroundPageTest {
         isAllPuffyEnabled: Boolean,
         isPukuPukuSupported: Boolean,
         onAllPuffyEnabledChanged: (Boolean) -> Unit = {},
-        onPuffyUnsupportedClick: () -> Unit = {}
+        onPuffyUnsupportedClick: () -> Unit = {},
+        allTextStyle: AllTextStyle? = null,
+        onAllTextFontSelected: (FontFamilies) -> Unit = {}
     ) {
         composeTestRule.setContent {
             FansaUchiwaTheme {
@@ -39,12 +45,18 @@ class UchiwaBackgroundPageTest {
                     onOverallBorderWeightChangedFinished = {},
                     onAllPuffyEnabledChanged = onAllPuffyEnabledChanged,
                     onPuffyUnsupportedClick = onPuffyUnsupportedClick,
+                    onAllTextFontSelected = onAllTextFontSelected,
+                    onAllTextColorSelected = {},
+                    onAllTextStrokeColorSelected = {},
+                    onAllTextStrokeWeightChanged = {},
+                    onAllTextStrokeWeightChangedFinished = {},
                     currentUchiwaColor = Color.Red,
                     currentBackgroundColor = Color.Blue,
                     currentOverallBorderColor = Color.White,
                     currentOverallBorderWidth = 8f,
                     isAllPuffyEnabled = isAllPuffyEnabled,
-                    isPukuPukuSupported = isPukuPukuSupported
+                    isPukuPukuSupported = isPukuPukuSupported,
+                    allTextStyle = allTextStyle
                 )
             }
         }
@@ -113,4 +125,71 @@ class UchiwaBackgroundPageTest {
 
         assertTrue(wasClicked)
     }
+
+    @Test
+    fun allTextStyleSection_noText_isNotShown() {
+        setContent(isAllPuffyEnabled = false, isPukuPukuSupported = true, allTextStyle = null)
+
+        composeTestRule
+            .onNode(hasTestTag(TestTags.ALL_TEXT_STYLE_SECTION))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun allTextFontButton_allTextsSameFont_isSelected() {
+        setContent(
+            isAllPuffyEnabled = false,
+            isPukuPukuSupported = true,
+            allTextStyle = allTextStyle(font = FontFamilies.HACHI_MARU_POP)
+        )
+
+        scrollToAllTextFontButton(FontFamilies.HACHI_MARU_POP)
+            .assertIsSelected()
+    }
+
+    @Test
+    fun allTextFontButtons_mixedFonts_noneSelected() {
+        setContent(
+            isAllPuffyEnabled = false,
+            isPukuPukuSupported = true,
+            allTextStyle = allTextStyle(font = null)
+        )
+
+        FontFamilies.entries.forEach { fontFamily ->
+            scrollToAllTextFontButton(fontFamily)
+                .assertIsNotSelected()
+        }
+    }
+
+    @Test
+    fun allTextFontButton_click_requestsThatFont() {
+        var requested: FontFamilies? = null
+        setContent(
+            isAllPuffyEnabled = false,
+            isPukuPukuSupported = true,
+            allTextStyle = allTextStyle(font = null),
+            onAllTextFontSelected = { requested = it }
+        )
+
+        scrollToAllTextFontButton(FontFamilies.NOTO_SANS_JP)
+            .performClick()
+
+        assertEquals(FontFamilies.NOTO_SANS_JP, requested)
+    }
+
+    /** フォントのボタンはグリッドの項目で、見えるまで作られないので、ページをスクロールしてから探す */
+    private fun scrollToAllTextFontButton(fontFamily: FontFamilies): SemanticsNodeInteraction {
+        val buttonMatcher = hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + fontFamily.name)
+        composeTestRule
+            .onNode(hasTestTag(TestTags.UCHIWA_BACKGROUND_PAGE))
+            .performScrollToNode(buttonMatcher)
+        return composeTestRule.onNode(buttonMatcher)
+    }
+
+    private fun allTextStyle(font: FontFamilies?) = AllTextStyle(
+        font = font,
+        color = Color.Black,
+        strokeColor = Color.White,
+        strokeWidth = 20f
+    )
 }
