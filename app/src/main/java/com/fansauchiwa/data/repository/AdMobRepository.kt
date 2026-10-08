@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.ads.AdLoadRetryPolicy
+import com.fansauchiwa.ads.AdLoadWait
 import com.fansauchiwa.analytics.AdFormat
 import com.fansauchiwa.analytics.AdPaidEventFactory
 import com.fansauchiwa.analytics.AnalyticsActions
@@ -29,14 +30,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
-
-// 表示を求められたときにロード中だった広告を、ロードの完了まで待つ上限
-private const val REWARDED_AD_LOAD_TIMEOUT_MILLIS = 5_000L
 
 /**
  * AdMobのリワード広告とインタースティシャル広告を管理するRepository
@@ -268,7 +264,7 @@ class AdMobRepositoryImpl @Inject constructor(
 
     /**
      * リワード広告のロード完了を待って表示する
-     * [REWARDED_AD_LOAD_TIMEOUT_MILLIS] たってもロードが完了しない場合はスキップ
+     * [AdLoadWait.MAX_WAIT_MILLIS] たってもロードが完了しない場合はスキップ
      */
     private fun waitForRewardedAdLoad(
         activity: Activity,
@@ -278,17 +274,14 @@ class AdMobRepositoryImpl @Inject constructor(
         onAdDismissed: (() -> Unit)?
     ) {
         mainScope.launch {
-            // ロードが終わる（成功・失敗のどちらでも）か、上限の時間がたつまで待つ
-            withTimeoutOrNull(REWARDED_AD_LOAD_TIMEOUT_MILLIS) {
-                _isLoadingRewardedAd.first { isLoading -> !isLoading }
-            }
+            AdLoadWait.awaitLoadFinished(_isLoadingRewardedAd)
 
             if (rewardedAd != null) {
-                // ロードが完了したので再度showRewardedAdを呼び出す（waitForLoad=falseで無限ループ防止）
+                // ロードが完了したので再度showRewardedAdを呼び出す（待たないようにして無限ループを防ぐ）
                 showRewardedAd(
                     activity,
                     placement,
-                    false,
+                    waitForLoad = false,
                     onUserEarnedReward,
                     onAdFailedOrSkipped,
                     onAdDismissed
