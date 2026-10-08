@@ -3,10 +3,13 @@ package com.fansauchiwa.home
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -32,7 +35,6 @@ class HomeScreenTest {
         return (1..3).map { index ->
             Template(
                 id = "template_$index",
-                previewImageResId = R.drawable.uchiwa_shape,
                 savedUchiwa = SavedUchiwa(
                     decorations = listOf(
                         Decoration.Text(
@@ -82,6 +84,7 @@ class HomeScreenTest {
                     onTemplateClick = {},
                     onImageLongPress = {},
                     statusBarPadding = 0.dp,
+                    bottomPadding = 0.dp,
                     isPreview = true
                 )
             }
@@ -95,7 +98,12 @@ class HomeScreenTest {
 
         composeTestRule.onNodeWithText(homeTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(myDesignTabLabel).assertIsDisplayed()
+        // ホームタブの先頭に入口（#270）があり、画面が低い端末ではテンプレートが画面の外に出るので、スクロールしてから確かめる
+        composeTestRule.onNodeWithTag(HOME_TAB_HOME_GRID_TAG)
+            .performScrollToNode(hasText(templateSectionTitle))
         composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(HOME_TAB_HOME_GRID_TAG)
+            .performScrollToNode(hasTestTag("template-preview-template_1"))
         composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
         composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
         composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
@@ -130,6 +138,7 @@ class HomeScreenTest {
                 onTemplateClick = {},
                 onImageLongPress = {},
                 statusBarPadding = 0.dp,
+                bottomPadding = 0.dp,
                 isPreview = true
             )
         }
