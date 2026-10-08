@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.ads.AdLoadRetryPolicy
+import com.fansauchiwa.ads.AdLoadWait
 import com.fansauchiwa.analytics.AdFormat
 import com.fansauchiwa.analytics.AdPaidEventFactory
 import com.fansauchiwa.analytics.AnalyticsActions
@@ -116,8 +117,8 @@ class AdMobRepositoryImpl @Inject constructor(
     // Analytics計測用のCoroutineScope（コールバック内で使用）
     private val analyticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // ロード失敗時の再試行を待つためのCoroutineScope（広告のロードはメインスレッドで行う）
-    private val retryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    // ロード失敗時の再試行や、ロードの完了を待つためのCoroutineScope（広告のロードと表示はメインスレッドで行う）
+    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var rewardedRetryAttempt = 0
     private var rewardedRetryJob: Job? = null
 
@@ -164,7 +165,7 @@ class AdMobRepositoryImpl @Inject constructor(
     private fun scheduleRewardedAdRetry() {
         val delayMillis = AdLoadRetryPolicy.delayMillisFor(rewardedRetryAttempt) ?: return
         rewardedRetryAttempt++
-        rewardedRetryJob = retryScope.launch {
+        rewardedRetryJob = mainScope.launch {
             delay(delayMillis)
             requestRewardedAd()
         }
@@ -263,7 +264,7 @@ class AdMobRepositoryImpl @Inject constructor(
 
     /**
      * リワード広告のロード完了を待って表示する
-     * 一定時間経過してもロードが完了しない場合はスキップ
+     * [AdLoadWait.MAX_WAIT_MILLIS] たってもロードが完了しない場合はスキップ
      */
     private fun waitForRewardedAdLoad(
         activity: Activity,
@@ -272,32 +273,24 @@ class AdMobRepositoryImpl @Inject constructor(
         onAdFailedOrSkipped: () -> Unit,
         onAdDismissed: (() -> Unit)?
     ) {
-        analyticsScope.launch {
-            val startTime = System.currentTimeMillis()
-            val timeoutMillis = 5000L // 最大5秒待つ
+        mainScope.launch {
+            AdLoadWait.awaitLoadFinished(_isLoadingRewardedAd)
 
-            while (_isLoadingRewardedAd.value && System.currentTimeMillis() - startTime < timeoutMillis) {
-                kotlinx.coroutines.delay(100)
-            }
-
-            // メインスレッドで広告を表示
-            kotlinx.coroutines.withContext(Dispatchers.Main) {
-                if (rewardedAd != null) {
-                    // ロードが完了したので再度showRewardedAdを呼び出す（waitForLoad=falseで無限ループ防止）
-                    showRewardedAd(
-                        activity,
-                        placement,
-                        false,
-                        onUserEarnedReward,
-                        onAdFailedOrSkipped,
-                        onAdDismissed
-                    )
-                } else {
-                    // タイムアウトまたはロード失敗
-                    onAdFailedOrSkipped()
-                    onAdDismissed?.invoke()
-                    loadRewardedAd()
-                }
+            if (rewardedAd != null) {
+                // ロードが完了したので再度showRewardedAdを呼び出す（待たないようにして無限ループを防ぐ）
+                showRewardedAd(
+                    activity,
+                    placement,
+                    waitForLoad = false,
+                    onUserEarnedReward,
+                    onAdFailedOrSkipped,
+                    onAdDismissed
+                )
+            } else {
+                // タイムアウトまたはロード失敗
+                onAdFailedOrSkipped()
+                onAdDismissed?.invoke()
+                loadRewardedAd()
             }
         }
     }
