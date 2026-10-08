@@ -90,14 +90,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
@@ -116,7 +114,11 @@ import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
 import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.decorationitem.decorationTextFrameSize
+import com.fansauchiwa.edit.decorationitem.decorationTextSize
+import com.fansauchiwa.edit.decorationitem.fontWeight
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
+import com.fansauchiwa.edit.decorationitem.maxStroke
 import com.fansauchiwa.edit.decorationitem.measureDecorationText
 import com.fansauchiwa.edit.decorationitem.resolveTextDecorationTypefaces
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
@@ -943,14 +945,12 @@ fun UchiwaPreview(
                                 val layoutResult = measureDecorationText(
                                     text = decoration.text,
                                     fontFamily = decoration.font.value,
-                                    fontWeight = FontWeight(decoration.width),
-                                    fontSize = 24.sp.nonScaledSp
+                                    fontWeight = decoration.fontWeight,
+                                    fontSize = decorationTextSize
                                 )
-                                val maxStroke =
-                                    decoration.strokeWidth + decoration.secondBorderWidth
-                                val decorationSize = Size(
-                                    layoutResult.size.width + maxStroke,
-                                    layoutResult.size.height + maxStroke
+                                val decorationSize = decorationTextFrameSize(
+                                    layoutResult.size,
+                                    decoration.maxStroke
                                 )
                                 val decorationDpSize = with(density) { decorationSize.toDpSize() }
                                 val handleOffset = calculateHandleOffset(
@@ -1309,10 +1309,9 @@ private fun TextItem(
             .wrapContentSize()
     )
     {
-        val textSize = 24.sp.nonScaledSp
         TextItemContent(
             decoration = decoration,
-            textSize = textSize,
+            textSize = decorationTextSize,
             modifier = Modifier
         )
     }
