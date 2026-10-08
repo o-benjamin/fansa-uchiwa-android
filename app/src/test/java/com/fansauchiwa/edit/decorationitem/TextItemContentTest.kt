@@ -12,7 +12,7 @@ import org.junit.Test
 
 class TextItemContentTest {
 
-    private fun text(strokeWidth: Float = 0f, secondBorderWidth: Float = 0f, width: Int = 900) =
+    private fun textDecoration(strokeWidth: Float = 0f, secondBorderWidth: Float = 0f, width: Int = 900) =
         Decoration.Text(
             id = "t",
             font = FontFamilies.NOTO_SANS_JP,
@@ -48,26 +48,26 @@ class TextItemContentTest {
 
     @Test
     fun maxStroke_StrokeAndSecondBorder_ReturnsSum() {
-        assertEquals(40f, text(strokeWidth = 30f, secondBorderWidth = 10f).maxStroke)
+        assertEquals(40f, textDecoration(strokeWidth = 30f, secondBorderWidth = 10f).maxStroke)
     }
 
     @Test
     fun maxStroke_NoSecondBorder_ReturnsStrokeWidth() {
-        assertEquals(30f, text(strokeWidth = 30f).maxStroke)
+        assertEquals(30f, textDecoration(strokeWidth = 30f).maxStroke)
     }
 
     @Test
     fun maxStroke_NoBorders_ReturnsZero() {
-        assertEquals(0f, text().maxStroke)
+        assertEquals(0f, textDecoration().maxStroke)
     }
 
     @Test
     fun fontWeight_Width900_ReturnsW900() {
-        assertEquals(FontWeight.W900, text(width = 900).fontWeight)
+        assertEquals(FontWeight.W900, textDecoration(width = 900).fontWeight)
     }
 
     @Test
     fun fontWeight_Width400_ReturnsNormal() {
-        assertEquals(FontWeight.Normal, text(width = 400).fontWeight)
+        assertEquals(FontWeight.Normal, textDecoration(width = 400).fontWeight)
     }
 }

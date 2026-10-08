@@ -75,11 +75,8 @@ fun TextItemContent(
         Stroke(width = decoration.strokeWidth, join = StrokeJoin.Round)
     }
 
-    val secondBorderDrawStyle = remember(decoration.strokeWidth, decoration.secondBorderWidth) {
-        Stroke(
-            width = decoration.strokeWidth + decoration.secondBorderWidth,
-            join = StrokeJoin.Round
-        )
+    val secondBorderDrawStyle = remember(maxStroke) {
+        Stroke(width = maxStroke, join = StrokeJoin.Round)
     }
 
     // layoutResult をキーにしてよい理由は measureDecorationText の KDoc
@@ -142,10 +139,7 @@ fun TextItemContent(
                     if (!shouldRenderPuffyText || secondBorderSdfBitmap == null || !isHardware) {
                         drawText(
                             textLayoutResult = layoutResult,
-                            drawStyle = Stroke(
-                                width = decoration.strokeWidth + secondBorderWidth,
-                                join = StrokeJoin.Round
-                            ),
+                            drawStyle = Stroke(width = maxStroke, join = StrokeJoin.Round),
                             color = secondBorderColor,
                         )
                     }
@@ -211,7 +205,7 @@ fun TextItemContent(
  * そのため結果を `LaunchedEffect` のキーにしても、再コンポーズのたびに動き直すことはない。
  * `rememberTextMeasurer` の `cacheSize` を 0 にしないこと（毎回別の結果になり、`LaunchedEffect` が再コンポーズのたびに動き直す）。
  *
- * 書式（太さの求め方など）を変えたら、[resolveDecorationTypeface] も合わせること。
+ * 太さは [fontWeight] で共通にしている。書式に fontStyle などを足すときは、[resolveDecorationTypeface] も合わせること。
  */
 @Composable
 internal fun measureDecorationText(
@@ -236,6 +230,7 @@ internal fun measureDecorationText(
  * 文字の装飾を描く文字の大きさ。見た目（`EditScreen`・`HomeScreen` が [TextItemContent] に渡す）と
  * つかめる範囲（`EditScreen`）で同じ値を使う。違うと、見た目とつかめる範囲の大きさがずれる。
  * 端末の文字サイズの設定で大きさが変わらないよう [nonScaledSp] にしている。
+ * レイヤーの一覧の見本（`EditPager` の `LayerItemPreview`）は、つかめる範囲と関係なく小さく見せるため別の大きさにしている。
  */
 internal val decorationTextSize: TextUnit
     @Composable
@@ -249,15 +244,20 @@ internal val Decoration.Text.fontWeight: FontWeight
     get() = FontWeight(width)
 
 /**
- * いちばん外側の縁取りの太さ。縁取りは文字の輪郭の両側に半分ずつはみ出すので、枠は文字よりこの分だけ大きくなる。
+ * いちばん太い枠線の太さ（px）。2つ目の枠線は `strokeWidth + secondBorderWidth` の太さの線で1つ目の下に描くので、
+ * 2つ目があるときはこれがいちばん太い（ないときは `strokeWidth` と同じ）。2つ目の枠線もこの太さで描くこと。
+ * 線は文字の輪郭を中心に描かれ、外へ太さの半分はみ出す。左右・上下の両方ではみ出すので、
+ * 枠は測った文字より縦横それぞれこの太さだけ大きくなる（[decorationTextFrameSize]）。
  */
 internal val Decoration.Text.maxStroke: Float
     get() = strokeWidth + secondBorderWidth
 
 /**
- * 文字の装飾の枠の大きさ（px）。測った文字の大きさ [measuredSize] に、いちばん外側の縁取りの太さ [maxStroke] を足す。
+ * 文字の装飾の枠の大きさ（px）。測った文字の大きさ [measuredSize] に、いちばん太い枠線の太さ [maxStroke] を足す。
  * 見た目（[TextItemContent]）・つかめる範囲（`EditScreen`）・ぷくぷくの下絵（[createTextMaskBitmap]）で
  * 同じ大きさにするため、ここだけで求める。
+ * 文字は枠の中で (`maxStroke / 2`, `maxStroke / 2`) ずらして描く（[TextItemContent] と [createTextMaskBitmap] の `translate`）。
+ * 枠の求め方を変えたら、そこも合わせること。
  */
 internal fun decorationTextFrameSize(measuredSize: IntSize, maxStroke: Float): Size =
     Size(measuredSize.width + maxStroke, measuredSize.height + maxStroke)
