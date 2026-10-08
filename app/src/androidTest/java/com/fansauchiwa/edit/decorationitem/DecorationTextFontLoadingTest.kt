@@ -1,17 +1,13 @@
 package com.fansauchiwa.edit.decorationitem
 
-import android.content.Context
 import android.graphics.Typeface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.text.font.AndroidFont
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontLoadingStrategy
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.fansauchiwa.ui.theme.DeferredFont
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -114,22 +110,5 @@ class DecorationTextFontLoadingTest {
 
         // 失敗では縁取りを作り直す必要がないので、同じ値のままであること
         assertEquals(typefaceWhileLoading, resolvedTypeface)
-    }
-
-    /** [typeface] が完了するまで取得が終わらない非同期フォント。 */
-    private class DeferredFont(typeface: CompletableDeferred<Typeface?>) : AndroidFont(
-        loadingStrategy = FontLoadingStrategy.Async,
-        typefaceLoader = Loader(typeface),
-        variationSettings = FontVariation.Settings()
-    ) {
-        override val weight: FontWeight = FontWeight.Normal
-        override val style: FontStyle = FontStyle.Normal
-
-        private class Loader(private val typeface: CompletableDeferred<Typeface?>) : TypefaceLoader {
-            override fun loadBlocking(context: Context, font: AndroidFont): Typeface? =
-                error("非同期フォントは loadBlocking で読み込まれない")
-
-            override suspend fun awaitLoad(context: Context, font: AndroidFont): Typeface? = typeface.await()
-        }
     }
 }
