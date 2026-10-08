@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.fansauchiwa.analytics.AnalyticsActions
@@ -14,9 +16,11 @@ import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.EventAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
+import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.ui.notification.EXTRA_REMINDER_DAYS_UNTIL
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import com.fansauchiwa.ui.theme.createFontFamilyResolverRecordingFailures
 import com.fansauchiwa.ui.util.LocalHapticFeedbackEnabled
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -33,6 +37,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var analyticsRepository: AnalyticsRepository
+
+    @Inject
+    lateinit var crashReportingRepository: CrashReportingRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,10 +63,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             val isHapticEnabled by settingsRepository.getHapticFeedbackEnabledStream()
                 .collectAsStateWithLifecycle(initialValue = true)
+            val fontFamilyResolver = remember {
+                createFontFamilyResolverRecordingFailures(this@MainActivity, crashReportingRepository)
+            }
 
             FansaUchiwaTheme {
                 CompositionLocalProvider(
-                    LocalHapticFeedbackEnabled provides isHapticEnabled
+                    LocalHapticFeedbackEnabled provides isHapticEnabled,
+                    LocalFontFamilyResolver provides fontFamilyResolver
                 ) {
                     FansaUchiwaNavGraph()
                 }
