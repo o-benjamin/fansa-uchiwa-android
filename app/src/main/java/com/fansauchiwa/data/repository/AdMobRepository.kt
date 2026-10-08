@@ -2,7 +2,9 @@ package com.fansauchiwa.data.repository
 
 import android.app.Activity
 import android.content.Context
+import android.os.SystemClock
 import com.fansauchiwa.BuildConfig
+import com.fansauchiwa.ads.AdExpiryPolicy
 import com.fansauchiwa.ads.AdLoadRetryPolicy
 import com.fansauchiwa.analytics.AdFormat
 import com.fansauchiwa.analytics.AdPaidEventFactory
@@ -45,11 +47,14 @@ interface AdMobRepository {
 
     /**
      * リワード広告を事前にロードする（非同期）
+     * ロード済みの広告が期限切れ（[AdExpiryPolicy]）なら、捨ててロードし直す
      */
     fun loadRewardedAd()
 
     /**
      * リワード広告を表示する
+     * 広告を閉じたあとに次の広告はロードしない（ロードしても使われずに捨てられることが多く、表示率を下げるため）。
+     * 同じ画面でもう一度表示するつもりなら、呼び出し元が [loadRewardedAd] を呼ぶこと
      * @param activity 広告を表示するActivity
      * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param waitForLoad trueの場合、ロード中の広告のロードが完了するまで待つ。falseの場合、ロード中であれば即座にスキップ
@@ -68,11 +73,14 @@ interface AdMobRepository {
 
     /**
      * インタースティシャル広告を事前にロードする（非同期）
+     * ロード済みの広告が期限切れ（[AdExpiryPolicy]）なら、捨ててロードし直す
      */
     fun loadInterstitialAd()
 
     /**
      * インタースティシャル広告を表示する
+     * 広告を閉じたあとに次の広告はロードしない（[showRewardedAd] と同じ理由）。次に表示する前に呼び出し元が
+     * [loadInterstitialAd] を呼ぶこと
      * @param activity 広告を表示するActivity
      * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param onAdClosed 広告が閉じられた際のコールバック
@@ -106,11 +114,15 @@ class AdMobRepositoryImpl @Inject constructor(
     private val adUnitId = BuildConfig.REWARDED_AD_UNIT_ID
     private var rewardedAd: RewardedAd? = null
 
+    // 期限切れの判定に使う、ロードが終わった時刻（SystemClock.elapsedRealtime()）
+    private var rewardedAdLoadedAtMillis = 0L
+
     private val _isLoadingRewardedAd = MutableStateFlow(false)
     override val isLoadingRewardedAd: StateFlow<Boolean> = _isLoadingRewardedAd.asStateFlow()
 
     private val interstitialAdUnitId = BuildConfig.INTERSTITIAL_AD_UNIT_ID
     private var interstitialAd: InterstitialAd? = null
+    private var interstitialAdLoadedAtMillis = 0L
     private var isLoadingInterstitialAd = false
 
     // Analytics計測用のCoroutineScope（コールバック内で使用）
@@ -122,6 +134,9 @@ class AdMobRepositoryImpl @Inject constructor(
     private var rewardedRetryJob: Job? = null
 
     override fun loadRewardedAd() {
+        if (isRewardedAdExpired()) {
+            rewardedAd = null
+        }
         // 画面遷移など、広告が必要になったタイミングで呼ばれるため、再試行の回数をリセットしてすぐにロードする
         rewardedRetryJob?.cancel()
         rewardedRetryAttempt = 0
@@ -144,6 +159,7 @@ class AdMobRepositoryImpl @Inject constructor(
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
                     rewardedAd = ad
+                    rewardedAdLoadedAtMillis = SystemClock.elapsedRealtime()
                     rewardedRetryAttempt = 0
                     _isLoadingRewardedAd.value = false
                 }
@@ -170,6 +186,10 @@ class AdMobRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun isRewardedAdExpired(): Boolean =
+        rewardedAd != null &&
+            AdExpiryPolicy.isExpired(rewardedAdLoadedAtMillis, SystemClock.elapsedRealtime())
+
     override fun showRewardedAd(
         activity: Activity,
         placement: String,
@@ -178,6 +198,11 @@ class AdMobRepositoryImpl @Inject constructor(
         onAdFailedOrSkipped: () -> Unit,
         onAdDismissed: (() -> Unit)?
     ) {
+        // 期限切れの広告は表示しても収益にならないため、捨ててロードし直す
+        // （ロード中になるので、waitForLoad=true なら下でロードの完了を待つ）
+        if (isRewardedAdExpired()) {
+            loadRewardedAd()
+        }
         val ad = rewardedAd
 
         // 広告がロードされていない場合
@@ -223,9 +248,8 @@ class AdMobRepositoryImpl @Inject constructor(
                         )
                     )
                 }
-                // 広告を閉じた後、次回のために新しい広告をロード
+                // 次の広告はロードしない（もう一度表示するときは呼び出し元が loadRewardedAd() を呼ぶ）
                 rewardedAd = null
-                loadRewardedAd()
                 onAdDismissed?.invoke()
             }
 
@@ -303,6 +327,9 @@ class AdMobRepositoryImpl @Inject constructor(
     }
 
     override fun loadInterstitialAd() {
+        if (isInterstitialAdExpired()) {
+            interstitialAd = null
+        }
         // 既にロード中または既にロード済みの場合はスキップ
         if (isLoadingInterstitialAd || interstitialAd != null) {
             return
@@ -318,6 +345,7 @@ class AdMobRepositoryImpl @Inject constructor(
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAd = ad
+                    interstitialAdLoadedAtMillis = SystemClock.elapsedRealtime()
                     isLoadingInterstitialAd = false
                 }
 
@@ -329,11 +357,19 @@ class AdMobRepositoryImpl @Inject constructor(
         )
     }
 
+    private fun isInterstitialAdExpired(): Boolean =
+        interstitialAd != null &&
+            AdExpiryPolicy.isExpired(interstitialAdLoadedAtMillis, SystemClock.elapsedRealtime())
+
     override fun showInterstitialAd(
         activity: Activity,
         placement: String,
         onAdClosed: () -> Unit
     ) {
+        // 期限切れの広告は表示しても収益にならないため、捨ててロードし直し、今回は表示しない
+        if (isInterstitialAdExpired()) {
+            loadInterstitialAd()
+        }
         val ad = interstitialAd
 
         // 広告がロードされていない場合は、即座に処理をスキップ（UX低下を防ぐため）
@@ -364,9 +400,8 @@ class AdMobRepositoryImpl @Inject constructor(
                         )
                     )
                 }
-                // 広告を閉じた後、次回のために新しい広告をロード
+                // 次の広告はロードしない（次に表示する前に呼び出し元が loadInterstitialAd() を呼ぶ）
                 interstitialAd = null
-                loadInterstitialAd()
                 onAdClosed()
             }
 

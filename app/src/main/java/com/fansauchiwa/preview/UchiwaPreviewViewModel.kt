@@ -150,8 +150,19 @@ class UchiwaPreviewViewModel @Inject constructor(
                         val state = uiState.value
                         savedStateHandle[UI_STATE_KEY] = state.copy(isSaveButtonPressed = false)
                     }
+                    loadRewardedAdIfNotEarned()
                 }
             )
+        }
+    }
+
+    /**
+     * 報酬を得ずに広告を閉じたときは、もう一度保存・共有を押されたときに出せるよう次の広告をロードしておく。
+     * 報酬を得たあとはこの画面では広告を出さないため、ロードしない（使われずに捨てられ、表示率を下げるため。#218）
+     */
+    private fun loadRewardedAdIfNotEarned() {
+        if (!hasEarnedRewardInSession) {
+            adMobRepository.loadRewardedAd()
         }
     }
 
@@ -267,6 +278,7 @@ class UchiwaPreviewViewModel @Inject constructor(
             onAdDismissed = {
                 // 広告が閉じられた後（画面が前面に戻ってから）共有シートを起動
                 setShareImagePath()
+                loadRewardedAdIfNotEarned()
             }
         )
     }

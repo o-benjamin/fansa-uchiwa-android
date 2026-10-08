@@ -409,4 +409,54 @@ class UchiwaPreviewShareTest {
     }
 
     // endregion
+
+    // region 広告を閉じたあとのロード（#218）
+
+    @Test
+    fun showRewardedAdAndShare_userEarnedRewardThenAdDismissed_doesNotLoadNextAd() = runTest {
+        // 報酬を得たあとはこの画面で広告を出さないので、使われない広告をロードしない
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        stubShowRewardedAd { onUserEarnedReward, onAdDismissed ->
+            onUserEarnedReward()
+            onAdDismissed()
+        }
+
+        viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
+    }
+
+    @Test
+    fun showRewardedAdAndShare_adDismissedWithoutReward_loadsNextAdForLaterSave() = runTest {
+        // 報酬を得ずに閉じても共有はできるが、このあと保存すると広告を出すので、次の広告をロードしておく
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
+
+        viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+        advanceUntilIdle()
+
+        // 画面を開いたときと、広告を閉じたあとの2回
+        verify(exactly = 2) { adMobRepository.loadRewardedAd() }
+    }
+
+    private fun stubShowRewardedAd(invokeCallback: (onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) -> Unit) {
+        val onUserEarnedRewardSlot = slot<() -> Unit>()
+        val onAdDismissedSlot = slot<() -> Unit>()
+        every {
+            adMobRepository.showRewardedAd(
+                activity = any(),
+                placement = AnalyticsScreens.PREVIEW_SCREEN,
+                waitForLoad = true,
+                onUserEarnedReward = capture(onUserEarnedRewardSlot),
+                onAdFailedOrSkipped = any(),
+                onAdDismissed = capture(onAdDismissedSlot)
+            )
+        } answers {
+            invokeCallback(onUserEarnedRewardSlot.captured, onAdDismissedSlot.captured)
+        }
+    }
+
+    // endregion
 }

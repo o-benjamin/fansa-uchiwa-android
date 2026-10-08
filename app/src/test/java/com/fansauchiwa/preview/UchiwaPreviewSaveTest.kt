@@ -474,4 +474,36 @@ class UchiwaPreviewSaveTest {
             analyticsRepository.logEvent(match { it.name == AnalyticsActions.EXPORT_UCHIWA_FONT })
         }
     }
+
+    @Test
+    fun showRewardedAdAndSave_userEarnedRewardThenAdDismissed_doesNotLoadNextAd() = runTest {
+        // 報酬を得たあとはこの画面で広告を出さないので、使われない広告をロードしない（#218）
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+        stubShowRewardedAd { onUserEarnedReward, onAdDismissed ->
+            onUserEarnedReward()
+            onAdDismissed()
+        }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_adDismissedWithoutReward_loadsNextAdForRetry() = runTest {
+        // 報酬を得ずに閉じた人は保存をもう一度押すので、次の広告をロードしておく（#218）
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        // 画面を開いたときと、広告を閉じたあとの2回
+        verify(exactly = 2) { adMobRepository.loadRewardedAd() }
+    }
 }
