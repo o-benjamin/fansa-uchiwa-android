@@ -139,7 +139,7 @@ fun TextItemContent(
                     if (!shouldRenderPuffyText || secondBorderSdfBitmap == null || !isHardware) {
                         drawText(
                             textLayoutResult = layoutResult,
-                            drawStyle = Stroke(width = maxStroke, join = StrokeJoin.Round),
+                            drawStyle = secondBorderDrawStyle,
                             color = secondBorderColor,
                         )
                     }
