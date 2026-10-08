@@ -29,9 +29,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
+
+// 表示を求められたときにロード中だった広告を、ロードの完了まで待つ上限
+private const val REWARDED_AD_LOAD_TIMEOUT_MILLIS = 5_000L
 
 /**
  * AdMobのリワード広告とインタースティシャル広告を管理するRepository
@@ -116,8 +121,8 @@ class AdMobRepositoryImpl @Inject constructor(
     // Analytics計測用のCoroutineScope（コールバック内で使用）
     private val analyticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // ロード失敗時の再試行を待つためのCoroutineScope（広告のロードはメインスレッドで行う）
-    private val retryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    // ロード失敗時の再試行や、ロードの完了を待つためのCoroutineScope（広告のロードと表示はメインスレッドで行う）
+    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var rewardedRetryAttempt = 0
     private var rewardedRetryJob: Job? = null
 
@@ -164,7 +169,7 @@ class AdMobRepositoryImpl @Inject constructor(
     private fun scheduleRewardedAdRetry() {
         val delayMillis = AdLoadRetryPolicy.delayMillisFor(rewardedRetryAttempt) ?: return
         rewardedRetryAttempt++
-        rewardedRetryJob = retryScope.launch {
+        rewardedRetryJob = mainScope.launch {
             delay(delayMillis)
             requestRewardedAd()
         }
@@ -263,7 +268,7 @@ class AdMobRepositoryImpl @Inject constructor(
 
     /**
      * リワード広告のロード完了を待って表示する
-     * 一定時間経過してもロードが完了しない場合はスキップ
+     * [REWARDED_AD_LOAD_TIMEOUT_MILLIS] たってもロードが完了しない場合はスキップ
      */
     private fun waitForRewardedAdLoad(
         activity: Activity,
@@ -272,32 +277,27 @@ class AdMobRepositoryImpl @Inject constructor(
         onAdFailedOrSkipped: () -> Unit,
         onAdDismissed: (() -> Unit)?
     ) {
-        analyticsScope.launch {
-            val startTime = System.currentTimeMillis()
-            val timeoutMillis = 5000L // 最大5秒待つ
-
-            while (_isLoadingRewardedAd.value && System.currentTimeMillis() - startTime < timeoutMillis) {
-                kotlinx.coroutines.delay(100)
+        mainScope.launch {
+            // ロードが終わる（成功・失敗のどちらでも）か、上限の時間がたつまで待つ
+            withTimeoutOrNull(REWARDED_AD_LOAD_TIMEOUT_MILLIS) {
+                _isLoadingRewardedAd.first { isLoading -> !isLoading }
             }
 
-            // メインスレッドで広告を表示
-            kotlinx.coroutines.withContext(Dispatchers.Main) {
-                if (rewardedAd != null) {
-                    // ロードが完了したので再度showRewardedAdを呼び出す（waitForLoad=falseで無限ループ防止）
-                    showRewardedAd(
-                        activity,
-                        placement,
-                        false,
-                        onUserEarnedReward,
-                        onAdFailedOrSkipped,
-                        onAdDismissed
-                    )
-                } else {
-                    // タイムアウトまたはロード失敗
-                    onAdFailedOrSkipped()
-                    onAdDismissed?.invoke()
-                    loadRewardedAd()
-                }
+            if (rewardedAd != null) {
+                // ロードが完了したので再度showRewardedAdを呼び出す（waitForLoad=falseで無限ループ防止）
+                showRewardedAd(
+                    activity,
+                    placement,
+                    false,
+                    onUserEarnedReward,
+                    onAdFailedOrSkipped,
+                    onAdDismissed
+                )
+            } else {
+                // タイムアウトまたはロード失敗
+                onAdFailedOrSkipped()
+                onAdDismissed?.invoke()
+                loadRewardedAd()
             }
         }
     }
