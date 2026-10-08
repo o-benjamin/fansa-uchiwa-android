@@ -1,6 +1,7 @@
 package com.fansauchiwa.ads
 
 import android.content.Context
+import android.os.Bundle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +29,7 @@ import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.R
 import com.fansauchiwa.analytics.AdFormat
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.google.ads.mediation.admob.AdMobAdapter
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -35,15 +37,27 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import dagger.hilt.android.EntryPointAccessors
 
+// Kept for the whole process so that each screen expands a collapsible banner only once per app session.
+private val collapsibleBannerLimiter = CollapsibleBannerLimiter()
+
 /**
  * A composable function to display an Ad Manager banner advertisement.
  *
  * @param context The context to use for creating the AdView.
  * @param placement Where the banner is shown, used for revenue analytics (an [AnalyticsScreens] value).
  * @param modifier The modifier to apply to the banner ad.
+ * @param collapsible Whether to request a collapsible banner, which first expands upward over the screen
+ * and collapses to the normal size when the user closes it. Use it only for banners anchored to the bottom
+ * of screens with static layouts, not where the user drags or scrolls a lot (e.g. the edit screen).
+ * Only the first banner of each [placement] in the process is requested as collapsible.
  */
 @Composable
-fun BannerAd(context: Context, placement: String, modifier: Modifier = Modifier) {
+fun BannerAd(
+    context: Context,
+    placement: String,
+    modifier: Modifier = Modifier,
+    collapsible: Boolean = false
+) {
     var adLoadState by remember { mutableStateOf(AdLoadState.LOADING) }
 
     val deviceWidth = LocalConfiguration.current.screenWidthDp
@@ -77,7 +91,11 @@ fun BannerAd(context: Context, placement: String, modifier: Modifier = Modifier)
                         responseInfo = responseInfo
                     )
             }
-            loadAd(AdRequest.Builder().build())
+            loadAd(
+                bannerAdRequest(
+                    collapsible = collapsible && collapsibleBannerLimiter.tryAcquire(placement)
+                )
+            )
         }
     }
 
@@ -131,6 +149,17 @@ fun BannerAd(context: Context, placement: String, modifier: Modifier = Modifier)
         adView.resume()
         onPauseOrDispose { adView.pause() }
     }
+}
+
+private fun bannerAdRequest(collapsible: Boolean): AdRequest {
+    val builder = AdRequest.Builder()
+    if (collapsible) {
+        // "bottom" aligns the expanded ad to the bottom of the banner, so it grows upward.
+        // Only Google demand serves collapsible ads; mediated networks return a normal banner.
+        val extras = Bundle().apply { putString("collapsible", "bottom") }
+        builder.addNetworkExtrasBundle(AdMobAdapter::class.java, extras)
+    }
+    return builder.build()
 }
 
 @Composable

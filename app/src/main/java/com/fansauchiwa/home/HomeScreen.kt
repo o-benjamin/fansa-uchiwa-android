@@ -458,7 +458,8 @@ fun HomeScreen(
                         placement = AnalyticsScreens.HOME_SCREEN,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .windowInsetsPadding(WindowInsets.navigationBars)
+                            .windowInsetsPadding(WindowInsets.navigationBars),
+                        collapsible = true
                     )
                 }
             }
