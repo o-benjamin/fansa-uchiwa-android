@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -637,67 +640,70 @@ fun UchiwaBackgroundPage(
     isPukuPukuSupported: Boolean,
     allTextStyle: AllTextStyle?
 ) {
-    val scrollState = rememberScrollState()
-
-    Column(
+    // 「すべての文字」のフォントのボタンを見えている分だけ読み込むため、ページ全体をグリッドにする（#308）
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(scrollState),
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.Top,
+            .testTag(TestTags.UCHIWA_BACKGROUND_PAGE)
     ) {
-        HeaderTitle(
-            title = stringResource(R.string.uchiwa_color),
-            modifier = Modifier.padding(top = 16.dp)
-        )
-        ColorPickerRow(
-            onColorSelected = { color ->
-                onUchiwaColorSelected(color)
-            },
-            modifier = Modifier.padding(top = 8.dp),
-            currentColor = currentUchiwaColor
-        )
-        HeaderTitle(
-            title = stringResource(R.string.background_color),
-            modifier = Modifier.padding(top = 16.dp)
-        )
-        ColorPickerRow(
-            onColorSelected = { color ->
-                onBackgroundColorSelected(color)
-            },
-            modifier = Modifier.padding(top = 8.dp),
-            currentColor = currentBackgroundColor
-        )
-        ColorAndWeightControl(
-            title = stringResource(R.string.overall_border),
-            color = currentOverallBorderColor,
-            width = currentOverallBorderWidth,
-            valueRange = OVERALL_BORDER_MIN_WIDTH..OVERALL_BORDER_MAX_WIDTH,
-            steps = OVERALL_BORDER_SLIDER_STEPS,
-            onColorSelected = onOverallBorderColorSelected,
-            onWeightChanged = onOverallBorderWeightChanged,
-            onWeightChangedFinished = onOverallBorderWeightChangedFinished
-        )
-        PuffyEffectToggleRow(
-            label = stringResource(R.string.puffy_enabled),
-            isEnabled = isPukuPukuSupported,
-            isChecked = isAllPuffyEnabled,
-            onCheckedChange = onAllPuffyEnabledChanged,
-            onUnsupportedClick = onPuffyUnsupportedClick,
-            modifier = Modifier.testTag(TestTags.PUFFY_ROW),
-            switchModifier = Modifier.testTag(TestTags.PUFFY_SWITCH)
-        )
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                HeaderTitle(
+                    title = stringResource(R.string.uchiwa_color),
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                ColorPickerRow(
+                    onColorSelected = { color ->
+                        onUchiwaColorSelected(color)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                    currentColor = currentUchiwaColor
+                )
+                HeaderTitle(
+                    title = stringResource(R.string.background_color),
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                ColorPickerRow(
+                    onColorSelected = { color ->
+                        onBackgroundColorSelected(color)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                    currentColor = currentBackgroundColor
+                )
+                ColorAndWeightControl(
+                    title = stringResource(R.string.overall_border),
+                    color = currentOverallBorderColor,
+                    width = currentOverallBorderWidth,
+                    valueRange = OVERALL_BORDER_MIN_WIDTH..OVERALL_BORDER_MAX_WIDTH,
+                    steps = OVERALL_BORDER_SLIDER_STEPS,
+                    onColorSelected = onOverallBorderColorSelected,
+                    onWeightChanged = onOverallBorderWeightChanged,
+                    onWeightChangedFinished = onOverallBorderWeightChangedFinished
+                )
+                PuffyEffectToggleRow(
+                    label = stringResource(R.string.puffy_enabled),
+                    isEnabled = isPukuPukuSupported,
+                    isChecked = isAllPuffyEnabled,
+                    onCheckedChange = onAllPuffyEnabledChanged,
+                    onUnsupportedClick = onPuffyUnsupportedClick,
+                    modifier = Modifier.testTag(TestTags.PUFFY_ROW),
+                    switchModifier = Modifier.testTag(TestTags.PUFFY_SWITCH)
+                )
+            }
+        }
         // 文字が1つもないときは、変える相手がいないので出さない（#308）
         if (allTextStyle != null) {
-            AllTextStyleSection(
+            allTextStyleItems(
                 style = allTextStyle,
                 onFontSelected = onAllTextFontSelected,
                 onColorSelected = onAllTextColorSelected,
                 onStrokeColorSelected = onAllTextStrokeColorSelected,
                 onStrokeWeightChanged = onAllTextStrokeWeightChanged,
-                onStrokeWeightChangedFinished = onAllTextStrokeWeightChangedFinished,
-                modifier = Modifier.padding(top = 24.dp)
+                onStrokeWeightChangedFinished = onAllTextStrokeWeightChangedFinished
             )
         }
     }

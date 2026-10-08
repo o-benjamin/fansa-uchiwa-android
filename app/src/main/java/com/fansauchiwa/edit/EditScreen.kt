@@ -382,7 +382,9 @@ fun EditScreen(
                             uiState.decorations,
                             uiState.isOverallBorderPuffyEnabled
                         ),
-                        allTextStyle = AllTextStyle.of(uiState.decorations),
+                        allTextStyle = remember(uiState.decorations) {
+                            AllTextStyle.of(uiState.decorations)
+                        },
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported

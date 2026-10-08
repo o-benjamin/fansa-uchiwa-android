@@ -43,6 +43,9 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 internal val TEXT_STROKE_WIDTH_RANGE = 0f..90f
 internal const val TEXT_STROKE_WIDTH_STEPS = 17
 
+/** フォントのボタンを並べるグリッドの列の最小幅。文字タブと「全体」タブで共通 */
+internal val FONT_BUTTON_MIN_WIDTH = 88.dp
+
 @Composable
 fun TextPage(
     onAddText: (FontFamilies) -> Unit,
@@ -147,11 +150,10 @@ fun FontFamilySelectionGrid(
     selectedTextDecoration: Decoration.Text?,
     modifier: Modifier = Modifier
 ) {
-    val minButtonWidth = 88.dp
     val spacing = 8.dp
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = minButtonWidth),
+        columns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
         contentPadding = PaddingValues(start = 32.dp, end = 32.dp, bottom = 32.dp),

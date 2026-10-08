@@ -153,6 +153,7 @@ fun ColorPickerRow(
 
     if (showColorPickerDialog) {
         ColorPickerDialog(
+            // 色が決まっていない（文字ごとにちがう）ときは、ダイアログの既定値と同じ白から始める
             initialColor = currentColor ?: Color.White,
             onDismiss = { showColorPickerDialog = false },
             onColorSelected = onColorSelected

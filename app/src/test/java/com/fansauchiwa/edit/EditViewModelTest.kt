@@ -1187,6 +1187,52 @@ class EditViewModelTest {
                 )
             )
         }
+        // フォントの並び順の集計に入れるため、select_edit_text_font も1回送る
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+                    params = mapOf(FontFamilyParams.PARAM_FONT_FAMILY to FontFamilies.DELA_GOTHIC_ONE.name)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_everyTextAlreadyThatFont_doesNotCountSwitchOrSendEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
+        }
+    }
+
+    @Test
+    fun updateAllTextColor_everyTextAlreadyThatColor_keepsRedoHistory() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+        viewModel.updateAllTextColor(Color.Green)
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        viewModel.undo()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.canRedo)
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canRedo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT &&
+                            it.params["target"] == EditAllTextTargetParams.TEXT_COLOR
+                }
+            )
+        }
     }
 
     @Test
@@ -1285,6 +1331,20 @@ class EditViewModelTest {
         advanceUntilIdle()
 
         viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_noText_doesNothing() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
         viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
         advanceUntilIdle()
 

@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fansauchiwa.edit.pager.UchiwaBackgroundPage
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
@@ -141,9 +143,7 @@ class UchiwaBackgroundPageTest {
             allTextStyle = allTextStyle(font = FontFamilies.HACHI_MARU_POP)
         )
 
-        composeTestRule
-            .onNode(hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + FontFamilies.HACHI_MARU_POP.name))
-            .performScrollTo()
+        scrollToAllTextFontButton(FontFamilies.HACHI_MARU_POP)
             .assertIsSelected()
     }
 
@@ -156,9 +156,7 @@ class UchiwaBackgroundPageTest {
         )
 
         FontFamilies.entries.forEach { fontFamily ->
-            composeTestRule
-                .onNode(hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + fontFamily.name))
-                .performScrollTo()
+            scrollToAllTextFontButton(fontFamily)
                 .assertIsNotSelected()
         }
     }
@@ -173,12 +171,19 @@ class UchiwaBackgroundPageTest {
             onAllTextFontSelected = { requested = it }
         )
 
-        composeTestRule
-            .onNode(hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + FontFamilies.NOTO_SANS_JP.name))
-            .performScrollTo()
+        scrollToAllTextFontButton(FontFamilies.NOTO_SANS_JP)
             .performClick()
 
         assertEquals(FontFamilies.NOTO_SANS_JP, requested)
+    }
+
+    /** フォントのボタンはグリッドの項目で、見えるまで作られないので、ページをスクロールしてから探す */
+    private fun scrollToAllTextFontButton(fontFamily: FontFamilies): SemanticsNodeInteraction {
+        val buttonMatcher = hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + fontFamily.name)
+        composeTestRule
+            .onNode(hasTestTag(TestTags.UCHIWA_BACKGROUND_PAGE))
+            .performScrollToNode(buttonMatcher)
+        return composeTestRule.onNode(buttonMatcher)
     }
 
     private fun allTextStyle(font: FontFamilies?) = AllTextStyle(

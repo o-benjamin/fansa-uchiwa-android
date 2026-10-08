@@ -663,10 +663,17 @@ class EditViewModel @Inject constructor(
 
     /** うちわの中の文字すべてのフォントを変える（#308） */
     fun updateAllTextFont(newFont: FontFamilies) {
-        if (!updateAllTexts { it.copy(font = newFont) }) return
-        // 1回の切り替えとして数える。どの文字も同じフォントになるので、記録する文字は先頭の1つでよい
-        val firstText = uiState.value.decorations.first { it is Decoration.Text }
+        val decorations = decorationsWithAllTextsChanged { it.copy(font = newFont) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        // 文字の数によらず1回の切り替えとして数える。どの文字も同じフォントになるので、記録する文字は先頭の1つでよい
+        val firstText = decorations.first { it is Decoration.Text }
         fontSessionTracker.onFontSwitched(firstText.id)
+        // フォントの並び順（#241）は select_edit_text_font の回数で決めるので、まとめて選んだときも1回送る
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+            mapOf(FontFamilyParams.PARAM_FONT_FAMILY to newFont.name)
+        )
         logEvent(
             AnalyticsActions.SELECT_EDIT_ALL_TEXT,
             mapOf(
@@ -678,7 +685,9 @@ class EditViewModel @Inject constructor(
 
     /** うちわの中の文字すべての文字色を変える（#308） */
     fun updateAllTextColor(newColor: Color) {
-        if (!updateAllTexts { it.copy(color = newColor) }) return
+        val decorations = decorationsWithAllTextsChanged { it.copy(color = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
         logEvent(
             AnalyticsActions.SELECT_EDIT_ALL_TEXT,
             mapOf("target" to EditAllTextTargetParams.TEXT_COLOR)
@@ -687,7 +696,9 @@ class EditViewModel @Inject constructor(
 
     /** うちわの中の文字すべての枠線（1つめの縁）の色を変える（#308） */
     fun updateAllTextStrokeColor(newColor: Color) {
-        if (!updateAllTexts { it.copy(strokeColor = newColor) }) return
+        val decorations = decorationsWithAllTextsChanged { it.copy(strokeColor = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
         logEvent(
             AnalyticsActions.SELECT_EDIT_ALL_TEXT,
             mapOf("target" to EditAllTextTargetParams.STROKE_1_COLOR)
@@ -696,8 +707,9 @@ class EditViewModel @Inject constructor(
 
     /** うちわの中の文字すべての枠線（1つめの縁）の太さを変える（#308）。スライダーを離したら [finishAllTextStrokeWidthChange] */
     fun updateAllTextStrokeWidth(newWidth: Float) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(strokeWidth = newWidth) } ?: return
         capturePendingSliderSnapshot()
-        replaceAllTexts { it.copy(strokeWidth = newWidth) }
+        setDecorations(decorations)
     }
 
     fun finishAllTextStrokeWidthChange() {
@@ -709,23 +721,21 @@ class EditViewModel @Inject constructor(
     }
 
     /**
-     * 文字すべてに [transform] を当てる。「元に戻す」1回でまとめて戻るよう、履歴は1回だけ積む。
-     * 文字が1つもなければ何もせず false を返す
+     * 文字すべてに [transform] を当てた装飾の一覧。変わる文字がない（文字がない・すでに全部その値）ときは null。
+     * 何も変わらない操作で「元に戻す」の履歴を積んだり、イベントを送ったりしないため
      */
-    private fun updateAllTexts(transform: (Decoration.Text) -> Decoration.Text): Boolean {
-        if (uiState.value.decorations.none { it is Decoration.Text }) return false
-        saveSnapshot()
-        replaceAllTexts(transform)
-        return true
+    private fun decorationsWithAllTextsChanged(
+        transform: (Decoration.Text) -> Decoration.Text
+    ): List<Decoration>? {
+        val decorations = uiState.value.decorations
+        val changedDecorations = decorations.map { decoration ->
+            if (decoration is Decoration.Text) transform(decoration) else decoration
+        }
+        return changedDecorations.takeIf { it != decorations }
     }
 
-    private fun replaceAllTexts(transform: (Decoration.Text) -> Decoration.Text) {
-        val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(
-            decorations = currentState.decorations.map { decoration ->
-                if (decoration is Decoration.Text) transform(decoration) else decoration
-            }
-        )
+    private fun setDecorations(decorations: List<Decoration>) {
+        savedStateHandle[UI_STATE_KEY] = uiState.value.copy(decorations = decorations)
     }
 
     fun updateUchiwaColor(color: Color) {

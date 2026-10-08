@@ -138,7 +138,7 @@
     <string name="edit_tab_layers">レイヤー</string>
     <string name="overall_border">全体の縁</string>
     <string name="all_text_style_title">すべての文字をまとめて変える</string>
-    <string name="all_text_style_mixed_note">文字ごとにちがう項目は、どれも選ばれていない表示になります</string>
+    <string name="all_text_style_mixed_title">%1$s（文字ごとにちがう）</string>
     <string name="all_text_color">文字色</string>
     <string name="all_text_font">フォント</string>
 

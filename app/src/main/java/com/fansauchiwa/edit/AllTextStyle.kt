@@ -18,10 +18,6 @@ data class AllTextStyle(
     val strokeColor: Color?,
     val strokeWidth: Float?
 ) {
-    /** 文字ごとにちがう項目が1つでもあるかどうか */
-    val hasMixedValues: Boolean
-        get() = font == null || color == null || strokeColor == null || strokeWidth == null
-
     companion object {
         /** うちわに文字が1つもなければ null（欄を出さない） */
         fun of(decorations: List<Decoration>): AllTextStyle? {

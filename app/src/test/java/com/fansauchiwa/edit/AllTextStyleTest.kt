@@ -3,9 +3,7 @@ package com.fansauchiwa.edit
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.data.Decoration
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AllTextStyleTest {
@@ -55,7 +53,6 @@ class AllTextStyleTest {
             ),
             style
         )
-        assertFalse(style!!.hasMixedValues)
     }
 
     @Test
@@ -66,7 +63,6 @@ class AllTextStyleTest {
         assertEquals(Color.Black, style?.color)
         assertEquals(Color.White, style?.strokeColor)
         assertEquals(20f, style?.strokeWidth)
-        assertFalse(style!!.hasMixedValues)
     }
 
     @Test
@@ -79,7 +75,6 @@ class AllTextStyleTest {
         assertEquals(Color.Black, style?.color)
         assertEquals(Color.White, style?.strokeColor)
         assertEquals(20f, style?.strokeWidth)
-        assertTrue(style!!.hasMixedValues)
     }
 
     @Test
@@ -107,6 +102,5 @@ class AllTextStyleTest {
         )
 
         assertEquals(Color.Black, style?.color)
-        assertFalse(style!!.hasMixedValues)
     }
 }
