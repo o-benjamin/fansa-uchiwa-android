@@ -61,30 +61,41 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 
 ### アプリに同梱しているフォント
 
-`app/src/main/res/font/` に入っていて、APK に入れて配る（`ui/theme/Typography.kt`）。規約は配布元の公式ページと、配布物に入っている説明書きで確かめた（2026-10-09、#296）。「著作権表示」はフォントファイルの name テーブル（nameID 0）の文。
+`app/src/main/res/font/` に入っていて、APK に入れて配る（`ui/theme/Typography.kt`）。規約は配布元の公式ページと、配布物に入っている説明書きで確かめた（2026-10-09、#296）。「著作権表示」はフォントファイルの name テーブル（nameID 0）の文。配布元のリンクの横の「写し」は、確かめた日の Internet Archive の保存。
 
 | enum | フォント | ファイル | 配布元 | ライセンス | 同梱・商用 | クレジット | 著作権表示 |
 |---|---|---|---|---|---|---|---|
-| `KEI_FONT` | けいふぉんと（Version 1.01） | `keifont.ttf` | [すもももじ（Do-Font）](https://font.sumomo.ne.jp/font_1.html) | Apache 2.0 | 可 | 表記の義務はない。ライセンスの写しを渡す決まりがあるので、アプリの「設定 → 素材のライセンス」に載せている | [Source Han Sans] Copyright(c) 2014 Adobe Systems Incorporated. All Rights Reserved. [M+ OUTLINE FONTS] Copyright(c) 2014 M+ FONTS PROJECT [Genshin] Copyright(c) 2014 Jikasei Font Kobo by MM. [KANAMOJI] Copyright(c) 2014 Do-Font |
-| `LIGHT_NOVEL_POP` | ラノベPOP v2（Version 2.001） | `lightnovelpopv2.otf` | [フロップデザイン（BOOTH）](https://flopdesign.booth.pm/items/2328262) | M+ FONTS のライセンス | 可（下の「食い違い」を参照） | 義務はない（動画では入れてもらえると喜ぶ、というお願いだけ） | Copyright(c) 2019 M+ FONTS PROJECT,Copyright(c) flopdesign.com |
-| `AKAZUKI_POP` | あかずきんポップ（Version 2.000） | `akazukinpop.otf` | [フロップデザイン（BOOTH）](https://flopdesign.booth.pm/items/1748058) | M+ FONTS のライセンス | 可（下の「食い違い」を参照） | 義務はない（同上） | Copyright(c) 2019 M+ FONTS PROJECT,Copyright(c) Fontna.com |
+| `KEI_FONT` | けいふぉんと（Version 1.01） | `keifont.ttf` | [すもももじ（Do-Font）](https://font.sumomo.ne.jp/font_1.html)（[写し](https://web.archive.org/web/20261008232120/https://font.sumomo.ne.jp/font_1.html)） | Apache 2.0 | 可 | 義務はない（ライセンスの写しは下を参照） | [Source Han Sans] Copyright(c) 2014 Adobe Systems Incorporated. All Rights Reserved. [M+ OUTLINE FONTS] Copyright(c) 2014 M+ FONTS PROJECT [Genshin] Copyright(c) 2014 Jikasei Font Kobo by MM. [KANAMOJI] Copyright(c) 2014 Do-Font |
+| `LIGHT_NOVEL_POP` | ラノベPOP v2（Version 2.001） | `lightnovelpopv2.otf` | [フロップデザイン（BOOTH）](https://flopdesign.booth.pm/items/2328262)（[写し](https://web.archive.org/web/20261008232120/https://flopdesign.booth.pm/items/2328262)） | M+ FONTS のライセンス | 可（BOOTH の記載による。作者に確認中、#324） | 義務はない（動画で使うときはクレジットを入れてほしい、という作者のお願いだけ） | Copyright(c) 2019 M+ FONTS PROJECT,Copyright(c) flopdesign.com |
+| `AKAZUKI_POP` | あかずきんポップ（Version 2.000） | `akazukinpop.otf` | [フロップデザイン（BOOTH）](https://flopdesign.booth.pm/items/1748058)（[写し](https://web.archive.org/web/20261008232120/https://flopdesign.booth.pm/items/1748058)） | M+ FONTS のライセンス | 可（BOOTH の記載による。作者に確認中、#324） | 義務はない（同上） | Copyright(c) 2019 M+ FONTS PROJECT,Copyright(c) Fontna.com |
+
+同梱しているファイルの SHA-256（2026-10-09）。ファイルを差し替えたら、ここと上の表を確かめ直す。
+
+- `keifont.ttf`：`d5795bdff960c2b2ec5727ffeb79d836f8f11dac3015f6e16089a912e9cced6f`
+- `lightnovelpopv2.otf`：`e5b1e8cd7b7b4735f51a4f92dedb4064618d4cc7ac725d55a973dff488a4bf51`
+- `akazukinpop.otf`：`f3b5f0c46ff61578c082e3a0c58d9141d6a9853e7bf7cec37eb958280ba52cf9`
 
 けいふぉんと：
 
 - 配布ページに「このフォントは、Apache License 2.0のもとで使用することができます」「商用利用については特に制限しておりません」とある。配布物（`k-font.zip`）の中身は `keifont.ttf`・Apache License 2.0 の全文・M+ FONTS のライセンス・説明書きで、NOTICE ファイルはない
-- 同梱している `keifont.ttf` は、配布物の `keifont.ttf` と同じファイル（SHA-256 が一致。2026-10-09）
+- 同梱している `keifont.ttf` は、配布物の `keifont.ttf` と SHA-256 が一致する
 - ひらがな・カタカナは Do-Font の作、それ以外は源ノ角ゴシック（Adobe）・源真ゴシック（自家製フォント工房）・M+ OUTLINE FONTS から来ている
 - 作者からのお願い：ヒント元の作品（『けいおん！』のロゴ）の名誉を傷つける場面では使わない
-- Apache 2.0 は、配るときにライセンスの写しを渡す決まり（第4条(a)）。「設定 → 素材のライセンス」の Apache 2.0 の括弧に「けいふぉんと」を載せ、「ブラウザで開く」で全文を読めるようにしている
+- Apache 2.0 は、配るときにライセンスの写しを渡す決まり（第4条(a)）。アプリの「設定 → 素材のライセンス」の Apache 2.0 の括弧に「けいふぉんと」を載せ、「ブラウザで開く」で全文を読めるようにしている
 
 ラノベPOP v2・あかずきんポップ：
 
-- どちらもフロップデザイン（旧サイト「フォントな」fontna.com）の作で、M+ FONTS から派生したフリーフォント。今は BOOTH で無料で配っている（ラノベPOP の旧版の[配布ページ](https://www.fontna.com/blog/lightnovel.html)から、v2 とあかずきんポップの BOOTH にリンクしている）
+- どちらもフロップデザイン（旧サイト「フォントな」fontna.com）の作で、M+ FONTS から派生したフリーフォント。今は BOOTH で無料で配っている（BOOTH が作者の配布先であることは、ラノベPOP の旧版の[配布ページ](https://www.fontna.com/blog/lightnovel.html)からリンクしていることで確かめた）
 - BOOTH の配布ページに「商用・非商用問わず使用可能」「プログラムへの埋め込みが可能です」「フォントは以下のライセンスに準じます。Copyright(c) 20xx M+ FONTS PROJECT」とある
 - M+ FONTS のライセンスは「あらゆる改変の有無に関わらず、また商業的な利用であっても、自由にご利用、複製、再配布することができます」。著作権表示やライセンス文を載せる決まりはない（ラノベPOP の旧版の配布物に入っている `LICENSE_J` で確かめた）
 - 旧版の配布ページの注意：フォントを使った成果物を商標登録・意匠登録しない
-- 同梱しているファイルが今の BOOTH の配布物と同じかは確かめていない（BOOTH のダウンロードにはログインが要る）。name テーブルの版と著作権表示は、BOOTH の説明と合う
-- **食い違い**：フロップデザインのサイト（flopdesign.com）の[フォントご使用の前に](https://www.flopdesign.com/font-readme.html)には「フォントデータ自体をアプリなどの内部に埋め込み公開」は無償・有償を問わずメールで報告、とあり、[お問い合わせ](https://www.flopdesign.com/contactmail.html)のページには「当フリーフォントは…アプリ・プログラムへの埋め込みを禁止します」とある。どちらもこのサイトで配るフォント（ユーザー登録して使うもの）の書き方で、購入が要る場合の決まりには「オープンソースのフォントについては適用外」と添えてある。BOOTH の2つの配布ページと M+ FONTS のライセンスは、埋め込みを認めている。作者には、アプリに同梱していることを報告して確かめる（2026-10-09 時点で未送信）。返事が来たらここに書く
+- 同梱しているファイルが今の BOOTH の配布物と同じかは確かめていない（BOOTH のダウンロードにはログインが要る）。name テーブルの版（v2）と著作権表示は BOOTH の説明と合い、v2 の配布先は BOOTH のほかに見つからなかった（fontna.com にあるのは旧版）
+- **食い違い**：BOOTH の配布ページと M+ FONTS のライセンスに従って「可」としている。ただし作者のサイトに反対に読める注意書きがあるので、作者に報告して確かめる（#324）
+  - [フォントご使用の前に](https://www.flopdesign.com/font-readme.html)：「無償・有償を問わずメールでの報告が必要なケース例」に「フォントデータ自体をアプリなどの内部に埋め込み公開」がある。同じページの「フォントの購入が必要なケース例」には「オープンソースのフォントについては適用外」と添えてあるが、報告の方には添えていない
+  - [お問い合わせ](https://www.flopdesign.com/contactmail.html)：「当フリーフォントは…アプリ・プログラムへの埋め込みを禁止します」
+  - どちらも、flopdesign.com で配っているフォント（ユーザー登録して使うもの）向けの書き方
+  - BOOTH の2つの配布ページは「プログラムへの埋め込みが可能です」。M+ FONTS のライセンスも埋め込みを制限していない
+  - 作者から返事が来たらここに書く
 
 ## ステッカー
 
