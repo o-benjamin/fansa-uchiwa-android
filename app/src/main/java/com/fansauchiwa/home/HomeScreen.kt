@@ -116,10 +116,10 @@ import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
 import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.decorationitem.decorationTextSize
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
 import com.fansauchiwa.edit.decorationitem.resolveTextDecorationTypefaces
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
-import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.home.featuredoor.FeatureDoorSection
 import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.composable.FansaFloatingActionButton
@@ -996,7 +996,7 @@ private fun TemplateTextItem(
     ) {
         TextItemContent(
             decoration = decoration,
-            textSize = 24.sp.nonScaledSp,
+            textSize = decorationTextSize,
         )
     }
 }

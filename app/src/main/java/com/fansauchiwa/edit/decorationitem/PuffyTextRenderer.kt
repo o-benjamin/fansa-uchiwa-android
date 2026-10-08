@@ -415,8 +415,9 @@ fun createTextMaskBitmap(
     clearInner: Boolean = false,
     clearStroke: Stroke? = null
 ): Bitmap {
-    val width = ((layoutResult.size.width + maxStroke) * scaleFactor).toInt()
-    val height = ((layoutResult.size.height + maxStroke) * scaleFactor).toInt()
+    val frameSize = decorationTextFrameSize(layoutResult.size, maxStroke)
+    val width = (frameSize.width * scaleFactor).toInt()
+    val height = (frameSize.height * scaleFactor).toInt()
 
     if (width <= 0 || height <= 0) {
         return createBitmap(1, 1, Bitmap.Config.ALPHA_8)

@@ -29,10 +29,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.nonScaledSp
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 @Composable
@@ -52,14 +54,12 @@ fun TextItemContent(
     val layoutResult = measureDecorationText(
         text = decoration.text,
         fontFamily = decoration.font.value,
-        fontWeight = FontWeight(decoration.width),
+        fontWeight = decoration.fontWeight,
         fontSize = textSize
     )
 
-    val maxStroke = decoration.strokeWidth + decoration.secondBorderWidth
-    val boxSize = with(density) {
-        Size(layoutResult.size.width + maxStroke, layoutResult.size.height + maxStroke).toDpSize()
-    }
+    val maxStroke = decoration.maxStroke
+    val boxSize = with(density) { decorationTextFrameSize(layoutResult.size, maxStroke).toDpSize() }
 
     var fillSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var strokeSdfBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -233,6 +233,36 @@ internal fun measureDecorationText(
 }
 
 /**
+ * 文字の装飾を描く文字の大きさ。見た目（`EditScreen`・`HomeScreen` が [TextItemContent] に渡す）と
+ * つかめる範囲（`EditScreen`）で同じ値を使う。違うと、見た目とつかめる範囲の大きさがずれる。
+ * 端末の文字サイズの設定で大きさが変わらないよう [nonScaledSp] にしている。
+ */
+internal val decorationTextSize: TextUnit
+    @Composable
+    get() = 24.sp.nonScaledSp
+
+/**
+ * 文字の装飾の太さ。描く文字・つかめる範囲（[measureDecorationText] に渡す）と、
+ * 全体の縁取りのキー（[resolveTextDecorationTypefaces]）で同じ値を使う。
+ */
+internal val Decoration.Text.fontWeight: FontWeight
+    get() = FontWeight(width)
+
+/**
+ * いちばん外側の縁取りの太さ。縁取りは文字の輪郭の両側に半分ずつはみ出すので、枠は文字よりこの分だけ大きくなる。
+ */
+internal val Decoration.Text.maxStroke: Float
+    get() = strokeWidth + secondBorderWidth
+
+/**
+ * 文字の装飾の枠の大きさ（px）。測った文字の大きさ [measuredSize] に、いちばん外側の縁取りの太さ [maxStroke] を足す。
+ * 見た目（[TextItemContent]）・つかめる範囲（`EditScreen`）・ぷくぷくの下絵（[createTextMaskBitmap]）で
+ * 同じ大きさにするため、ここだけで求める。
+ */
+internal fun decorationTextFrameSize(measuredSize: IntSize, maxStroke: Float): Size =
+    Size(measuredSize.width + maxStroke, measuredSize.height + maxStroke)
+
+/**
  * 文字の装飾それぞれが、いま描かれている書体。
  *
  * ダウンロード式フォントの取得が終わると別の値になる。文字の形を写し取って作るもの（全体の縁取り）は、
@@ -243,7 +273,7 @@ internal fun resolveTextDecorationTypefaces(decorations: List<Decoration>): List
     decorations.filterIsInstance<Decoration.Text>().map { decoration ->
         resolveDecorationTypeface(
             fontFamily = decoration.font.value,
-            fontWeight = FontWeight(decoration.width)
+            fontWeight = decoration.fontWeight
         )
     }
 
