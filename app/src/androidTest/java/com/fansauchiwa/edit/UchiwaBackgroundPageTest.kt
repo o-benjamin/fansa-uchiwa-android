@@ -2,8 +2,10 @@ package com.fansauchiwa.edit
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performClick
@@ -27,7 +29,9 @@ class UchiwaBackgroundPageTest {
         isAllPuffyEnabled: Boolean,
         isPukuPukuSupported: Boolean,
         onAllPuffyEnabledChanged: (Boolean) -> Unit = {},
-        onPuffyUnsupportedClick: () -> Unit = {}
+        onPuffyUnsupportedClick: () -> Unit = {},
+        allTextStyle: AllTextStyle? = null,
+        onAllTextFontSelected: (FontFamilies) -> Unit = {}
     ) {
         composeTestRule.setContent {
             FansaUchiwaTheme {
@@ -39,12 +43,18 @@ class UchiwaBackgroundPageTest {
                     onOverallBorderWeightChangedFinished = {},
                     onAllPuffyEnabledChanged = onAllPuffyEnabledChanged,
                     onPuffyUnsupportedClick = onPuffyUnsupportedClick,
+                    onAllTextFontSelected = onAllTextFontSelected,
+                    onAllTextColorSelected = {},
+                    onAllTextStrokeColorSelected = {},
+                    onAllTextStrokeWeightChanged = {},
+                    onAllTextStrokeWeightChangedFinished = {},
                     currentUchiwaColor = Color.Red,
                     currentBackgroundColor = Color.Blue,
                     currentOverallBorderColor = Color.White,
                     currentOverallBorderWidth = 8f,
                     isAllPuffyEnabled = isAllPuffyEnabled,
-                    isPukuPukuSupported = isPukuPukuSupported
+                    isPukuPukuSupported = isPukuPukuSupported,
+                    allTextStyle = allTextStyle
                 )
             }
         }
@@ -113,4 +123,68 @@ class UchiwaBackgroundPageTest {
 
         assertTrue(wasClicked)
     }
+
+    @Test
+    fun allTextStyleSection_noText_isNotShown() {
+        setContent(isAllPuffyEnabled = false, isPukuPukuSupported = true, allTextStyle = null)
+
+        composeTestRule
+            .onNode(hasTestTag(TestTags.ALL_TEXT_STYLE_SECTION))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun allTextFontButton_allTextsSameFont_isSelected() {
+        setContent(
+            isAllPuffyEnabled = false,
+            isPukuPukuSupported = true,
+            allTextStyle = allTextStyle(font = FontFamilies.HACHI_MARU_POP)
+        )
+
+        composeTestRule
+            .onNode(hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + FontFamilies.HACHI_MARU_POP.name))
+            .performScrollTo()
+            .assertIsSelected()
+    }
+
+    @Test
+    fun allTextFontButtons_mixedFonts_noneSelected() {
+        setContent(
+            isAllPuffyEnabled = false,
+            isPukuPukuSupported = true,
+            allTextStyle = allTextStyle(font = null)
+        )
+
+        FontFamilies.entries.forEach { fontFamily ->
+            composeTestRule
+                .onNode(hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + fontFamily.name))
+                .performScrollTo()
+                .assertIsNotSelected()
+        }
+    }
+
+    @Test
+    fun allTextFontButton_click_requestsThatFont() {
+        var requested: FontFamilies? = null
+        setContent(
+            isAllPuffyEnabled = false,
+            isPukuPukuSupported = true,
+            allTextStyle = allTextStyle(font = null),
+            onAllTextFontSelected = { requested = it }
+        )
+
+        composeTestRule
+            .onNode(hasTestTag(TestTags.ALL_TEXT_FONT_BUTTON_PREFIX + FontFamilies.NOTO_SANS_JP.name))
+            .performScrollTo()
+            .performClick()
+
+        assertEquals(FontFamilies.NOTO_SANS_JP, requested)
+    }
+
+    private fun allTextStyle(font: FontFamilies?) = AllTextStyle(
+        font = font,
+        color = Color.Black,
+        strokeColor = Color.White,
+        strokeWidth = 20f
+    )
 }

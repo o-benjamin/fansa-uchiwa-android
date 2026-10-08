@@ -32,6 +32,7 @@ import com.fansauchiwa.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.analytics.BackGroundColorParams
 import com.fansauchiwa.analytics.DiscardReason
 import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
 import com.fansauchiwa.analytics.FontFamilyParams
@@ -658,6 +659,73 @@ class EditViewModel @Inject constructor(
 
             else -> Unit
         }
+    }
+
+    /** うちわの中の文字すべてのフォントを変える（#308） */
+    fun updateAllTextFont(newFont: FontFamilies) {
+        if (!updateAllTexts { it.copy(font = newFont) }) return
+        // 1回の切り替えとして数える。どの文字も同じフォントになるので、記録する文字は先頭の1つでよい
+        val firstText = uiState.value.decorations.first { it is Decoration.Text }
+        fontSessionTracker.onFontSwitched(firstText.id)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf(
+                "target" to EditAllTextTargetParams.FONT,
+                FontFamilyParams.PARAM_FONT_FAMILY to newFont.name
+            )
+        )
+    }
+
+    /** うちわの中の文字すべての文字色を変える（#308） */
+    fun updateAllTextColor(newColor: Color) {
+        if (!updateAllTexts { it.copy(color = newColor) }) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.TEXT_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線（1つめの縁）の色を変える（#308） */
+    fun updateAllTextStrokeColor(newColor: Color) {
+        if (!updateAllTexts { it.copy(strokeColor = newColor) }) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_1_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線（1つめの縁）の太さを変える（#308）。スライダーを離したら [finishAllTextStrokeWidthChange] */
+    fun updateAllTextStrokeWidth(newWidth: Float) {
+        capturePendingSliderSnapshot()
+        replaceAllTexts { it.copy(strokeWidth = newWidth) }
+    }
+
+    fun finishAllTextStrokeWidthChange() {
+        if (!savePendingSliderSnapshot()) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_1_WEIGHT)
+        )
+    }
+
+    /**
+     * 文字すべてに [transform] を当てる。「元に戻す」1回でまとめて戻るよう、履歴は1回だけ積む。
+     * 文字が1つもなければ何もせず false を返す
+     */
+    private fun updateAllTexts(transform: (Decoration.Text) -> Decoration.Text): Boolean {
+        if (uiState.value.decorations.none { it is Decoration.Text }) return false
+        saveSnapshot()
+        replaceAllTexts(transform)
+        return true
+    }
+
+    private fun replaceAllTexts(transform: (Decoration.Text) -> Decoration.Text) {
+        val currentState = uiState.value
+        savedStateHandle[UI_STATE_KEY] = currentState.copy(
+            decorations = currentState.decorations.map { decoration ->
+                if (decoration is Decoration.Text) transform(decoration) else decoration
+            }
+        )
     }
 
     fun updateUchiwaColor(color: Color) {

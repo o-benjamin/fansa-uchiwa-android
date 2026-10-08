@@ -59,6 +59,7 @@ import com.fansauchiwa.R
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.ImageReference
+import com.fansauchiwa.edit.AllTextStyle
 import com.fansauchiwa.edit.ColorAndWeightControl
 import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.edit.DecorationTabType
@@ -93,6 +94,7 @@ data class EditPagerUiState(
     val overallBorderColor: Color,
     val overallBorderWidth: Float,
     val isAllPuffyEnabled: Boolean,
+    val allTextStyle: AllTextStyle?,
     val decorations: List<Decoration> = emptyList(),
     val selectedDecorationId: String? = null,
     val isPukuPukuSupported: Boolean = false
@@ -122,6 +124,11 @@ data class EditPagerActions(
     val onOverallBorderWeightChanged: (Float) -> Unit,
     val onOverallBorderWeightChangedFinished: () -> Unit,
     val onAllPuffyEnabledChanged: (Boolean) -> Unit,
+    val onAllTextFontSelected: (FontFamilies) -> Unit,
+    val onAllTextColorSelected: (Color) -> Unit,
+    val onAllTextStrokeColorSelected: (Color) -> Unit,
+    val onAllTextStrokeWeightChanged: (Float) -> Unit,
+    val onAllTextStrokeWeightChangedFinished: () -> Unit,
     val onDecorationClick: (String) -> Unit,
     val onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
 )
@@ -228,12 +235,18 @@ fun EditPager(
                         onOverallBorderWeightChangedFinished = actions.onOverallBorderWeightChangedFinished,
                         onAllPuffyEnabledChanged = actions.onAllPuffyEnabledChanged,
                         onPuffyUnsupportedClick = actions.onUnsupportedPuffyClick,
+                        onAllTextFontSelected = actions.onAllTextFontSelected,
+                        onAllTextColorSelected = actions.onAllTextColorSelected,
+                        onAllTextStrokeColorSelected = actions.onAllTextStrokeColorSelected,
+                        onAllTextStrokeWeightChanged = actions.onAllTextStrokeWeightChanged,
+                        onAllTextStrokeWeightChangedFinished = actions.onAllTextStrokeWeightChangedFinished,
                         currentUchiwaColor = state.uchiwaColor,
                         currentBackgroundColor = state.backgroundColor,
                         currentOverallBorderColor = state.overallBorderColor,
                         currentOverallBorderWidth = state.overallBorderWidth,
                         isAllPuffyEnabled = state.isAllPuffyEnabled,
-                        isPukuPukuSupported = state.isPukuPukuSupported
+                        isPukuPukuSupported = state.isPukuPukuSupported,
+                        allTextStyle = state.allTextStyle
                     )
                 }
 
@@ -611,12 +624,18 @@ fun UchiwaBackgroundPage(
     onOverallBorderWeightChangedFinished: () -> Unit,
     onAllPuffyEnabledChanged: (Boolean) -> Unit,
     onPuffyUnsupportedClick: () -> Unit,
+    onAllTextFontSelected: (FontFamilies) -> Unit,
+    onAllTextColorSelected: (Color) -> Unit,
+    onAllTextStrokeColorSelected: (Color) -> Unit,
+    onAllTextStrokeWeightChanged: (Float) -> Unit,
+    onAllTextStrokeWeightChangedFinished: () -> Unit,
     currentUchiwaColor: Color,
     currentBackgroundColor: Color,
     currentOverallBorderColor: Color,
     currentOverallBorderWidth: Float,
     isAllPuffyEnabled: Boolean,
-    isPukuPukuSupported: Boolean
+    isPukuPukuSupported: Boolean,
+    allTextStyle: AllTextStyle?
 ) {
     val scrollState = rememberScrollState()
 
@@ -669,6 +688,18 @@ fun UchiwaBackgroundPage(
             modifier = Modifier.testTag(TestTags.PUFFY_ROW),
             switchModifier = Modifier.testTag(TestTags.PUFFY_SWITCH)
         )
+        // 文字が1つもないときは、変える相手がいないので出さない（#308）
+        if (allTextStyle != null) {
+            AllTextStyleSection(
+                style = allTextStyle,
+                onFontSelected = onAllTextFontSelected,
+                onColorSelected = onAllTextColorSelected,
+                onStrokeColorSelected = onAllTextStrokeColorSelected,
+                onStrokeWeightChanged = onAllTextStrokeWeightChanged,
+                onStrokeWeightChangedFinished = onAllTextStrokeWeightChangedFinished,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+        }
     }
 }
 
@@ -684,12 +715,23 @@ fun UchiwaBackgroundPagePreview() {
             onOverallBorderWeightChangedFinished = {},
             onAllPuffyEnabledChanged = {},
             onPuffyUnsupportedClick = {},
+            onAllTextFontSelected = {},
+            onAllTextColorSelected = {},
+            onAllTextStrokeColorSelected = {},
+            onAllTextStrokeWeightChanged = {},
+            onAllTextStrokeWeightChangedFinished = {},
             currentUchiwaColor = DecorationColors.RED.value,
             currentBackgroundColor = DecorationColors.BLUE.value,
             currentOverallBorderColor = DecorationColors.WHITE.value,
             currentOverallBorderWidth = 8f,
             isAllPuffyEnabled = true,
-            isPukuPukuSupported = true
+            isPukuPukuSupported = true,
+            allTextStyle = AllTextStyle(
+                font = FontFamilies.HACHI_MARU_POP,
+                color = DecorationColors.PINK.value,
+                strokeColor = DecorationColors.WHITE.value,
+                strokeWidth = 20f
+            )
         )
     }
 }

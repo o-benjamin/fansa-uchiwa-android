@@ -54,6 +54,9 @@ object AnalyticsActions {
     const val SELECT_EDIT_BACKGROUND_COLOR = "select_edit_background_color"
     const val SELECT_EDIT_LAYER = "select_edit_layer"
 
+    // 「全体」タブで、すべての文字をまとめて変えた（#308）。パラメータは EditAllTextTargetParams
+    const val SELECT_EDIT_ALL_TEXT = "select_edit_all_text"
+
     const val TAP_IMAGE_PREVIEW_CONFIRM = "tap_image_preview_confirm"
 
     const val BACKGROUND_REMOVAL_SUCCESS = "background_removal_success"
