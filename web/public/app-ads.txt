@@ -163,7 +163,8 @@ google.com, pub-5060663379040713, RESELLER, f08c47fec0942fa0
 google.com, pub-3990748024667386, RESELLER, f08c47fec0942fa0
 
 # Liftoff Monetize（issue #213、ビディングのメディエーションパートナー追加）
-# Liftoff（Vungle）ダッシュボードの app-ads.txt 推奨行から、既存と重複しない行だけを貼り付けたもの。Liftoff 自身の DIRECT 行を含む。推奨行が更新されたらこのブロックごと差し替える
+# 取得: 2026-10-10、Liftoff Monetize ダッシュボードの app-ads.txt 案内（vungle.txt）。並びは案内のまま、既存行と「ドメイン, ID, 区分」が完全に同じ行だけ除いた。Liftoff 自身の DIRECT 行を含む
+# 認証局 ID の有無だけが既存行と違う2行（rubiconproject.com 15268、smartadserver.com 4456）は、案内どおりに残している。案内が更新されたらこのブロックごと差し替える
 vungle.com, 6aca140e020a978505d0604c, DIRECT, c107d686becd2d77
 33across.com, 001Pg0000197KcKIAU, RESELLER, bbea06d9c4d2853c
 contextweb.com, 562852, RESELLER, 89ff185a4c4e857c
