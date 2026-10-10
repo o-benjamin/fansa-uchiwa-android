@@ -83,6 +83,7 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
   - どちらも座標を 24×24 に拡大縮小し、小数2桁に丸めて VectorDrawable にした。原本の SVG と数値が合わないのはこのため（形は変えていない）
 - それより前の分は取り込みの記録がない。ファイル名の形（`baseline_`／`round_`〜`_24` は Android Studio の Vector Asset が Material Icons から作る名前、`〜_24px`／`rounded_〜_24` は Material Symbols から作る名前）とアイコン名から出どころを判断した。`STAR`・`THUMB_UP`・`BRIGHTNESS_2`・`BRIGHTNESS_3`・`HEART` は、Material Icons の SVG と形の数値が一致することも確かめた（2026-10-04）
 - 「自作」は、このアプリのために生成 AI（Claude）が SVG で描き、VectorDrawable にしたもの。第三者の素材・作品を元にしていない。元の SVG はリポジトリになく、`app/src/main/res/drawable/` の XML が原本
+- SVG Silh は、サイトのフッターに CC0（パブリックドメイン）と明記された無料 SVG 素材集（画像の元は Pixabay）。個別の素材ページは特定できておらず、台帳はサイトの表記に基づく（2026-10-10）
 - Material Icons と Material Symbols の LICENSE（Apache 2.0）には著作権者の行がなく、NOTICE ファイルもない。表の「Google」は権利者の名前で、写さなければならない表示の文ではない
 
 | enum | ファイル | 出どころ（アイコン名） | ライセンス | 著作権表示 | 追加 |
@@ -110,9 +111,9 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `HAND_PEACE` | `sticker_hand_peace.xml` | Phosphor Icons（`hand-peace`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
 | `HEART` | `sticker_heart.xml` | Material Icons（`favorite`、Filled） | Apache 2.0 | Google | — |
 | `HEART_ARROW` | `sticker_heart_arrow.xml` | 自作 | なし（このアプリ用に作成） | 表示の義務なし | v2.9.0（#287） |
-| `HEART_CUTE` | `sticker_heart_cute.xml` | 自作（オーナー確認、2026-10-04） | なし（このアプリ用に作成） | 表示の義務なし | v2.0.0 |
-| `HEART_HORIZONTAL` | `sticker_heart_horizontal.xml` | 自作（オーナー確認、2026-10-04） | なし（このアプリ用に作成） | 表示の義務なし | v2.0.0 |
-| `HEART_VERTICAL` | `sticker_heart_vertical.xml` | 自作（オーナー確認、2026-10-04） | なし（このアプリ用に作成） | 表示の義務なし | v2.0.0 |
+| `HEART_CUTE` | `sticker_heart_cute.xml` | SVG Silh（svgsilh.com）の素材 | CC0（サイトの表記） | 表示の義務なし | — |
+| `HEART_HORIZONTAL` | `sticker_heart_horizontal.xml` | SVG Silh（svgsilh.com）の素材 | CC0（サイトの表記） | 表示の義務なし | — |
+| `HEART_VERTICAL` | `sticker_heart_vertical.xml` | SVG Silh（svgsilh.com）の素材 | CC0（サイトの表記） | 表示の義務なし | — |
 | `KISS_LIPS` | `sticker_kiss_lips.xml` | 自作 | なし（このアプリ用に作成） | 表示の義務なし | v2.9.0（#287） |
 | `LOCAL_FIRE_DEPARTMENT` | `round_local_fire_department_24.xml` | Material Icons（`local_fire_department`、Round） | Apache 2.0 | Google | — |
 | `MICROPHONE_STAGE` | `sticker_microphone_stage.xml` | Phosphor Icons（`microphone-stage`） | MIT | Copyright (c) 2023 Phosphor Icons | v2.9.0（#287） |
@@ -130,4 +131,4 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `WAVING_HAND` | `baseline_waving_hand_24.xml` | Material Icons（`waving_hand`、Filled） | Apache 2.0 | Google | — |
 | `WINGED_HEART` | `sticker_winged_heart.xml` | 自作 | なし（このアプリ用に作成） | 表示の義務なし | v2.9.0（#287） |
 
-`HEART_CUTE`・`HEART_HORIZONTAL`・`HEART_VERTICAL` は、作った経緯の記録がコミットになかった。オーナーが自作だと確認した（2026-10-04、#302）。
+`HEART_CUTE`・`HEART_HORIZONTAL`・`HEART_VERTICAL` は v2.0.0（2026-03-17）で足した。作った経緯の記録がコミットになかったが、オーナーが出どころを SVG Silh（[svgsilh.com](https://svgsilh.com/ja/)）と突き止めた（2026-10-10、#302）。
