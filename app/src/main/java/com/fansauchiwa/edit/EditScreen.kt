@@ -455,6 +455,9 @@ fun EditScreen(
                         onAllTextStrokeColorSelected = viewModel::updateAllTextStrokeColor,
                         onAllTextStrokeWeightChanged = viewModel::updateAllTextStrokeWidth,
                         onAllTextStrokeWeightChangedFinished = viewModel::finishAllTextStrokeWidthChange,
+                        onAllTextSecondBorderColorSelected = viewModel::updateAllTextSecondBorderColor,
+                        onAllTextSecondBorderWeightChanged = viewModel::updateAllTextSecondBorderWidth,
+                        onAllTextSecondBorderWeightChangedFinished = viewModel::finishAllTextSecondBorderWidthChange,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->
                             hapticManager.perform(FansaHapticType.VIRTUAL_KEY)

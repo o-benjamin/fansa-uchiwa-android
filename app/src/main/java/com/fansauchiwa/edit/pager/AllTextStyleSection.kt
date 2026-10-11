@@ -1,12 +1,10 @@
 package com.fansauchiwa.edit.pager
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,8 +30,9 @@ import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 /**
- * 「全体」タブの「すべての文字」の欄（#308）。うちわの中の文字すべての文字色・枠線の色と太さ・フォントをまとめて変える。
- * 文字ごとに値がちがう項目は、見出しに「（文字ごとにちがう）」を付け、何も選ばれていない表示にする（枠線の太さはスライダーを左端に置く）。
+ * 「全体」タブの「すべての文字」の欄（#308）。うちわの中の文字すべての文字色・枠線（1つめと2つめ）の色と太さ・フォントをまとめて変える。
+ * 文字ごとに値がちがう項目は、何も選ばれていない表示にする（枠線の太さはスライダーを左端に置く）。
+ * 見出しに「文字ごとにちがう」とは書かない（オーナーの判断。#331）
  *
  * フォントはダウンロード式なので、ボタンをグリッドの項目にして、見えている分だけ読み込む（文字タブと同じ）。
  * そのため「全体」タブは [LazyVerticalGrid] で、この欄はその中に項目として並べる
@@ -44,7 +43,10 @@ fun LazyGridScope.allTextStyleItems(
     onColorSelected: (Color) -> Unit,
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
-    onStrokeWeightChangedFinished: () -> Unit
+    onStrokeWeightChangedFinished: () -> Unit,
+    onSecondBorderColorSelected: (Color) -> Unit,
+    onSecondBorderWeightChanged: (Float) -> Unit,
+    onSecondBorderWeightChangedFinished: () -> Unit
 ) {
     item(span = { GridItemSpan(maxLineSpan) }) {
         AllTextStyleControls(
@@ -53,6 +55,9 @@ fun LazyGridScope.allTextStyleItems(
             onStrokeColorSelected = onStrokeColorSelected,
             onStrokeWeightChanged = onStrokeWeightChanged,
             onStrokeWeightChangedFinished = onStrokeWeightChangedFinished,
+            onSecondBorderColorSelected = onSecondBorderColorSelected,
+            onSecondBorderWeightChanged = onSecondBorderWeightChanged,
+            onSecondBorderWeightChangedFinished = onSecondBorderWeightChangedFinished,
             modifier = Modifier.padding(top = 24.dp)
         )
     }
@@ -74,6 +79,9 @@ private fun AllTextStyleControls(
     onStrokeColorSelected: (Color) -> Unit,
     onStrokeWeightChanged: (Float) -> Unit,
     onStrokeWeightChangedFinished: () -> Unit,
+    onSecondBorderColorSelected: (Color) -> Unit,
+    onSecondBorderWeightChanged: (Float) -> Unit,
+    onSecondBorderWeightChangedFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -88,7 +96,7 @@ private fun AllTextStyleControls(
         )
 
         HeaderTitle(
-            title = allTextItemTitle(R.string.all_text_color, isMixed = style.color == null),
+            title = stringResource(R.string.all_text_color),
             modifier = Modifier.padding(top = 16.dp)
         )
         ColorPickerRow(
@@ -98,10 +106,7 @@ private fun AllTextStyleControls(
         )
 
         ColorAndWeightControl(
-            title = allTextItemTitle(
-                R.string.stroke_color_and_weight,
-                isMixed = style.strokeColor == null || style.strokeWidth == null
-            ),
+            title = stringResource(R.string.stroke_color_and_weight),
             color = style.strokeColor,
             width = style.strokeWidth ?: TEXT_STROKE_WIDTH_RANGE.start,
             valueRange = TEXT_STROKE_WIDTH_RANGE,
@@ -111,27 +116,31 @@ private fun AllTextStyleControls(
             onWeightChangedFinished = onStrokeWeightChangedFinished
         )
 
+        ColorAndWeightControl(
+            title = stringResource(R.string.second_stroke_color_and_weight),
+            color = style.secondBorderColor,
+            width = style.secondBorderWidth ?: TEXT_STROKE_WIDTH_RANGE.start,
+            valueRange = TEXT_STROKE_WIDTH_RANGE,
+            steps = TEXT_STROKE_WIDTH_STEPS,
+            onColorSelected = onSecondBorderColorSelected,
+            onWeightChanged = onSecondBorderWeightChanged,
+            onWeightChangedFinished = onSecondBorderWeightChangedFinished
+        )
+
         HeaderTitle(
-            title = allTextItemTitle(R.string.all_text_font, isMixed = style.font == null),
+            title = stringResource(R.string.all_text_font),
             modifier = Modifier.padding(top = 16.dp)
         )
     }
 }
 
-/** 項目の見出し。文字ごとに値がちがう項目には「（文字ごとにちがう）」を付ける */
-@Composable
-private fun allTextItemTitle(@StringRes titleRes: Int, isMixed: Boolean): String {
-    val title = stringResource(titleRes)
-    return if (isMixed) stringResource(R.string.all_text_style_mixed_title, title) else title
-}
-
 @Composable
 private fun AllTextStyleItemsPreviewGrid(style: AllTextStyle) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH),
+        columns = FontButtonGridCells(pageHorizontalPadding = UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        contentPadding = PaddingValues(horizontal = UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING)
     ) {
         allTextStyleItems(
             style = style,
@@ -139,7 +148,10 @@ private fun AllTextStyleItemsPreviewGrid(style: AllTextStyle) {
             onColorSelected = {},
             onStrokeColorSelected = {},
             onStrokeWeightChanged = {},
-            onStrokeWeightChangedFinished = {}
+            onStrokeWeightChangedFinished = {},
+            onSecondBorderColorSelected = {},
+            onSecondBorderWeightChanged = {},
+            onSecondBorderWeightChangedFinished = {}
         )
     }
 }
@@ -153,7 +165,9 @@ fun AllTextStyleItemsSamePreview() {
                 font = FontFamilies.HACHI_MARU_POP,
                 color = DecorationColors.PINK.value,
                 strokeColor = DecorationColors.WHITE.value,
-                strokeWidth = 20f
+                strokeWidth = 20f,
+                secondBorderColor = DecorationColors.PINK.value,
+                secondBorderWidth = 10f
             )
         )
     }
@@ -168,7 +182,9 @@ fun AllTextStyleItemsMixedPreview() {
                 font = null,
                 color = null,
                 strokeColor = null,
-                strokeWidth = null
+                strokeWidth = null,
+                secondBorderColor = null,
+                secondBorderWidth = null
             )
         )
     }

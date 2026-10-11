@@ -9,14 +9,16 @@ import com.fansauchiwa.data.Decoration
  *
  * 項目ごとに、すべての文字で値がそろっていればその値、文字ごとにちがえば null。
  * null の項目は、欄で何も選ばれていない表示にする。
- * 縁は1つめ（枠線）だけを扱う。2つめの縁（secondBorder）は文字ごとに変える。
+ * 縁は1つめ（枠線）と2つめ（枠線2）の両方を扱う（2つめは #331 で追加。テンプレートの文字の多くが使うため）
  */
 @Immutable
 data class AllTextStyle(
     val font: FontFamilies?,
     val color: Color?,
     val strokeColor: Color?,
-    val strokeWidth: Float?
+    val strokeWidth: Float?,
+    val secondBorderColor: Color?,
+    val secondBorderWidth: Float?
 ) {
     companion object {
         /** うちわに文字が1つもなければ null（欄を出さない） */
@@ -27,7 +29,9 @@ data class AllTextStyle(
                 font = texts.commonValueOrNull { it.font },
                 color = texts.commonValueOrNull { it.color },
                 strokeColor = texts.commonValueOrNull { it.strokeColor },
-                strokeWidth = texts.commonValueOrNull { it.strokeWidth }
+                strokeWidth = texts.commonValueOrNull { it.strokeWidth },
+                secondBorderColor = texts.commonValueOrNull { it.secondBorderColor },
+                secondBorderWidth = texts.commonValueOrNull { it.secondBorderWidth }
             )
         }
     }
