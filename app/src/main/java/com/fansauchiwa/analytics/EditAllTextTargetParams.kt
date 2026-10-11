@@ -16,7 +16,7 @@ object EditAllTextTargetParams {
     const val STROKE_1_COLOR = "stroke_1_color"
     const val STROKE_1_WEIGHT = "stroke_1_weight"
 
-    /** 枠線2（2つめの縁）。#331 で追加 */
+    // 枠線2（2つめの縁）
     const val STROKE_2_COLOR = "stroke_2_color"
     const val STROKE_2_WEIGHT = "stroke_2_weight"
 }

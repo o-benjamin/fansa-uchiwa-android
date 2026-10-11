@@ -85,7 +85,10 @@ private const val OVERALL_BORDER_MIN_WIDTH = 0f
 private const val OVERALL_BORDER_MAX_WIDTH = 24f
 private const val OVERALL_BORDER_SLIDER_STEPS = 23
 
-/** 「全体」タブの左右の余白（片側） */
+/**
+ * 「全体」タブの左右の余白（片側）。うちわ色〜ぷくぷくの行は画像タブと同じこの幅にそろえる。
+ * 文字タブ（[TEXT_PAGE_HORIZONTAL_PADDING]）より狭いので、フォントの列数は [FontButtonGridCells] で文字タブにそろえる
+ */
 internal val UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING = 16.dp
 
 @Immutable

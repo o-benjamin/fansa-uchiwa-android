@@ -1331,7 +1331,7 @@ class EditViewModelTest {
     }
 
     @Test
-    fun updateAllTextSecondBorderColor_twoTexts_changesEveryTextSecondBorderColorAndKeepsSticker() = runTest {
+    fun updateAllTextSecondBorderColor_twoTexts_changesOnlyTextSecondBorderAndUndoesInOneStep() = runTest {
         val viewModel = createViewModelWithTwoTextsAndSticker()
 
         viewModel.updateAllTextSecondBorderColor(Color.Magenta)

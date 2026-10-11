@@ -9,7 +9,7 @@ import com.fansauchiwa.data.Decoration
  *
  * 項目ごとに、すべての文字で値がそろっていればその値、文字ごとにちがえば null。
  * null の項目は、欄で何も選ばれていない表示にする。
- * 縁は1つめ（枠線）と2つめ（枠線2）の両方を扱う（2つめは #331 で追加。テンプレートの文字の多くが使うため）
+ * 縁は1つめ（枠線）と2つめ（枠線2）の両方を扱う
  */
 @Immutable
 data class AllTextStyle(
