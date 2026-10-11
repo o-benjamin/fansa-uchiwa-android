@@ -17,28 +17,35 @@ class FontButtonGridCellsTest {
 
     @Test
     fun uchiwaBackgroundPage_pixel8aWidth_threeColumnsLikeTextPage() {
-        // 画面の幅 411dp から、「全体」タブの左右の余白 16dp を引いた幅
-        val availableSize = with(density) { (411.dp - 32.dp).roundToPx() }
+        // 画面の幅 411dp から、「全体」タブの左右の余白を引いた幅
+        val availableSize = with(density) { (411.dp - UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING * 2).roundToPx() }
 
-        val sizes = FontButtonGridCells(pageHorizontalPadding = 16.dp).cellSizes(availableSize)
+        val sizes = FontButtonGridCells(UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING).cellSizes(availableSize)
 
         assertEquals(3, sizes.size)
         assertEquals(availableSize, sizes.sum() + spacing * (sizes.size - 1))
     }
 
     @Test
-    fun uchiwaBackgroundPage_anyScreenWidth_sameColumnCountAsTextPage() {
-        for (screenWidthDp in 280..1280 step 7) {
-            val screenWidth = with(density) { screenWidthDp.dp.roundToPx() }
-            val textPageAvailableSize = screenWidth - with(density) { (TEXT_PAGE_HORIZONTAL_PADDING * 2).roundToPx() }
-            val uchiwaBackgroundAvailableSize = screenWidth - with(density) { 32.dp.roundToPx() }
+    fun uchiwaBackgroundPage_anyScreenWidthAndDensity_sameColumnCountAsTextPage() {
+        // 16dp・32dp が px にちょうどならない密度（tvdpi の 1.33 など）も含める
+        for (densityValue in listOf(1.33f, 2f, 2.625f, 2.75f, 3f, 3.5f)) {
+            val density = Density(density = densityValue)
+            val spacing = with(density) { 8.dp.roundToPx() }
+            for (screenWidthPx in 600..3000) {
+                val textPageAvailableSize = screenWidthPx - with(density) { TEXT_PAGE_HORIZONTAL_PADDING.roundToPx() } * 2
+                val pageAvailableSize =
+                    screenWidthPx - with(density) { UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING.roundToPx() } * 2
 
-            val textPageColumns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH)
-                .cellSizes(textPageAvailableSize).size
-            val uchiwaBackgroundColumns = FontButtonGridCells(pageHorizontalPadding = 16.dp)
-                .cellSizes(uchiwaBackgroundAvailableSize).size
+                val textPageColumns = with(GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH)) {
+                    density.calculateCrossAxisCellSizes(textPageAvailableSize, spacing)
+                }.size
+                val pageColumns = with(FontButtonGridCells(UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING)) {
+                    density.calculateCrossAxisCellSizes(pageAvailableSize, spacing)
+                }.size
 
-            assertEquals("screenWidthDp=$screenWidthDp", textPageColumns, uchiwaBackgroundColumns)
+                assertEquals("density=$densityValue screenWidthPx=$screenWidthPx", textPageColumns, pageColumns)
+            }
         }
     }
 
@@ -48,7 +55,7 @@ class FontButtonGridCellsTest {
 
         assertEquals(
             GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH).cellSizes(availableSize),
-            FontButtonGridCells(pageHorizontalPadding = TEXT_PAGE_HORIZONTAL_PADDING).cellSizes(availableSize)
+            FontButtonGridCells(TEXT_PAGE_HORIZONTAL_PADDING).cellSizes(availableSize)
         )
     }
 }

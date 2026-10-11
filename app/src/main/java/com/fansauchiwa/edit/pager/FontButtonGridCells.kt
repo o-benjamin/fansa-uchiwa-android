@@ -15,7 +15,8 @@ import androidx.compose.ui.unit.Dp
  */
 internal data class FontButtonGridCells(private val pageHorizontalPadding: Dp) : GridCells {
     override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
-        val narrowerOnTextPage = ((TEXT_PAGE_HORIZONTAL_PADDING - pageHorizontalPadding) * 2).roundToPx()
+        // LazyVerticalGrid は左右の余白をそれぞれ px に丸めるので、差も片側ずつ丸めてから2倍にする（1px のずれで列数が変わらないように）
+        val narrowerOnTextPage = (TEXT_PAGE_HORIZONTAL_PADDING.roundToPx() - pageHorizontalPadding.roundToPx()) * 2
         val textPageAvailableSize = availableSize - narrowerOnTextPage
         val count = ((textPageAvailableSize + spacing) / (FONT_BUTTON_MIN_WIDTH.roundToPx() + spacing))
             .coerceAtLeast(1)

@@ -243,7 +243,9 @@ fun FontFamilyButton(
             Text(
                 text = "あA!",
                 fontSize = (20.dp.value / density.fontScale).sp,
-                fontFamily = fontFamily.value
+                fontFamily = fontFamily.value,
+                maxLines = 1,
+                softWrap = false
             )
         }
         val rankIndex = fontRankIndexMap[fontFamily]
