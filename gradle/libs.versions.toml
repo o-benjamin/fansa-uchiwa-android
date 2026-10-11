@@ -27,6 +27,7 @@ playServiceAds = "25.4.0"
 unityAdsMediation = "4.20.0.1"
 # unityAds はアダプタ（unityAdsMediation）の末尾の番号を除いた版にそろえ、必ず一緒に上げる
 unityAds = "4.20.0"
+# Liftoff Monetize は旧名 Vungle。Maven の座標は vungle / vungle-ads。アダプタは play-services-ads 25.4.0 を要求する
 liftoffMediation = "7.7.8.1"
 # liftoffAds はアダプタ（liftoffMediation）の末尾の番号を除いた版にそろえ、必ず一緒に上げる
 liftoffAds = "7.7.8"
