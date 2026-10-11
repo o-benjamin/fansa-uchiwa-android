@@ -50,6 +50,9 @@ class UchiwaBackgroundPageTest {
                     onAllTextStrokeColorSelected = {},
                     onAllTextStrokeWeightChanged = {},
                     onAllTextStrokeWeightChangedFinished = {},
+                    onAllTextSecondBorderColorSelected = {},
+                    onAllTextSecondBorderWeightChanged = {},
+                    onAllTextSecondBorderWeightChangedFinished = {},
                     currentUchiwaColor = Color.Red,
                     currentBackgroundColor = Color.Blue,
                     currentOverallBorderColor = Color.White,
@@ -190,6 +193,8 @@ class UchiwaBackgroundPageTest {
         font = font,
         color = Color.Black,
         strokeColor = Color.White,
-        strokeWidth = 20f
+        strokeWidth = 20f,
+        secondBorderColor = Color.Black,
+        secondBorderWidth = 10f
     )
 }

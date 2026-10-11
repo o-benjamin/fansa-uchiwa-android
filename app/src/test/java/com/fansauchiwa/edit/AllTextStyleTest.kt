@@ -13,14 +13,18 @@ class AllTextStyleTest {
         font: FontFamilies = FontFamilies.HACHI_MARU_POP,
         color: Color = Color.Black,
         strokeColor: Color = Color.White,
-        strokeWidth: Float = 20f
+        strokeWidth: Float = 20f,
+        secondBorderColor: Color = Color.Magenta,
+        secondBorderWidth: Float = 10f
     ) = Decoration.Text(
         id = id,
         text = "テスト",
         font = font,
         color = color,
         strokeColor = strokeColor,
-        strokeWidth = strokeWidth
+        strokeWidth = strokeWidth,
+        secondBorderColor = secondBorderColor,
+        secondBorderWidth = secondBorderWidth
     )
 
     @Test
@@ -41,7 +45,7 @@ class AllTextStyleTest {
     @Test
     fun of_singleText_returnsItsValues() {
         val style = AllTextStyle.of(
-            listOf(text("text-1", FontFamilies.NOTO_SANS_JP, Color.Red, Color.Blue, 30f))
+            listOf(text("text-1", FontFamilies.NOTO_SANS_JP, Color.Red, Color.Blue, 30f, Color.Green, 15f))
         )
 
         assertEquals(
@@ -49,7 +53,9 @@ class AllTextStyleTest {
                 font = FontFamilies.NOTO_SANS_JP,
                 color = Color.Red,
                 strokeColor = Color.Blue,
-                strokeWidth = 30f
+                strokeWidth = 30f,
+                secondBorderColor = Color.Green,
+                secondBorderWidth = 15f
             ),
             style
         )
@@ -63,6 +69,8 @@ class AllTextStyleTest {
         assertEquals(Color.Black, style?.color)
         assertEquals(Color.White, style?.strokeColor)
         assertEquals(20f, style?.strokeWidth)
+        assertEquals(Color.Magenta, style?.secondBorderColor)
+        assertEquals(10f, style?.secondBorderWidth)
     }
 
     @Test
@@ -90,6 +98,21 @@ class AllTextStyleTest {
         assertNull(style?.color)
         assertNull(style?.strokeColor)
         assertNull(style?.strokeWidth)
+    }
+
+    @Test
+    fun of_onlySecondBorderDiffers_secondBorderIsNullAndFirstBorderKept() {
+        val style = AllTextStyle.of(
+            listOf(
+                text("text-1"),
+                text("text-2", secondBorderColor = Color.Yellow, secondBorderWidth = 0f)
+            )
+        )
+
+        assertEquals(Color.White, style?.strokeColor)
+        assertEquals(20f, style?.strokeWidth)
+        assertNull(style?.secondBorderColor)
+        assertNull(style?.secondBorderWidth)
     }
 
     @Test

@@ -1137,14 +1137,18 @@ class EditViewModelTest {
                     font = FontFamilies.HACHI_MARU_POP,
                     color = Color.Black,
                     strokeColor = Color.White,
-                    strokeWidth = 20f
+                    strokeWidth = 20f,
+                    secondBorderColor = Color.Black,
+                    secondBorderWidth = 10f
                 ),
                 Decoration.Sticker(
                     id = "sticker-1",
                     label = "heart",
                     color = Color.Red,
                     strokeColor = Color.White,
-                    strokeWidth = 3f
+                    strokeWidth = 3f,
+                    secondStrokeColor = Color.Black,
+                    secondStrokeWidth = 5f
                 ),
                 Decoration.Text(
                     id = "text-2",
@@ -1152,7 +1156,9 @@ class EditViewModelTest {
                     font = FontFamilies.NOTO_SANS_JP,
                     color = Color.Blue,
                     strokeColor = Color.Yellow,
-                    strokeWidth = 40f
+                    strokeWidth = 40f,
+                    secondBorderColor = Color.Red,
+                    secondBorderWidth = 0f
                 )
             ),
             uchiwaColor = Color.Black,
@@ -1321,6 +1327,70 @@ class EditViewModelTest {
 
         assertEquals(20f, viewModel.findTextDecoration("text-1")?.strokeWidth)
         assertEquals(40f, viewModel.findTextDecoration("text-2")?.strokeWidth)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextSecondBorderColor_twoTexts_changesOnlyTextSecondBorderAndUndoesInOneStep() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextSecondBorderColor(Color.Magenta)
+        advanceUntilIdle()
+
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-1")?.secondBorderColor)
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-2")?.secondBorderColor)
+        // 1つめの縁とステッカーの2つめの縁は変わらない
+        assertEquals(Color.White, viewModel.findTextDecoration("text-1")?.strokeColor)
+        assertEquals(Color.Black, viewModel.findStickerDecoration("sticker-1")?.secondStrokeColor)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_2_COLOR)
+                )
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(Color.Black, viewModel.findTextDecoration("text-1")?.secondBorderColor)
+        assertEquals(Color.Red, viewModel.findTextDecoration("text-2")?.secondBorderColor)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextSecondBorderWidth_multipleDragUpdates_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextSecondBorderWidth(30f)
+        viewModel.updateAllTextSecondBorderWidth(35f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(35f, viewModel.findTextDecoration("text-1")?.secondBorderWidth)
+        assertEquals(35f, viewModel.findTextDecoration("text-2")?.secondBorderWidth)
+        assertEquals(20f, viewModel.findTextDecoration("text-1")?.strokeWidth)
+        assertEquals(5f, viewModel.findStickerDecoration("sticker-1")?.secondStrokeWidth)
+
+        viewModel.finishAllTextSecondBorderWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_2_WEIGHT)
+                )
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(10f, viewModel.findTextDecoration("text-1")?.secondBorderWidth)
+        assertEquals(0f, viewModel.findTextDecoration("text-2")?.secondBorderWidth)
         assertFalse(viewModel.uiState.value.canUndo)
     }
 

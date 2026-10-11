@@ -720,6 +720,32 @@ class EditViewModel @Inject constructor(
         )
     }
 
+    /** うちわの中の文字すべての枠線2（2つめの縁）の色を変える（#331） */
+    fun updateAllTextSecondBorderColor(newColor: Color) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(secondBorderColor = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_2_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線2（2つめの縁）の太さを変える（#331）。スライダーを離したら [finishAllTextSecondBorderWidthChange] */
+    fun updateAllTextSecondBorderWidth(newWidth: Float) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(secondBorderWidth = newWidth) } ?: return
+        capturePendingSliderSnapshot()
+        setDecorations(decorations)
+    }
+
+    fun finishAllTextSecondBorderWidthChange() {
+        if (!savePendingSliderSnapshot()) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_2_WEIGHT)
+        )
+    }
+
     /**
      * 文字すべてに [transform] を当てた装飾の一覧。変わる文字がない（文字がない・すでに全部その値）ときは null。
      * 何も変わらない操作で「元に戻す」の履歴を積んだり、イベントを送ったりしないため

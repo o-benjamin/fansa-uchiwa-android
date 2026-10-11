@@ -46,6 +46,9 @@ internal const val TEXT_STROKE_WIDTH_STEPS = 17
 /** フォントのボタンを並べるグリッドの列の最小幅。文字タブと「全体」タブで共通 */
 internal val FONT_BUTTON_MIN_WIDTH = 88.dp
 
+/** 文字タブの左右の余白（片側）。「全体」タブのフォントの列数は、この余白のときと同じにそろえる（[FontButtonGridCells]） */
+internal val TEXT_PAGE_HORIZONTAL_PADDING = 32.dp
+
 @Composable
 fun TextPage(
     onAddText: (FontFamilies) -> Unit,
@@ -156,7 +159,11 @@ fun FontFamilySelectionGrid(
         columns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
-        contentPadding = PaddingValues(start = 32.dp, end = 32.dp, bottom = 32.dp),
+        contentPadding = PaddingValues(
+            start = TEXT_PAGE_HORIZONTAL_PADDING,
+            end = TEXT_PAGE_HORIZONTAL_PADDING,
+            bottom = 32.dp
+        ),
         modifier = modifier.testTag(TestTags.FONT_FAMILY_GRID)
     ) {
         if (selectedTextDecoration != null) {
@@ -236,7 +243,9 @@ fun FontFamilyButton(
             Text(
                 text = "あA!",
                 fontSize = (20.dp.value / density.fontScale).sp,
-                fontFamily = fontFamily.value
+                fontFamily = fontFamily.value,
+                maxLines = 1,
+                softWrap = false
             )
         }
         val rankIndex = fontRankIndexMap[fontFamily]

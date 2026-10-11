@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
@@ -86,6 +85,12 @@ private const val OVERALL_BORDER_MIN_WIDTH = 0f
 private const val OVERALL_BORDER_MAX_WIDTH = 24f
 private const val OVERALL_BORDER_SLIDER_STEPS = 23
 
+/**
+ * 「全体」タブの左右の余白（片側）。うちわ色〜ぷくぷくの行は画像タブと同じこの幅にそろえる。
+ * 文字タブ（[TEXT_PAGE_HORIZONTAL_PADDING]）より狭いので、フォントの列数は [FontButtonGridCells] で文字タブにそろえる
+ */
+internal val UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING = 16.dp
+
 @Immutable
 data class EditPagerUiState(
     val selectedDecoration: Decoration? = null,
@@ -132,6 +137,9 @@ data class EditPagerActions(
     val onAllTextStrokeColorSelected: (Color) -> Unit,
     val onAllTextStrokeWeightChanged: (Float) -> Unit,
     val onAllTextStrokeWeightChangedFinished: () -> Unit,
+    val onAllTextSecondBorderColorSelected: (Color) -> Unit,
+    val onAllTextSecondBorderWeightChanged: (Float) -> Unit,
+    val onAllTextSecondBorderWeightChangedFinished: () -> Unit,
     val onDecorationClick: (String) -> Unit,
     val onMoveDecoration: (fromIndex: Int, toIndex: Int) -> Unit
 )
@@ -243,6 +251,9 @@ fun EditPager(
                         onAllTextStrokeColorSelected = actions.onAllTextStrokeColorSelected,
                         onAllTextStrokeWeightChanged = actions.onAllTextStrokeWeightChanged,
                         onAllTextStrokeWeightChangedFinished = actions.onAllTextStrokeWeightChangedFinished,
+                        onAllTextSecondBorderColorSelected = actions.onAllTextSecondBorderColorSelected,
+                        onAllTextSecondBorderWeightChanged = actions.onAllTextSecondBorderWeightChanged,
+                        onAllTextSecondBorderWeightChangedFinished = actions.onAllTextSecondBorderWeightChangedFinished,
                         currentUchiwaColor = state.uchiwaColor,
                         currentBackgroundColor = state.backgroundColor,
                         currentOverallBorderColor = state.overallBorderColor,
@@ -632,6 +643,9 @@ fun UchiwaBackgroundPage(
     onAllTextStrokeColorSelected: (Color) -> Unit,
     onAllTextStrokeWeightChanged: (Float) -> Unit,
     onAllTextStrokeWeightChangedFinished: () -> Unit,
+    onAllTextSecondBorderColorSelected: (Color) -> Unit,
+    onAllTextSecondBorderWeightChanged: (Float) -> Unit,
+    onAllTextSecondBorderWeightChangedFinished: () -> Unit,
     currentUchiwaColor: Color,
     currentBackgroundColor: Color,
     currentOverallBorderColor: Color,
@@ -640,12 +654,17 @@ fun UchiwaBackgroundPage(
     isPukuPukuSupported: Boolean,
     allTextStyle: AllTextStyle?
 ) {
-    // 「すべての文字」のフォントのボタンを見えている分だけ読み込むため、ページ全体をグリッドにする（#308）
+    // 「すべての文字」のフォントのボタンを見えている分だけ読み込むため、ページ全体をグリッドにする（#308）。
+    // 列はフォントのボタンに合わせ、文字タブと同じ列数にする（#331）
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = FONT_BUTTON_MIN_WIDTH),
+        columns = FontButtonGridCells(pageHorizontalPadding = UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
+        contentPadding = PaddingValues(
+            start = UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING,
+            end = UCHIWA_BACKGROUND_PAGE_HORIZONTAL_PADDING,
+            bottom = 32.dp
+        ),
         modifier = modifier
             .fillMaxSize()
             .testTag(TestTags.UCHIWA_BACKGROUND_PAGE)
@@ -703,7 +722,10 @@ fun UchiwaBackgroundPage(
                 onColorSelected = onAllTextColorSelected,
                 onStrokeColorSelected = onAllTextStrokeColorSelected,
                 onStrokeWeightChanged = onAllTextStrokeWeightChanged,
-                onStrokeWeightChangedFinished = onAllTextStrokeWeightChangedFinished
+                onStrokeWeightChangedFinished = onAllTextStrokeWeightChangedFinished,
+                onSecondBorderColorSelected = onAllTextSecondBorderColorSelected,
+                onSecondBorderWeightChanged = onAllTextSecondBorderWeightChanged,
+                onSecondBorderWeightChangedFinished = onAllTextSecondBorderWeightChangedFinished
             )
         }
     }
@@ -726,6 +748,9 @@ fun UchiwaBackgroundPagePreview() {
             onAllTextStrokeColorSelected = {},
             onAllTextStrokeWeightChanged = {},
             onAllTextStrokeWeightChangedFinished = {},
+            onAllTextSecondBorderColorSelected = {},
+            onAllTextSecondBorderWeightChanged = {},
+            onAllTextSecondBorderWeightChangedFinished = {},
             currentUchiwaColor = DecorationColors.RED.value,
             currentBackgroundColor = DecorationColors.BLUE.value,
             currentOverallBorderColor = DecorationColors.WHITE.value,
@@ -736,7 +761,9 @@ fun UchiwaBackgroundPagePreview() {
                 font = FontFamilies.HACHI_MARU_POP,
                 color = DecorationColors.PINK.value,
                 strokeColor = DecorationColors.WHITE.value,
-                strokeWidth = 20f
+                strokeWidth = 20f,
+                secondBorderColor = DecorationColors.PINK.value,
+                secondBorderWidth = 10f
             )
         )
     }
