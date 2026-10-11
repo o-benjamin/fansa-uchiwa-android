@@ -38,7 +38,7 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 29
+        versionCode = 30
         versionName = "2.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
