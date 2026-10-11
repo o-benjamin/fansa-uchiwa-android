@@ -170,6 +170,9 @@ dependencies {
     // Unity Ads（AdMob メディエーション、issue #213）
     implementation(libs.unity.ads.mediation)
     implementation(libs.unity.ads)
+    // Liftoff Monetize（Vungle。AdMob メディエーション、issue #213）
+    implementation(libs.liftoff.mediation)
+    implementation(libs.liftoff.ads)
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
