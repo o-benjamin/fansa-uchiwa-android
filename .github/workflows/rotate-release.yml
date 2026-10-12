@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Calculate next version and create new branch
+      - name: Calculate next version and create new branch (skip if it exists)
         id: calc_version
         run: |
           OLD_BRANCH="${{ github.event.pull_request.head.ref }}"
@@ -46,11 +46,13 @@ jobs:
           echo "NEW_BRANCH=$NEW_BRANCH" >> $GITHUB_ENV
 
           # 前のリリースの公開待ちのあいだに次の release ブランチを手で切っていることがあるので（v2.11.0 の #343）、
-          # 既にあれば作らずに成功で終える。ls-remote は、ブランチがなければ 2、認証・通信のエラーなら 128 を返す
+          # 既にあれば作成とバージョンの更新を飛ばす（古いブランチの削除は続けて行う）。
+          # 手で切るときは、前の release ブランチから切り、versionName と versionCode を上げておくこと。
+          # ls-remote は、ブランチがなければ 2、認証・通信のエラーなら 128 を返す
           STATUS=0
           git ls-remote --exit-code --heads origin "$NEW_BRANCH" > /dev/null || STATUS=$?
           if [ "$STATUS" -eq 0 ]; then
-            echo "BRANCH_EXISTS=true" >> $GITHUB_ENV
+            echo "branch_exists=true" >> $GITHUB_OUTPUT
             echo "次のブランチ ($NEW_BRANCH) は既にあるので、作成とバージョンの更新を飛ばします。"
             exit 0
           elif [ "$STATUS" -ne 2 ]; then
@@ -63,7 +65,7 @@ jobs:
           git checkout -b "$NEW_BRANCH"
 
       - name: Update build.gradle.kts and Commit
-        if: env.BRANCH_EXISTS != 'true'
+        if: steps.calc_version.outputs.branch_exists != 'true'
         run: |
           # Gitユーザー設定
           git config user.name "github-actions[bot]"
