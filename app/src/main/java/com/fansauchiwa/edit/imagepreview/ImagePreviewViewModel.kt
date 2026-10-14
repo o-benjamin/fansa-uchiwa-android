@@ -158,6 +158,18 @@ class ImagePreviewViewModel @Inject constructor(
     }
 
     /**
+     * 画面に入ったとき（戻ってきたときを含む）に呼ぶ。
+     * 背景を消した画像がすでにあれば、インタースティシャル広告を読み込んでおく。
+     * 広告を閉じたあとには読み込まないため、確定 → 戻る → もう一度確定 の流れでは、
+     * ここで読み込まないと2回目の確定で広告が出ない
+     */
+    fun onScreenShown() {
+        if (transparentUri != null) {
+            adMobRepository.loadInterstitialAd()
+        }
+    }
+
+    /**
      * 確認ボタンがタップされた時の処理
      * isOriginalSelected = false（透明画像選択時）の場合はインタースティシャル広告を表示してから遷移
      */

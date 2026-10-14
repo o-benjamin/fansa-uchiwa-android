@@ -266,6 +266,29 @@ class ImagePreviewBackgroundRemovalTest {
         verify(exactly = 0) { adMobRepository.loadInterstitialAd() }
         verify { crashReportingRepository.recordException(error) }
     }
+    @Test
+    fun onScreenShown_BeforeBackgroundRemoval_DoesNotLoadInterstitialAd() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.onScreenShown()
+
+        verify(exactly = 0) { adMobRepository.loadInterstitialAd() }
+    }
+
+    @Test
+    fun onScreenShown_AfterBackgroundRemoval_LoadsInterstitialAd() = runTest(testDispatcher) {
+        coEvery { imageProcessingRepository.removeBackground(originalUri) } returns
+            Result.success(transparentUri)
+        val viewModel = createViewModel()
+        viewModel.showTransparent()
+        advanceUntilIdle()
+
+        // 確定して次の画面へ進み、戻ってきたとき
+        viewModel.onScreenShown()
+
+        verify(exactly = 2) { adMobRepository.loadInterstitialAd() }
+    }
+
 
     private companion object {
         const val ORIGINAL_URI_STRING = "content://media/picker/0/1"
