@@ -54,6 +54,9 @@ object AnalyticsActions {
     const val SELECT_EDIT_BACKGROUND_COLOR = "select_edit_background_color"
     const val SELECT_EDIT_LAYER = "select_edit_layer"
 
+    // 「全体」タブで、すべての文字をまとめて変えた（#308）。パラメータは EditAllTextTargetParams
+    const val SELECT_EDIT_ALL_TEXT = "select_edit_all_text"
+
     const val TAP_IMAGE_PREVIEW_CONFIRM = "tap_image_preview_confirm"
 
     const val BACKGROUND_REMOVAL_SUCCESS = "background_removal_success"
@@ -63,6 +66,10 @@ object AnalyticsActions {
     const val TAP_PREVIEW_SHARE = "tap_preview_share"
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
+
+    // 保存完了のダイアログのうちわの材料のリンク（#311）。表示はクリック率の分母。パラメータは AffiliateAnalyticsParams
+    const val VIEW_PREVIEW_AFFILIATE = "view_preview_affiliate"
+    const val TAP_PREVIEW_AFFILIATE = "tap_preview_affiliate"
 
     // ギャラリーへ保存できたうちわのフォント（#288）。フォントごとに1回送る。パラメータは FontFamilyParams、送り方は ExportedFontAnalytics を参照
     const val EXPORT_UCHIWA_FONT = "export_uchiwa_font"

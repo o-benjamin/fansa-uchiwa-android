@@ -27,12 +27,6 @@ interface SettingsRepository {
      */
     suspend fun setHapticFeedbackEnabled(enabled: Boolean)
 
-    fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean>
-
-    suspend fun fetchHasSeenEditCompletionTooltip()
-
-    suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean)
-
     fun getHasSeenApologyDialogStream(): Flow<Boolean>
 
     /**
@@ -50,14 +44,10 @@ class SettingsRepositoryImpl @Inject constructor(
 ) : SettingsRepository {
 
     private val _hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
-    private val _hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
     private val _hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
 
     override fun getHapticFeedbackEnabledStream(): Flow<Boolean> =
         _hapticFeedbackEnabledStream.asSharedFlow()
-
-    override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> =
-        _hasSeenEditCompletionTooltipStream.asSharedFlow()
 
     override fun getHasSeenApologyDialogStream(): Flow<Boolean> =
         _hasSeenApologyDialogStream.asSharedFlow()
@@ -69,15 +59,6 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
         settingsDataSource.setHapticFeedbackEnabled(enabled)
-    }
-
-    override suspend fun fetchHasSeenEditCompletionTooltip() {
-        val value = settingsDataSource.getHasSeenEditCompletionTooltipStream().first()
-        _hasSeenEditCompletionTooltipStream.emit(value)
-    }
-
-    override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
-        settingsDataSource.setHasSeenEditCompletionTooltip(hasSeen)
     }
 
     override suspend fun fetchHasSeenApologyDialog() {

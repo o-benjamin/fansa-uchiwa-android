@@ -52,10 +52,13 @@ fun HeaderTitle(title: String, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * @param color 見本に出す色。null なら色のない見本にし、色の一覧もどれも選ばれていない表示にする（「すべての文字」の欄で、文字ごとに色がちがうとき）
+ */
 @Composable
 fun ColorAndWeightControl(
     title: String,
-    color: Color,
+    color: Color?,
     width: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     steps: Int,
@@ -100,7 +103,7 @@ fun ColorAndWeightControl(
                             .size(32.dp)
                             .clip(CircleShape)
                             .border(1.dp, colorResource(R.color.gray), CircleShape)
-                            .background(color = color)
+                            .background(color = color ?: Color.Transparent)
                             .clickable {
                                 isColorPickerOpen.value = true
                             }

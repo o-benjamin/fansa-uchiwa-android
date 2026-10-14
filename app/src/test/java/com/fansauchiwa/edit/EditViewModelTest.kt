@@ -12,8 +12,10 @@ import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.DiscardReason
 import com.fansauchiwa.analytics.DiscardReasonParams
 import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
+import com.fansauchiwa.analytics.FontFamilyParams
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
@@ -25,7 +27,6 @@ import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -34,8 +35,6 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -59,51 +58,8 @@ class EditViewModelTest {
     private lateinit var masterpieceRepository: MasterpieceRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var editDecorationRepository: EditDecorationRepository
-    private lateinit var settingsRepository: FakeSettingsRepository
     private lateinit var templateRepository: TemplateRepository
     private lateinit var fontSessionTracker: FontSessionTracker
-
-    private class FakeSettingsRepository(
-        private var hasSeenEditCompletionTooltip: Boolean = false
-    ) : SettingsRepository {
-        private val hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
-        private val hasSeenEditCompletionTooltipStream = MutableSharedFlow<Boolean>(replay = 1)
-        private val hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
-
-        override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = hapticFeedbackEnabledStream
-
-        override suspend fun fetchHapticFeedbackEnabled() {
-            hapticFeedbackEnabledStream.emit(true)
-        }
-
-        override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
-            hapticFeedbackEnabledStream.emit(enabled)
-        }
-
-        override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> =
-            hasSeenEditCompletionTooltipStream
-
-        override suspend fun fetchHasSeenEditCompletionTooltip() {
-            hasSeenEditCompletionTooltipStream.emit(hasSeenEditCompletionTooltip)
-        }
-
-        override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) {
-            hasSeenEditCompletionTooltip = hasSeen
-        }
-
-        override fun getHasSeenApologyDialogStream(): Flow<Boolean> = hasSeenApologyDialogStream
-
-        override suspend fun fetchHasSeenApologyDialog() {
-            // お詫びダイアログはこのテストの対象外なので「表示済み」にしておく
-            hasSeenApologyDialogStream.emit(true)
-        }
-
-        override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
-            hasSeenApologyDialogStream.emit(hasSeen)
-        }
-
-        fun hasSeenEditCompletionTooltip(): Boolean = hasSeenEditCompletionTooltip
-    }
 
     @Before
     fun setUp() {
@@ -113,7 +69,6 @@ class EditViewModelTest {
         masterpieceRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
         editDecorationRepository = mockk(relaxed = true)
-        settingsRepository = FakeSettingsRepository()
         templateRepository = mockk(relaxed = true)
         fontSessionTracker = mockk(relaxed = true)
     }
@@ -130,12 +85,8 @@ class EditViewModelTest {
         lastName: String? = null,
         firstName1: String? = null,
         firstName2: String? = null,
-        honorific: String? = null,
-        hasSeenEditCompletionTooltip: Boolean = false
+        honorific: String? = null
     ): EditViewModel {
-        settingsRepository = FakeSettingsRepository(
-            hasSeenEditCompletionTooltip = hasSeenEditCompletionTooltip
-        )
         val savedStateHandle = SavedStateHandle().apply {
             if (uchiwaId != null) {
                 set(
@@ -158,7 +109,6 @@ class EditViewModelTest {
             masterpieceRepository = masterpieceRepository,
             analyticsRepository = analyticsRepository,
             editDecorationRepository = editDecorationRepository,
-            settingsRepository = settingsRepository,
             templateRepository = templateRepository,
             fontSessionTracker = fontSessionTracker,
             discardReasonSurvey = DiscardReasonSurvey(),
@@ -1077,47 +1027,6 @@ class EditViewModelTest {
     }
 
     @Test
-    fun initialLoad_whenTooltipNotSeen_showsCompletionTooltipAndPersistsShownFlag() = runTest {
-        val uchiwaId = "new-uchiwa-id"
-        every { localImageRepository.getAllImages() } returns emptyList()
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        assertTrue(viewModel.uiState.value.showCompletionTooltip)
-        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
-    }
-
-    @Test
-    fun onTooltipDismissed_afterTooltipShown_hidesTooltipAndPersistsFlag() = runTest {
-        val uchiwaId = "new-uchiwa-id"
-        every { localImageRepository.getAllImages() } returns emptyList()
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(uchiwaId = uchiwaId)
-        advanceUntilIdle()
-
-        viewModel.onTooltipDismissed()
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.showCompletionTooltip)
-        assertTrue(settingsRepository.hasSeenEditCompletionTooltip())
-    }
-
-    @Test
-    fun initialLoad_whenTooltipAlreadySeen_doesNotShowCompletionTooltip() = runTest {
-        val uchiwaId = "new-uchiwa-id"
-        every { localImageRepository.getAllImages() } returns emptyList()
-        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
-        val viewModel = createViewModel(
-            uchiwaId = uchiwaId,
-            hasSeenEditCompletionTooltip = true
-        )
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.showCompletionTooltip)
-    }
-
-    @Test
     fun initialState_setsPukuPukuSupportFromCurrentSdk() = runTest {
         every { localImageRepository.getAllImages() } returns emptyList()
         val viewModel = createViewModel(uchiwaId = null)
@@ -1210,6 +1119,309 @@ class EditViewModelTest {
 
         verify(exactly = 1) {
             fontSessionTracker.finishSessionForPreview(viewModel.uiState.value.decorations)
+        }
+    }
+
+    // endregion
+
+    // region すべての文字をまとめて変える（#308）
+
+    private fun TestScope.createViewModelWithTwoTextsAndSticker(): EditViewModel {
+        val uchiwaId = "all-text-uchiwa-id"
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns Uchiwa(
+            id = uchiwaId,
+            decorations = listOf(
+                Decoration.Text(
+                    id = "text-1",
+                    text = "名前",
+                    font = FontFamilies.HACHI_MARU_POP,
+                    color = Color.Black,
+                    strokeColor = Color.White,
+                    strokeWidth = 20f,
+                    secondBorderColor = Color.Black,
+                    secondBorderWidth = 10f
+                ),
+                Decoration.Sticker(
+                    id = "sticker-1",
+                    label = "heart",
+                    color = Color.Red,
+                    strokeColor = Color.White,
+                    strokeWidth = 3f,
+                    secondStrokeColor = Color.Black,
+                    secondStrokeWidth = 5f
+                ),
+                Decoration.Text(
+                    id = "text-2",
+                    text = "ピースして",
+                    font = FontFamilies.NOTO_SANS_JP,
+                    color = Color.Blue,
+                    strokeColor = Color.Yellow,
+                    strokeWidth = 40f,
+                    secondBorderColor = Color.Red,
+                    secondBorderWidth = 0f
+                )
+            ),
+            uchiwaColor = Color.Black,
+            backgroundColor = Color.White
+        )
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = uchiwaId)
+        advanceUntilIdle()
+        return viewModel
+    }
+
+    @Test
+    fun updateAllTextFont_twoTexts_changesEveryTextAndKeepsSticker() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+        val stickerBefore = viewModel.findStickerDecoration("sticker-1")
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        assertEquals(FontFamilies.DELA_GOTHIC_ONE, viewModel.findTextDecoration("text-1")?.font)
+        assertEquals(FontFamilies.DELA_GOTHIC_ONE, viewModel.findTextDecoration("text-2")?.font)
+        assertEquals(stickerBefore, viewModel.findStickerDecoration("sticker-1"))
+        verify(exactly = 1) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf(
+                        "target" to EditAllTextTargetParams.FONT,
+                        FontFamilyParams.PARAM_FONT_FAMILY to FontFamilies.DELA_GOTHIC_ONE.name
+                    )
+                )
+            )
+        }
+        // フォントの並び順の集計に入れるため、select_edit_text_font も1回送る
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+                    params = mapOf(FontFamilyParams.PARAM_FONT_FAMILY to FontFamilies.DELA_GOTHIC_ONE.name)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_everyTextAlreadyThatFont_doesNotCountSwitchOrSendEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
+        }
+    }
+
+    @Test
+    fun updateAllTextColor_everyTextAlreadyThatColor_keepsRedoHistory() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+        viewModel.updateAllTextColor(Color.Green)
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        viewModel.undo()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.canRedo)
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canRedo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                match {
+                    it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT &&
+                            it.params["target"] == EditAllTextTargetParams.TEXT_COLOR
+                }
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_thenUndoOnce_restoresEveryTextFont() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(FontFamilies.HACHI_MARU_POP, viewModel.findTextDecoration("text-1")?.font)
+        assertEquals(FontFamilies.NOTO_SANS_JP, viewModel.findTextDecoration("text-2")?.font)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextColor_twoTexts_changesEveryTextColorAndKeepsStickerColor() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertEquals(Color.Green, viewModel.findTextDecoration("text-1")?.color)
+        assertEquals(Color.Green, viewModel.findTextDecoration("text-2")?.color)
+        assertEquals(Color.Red, viewModel.findStickerDecoration("sticker-1")?.color)
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.TEXT_COLOR)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextStrokeColor_twoTexts_changesEveryTextStrokeColorAndKeepsSticker() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextStrokeColor(Color.Magenta)
+        advanceUntilIdle()
+
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-1")?.strokeColor)
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-2")?.strokeColor)
+        assertEquals(Color.White, viewModel.findStickerDecoration("sticker-1")?.strokeColor)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_1_COLOR)
+                )
+            )
+        }
+    }
+
+    @Test
+    fun updateAllTextStrokeWidth_multipleDragUpdates_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextStrokeWidth(50f)
+        viewModel.updateAllTextStrokeWidth(60f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(60f, viewModel.findTextDecoration("text-1")?.strokeWidth)
+        assertEquals(60f, viewModel.findTextDecoration("text-2")?.strokeWidth)
+        assertEquals(3f, viewModel.findStickerDecoration("sticker-1")?.strokeWidth)
+
+        viewModel.finishAllTextStrokeWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_1_WEIGHT)
+                )
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(20f, viewModel.findTextDecoration("text-1")?.strokeWidth)
+        assertEquals(40f, viewModel.findTextDecoration("text-2")?.strokeWidth)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextSecondBorderColor_twoTexts_changesOnlyTextSecondBorderAndUndoesInOneStep() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextSecondBorderColor(Color.Magenta)
+        advanceUntilIdle()
+
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-1")?.secondBorderColor)
+        assertEquals(Color.Magenta, viewModel.findTextDecoration("text-2")?.secondBorderColor)
+        // 1つめの縁とステッカーの2つめの縁は変わらない
+        assertEquals(Color.White, viewModel.findTextDecoration("text-1")?.strokeColor)
+        assertEquals(Color.Black, viewModel.findStickerDecoration("sticker-1")?.secondStrokeColor)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_2_COLOR)
+                )
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(Color.Black, viewModel.findTextDecoration("text-1")?.secondBorderColor)
+        assertEquals(Color.Red, viewModel.findTextDecoration("text-2")?.secondBorderColor)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextSecondBorderWidth_multipleDragUpdates_finishCommitsSingleUndoAndAnalyticsEvent() = runTest {
+        val viewModel = createViewModelWithTwoTextsAndSticker()
+
+        viewModel.updateAllTextSecondBorderWidth(30f)
+        viewModel.updateAllTextSecondBorderWidth(35f)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        assertEquals(35f, viewModel.findTextDecoration("text-1")?.secondBorderWidth)
+        assertEquals(35f, viewModel.findTextDecoration("text-2")?.secondBorderWidth)
+        assertEquals(20f, viewModel.findTextDecoration("text-1")?.strokeWidth)
+        assertEquals(5f, viewModel.findStickerDecoration("sticker-1")?.secondStrokeWidth)
+
+        viewModel.finishAllTextSecondBorderWidthChange()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+                    params = mapOf("target" to EditAllTextTargetParams.STROKE_2_WEIGHT)
+                )
+            )
+        }
+
+        viewModel.undo()
+        advanceUntilIdle()
+
+        assertEquals(10f, viewModel.findTextDecoration("text-1")?.secondBorderWidth)
+        assertEquals(0f, viewModel.findTextDecoration("text-2")?.secondBorderWidth)
+        assertFalse(viewModel.uiState.value.canUndo)
+    }
+
+    @Test
+    fun updateAllTextColor_noText_doesNothing() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.updateAllTextColor(Color.Green)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
+        }
+    }
+
+    @Test
+    fun updateAllTextFont_noText_doesNothing() = runTest {
+        every { localImageRepository.getAllImages() } returns emptyList()
+        val viewModel = createViewModel(uchiwaId = null)
+        advanceUntilIdle()
+
+        viewModel.updateAllTextFont(FontFamilies.DELA_GOTHIC_ONE)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canUndo)
+        verify(exactly = 0) { fontSessionTracker.onFontSwitched(any()) }
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
         }
     }
 

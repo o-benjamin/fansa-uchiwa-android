@@ -16,10 +16,6 @@ interface SettingsDataSource {
      */
     suspend fun setHapticFeedbackEnabled(enabled: Boolean)
 
-    fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean>
-
-    suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean)
-
     /**
      * バージョンアップ後初回起動のお詫びダイアログを見たかどうかのFlowを返す
      */
