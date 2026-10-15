@@ -10,6 +10,12 @@
 - `FontFamilies` は `finalFontRankBucket`（GA4 の `final_font_rank_bucket`）でも、バッジと同じ順位（NEW を除いた宣言順）を使う。NEW のフォントは `new` になる（#286）
 - 並べ替えても保存済みのうちわは壊れない。Room は `Decoration` を kotlinx.serialization の JSON で保存し、フォントは enum の名前（`KLEE_ONE`）、ステッカーは `Decoration.Sticker.label`（= `StickerAsset.type` の文字列、`heart`）で書かれるため（`ConvertersTest` で確認している）。ステッカーの `type` は保存のキーなので、enum の名前を変えるときも `type` は変えない。`FontFamiliesParceler` は ordinal を使うが、Parcel はプロセス内の一時的なもの
 
+## フォントを外すとき（`isRetired`）
+
+- 保存済みのうちわはフォントを enum の名前で持つので、`FontFamilies` の値は消さない。`isRetired = true` を付けて enum の**末尾**に移す（途中に残すと、後ろのフォントの順位が1つずれる）。選択画面は `selectableFontFamilies` だけを並べる
+- 描画に使う `FontFamily` は、外す前に利用者に見えていた書体にする（取得できずに外したなら `FontFamily.Default`。#346）。`Typography.kt` の定義と `licenses/materials.md` の行は消す
+- ダウンロード式フォントを足す前に、`https://fonts.gstatic.com/s/a/directory.xml` に載っているかを確かめる。Web 版の Google Fonts にあっても、Android で取れないことがある（#346）
+
 ## NEW ラベル（`isNew`）
 
 - 新しく追加したステッカー・フォントには `isNew = true` を付け、enum の**先頭**に置く（見つけてもらうため）。NEW バッジが付き、順位の対象から外れる（`buildRankIndexMap`）

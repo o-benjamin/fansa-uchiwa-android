@@ -70,7 +70,7 @@ class TextPageTest {
     fun fontButton_allOtherFontsWhenHachiMaruPopSelected_areNotSelected() {
         setContentWithSelectedFont(FontFamilies.HACHI_MARU_POP)
 
-        FontFamilies.entries
+        selectableFontFamilies
             .filter { it != FontFamilies.HACHI_MARU_POP }
             .forEach { fontFamily ->
                 composeTestRule
@@ -80,5 +80,16 @@ class TextPageTest {
                     .onNode(hasTestTag("font_button_${fontFamily.name}"))
                     .assertIsNotSelected()
             }
+    }
+
+    @Test
+    fun fontButton_retiredFont_isNotShown() {
+        setContentWithSelectedFont(FontFamilies.HACHI_MARU_POP)
+
+        FontFamilies.entries.filter { it.isRetired }.forEach { fontFamily ->
+            composeTestRule
+                .onNode(hasTestTag("font_button_${fontFamily.name}"))
+                .assertDoesNotExist()
+        }
     }
 }

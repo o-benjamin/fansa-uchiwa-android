@@ -48,7 +48,6 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `SHIPPORI_MINCHO_B1` | Shippori Mincho B1 | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/shipporiminchob1/OFL.txt) | Copyright 2021 The Shippori Mincho Project Authors (https://github.com/fontdasu/ShipporiMincho) | — |
 | `STICK` | Stick | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/stick/OFL.txt) | Copyright 2020 The Stick Project Authors (https://github.com/fontworks-fonts/Stick) | — |
 | `TRAIN_ONE` | Train One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/trainone/OFL.txt) | Copyright 2020 The Train Project Authors (https://github.com/fontworks-fonts/Train) | — |
-| `WDXL_LUBRIFONT_JP_N` | WDXL Lubrifont JP N | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/wdxllubrifontjpn/OFL.txt) | Copyright 2025 The WDXL Lubrifont Project Authors (https://github.com/NightFurySL2001/WD-XL-font) | v2.9.0（#286） |
 | `YOMOGI` | Yomogi | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/yomogi/OFL.txt) | Copyright 2020 The Yomogi Project Authors (https://github.com/satsuyako/YomogiFont), all rights reserved. | — |
 | `YUSEI_MAGIC` | Yusei Magic | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/yuseimagic/OFL.txt) | Copyright 2020 The Yusei Magic Project Authors (https://github.com/tanukifont/YuseiMagic) | — |
 | `ZEN_ANTIQUE` | Zen Antique | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/zenantique/OFL.txt) | Copyright 2021 The Zen Antique Project Authors (https://github.com/googlefonts/zen-antique) | — |
