@@ -407,23 +407,6 @@ class UchiwaPreviewSaveTest {
         mapOf(FontFamilyParams.PARAM_FONT_FAMILY to font.name)
     )
 
-    private fun stubShowRewardedAd(invokeCallback: (onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) -> Unit) {
-        val onUserEarnedRewardSlot = slot<() -> Unit>()
-        val onAdDismissedSlot = slot<() -> Unit>()
-        every {
-            adMobRepository.showRewardedAd(
-                activity = any(),
-                placement = AnalyticsScreens.PREVIEW_SCREEN,
-                waitForLoad = true,
-                onUserEarnedReward = capture(onUserEarnedRewardSlot),
-                onAdFailedOrSkipped = any(),
-                onAdDismissed = capture(onAdDismissedSlot)
-            )
-        } answers {
-            invokeCallback(onUserEarnedRewardSlot.captured, onAdDismissedSlot.captured)
-        }
-    }
-
     @Test
     fun showRewardedAdAndSave_gallerySaveSucceeds_logsFontEventsOfSavedUchiwa() = runTest {
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
@@ -431,7 +414,7 @@ class UchiwaPreviewSaveTest {
         every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
         val fontEvents = listOf(fontEvent(FontFamilies.NOTO_SANS_JP), fontEvent(FontFamilies.DELA_GOTHIC_ONE))
         coEvery { exportedFontAnalytics.fontEvents("uchiwa-1") } returns fontEvents
-        stubShowRewardedAd { onUserEarnedReward, _ -> onUserEarnedReward() }
+        adMobRepository.stubShowRewardedAd { onUserEarnedReward, _ -> onUserEarnedReward() }
 
         viewModel.showRewardedAdAndSave(mockk<Activity>())
         advanceUntilIdle()
@@ -446,7 +429,7 @@ class UchiwaPreviewSaveTest {
         val viewModel = createViewModel(imagePath)
         every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns false
         coEvery { exportedFontAnalytics.fontEvents("uchiwa-1") } returns listOf(fontEvent(FontFamilies.NOTO_SANS_JP))
-        stubShowRewardedAd { onUserEarnedReward, _ -> onUserEarnedReward() }
+        adMobRepository.stubShowRewardedAd { onUserEarnedReward, _ -> onUserEarnedReward() }
 
         viewModel.showRewardedAdAndSave(mockk<Activity>())
         advanceUntilIdle()
@@ -463,7 +446,7 @@ class UchiwaPreviewSaveTest {
         val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
         val viewModel = createViewModel(imagePath)
         coEvery { exportedFontAnalytics.fontEvents("uchiwa-1") } returns listOf(fontEvent(FontFamilies.NOTO_SANS_JP))
-        stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
+        adMobRepository.stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
 
         viewModel.showRewardedAdAndSave(mockk<Activity>())
         advanceUntilIdle()
@@ -473,5 +456,52 @@ class UchiwaPreviewSaveTest {
         coVerify(exactly = 0) {
             analyticsRepository.logEvent(match { it.name == AnalyticsActions.EXPORT_UCHIWA_FONT })
         }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_UserEarnedRewardThenAdDismissed_DoesNotLoadNextAd() = runTest {
+        // 報酬を得たあとはこの画面で広告を出さないので、使われない広告をロードしない（#218）
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+        adMobRepository.stubShowRewardedAd { onUserEarnedReward, onAdDismissed ->
+            onUserEarnedReward()
+            onAdDismissed()
+        }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_AdDismissedWithoutReward_LoadsNextAdForRetry() = runTest {
+        // 報酬を得ずに閉じた人は保存をもう一度押すので、次の広告をロードしておく（#218）
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        adMobRepository.stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        // 画面を開いたときと、広告を閉じたあとの2回
+        verify(exactly = 2) { adMobRepository.loadRewardedAd() }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_AdFailedOrSkipped_DoesNotLoadNextAd() = runTest {
+        // 広告を出せなかったときは AdMobRepository がロードし直すので、ViewModel からは頼まない（二重にしない）
+        val imagePath = "/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png"
+        val viewModel = createViewModel(imagePath)
+        every { masterpieceRepository.saveMasterpieceToGallery(imagePath) } returns true
+        adMobRepository.stubShowRewardedAdFailedOrSkipped()
+
+        viewModel.showRewardedAdAndSave(mockk<Activity>())
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
     }
 }
