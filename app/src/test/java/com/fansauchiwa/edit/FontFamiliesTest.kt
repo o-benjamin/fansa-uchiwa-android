@@ -2,6 +2,7 @@ package com.fansauchiwa.edit
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -14,25 +15,18 @@ class FontFamiliesTest {
     }
 
     @Test
-    fun selectableFontFamilies_activeFonts_keepDeclarationOrder() {
-        assertEquals(FontFamilies.entries.filterNot { it.isRetired }, selectableFontFamilies)
-    }
+    fun fontRankIndexMap_selectableFonts_areNotShiftedByRetiredFonts() {
+        val rankedSelectableFonts = selectableFontFamilies.filterNot { it.isNew }
 
-    // 選択画面に出さないフォントが途中にあると、その後ろのフォントの順位（バッジ・final_font_rank_bucket）が1つずれる
-    @Test
-    fun fontFamilies_retiredFonts_areDeclaredAfterAllActiveFonts() {
-        val firstRetiredIndex = FontFamilies.entries.indexOfFirst { it.isRetired }
-        val lastActiveIndex = FontFamilies.entries.indexOfLast { !it.isRetired }
-
-        assertTrue(firstRetiredIndex > lastActiveIndex)
-    }
-
-    @Test
-    fun fontRankIndexMap_activeFonts_rankIgnoresRetiredFonts() {
-        val rankedActiveFonts = selectableFontFamilies.filterNot { it.isNew }
-
-        rankedActiveFonts.forEachIndexed { index, font ->
+        rankedSelectableFonts.forEachIndexed { index, font ->
             assertEquals(index, fontRankIndexMap[font])
+        }
+    }
+
+    @Test
+    fun fontRankIndexMap_retiredFonts_haveNoRank() {
+        FontFamilies.entries.filter { it.isRetired }.forEach { font ->
+            assertNull(fontRankIndexMap[font])
         }
     }
 }

@@ -7,20 +7,22 @@
 - GA4 の直近28日間の選択回数の多い順に並べる。ステッカーは `select_edit_sticker` の `label`、フォントは `select_edit_text_font` の `font_family`（どちらもカスタムディメンション登録済み）
     - 「全体」タブで文字すべてのフォントをまとめて選んだとき（#308、v2.10.0 から）も、`select_edit_text_font` を1回送っている。`select_edit_all_text` を足して数えると二重になるので、`select_edit_text_font` だけを数える
 - 選択回数が同じものは、並べ替え前の相対順を保つ
-- `FontFamilies` は `finalFontRankBucket`（GA4 の `final_font_rank_bucket`）でも、バッジと同じ順位（NEW を除いた宣言順）を使う。NEW のフォントは `new` になる（#286）
+- `FontFamilies` は `finalFontRankBucket`（GA4 の `final_font_rank_bucket`）でも、バッジと同じ順位（NEW を除いた宣言順）を使う。NEW のフォントは `new`（#286）、選択画面から外したフォントは `retired` になる（#346）
 - 並べ替えても保存済みのうちわは壊れない。Room は `Decoration` を kotlinx.serialization の JSON で保存し、フォントは enum の名前（`KLEE_ONE`）、ステッカーは `Decoration.Sticker.label`（= `StickerAsset.type` の文字列、`heart`）で書かれるため（`ConvertersTest` で確認している）。ステッカーの `type` は保存のキーなので、enum の名前を変えるときも `type` は変えない。`FontFamiliesParceler` は ordinal を使うが、Parcel はプロセス内の一時的なもの
-
-## フォントを外すとき（`isRetired`）
-
-- 保存済みのうちわはフォントを enum の名前で持つので、`FontFamilies` の値は消さない。`isRetired = true` を付けて enum の**末尾**に移す（途中に残すと、後ろのフォントの順位が1つずれる）。選択画面は `selectableFontFamilies` だけを並べる
-- 描画に使う `FontFamily` は、外す前に利用者に見えていた書体にする（取得できずに外したなら `FontFamily.Default`。#346）。`Typography.kt` の定義と `licenses/materials.md` の行は消す
-- ダウンロード式フォントを足す前に、`https://fonts.gstatic.com/s/a/directory.xml` に載っているかを確かめる。Web 版の Google Fonts にあっても、Android で取れないことがある（#346）
 
 ## NEW ラベル（`isNew`）
 
 - 新しく追加したステッカー・フォントには `isNew = true` を付け、enum の**先頭**に置く（見つけてもらうため）。NEW バッジが付き、順位の対象から外れる（`buildRankIndexMap`）
-- **NEW は付けてから2リリースで外す**（例：v2.7.0 で付けたら v2.9.0 で外す）。付けたバージョンは `licenses/materials.md` の「追加」列で確かめる。付けたときに、外す作業の Issue も立てておく。外すときは、上の手順で全体を並べ替え直す（外したものが宣言位置のまま順位争いに入り、上位のバッジを奪うため）
+- ダウンロード式フォントを足す前に、`https://fonts.gstatic.com/s/a/directory.xml` に載っているかを確かめる。Web 版の Google Fonts にあっても、Android で取れないことがある（#346）
+- **NEW は付けてから2リリースで外す**（例：v2.7.0 で付けたら v2.9.0 で外す）。付けたバージョンは `licenses/materials.md` の「追加」列で確かめる。付けたときに、外す作業の Issue も立てておく。NEW を外すときは、「並び順」の手順で全体を並べ替え直す（外したものが宣言位置のまま順位争いに入り、上位のバッジを奪うため）
 - 仕組み（`isNew` の引数、`buildRankIndexMap` の述語、`ItemBadge` の NEW 分岐、`badge_new`）は、次に追加するときのために残しておく
+
+## フォントを選択画面から外すとき（`isRetired`）
+
+- 保存済みのうちわはフォントを enum の名前で持つので、`FontFamilies` の値は消さない。`isRetired = true` を付けて enum の**末尾**に移す（選べるフォントの並び（GA4 の順）と混ざらないように）。選択画面は `selectableFontFamilies` だけを並べ、順位（`fontRankIndexMap`）も持たないので、ほかのフォントの順位はずれない
+- 描画に使う `FontFamily` は、外す前に利用者に見えていた書体にする
+    - 取得できずに外したなら `FontFamily.Default` にし、`Typography.kt` の定義と `licenses/materials.md` の行を消す。台帳には enum だけ残していることを注記する（#346）
+    - 取得できていたフォントを外すなら、その書体で描き続けるので、`Typography.kt` の定義も台帳の行も残す
 
 ## ライセンス台帳
 

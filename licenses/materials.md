@@ -58,6 +58,8 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `ZEN_MARU_GOTHIC` | Zen Maru Gothic | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/zenmarugothic/OFL.txt) | Copyright 2021 The Zen Maru Gothic Project Authors (https://github.com/googlefonts/zen-marugothic) | — |
 | `ZEN_OLD_MINCHO` | Zen Old Mincho | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/zenoldmincho/OFL.txt) | Copyright 2021 The Zen Old Mincho Project Authors (https://github.com/googlefonts/zen-oldmincho) | — |
 
+`WDXL_LUBRIFONT_JP_N` は表にない。Android で取得できず選択画面から外したフォントで、保存済みのうちわを読むために enum の値だけ残している。フォントは取得も同梱もしていない（#346）
+
 ### アプリに同梱しているフォント
 
 `app/src/main/res/font/` に入っていて、APK に入れて配る（`ui/theme/Typography.kt`）。規約は配布元の公式ページと、配布物に入っている説明書きで確かめた（2026-10-09、#296）。「著作権表示」はフォントファイルの name テーブル（nameID 0）の文。配布元のリンクの横の「写し」は Internet Archive の保存（BOOTH の2ページは 2026-10-09、けいふぉんとは 2026-10-04 の保存で、引用した文言が入っていることを 2026-10-09 に確かめた）。

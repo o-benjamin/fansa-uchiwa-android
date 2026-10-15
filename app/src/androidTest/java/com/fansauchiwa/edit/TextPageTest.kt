@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.edit.pager.TextPage
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -85,11 +86,13 @@ class TextPageTest {
     @Test
     fun fontButton_retiredFont_isNotShown() {
         setContentWithSelectedFont(FontFamilies.HACHI_MARU_POP)
+        val grid = composeTestRule.onNode(hasTestTag("font_family_grid")).assertExists()
 
+        // 遅延表示のグリッドは画面外の項目を作らないので、末尾までスクロールしても見つからないことで確かめる
         FontFamilies.entries.filter { it.isRetired }.forEach { fontFamily ->
-            composeTestRule
-                .onNode(hasTestTag("font_button_${fontFamily.name}"))
-                .assertDoesNotExist()
+            assertThrows(AssertionError::class.java) {
+                grid.performScrollToNode(hasTestTag("font_button_${fontFamily.name}"))
+            }
         }
     }
 }
