@@ -25,8 +25,10 @@ fun fontSwitchBucket(switchCount: Int): String = when {
  * NEW のフォントは順位を持たないので "new" を返す。NEW は選択画面の先頭に並ぶため、
  * 表示位置で数えると既存のフォントの順位が NEW の数だけずれ、#242 の判定（上位5件への着地）が
  * NEW を足したリリースの前後で比べられなくなる（#286）。
+ * 外したフォント（[FontFamilies.isRetired]）は選択画面にないので "retired" を返す。この値になるのは、そのフォントで保存した古いうちわを開き、フォントを変えずに保存したときだけ（#346）。
  */
 fun finalFontRankBucket(font: FontFamilies): String {
+    if (font.isRetired) return "retired"
     val rankIndex = fontRankIndexMap[font] ?: return "new"
     val rank = rankIndex + 1
     return when {

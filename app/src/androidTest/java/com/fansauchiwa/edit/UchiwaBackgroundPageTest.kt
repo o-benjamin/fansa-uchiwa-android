@@ -158,7 +158,7 @@ class UchiwaBackgroundPageTest {
             allTextStyle = allTextStyle(font = null)
         )
 
-        FontFamilies.entries.forEach { fontFamily ->
+        selectableFontFamilies.forEach { fontFamily ->
             scrollToAllTextFontButton(fontFamily)
                 .assertIsNotSelected()
         }

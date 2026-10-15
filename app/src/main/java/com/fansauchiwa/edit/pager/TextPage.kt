@@ -37,6 +37,7 @@ import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.ItemBadge
 import com.fansauchiwa.edit.TestTags
 import com.fansauchiwa.edit.fontRankIndexMap
+import com.fansauchiwa.edit.selectableFontFamilies
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
 /** 文字の枠線（1つめ・2つめの縁）の太さのスライダーの範囲。文字タブと「全体」タブの「すべての文字」で共通 */
@@ -192,7 +193,7 @@ fun FontFamilySelectionGrid(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        items(FontFamilies.entries.toList()) { fontFamily ->
+        items(selectableFontFamilies) { fontFamily ->
             FontFamilyButton(
                 fontFamily = fontFamily,
                 isSelected = selectedTextDecoration?.font == fontFamily,
