@@ -37,7 +37,7 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 import dagger.hilt.android.EntryPointAccessors
 
-// Kept for the whole process so that each screen expands a collapsible banner only once per app session.
+// Kept for the whole process so that each placement requests a collapsible banner only once per process.
 private val collapsibleBannerLimiter = CollapsibleBannerLimiter()
 
 /**
@@ -46,17 +46,19 @@ private val collapsibleBannerLimiter = CollapsibleBannerLimiter()
  * @param context The context to use for creating the AdView.
  * @param placement Where the banner is shown, used for revenue analytics (an [AnalyticsScreens] value).
  * @param modifier The modifier to apply to the banner ad.
- * @param collapsible Whether to request a collapsible banner, which first expands upward over the screen
- * and collapses to the normal size when the user closes it. Use it only for banners anchored to the bottom
- * of screens with static layouts, not where the user drags or scrolls a lot (e.g. the edit screen).
- * Only the first banner of each [placement] in the process is requested as collapsible.
+ * @param collapsibleOncePerProcess Whether to request the first banner of each [placement] in the process
+ * as a collapsible banner, which first expands upward over the screen and collapses to the normal size when
+ * the user closes it. Later banners of the same placement are requested as normal banners.
+ * Use it only for banners anchored to the bottom of the screen, and not on screens where an expanded ad
+ * would interrupt an ongoing operation such as dragging decorations or saving (edit, preview).
+ * See https://developers.google.com/admob/android/banner/collapsible
  */
 @Composable
 fun BannerAd(
     context: Context,
     placement: String,
     modifier: Modifier = Modifier,
-    collapsible: Boolean = false
+    collapsibleOncePerProcess: Boolean = false
 ) {
     var adLoadState by remember { mutableStateOf(AdLoadState.LOADING) }
 
@@ -93,7 +95,7 @@ fun BannerAd(
             }
             loadAd(
                 bannerAdRequest(
-                    collapsible = collapsible && collapsibleBannerLimiter.tryAcquire(placement)
+                    collapsible = collapsibleOncePerProcess && collapsibleBannerLimiter.tryAcquire(placement)
                 )
             )
         }
@@ -154,6 +156,7 @@ fun BannerAd(
 private fun bannerAdRequest(collapsible: Boolean): AdRequest {
     val builder = AdRequest.Builder()
     if (collapsible) {
+        // The extra key and value are defined by Google (see the BannerAd KDoc for the guide).
         // "bottom" aligns the expanded ad to the bottom of the banner, so it grows upward.
         // Only Google demand serves collapsible ads; mediated networks return a normal banner.
         val extras = Bundle().apply { putString("collapsible", "bottom") }

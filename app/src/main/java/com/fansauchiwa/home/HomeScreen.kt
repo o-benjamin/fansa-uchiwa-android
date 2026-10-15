@@ -459,7 +459,7 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .windowInsetsPadding(WindowInsets.navigationBars),
-                        collapsible = true
+                        collapsibleOncePerProcess = true
                     )
                 }
             }

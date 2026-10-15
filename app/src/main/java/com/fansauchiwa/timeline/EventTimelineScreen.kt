@@ -239,7 +239,7 @@ internal fun EventTimelineContent(
                 LocalContext.current,
                 placement = AnalyticsScreens.EVENT_TIMELINE_SCREEN,
                 modifier = modifier.windowInsetsPadding(WindowInsets.navigationBars),
-                collapsible = true
+                collapsibleOncePerProcess = true
             )
         },
         floatingActionButton = {
