@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Firestore はサーバー（Cloud Functions の Admin SDK）だけが読み書きする。Admin SDK はこのルールを通らない。
+// AI 素材の回数（users・spend）と設定（config）を、アプリから書き換えられないようにする（#315）。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

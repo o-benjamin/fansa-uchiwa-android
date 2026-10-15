@@ -1,0 +1,21 @@
+{
+  "name": "fansa-uchiwa-functions",
+  "private": true,
+  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）",
+  "main": "lib/src/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "npm run build && firebase emulators:exec --only firestore --project demo-fansa-uchiwa \"node --test lib/test/*.test.js\""
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  }
+}

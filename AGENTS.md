@@ -26,6 +26,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | Analytics のイベント・パラメータを追加・変更する、分析用のコードを扱う | `.agents/analytics.md` |
 | Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials` を設定する | `.agents/remote-config.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
+| サーバー（`functions/` の Cloud Functions）を作成・変更する | `functions/README.md` |
 | Android の API を調べる（`android docs search`）、頼まれたときや不具合の調査でアプリを動かす、既存の journey（`journeys/`）が通る画面の文言や手順を変える | `.agents/android-cli.md` |
 
 ## ルールの追加方法
