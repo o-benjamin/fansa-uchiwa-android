@@ -276,12 +276,14 @@ class UchiwaPreviewViewModel @Inject constructor(
             },
             onAdFailedOrSkipped = {
                 adFailedOrSkipped = true
-                // 広告が表示されなかった場合は onAdDismissed が来ないためここで共有を実行
+                // 広告が表示されなかった場合も続けて onAdDismissed が呼ばれるが、共有はここで先に実行する
+                // （setShareImagePath は同じパスを入れ直すだけなので、続けて呼ばれても問題ない）
                 setShareImagePath()
             },
             onAdDismissed = {
                 // 広告が閉じられた後（画面が前面に戻ってから）共有シートを起動
                 setShareImagePath()
+                // 広告を見せたが報酬を得ずに閉じられたときだけ（保存の saveTriggered と同じ判定）
                 if (!adFailedOrSkipped && !hasEarnedRewardInSession) {
                     loadRewardedAdAfterClosedWithoutReward()
                 }

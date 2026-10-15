@@ -60,8 +60,10 @@ interface AdMobRepository {
      * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param waitForLoad trueの場合、ロード中の広告のロードが完了するまで待つ。falseの場合、ロード中であれば即座にスキップ
      * @param onUserEarnedReward ユーザーが報酬を獲得した際のコールバック
-     * @param onAdFailedOrSkipped 広告の表示に失敗した、または広告がロードされていない場合のコールバック
-     * @param onAdDismissed 広告画面が閉じられた後に呼ばれるコールバック（nullの場合は呼ばれない）
+     * @param onAdFailedOrSkipped 広告の表示に失敗した、または広告がロードされていない場合のコールバック。
+     *   このときは次の広告をこのリポジトリがロードし直すので、呼び出し元はロードしなくてよい
+     * @param onAdDismissed 広告画面が閉じられた後に呼ばれるコールバック。広告を出せなかったときも
+     *   onAdFailedOrSkipped のあとに呼ばれる（nullの場合は呼ばれない）
      */
     fun showRewardedAd(
         activity: Activity,

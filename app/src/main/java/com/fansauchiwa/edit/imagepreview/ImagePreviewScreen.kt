@@ -92,7 +92,6 @@ fun ImagePreviewScreen(
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
-        viewModel.onScreenShown()
     }
 
     LaunchedEffect(Unit) {
