@@ -413,10 +413,10 @@ class UchiwaPreviewShareTest {
     // region 広告を閉じたあとのロード（#218）
 
     @Test
-    fun showRewardedAdAndShare_userEarnedRewardThenAdDismissed_doesNotLoadNextAd() = runTest {
+    fun showRewardedAdAndShare_UserEarnedRewardThenAdDismissed_DoesNotLoadNextAd() = runTest {
         // 報酬を得たあとはこの画面で広告を出さないので、使われない広告をロードしない
         val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
-        stubShowRewardedAd { onUserEarnedReward, onAdDismissed ->
+        adMobRepository.stubShowRewardedAd { onUserEarnedReward, onAdDismissed ->
             onUserEarnedReward()
             onAdDismissed()
         }
@@ -429,10 +429,10 @@ class UchiwaPreviewShareTest {
     }
 
     @Test
-    fun showRewardedAdAndShare_adDismissedWithoutReward_loadsNextAdForLaterSave() = runTest {
+    fun showRewardedAdAndShare_AdDismissedWithoutReward_LoadsNextAdForLaterSave() = runTest {
         // 報酬を得ずに閉じても共有はできるが、このあと保存すると広告を出すので、次の広告をロードしておく
         val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
-        stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
+        adMobRepository.stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
 
         viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
         advanceUntilIdle()
@@ -441,21 +441,17 @@ class UchiwaPreviewShareTest {
         verify(exactly = 2) { adMobRepository.loadRewardedAd() }
     }
 
-    private fun stubShowRewardedAd(invokeCallback: (onUserEarnedReward: () -> Unit, onAdDismissed: () -> Unit) -> Unit) {
-        val onUserEarnedRewardSlot = slot<() -> Unit>()
-        val onAdDismissedSlot = slot<() -> Unit>()
-        every {
-            adMobRepository.showRewardedAd(
-                activity = any(),
-                placement = AnalyticsScreens.PREVIEW_SCREEN,
-                waitForLoad = true,
-                onUserEarnedReward = capture(onUserEarnedRewardSlot),
-                onAdFailedOrSkipped = any(),
-                onAdDismissed = capture(onAdDismissedSlot)
-            )
-        } answers {
-            invokeCallback(onUserEarnedRewardSlot.captured, onAdDismissedSlot.captured)
-        }
+    @Test
+    fun showRewardedAdAndShare_AdFailedOrSkipped_DoesNotLoadNextAd() = runTest {
+        // 広告を出せなかったときは AdMobRepository がロードし直すので、ViewModel からは頼まない（二重にしない）
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        adMobRepository.stubShowRewardedAdFailedOrSkipped()
+
+        viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
     }
 
     // endregion
