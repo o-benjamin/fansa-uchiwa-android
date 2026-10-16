@@ -30,8 +30,6 @@ import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.analytics.BackGroundColorParams
-import com.fansauchiwa.analytics.DiscardReason
-import com.fansauchiwa.analytics.DiscardReasonSurvey
 import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
@@ -69,7 +67,6 @@ class EditViewModel @Inject constructor(
     private val editDecorationRepository: EditDecorationRepository,
     private val templateRepository: TemplateRepository,
     private val fontSessionTracker: FontSessionTracker,
-    private val discardReasonSurvey: DiscardReasonSurvey,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val inputArg: EditScreenInputArg? =
@@ -529,19 +526,6 @@ class EditViewModel @Inject constructor(
      * 破棄（tap_edit_back_dialog の action=delete）のログに付けるフォント計測パラメータを返す（#242）。
      */
     fun fontSessionParamsForDiscardEvent(): Map<String, Any> = fontSessionTracker.paramsForDiscardEvent()
-
-    /**
-     * 破棄を選んだときに、理由を聞くダイアログを出すかどうかを返す（#265・一時的な調査）。
-     * true を返すと聞いたものとして記録するため、ダイアログは必ず出すこと。
-     */
-    fun consumeDiscardReasonAskChance(): Boolean = discardReasonSurvey.tryConsumeAskChance()
-
-    /** 破棄した理由の答えを送る（#265・一時的な調査） */
-    fun answerDiscardReason(reason: DiscardReason) {
-        viewModelScope.launch {
-            analyticsRepository.logEvent(discardReasonSurvey.answerEvent(reason))
-        }
-    }
 
     /**
      * 保存してPreview画面へ進むときに呼ぶ。tap_preview_export 用のフォント計測（#242）の値を
