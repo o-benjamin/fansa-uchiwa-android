@@ -4,11 +4,15 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.fansauchiwa.data.infra.AppCheckDataSource
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.AppInstallLocalSource
+import com.fansauchiwa.data.infra.AuthDataSource
 import com.fansauchiwa.data.infra.CrashReportingDataSource
 import com.fansauchiwa.data.infra.EventDataSource
 import com.fansauchiwa.data.infra.EventLocalSource
+import com.fansauchiwa.data.infra.FirebaseAppCheckRemoteSource
+import com.fansauchiwa.data.infra.FirebaseAuthRemoteSource
 import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
 import com.fansauchiwa.data.infra.FirebaseRemoteConfigRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
@@ -22,6 +26,8 @@ import com.fansauchiwa.data.infra.SettingsDataSource
 import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import dagger.Binds
@@ -68,6 +74,37 @@ abstract class RemoteConfigModule {
         @Singleton
         fun provideFirebaseRemoteConfig(): FirebaseRemoteConfig {
             return FirebaseRemoteConfig.getInstance()
+        }
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AuthModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthDataSource(
+        impl: FirebaseAuthRemoteSource
+    ): AuthDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindAppCheckDataSource(
+        impl: FirebaseAppCheckRemoteSource
+    ): AppCheckDataSource
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideFirebaseAuth(): FirebaseAuth {
+            return FirebaseAuth.getInstance()
+        }
+
+        @Provides
+        @Singleton
+        fun provideFirebaseAppCheck(): FirebaseAppCheck {
+            return FirebaseAppCheck.getInstance()
         }
     }
 }
