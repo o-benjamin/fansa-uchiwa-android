@@ -146,7 +146,6 @@ internal fun buildTemplatePreviewSummary(savedUchiwa: SavedUchiwa): String = bui
 }
 
 internal fun mainColorChipTag(color: Color): String = "main-color-chip-${color.toArgb()}"
-internal const val HOME_TAB_HOME_GRID_TAG = "home-tab-home-grid"
 internal fun splitFirstNameForNameTemplate(firstName: String): Pair<String, String> =
     when (firstName.length) {
         0 -> "" to ""
@@ -608,8 +607,7 @@ private fun HomeTabHomeContent(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(152.dp),
         modifier = modifier
-            .fillMaxSize()
-            .testTag(HOME_TAB_HOME_GRID_TAG),
+            .fillMaxSize(),
         contentPadding = PaddingValues(
             start = 16.dp,
             top = statusBarPadding + 16.dp,

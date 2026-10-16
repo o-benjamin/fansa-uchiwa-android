@@ -3,13 +3,12 @@ package com.fansauchiwa.home
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -94,32 +93,30 @@ class HomeScreenTest {
         val homeTabLabel = context.getString(R.string.home)
         val myDesignTabLabel = context.getString(R.string.my_design)
         val templateSectionTitle = context.getString(R.string.template_section_title)
-        val myDesignSectionTitle = context.getString(R.string.my_design_section_title)
+        // 見出しはタブの名前と同じ「マイデザイン」なので、選べるタブを除いて探す
+        val myDesignSectionHeader = hasText(context.getString(R.string.my_design_section_title)) and !isSelectable()
 
         composeTestRule.onNodeWithText(homeTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(myDesignTabLabel).assertIsDisplayed()
-        // ホームタブの先頭に入口（#270）があり、画面が低い端末ではテンプレートが画面の外に出るので、スクロールしてから確かめる
-        composeTestRule.onNodeWithTag(HOME_TAB_HOME_GRID_TAG)
-            .performScrollToNode(hasText(templateSectionTitle))
         composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
-        composeTestRule.onNodeWithTag(HOME_TAB_HOME_GRID_TAG)
-            .performScrollToNode(hasTestTag("template-preview-template_1"))
-        composeTestRule.onNodeWithTag("template-preview-template_1").assertIsDisplayed()
-        composeTestRule.onNodeWithText(myDesignSectionTitle).assertDoesNotExist()
+        // テンプレートのカードは押せる（子の意味をまとめる）ので、カードの中のタグはまとめる前の木で探す
+        composeTestRule.onNodeWithTag("template-preview-template_1", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNode(myDesignSectionHeader).assertDoesNotExist()
         composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
 
         composeTestRule.onNodeWithText(myDesignTabLabel).performClick()
 
         composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
-        composeTestRule.onNodeWithTag("template-preview-template_1").assertDoesNotExist()
-        composeTestRule.onNodeWithText(myDesignSectionTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("template-preview-template_1", useUnmergedTree = true).assertDoesNotExist()
+        composeTestRule.onNode(myDesignSectionHeader).assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
     }
 
     @Test
     fun createTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
-        val targetColor = DecorationColors.BLUE
+        // 色の欄は横スクロールなので、幅の狭い端末でも画面に入る先頭の色を選ぶ
+        val targetColor = DecorationColors.RED
 
         composeTestRule.setContent {
             val selectedMemberColorState = androidx.compose.runtime.remember {
@@ -174,9 +171,15 @@ class HomeScreenTest {
 
         val context = getContext()
         composeTestRule.onNodeWithText(context.getString(R.string.name_template_dialog_title)).assertIsDisplayed()
-        composeTestRule.onNodeWithText(context.getString(R.string.name_template_last_name_placeholder)).assertIsDisplayed()
-        composeTestRule.onNodeWithText(context.getString(R.string.name_template_first_name_placeholder)).assertIsDisplayed()
-        composeTestRule.onNodeWithText(context.getString(R.string.name_template_honorific_placeholder)).assertIsDisplayed()
+        // ラベルのある欄の入力例は、その欄を押して入力中になったときだけ出る
+        listOf(
+            R.string.name_template_last_name to R.string.name_template_last_name_placeholder,
+            R.string.name_template_first_name to R.string.name_template_first_name_placeholder,
+            R.string.name_template_honorific to R.string.name_template_honorific_placeholder
+        ).forEach { (labelResId, placeholderResId) ->
+            composeTestRule.onNodeWithText(context.getString(labelResId)).performClick()
+            composeTestRule.onNodeWithText(context.getString(placeholderResId)).assertIsDisplayed()
+        }
     }
 
     @Test
