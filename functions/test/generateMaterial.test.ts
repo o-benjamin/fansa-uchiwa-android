@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { HttpsError } from "firebase-functions/v2/https";
-import type { GeminiClient, ImageResult } from "../src/gemini";
-import { handleGenerateMaterial } from "../src/generateMaterial";
+import type { GeminiClient, ImageResult, JudgeResult, SourceImage } from "../src/gemini";
+import { handleGenerateMaterial, MAX_PROMPT_LENGTH, MAX_SOURCE_IMAGE_BYTES } from "../src/generateMaterial";
 import type { GenerateMaterialDeps } from "../src/generateMaterial";
 import { jstDateKey } from "../src/jstDate";
-import type { JudgeCategory } from "../src/moderation";
 import { DEFAULT_SETTINGS } from "../src/settings";
 import type { AiMaterialSettings } from "../src/settings";
 import { daysLater, emulatorDb, uniqueDay, uniqueUid } from "./helpers";
@@ -16,15 +15,17 @@ const IMAGE: ImageResult = { kind: "image", mimeType: "image/png", data: "AAAA" 
 interface FakeOptions {
   open?: boolean;
   settings?: Partial<AiMaterialSettings>;
-  judge?: () => Promise<JudgeCategory | undefined>;
+  judge?: () => Promise<JudgeResult>;
   image?: () => Promise<ImageResult>;
+  loadSettings?: () => Promise<AiMaterialSettings>;
 }
 
 function fakeDeps(day: Date, options: FakeOptions = {}) {
-  const calls = { judge: 0, image: 0, notifications: [] as string[] };
+  const calls = { judge: 0, image: 0, judgedImages: [] as (SourceImage | undefined)[], notifications: [] as string[] };
   const gemini: GeminiClient = {
-    judge: async () => {
+    judge: async (_model, _prompt, sourceImage) => {
       calls.judge++;
+      calls.judgedImages.push(sourceImage);
       return options.judge ? options.judge() : "none";
     },
     generateImage: async () => {
@@ -35,7 +36,7 @@ function fakeDeps(day: Date, options: FakeOptions = {}) {
   const deps: GenerateMaterialDeps = {
     db,
     isEntryOpen: async () => options.open ?? true,
-    loadSettings: async () => ({ ...DEFAULT_SETTINGS, ...options.settings }),
+    loadSettings: options.loadSettings ?? (async () => ({ ...DEFAULT_SETTINGS, ...options.settings })),
     gemini,
     notifyOwner: async (message) => {
       calls.notifications.push(message);
@@ -90,14 +91,14 @@ test("文章が空・長すぎる、元画像の形が違うときは断る", as
   await assert.rejects(handleGenerateMaterial(uid, { prompt: "  " }, deps), rejectsWith("invalid_prompt", "invalid-argument"));
   await assert.rejects(handleGenerateMaterial(uid, {}, deps), rejectsWith("invalid_prompt", "invalid-argument"));
   await assert.rejects(
-    handleGenerateMaterial(uid, { prompt: "あ".repeat(201) }, deps),
+    handleGenerateMaterial(uid, { prompt: "あ".repeat(MAX_PROMPT_LENGTH + 1) }, deps),
     rejectsWith("invalid_prompt", "invalid-argument"),
   );
   await assert.rejects(
     handleGenerateMaterial(uid, { prompt: "うさぎ", sourceImage: { mimeType: "image/gif", data: "AAAA" } }, deps),
     rejectsWith("invalid_image", "invalid-argument"),
   );
-  const tooLarge = Buffer.alloc(4 * 1024 * 1024 + 1).toString("base64");
+  const tooLarge = Buffer.alloc(MAX_SOURCE_IMAGE_BYTES + 1).toString("base64");
   await assert.rejects(
     handleGenerateMaterial(uid, { prompt: "うさぎ", sourceImage: { mimeType: "image/png", data: tooLarge } }, deps),
     rejectsWith("invalid_image", "invalid-argument"),
@@ -106,10 +107,23 @@ test("文章が空・長すぎる、元画像の形が違うときは断る", as
   assert.equal(await freeUsed(uid), undefined);
 });
 
-test("200文字ちょうどと、元画像つきは通す", async () => {
-  const { deps } = fakeDeps(uniqueDay());
-  await handleGenerateMaterial(uniqueUid(), { prompt: "あ".repeat(200) }, deps);
+test("上限ちょうどの文字数と、元画像つきは通す。元画像は審査にも渡す", async () => {
+  const { deps, calls } = fakeDeps(uniqueDay());
+  await handleGenerateMaterial(uniqueUid(), { prompt: "あ".repeat(MAX_PROMPT_LENGTH) }, deps);
   await handleGenerateMaterial(uniqueUid(), { prompt: "うさぎ", sourceImage: { mimeType: "image/jpeg", data: "BBBB" } }, deps);
+  assert.deepEqual(calls.judgedImages, [undefined, { mimeType: "image/jpeg", data: "BBBB" }]);
+});
+
+test("設定を読めなければ、回数を使わずに generation_failed で断る", async () => {
+  const uid = uniqueUid();
+  const { deps, calls } = fakeDeps(uniqueDay(), {
+    loadSettings: async () => {
+      throw new Error("firestore unavailable");
+    },
+  });
+  await assert.rejects(handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps), rejectsWith("generation_failed", "unavailable"));
+  assert.equal(calls.judge, 0);
+  assert.equal(await freeUsed(uid), undefined);
 });
 
 test("入口スイッチが閉じていたら、回数を使わずに断る", async () => {
@@ -143,16 +157,42 @@ test("審査で断ったら、回数を戻し、画像は作らない", async ()
   assert.equal(await freeUsed(uid), false);
 });
 
-test("審査の答えを読めなければ、断って回数を戻す", async () => {
+test("審査の答えを読めない・審査のモデルを呼べなければ、画像を作らずに generation_failed で断り、回数を戻す", async () => {
+  const day = uniqueDay();
+  const unreadable = fakeDeps(day, { judge: async () => undefined });
+  const first = uniqueUid();
+  await assert.rejects(
+    handleGenerateMaterial(first, { prompt: "うさぎ" }, unreadable.deps),
+    rejectsWith("generation_failed", "unavailable"),
+  );
+  assert.equal(unreadable.calls.image, 0);
+  assert.equal(await freeUsed(first), false);
+
+  const throwing = fakeDeps(day, {
+    judge: async () => {
+      throw new Error("timeout");
+    },
+  });
+  const second = uniqueUid();
+  await assert.rejects(
+    handleGenerateMaterial(second, { prompt: "うさぎ" }, throwing.deps),
+    rejectsWith("generation_failed", "unavailable"),
+  );
+  assert.equal(throwing.calls.image, 0);
+  assert.equal(await freeUsed(second), false);
+});
+
+test("審査に送った内容が安全フィルターで止められたら、画像を作らずに safety_blocked で断り、回数を戻す", async () => {
   const uid = uniqueUid();
-  const { deps } = fakeDeps(uniqueDay(), { judge: async () => undefined });
-  await assert.rejects(handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps), rejectsWith("moderation", "permission-denied"));
+  const { deps, calls } = fakeDeps(uniqueDay(), { judge: async () => "safety_blocked" });
+  await assert.rejects(handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps), rejectsWith("safety_blocked", "permission-denied"));
+  assert.equal(calls.image, 0);
   assert.equal(await freeUsed(uid), false);
 });
 
 test("安全フィルターで止まったら safety_blocked で断り、回数を戻す", async () => {
   const uid = uniqueUid();
-  const { deps } = fakeDeps(uniqueDay(), { image: async () => ({ kind: "safety_blocked" }) });
+  const { deps } = fakeDeps(uniqueDay(), { image: async () => ({ kind: "safety_blocked", finishReason: "IMAGE_SAFETY" }) });
   await assert.rejects(handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps), rejectsWith("safety_blocked", "permission-denied"));
   assert.equal(await freeUsed(uid), false);
 });
@@ -160,7 +200,7 @@ test("安全フィルターで止まったら safety_blocked で断り、回数�
 test("画像が返らない・API が失敗したら generation_failed で断り、回数を戻す", async () => {
   const day = uniqueDay();
   const first = uniqueUid();
-  const { deps } = fakeDeps(day, { image: async () => ({ kind: "no_image" }) });
+  const { deps } = fakeDeps(day, { image: async () => ({ kind: "no_image", finishReason: "STOP" }) });
   await assert.rejects(handleGenerateMaterial(first, { prompt: "うさぎ" }, deps), rejectsWith("generation_failed", "unavailable"));
   assert.equal(await freeUsed(first), false);
 
@@ -175,7 +215,7 @@ test("画像が返らない・API が失敗したら generation_failed で断り
     rejectsWith("generation_failed", "unavailable"),
   );
   assert.equal(await freeUsed(second), false);
-  assert.equal((await db.collection("spend").doc(jstDateKey(day)).get()).get("free"), 0);
+  assert.equal((await db.collection("dailyUsage").doc(jstDateKey(day)).get()).get("free"), 0);
 });
 
 test("無料を使い終えて回数券がなければ no_credits", async () => {
@@ -188,7 +228,7 @@ test("無料を使い終えて回数券がなければ no_credits", async () => 
 
 test("全体の安全上限に当たったら断り、オーナーへの知らせはその日1回だけ", async () => {
   const day = uniqueDay();
-  await db.collection("spend").doc(jstDateKey(day)).set({ free: 0, paid: 3 });
+  await db.collection("dailyUsage").doc(jstDateKey(day)).set({ free: 0, ticket: 3 });
   const { deps, calls } = fakeDeps(day, { settings: { totalDailyLimit: 3 } });
 
   await assert.rejects(
@@ -205,7 +245,7 @@ test("全体の安全上限に当たったら断り、オーナーへの知ら�
 
 test("知らせに失敗しても、断る理由は変わらない", async () => {
   const day = uniqueDay();
-  await db.collection("spend").doc(jstDateKey(day)).set({ free: 0, paid: 1 });
+  await db.collection("dailyUsage").doc(jstDateKey(day)).set({ free: 0, ticket: 1 });
   const { deps } = fakeDeps(day, { settings: { totalDailyLimit: 1 } });
   deps.notifyOwner = async () => {
     throw new Error("discord down");

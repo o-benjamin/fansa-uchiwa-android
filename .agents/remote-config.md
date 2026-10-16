@@ -6,7 +6,7 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 | パラメータ | 型 | 使い道 | 初期値 |
 |---|---|---|---|
 | `affiliate_materials` | String（JSON） | 保存完了のダイアログに出す、うちわの材料の Amazon アソシエイトのリンク | 空文字（リンクの欄を出さない） |
-| `ai_material_enabled` | Boolean | AI 素材の入口（#315）。**サーバー（`functions/` の generateMaterial）も読む**。初期値も条件の値もすべて `false` なら、古いアプリからの呼び出しもサーバーが断る（`functions/README.md`） | `false`（入口を出さない） |
+| `ai_material_enabled` | Boolean | AI 素材の入口（#315）。いまはサーバー（`functions/` の generateMaterial）だけが読み、アプリは #339 で読む。初期値も条件の値もすべて `false` なら、古いアプリからの呼び出しもサーバーが断る（`functions/README.md`） | `false`（入口を出さない） |
 
 取得は、うちわのプレビュー画面を開いたとき。最小取得間隔は1時間なので、**コンソールで公開してから端末に届くまで最大約1時間**かかる。取得に失敗したら前回の値を使う（なければ空）。
 

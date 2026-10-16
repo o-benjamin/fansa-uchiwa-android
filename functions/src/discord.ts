@@ -1,6 +1,5 @@
-/** Discord の Webhook に1行送る。URL が空なら何もしない（エミュレーターや、Secret を登録する前）。 */
+/** Discord の Webhook に1行送る。 */
 export async function postToDiscord(webhookUrl: string, content: string, fetchImpl: typeof fetch = fetch): Promise<void> {
-  if (!webhookUrl) return;
   const response = await fetchImpl(webhookUrl, {
     method: "POST",
     headers: { "content-type": "application/json" },

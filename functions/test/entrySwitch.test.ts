@@ -1,20 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { RemoteConfigTemplate } from "firebase-admin/remote-config";
-import { createEntrySwitch, isEntryOpen } from "../src/entrySwitch";
+import { createEntrySwitch, isOpenInTemplate } from "../src/entrySwitch";
 
 function template(parameters: object): RemoteConfigTemplate {
   return { parameters, conditions: [], parameterGroups: {}, etag: "etag" } as unknown as RemoteConfigTemplate;
 }
 
 test("パラメータがなければ閉じている", () => {
-  assert.equal(isEntryOpen(template({})), false);
+  assert.equal(isOpenInTemplate(template({})), false);
 });
 
 test("初期値が true なら開いている。false なら閉じている", () => {
-  assert.equal(isEntryOpen(template({ ai_material_enabled: { defaultValue: { value: "true" } } })), true);
-  assert.equal(isEntryOpen(template({ ai_material_enabled: { defaultValue: { value: "false" } } })), false);
-  assert.equal(isEntryOpen(template({ ai_material_enabled: { defaultValue: { useInAppDefault: true } } })), false);
+  assert.equal(isOpenInTemplate(template({ ai_material_enabled: { defaultValue: { value: "true" } } })), true);
+  assert.equal(isOpenInTemplate(template({ ai_material_enabled: { defaultValue: { value: "false" } } })), false);
+  assert.equal(isOpenInTemplate(template({ ai_material_enabled: { defaultValue: { useInAppDefault: true } } })), false);
 });
 
 test("どれか1つの条件の値が true なら開いている", () => {
@@ -22,10 +22,10 @@ test("どれか1つの条件の値が true なら開いている", () => {
     defaultValue: { value: "false" },
     conditionalValues: { testers: { value: "true" } },
   };
-  assert.equal(isEntryOpen(template({ ai_material_enabled: parameter })), true);
+  assert.equal(isOpenInTemplate(template({ ai_material_enabled: parameter })), true);
 });
 
-test("1分は覚えておき、読めなければ前回の値を使う", async () => {
+test("1分は覚えておき、読めなければ前回の値を使い、1分は読み直さない", async () => {
   let now = 0;
   let calls = 0;
   let fail = false;
@@ -44,6 +44,9 @@ test("1分は覚えておき、読めなければ前回の値を使う", async (
   assert.equal(calls, 1);
   now = 61_000;
   fail = true;
+  assert.equal(await open(), true);
+  assert.equal(calls, 2);
+  now = 62_000;
   assert.equal(await open(), true);
   assert.equal(calls, 2);
 });

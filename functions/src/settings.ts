@@ -1,4 +1,5 @@
 import type { Firestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions";
 
 /**
  * Firestore の `config/aiMaterial` に置く設定。サーバーを出し直さずに変えられる。
@@ -45,13 +46,23 @@ export function parseSettings(data: Record<string, unknown> | undefined): AiMate
   };
 }
 
-/** 設定を読む。インスタンスごとに1分だけ覚えておき、呼ばれるたびに Firestore を読まない。 */
+/**
+ * 設定を読む。インスタンスごとに1分だけ覚えておき、呼ばれるたびに Firestore を読まない。
+ * 読めなかったときは前回の値を使う（1分は読み直さない）。一度も読めていなければ例外を投げる。
+ * 初期値で動かすと断る名前の一覧が空になるので、入口スイッチと同じく「作らない」側に倒す。
+ */
 export function createSettingsLoader(db: Firestore, ttlMs = 60_000, now = () => Date.now()) {
   let cached: { settings: AiMaterialSettings; loadedAt: number } | undefined;
   return async (): Promise<AiMaterialSettings> => {
     if (cached && now() - cached.loadedAt < ttlMs) return cached.settings;
-    const snapshot = await db.doc(SETTINGS_DOC_PATH).get();
-    cached = { settings: parseSettings(snapshot.data()), loadedAt: now() };
+    try {
+      const snapshot = await db.doc(SETTINGS_DOC_PATH).get();
+      cached = { settings: parseSettings(snapshot.data()), loadedAt: now() };
+    } catch (error) {
+      if (!cached) throw error;
+      logger.warn("設定を読めなかった。前回の値を使う", { error: String(error) });
+      cached = { settings: cached.settings, loadedAt: now() };
+    }
     return cached.settings;
   };
 }

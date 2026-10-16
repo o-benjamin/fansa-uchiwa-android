@@ -6,16 +6,21 @@ import { jstDateKey } from "./jstDate";
  * 回数の持ち方（書けるのはサーバーだけ。firestore.rules でアプリからは読み書きできない）
  *
  * users/{uid}
- *   freeUsed: boolean           無料の1回を使ったか（匿名ログインの ID ごとに1回。日ごとには戻らない）
+ *   freeUsed: boolean           無料の1回を使ったか（匿名ログインの ID ごとに1回。日ごとには戻らない）。
+ *                               アプリを入れ直すと ID が変わり、もう1回使えるので、無料の総数は下の全体の1日の上限
+ *                               （無料の非常ブレーキ）で抑える
  *   packs: {                    回数券。キーは購入ごとの ID（Play の注文番号。購入の確認 #348 が足す）
  *     <packId>: { remaining: number, expiresAt: Timestamp }   期限は購入から6ヶ月
  *   }
  *
- * spend/{日本時間の日付}
+ * dailyUsage/{日本時間の日付}
  *   free: number                その日に無料で作った回数（全体）
- *   paid: number                その日に回数券で作った回数（全体）
+ *   ticket: number              その日に回数券で作った回数（全体）
+ *                               どちらも、断った・失敗して戻した分は数えない（refundCredit が引く）
  *   totalLimitAlerted: boolean  全体の安全上限に当たったことを Discord に知らせたか（1日1回だけ知らせる）
  */
+
+export const DAILY_USAGE_COLLECTION = "dailyUsage";
 
 export interface DailyLimits {
   freeDailyLimit: number;
@@ -74,17 +79,17 @@ export async function reserveCredit(
 ): Promise<ReserveOutcome> {
   const dateKey = jstDateKey(now);
   const userRef = db.collection("users").doc(uid);
-  const spendRef = db.collection("spend").doc(dateKey);
+  const usageRef = db.collection(DAILY_USAGE_COLLECTION).doc(dateKey);
 
   return db.runTransaction(async (transaction) => {
-    const [userSnapshot, spendSnapshot] = await transaction.getAll(userRef, spendRef);
-    const spend = spendSnapshot.data() ?? {};
-    const freeToday = typeof spend.free === "number" ? spend.free : 0;
-    const paidToday = typeof spend.paid === "number" ? spend.paid : 0;
+    const [userSnapshot, usageSnapshot] = await transaction.getAll(userRef, usageRef);
+    const usage = usageSnapshot.data() ?? {};
+    const freeToday = typeof usage.free === "number" ? usage.free : 0;
+    const ticketToday = typeof usage.ticket === "number" ? usage.ticket : 0;
 
-    if (freeToday + paidToday >= limits.totalDailyLimit) {
-      const firstTotalLimitHit = spend.totalLimitAlerted !== true;
-      if (firstTotalLimitHit) transaction.set(spendRef, { totalLimitAlerted: true }, { merge: true });
+    if (freeToday + ticketToday >= limits.totalDailyLimit) {
+      const firstTotalLimitHit = usage.totalLimitAlerted !== true;
+      if (firstTotalLimitHit) transaction.set(usageRef, { totalLimitAlerted: true }, { merge: true });
       return { ok: false, reason: "total_daily_limit", firstTotalLimitHit };
     }
 
@@ -94,14 +99,14 @@ export async function reserveCredit(
 
     if (freeAvailable && freeToday < limits.freeDailyLimit) {
       transaction.set(userRef, { freeUsed: true }, { merge: true });
-      transaction.set(spendRef, { free: FieldValue.increment(1) }, { merge: true });
+      transaction.set(usageRef, { free: FieldValue.increment(1) }, { merge: true });
       return { ok: true, reservation: { kind: "free", dateKey }, ticketsRemaining: sumRemaining(packs) };
     }
 
     const pack = packs[0];
     if (pack) {
       transaction.update(userRef, new FieldPath("packs", pack.id, "remaining"), FieldValue.increment(-1));
-      transaction.set(spendRef, { paid: FieldValue.increment(1) }, { merge: true });
+      transaction.set(usageRef, { ticket: FieldValue.increment(1) }, { merge: true });
       return {
         ok: true,
         reservation: { kind: "ticket", dateKey, packId: pack.id },
@@ -119,19 +124,19 @@ export async function reserveCredit(
  */
 export async function refundCredit(db: Firestore, uid: string, reservation: Reservation): Promise<void> {
   const userRef = db.collection("users").doc(uid);
-  const spendRef = db.collection("spend").doc(reservation.dateKey);
+  const usageRef = db.collection(DAILY_USAGE_COLLECTION).doc(reservation.dateKey);
 
   await db.runTransaction(async (transaction) => {
-    const userSnapshot = await transaction.get(userRef);
     if (reservation.kind === "free") {
       transaction.set(userRef, { freeUsed: false }, { merge: true });
-      transaction.set(spendRef, { free: FieldValue.increment(-1) }, { merge: true });
+      transaction.set(usageRef, { free: FieldValue.increment(-1) }, { merge: true });
       return;
     }
+    const userSnapshot = await transaction.get(userRef);
     const packExists = userSnapshot.get(new FieldPath("packs", reservation.packId)) !== undefined;
     if (packExists) {
       transaction.update(userRef, new FieldPath("packs", reservation.packId, "remaining"), FieldValue.increment(1));
     }
-    transaction.set(spendRef, { paid: FieldValue.increment(-1) }, { merge: true });
+    transaction.set(usageRef, { ticket: FieldValue.increment(-1) }, { merge: true });
   });
 }

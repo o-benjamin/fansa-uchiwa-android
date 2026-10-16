@@ -21,7 +21,7 @@ export function uniqueUid(): string {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** ほかのテストと重ならない日（日本時間の正午）。全体の回数 `spend/{日付}` を分けるため。 */
+/** ほかのテストと重ならない日（日本時間の正午）。全体の回数 `dailyUsage/{日付}` を分けるため。 */
 export function uniqueDay(): Date {
   return new Date(Date.UTC(2030, 0, 1, 3) + randomInt(0, 1_000_000) * DAY_MS);
 }

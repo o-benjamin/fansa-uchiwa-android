@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { findBlockedName, parseJudgeAnswer } from "../src/moderation";
 
-const NAMES = ["山田太郎", "ABC", "Star Light"];
+const NAMES = ["山田太郎", "ABC", "Star Light", "ミルキー・ウェイ"];
 
 test("全角・半角、大文字・小文字、空白の違いがあっても名前に当てる", () => {
   assert.equal(findBlockedName("山田 太郎のうちわ", NAMES), "山田太郎");
@@ -18,6 +18,18 @@ test("英字の名前は、英文の中でも当て、ほかの英単語の一�
   assert.equal(findBlockedName("xabc", NAMES), undefined);
   assert.equal(findBlockedName("xabc と ABC", NAMES), "ABC");
   assert.equal(findBlockedName("King & Prince", ["King & Prince"]), "King & Prince");
+});
+
+test("英字の名前は、文字の間に空白や記号を挟んでも当てる。日本語を挟んだら当てない", () => {
+  assert.equal(findBlockedName("A.B.C のうちわ", NAMES), "ABC");
+  assert.equal(findBlockedName("a b c♡", NAMES), "ABC");
+  assert.equal(findBlockedName("star のステッカー、light blue の背景", NAMES), undefined);
+});
+
+test("日本語の名前は、記号の有無やカタカナ・ひらがなの違いがあっても当てる", () => {
+  assert.equal(findBlockedName("ミルキーウェイのロゴ", NAMES), "ミルキー・ウェイ");
+  assert.equal(findBlockedName("みるきー うぇいの文字", NAMES), "ミルキー・ウェイ");
+  assert.equal(findBlockedName("山田-太郎", NAMES), "山田太郎");
 });
 
 test("一覧になければ通す", () => {

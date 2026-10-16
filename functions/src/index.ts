@@ -26,9 +26,11 @@ export const generateMaterial = onCall(
     region: "asia-northeast1",
     enforceAppCheck: true,
     secrets: [geminiApiKey, discordWebhookUrl],
+    // gemini.ts の待ち時間（審査15秒＋画像60秒）より長くする。短いと、時間切れで打ち切られて回数を戻せなくなる
     timeoutSeconds: 120,
     memory: "512MiB",
-    // 全体の上限（1日300回）を大きく超える同時実行は要らない。不具合や攻撃で費用が膨らむのを抑える
+    // インスタンスが増え続けないように抑える（1インスタンスが複数の呼び出しを同時に受けるので、同時実行の上限ではない）。
+    // 作る回数と費用の上限は、回数の上限（quota.ts の全体の1日の上限）で守る
     maxInstances: 5,
   },
   (request) =>

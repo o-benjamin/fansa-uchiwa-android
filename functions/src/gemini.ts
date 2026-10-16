@@ -4,8 +4,9 @@ import type { JudgeCategory } from "./moderation";
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 /**
- * 画像を頼むときに、利用者の文章の前に付ける前置き。作り比べ（2026-10-11）で使った文と同じ。
- * 背景を単色にするのは、アプリが ML Kit で背景を切り抜くため。
+ * 画像を頼むときに、利用者の文章の前に付ける前置き。モデルを選ぶときに複数のモデルで同じ前置きを使って作り比べ、
+ * この文で背景を切り抜きやすい絵になった。背景を単色にするのは、アプリが ML Kit で背景を切り抜くため。
+ * 変えるときは、ML Kit で切り抜けるかを確かめ直す。
  */
 export const STICKER_PREFIX =
   "ステッカー用のイラスト。ひとつだけ中央に大きく描く。フラットでかわいい画風、太めの白いふちどり、" +
@@ -15,12 +16,15 @@ const SOURCE_IMAGE_NOTE = "添付の画像をもとに、同じ雰囲気のス�
 
 /**
  * 待つ時間の上限。審査と画像を合わせても関数の制限時間（120秒。index.ts）に収め、
- * 時間切れで打ち切られて回数を戻せなくなることがないようにする。作り比べでは画像は平均3秒。
+ * 時間切れで打ち切られて回数を戻せなくなることがないようにする。実際に試したときは、画像は数秒で返った。
  */
 const JUDGE_TIMEOUT_MS = 15_000;
 const IMAGE_TIMEOUT_MS = 60_000;
 
-/** 安全フィルターで止まったことを表す終わり方。このときは「作れませんでした」と返し、回数は戻す。 */
+/**
+ * モデルの側で止まった終わり方。利用者には `safety_blocked` で断り、回数は戻す。
+ * RECITATION（既存の作品に似すぎた）も、利用者から見れば同じ「この内容では作れない」なので同じ扱いにする。
+ */
 const SAFETY_FINISH_REASONS = new Set([
   "SAFETY",
   "PROHIBITED_CONTENT",
@@ -39,19 +43,33 @@ export interface SourceImage {
 
 export type ImageResult =
   | { kind: "image"; mimeType: string; data: string }
-  | { kind: "safety_blocked" }
-  | { kind: "no_image" };
+  | { kind: "safety_blocked"; finishReason: string }
+  | { kind: "no_image"; finishReason: string };
 
+/**
+ * Gemini API がエラーを返した。`apiStatus` / `apiMessage` は API の答えの `error.status` / `error.message`
+ * （キーが無効・モデル名が違う・割り当てを超えた、などを見分ける。利用者の文章は入らない）。
+ */
 export class GeminiHttpError extends Error {
-  constructor(readonly status: number) {
-    super(`Gemini API が ${status} を返した`);
+  constructor(
+    readonly status: number,
+    readonly apiStatus?: string,
+    readonly apiMessage?: string,
+  ) {
+    super(`Gemini API が ${status}（${apiStatus ?? "理由なし"}）を返した: ${apiMessage ?? ""}`);
   }
 }
 
+/**
+ * 審査の結果。分類のほか、審査に送った文章や画像そのものが Gemini の安全フィルターで止められたら `safety_blocked`、
+ * 答えを読めなければ undefined。
+ */
+export type JudgeResult = JudgeCategory | "safety_blocked" | undefined;
+
 export interface GeminiClient {
   generateImage(model: string, prompt: string, sourceImage?: SourceImage): Promise<ImageResult>;
-  /** 文章を審査する。答えを読めなければ undefined。 */
-  judge(model: string, prompt: string): Promise<JudgeCategory | undefined>;
+  /** 文章（と元画像）を審査する。 */
+  judge(model: string, prompt: string, sourceImage?: SourceImage): Promise<JudgeResult>;
 }
 
 interface GenerateContentResponse {
@@ -63,16 +81,35 @@ interface GenerateContentResponse {
 }
 
 /** 画像の生成の答えから、画像か、安全フィルターで止まったかを取り出す。 */
+/** 頼んだ内容か答えが安全フィルターで止められていれば、その理由を返す。 */
+function safetyStopReason(response: GenerateContentResponse): string | undefined {
+  return (
+    response.promptFeedback?.blockReason ??
+    response.candidates?.map((candidate) => candidate.finishReason ?? "").find((reason) => SAFETY_FINISH_REASONS.has(reason))
+  );
+}
+
 export function parseImageResponse(response: GenerateContentResponse): ImageResult {
-  if (response.promptFeedback?.blockReason) return { kind: "safety_blocked" };
   for (const candidate of response.candidates ?? []) {
     const image = candidate.content?.parts?.find((part) => part.inlineData?.data)?.inlineData;
     if (image?.data) return { kind: "image", mimeType: image.mimeType ?? "image/png", data: image.data };
   }
-  const stoppedBySafety = (response.candidates ?? []).some(
-    (candidate) => candidate.finishReason && SAFETY_FINISH_REASONS.has(candidate.finishReason),
-  );
-  return stoppedBySafety ? { kind: "safety_blocked" } : { kind: "no_image" };
+  const safetyReason = safetyStopReason(response);
+  if (safetyReason) return { kind: "safety_blocked", finishReason: safetyReason };
+  const finishReasons = (response.candidates ?? []).map((candidate) => candidate.finishReason ?? "なし");
+  return { kind: "no_image", finishReason: finishReasons.join(",") || "候補なし" };
+}
+
+/** 元画像があれば、文章の前に置く（モデルは前にある画像を「添付の画像」として読む）。 */
+function partsWith(text: string, sourceImage?: SourceImage): object[] {
+  const parts: object[] = [{ text }];
+  if (sourceImage) parts.unshift({ inlineData: { mimeType: sourceImage.mimeType, data: sourceImage.data } });
+  return parts;
+}
+
+async function toHttpError(response: Response): Promise<GeminiHttpError> {
+  const body = (await response.json().catch(() => undefined)) as { error?: { status?: string; message?: string } } | undefined;
+  return new GeminiHttpError(response.status, body?.error?.status, body?.error?.message);
 }
 
 function firstText(response: GenerateContentResponse): string {
@@ -88,29 +125,29 @@ export function createGeminiClient(apiKey: string, fetchImpl: typeof fetch = fet
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!response.ok) throw new GeminiHttpError(response.status);
+    if (!response.ok) throw await toHttpError(response);
     return (await response.json()) as GenerateContentResponse;
   }
 
   return {
     async generateImage(model, prompt, sourceImage) {
       const instruction = STICKER_PREFIX + (sourceImage ? SOURCE_IMAGE_NOTE : "") + "\n内容：" + prompt;
-      const parts: object[] = [{ text: instruction }];
-      if (sourceImage) parts.unshift({ inlineData: { mimeType: sourceImage.mimeType, data: sourceImage.data } });
       const body = {
-        contents: [{ role: "user", parts }],
+        contents: [{ role: "user", parts: partsWith(instruction, sourceImage) }],
         generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "1:1" } },
       };
       return parseImageResponse(await generateContent(model, body, IMAGE_TIMEOUT_MS));
     },
 
-    async judge(model, prompt) {
+    async judge(model, prompt, sourceImage) {
       const body = {
         systemInstruction: { parts: [{ text: JUDGE_INSTRUCTION }] },
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [{ role: "user", parts: partsWith(prompt, sourceImage) }],
         generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: JUDGE_RESPONSE_SCHEMA },
       };
-      return parseJudgeAnswer(firstText(await generateContent(model, body, JUDGE_TIMEOUT_MS)));
+      const response = await generateContent(model, body, JUDGE_TIMEOUT_MS);
+      if (safetyStopReason(response)) return "safety_blocked";
+      return parseJudgeAnswer(firstText(response));
     },
   };
 }
