@@ -9,9 +9,6 @@ import com.fansauchiwa.R
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
-import com.fansauchiwa.analytics.DiscardReason
-import com.fansauchiwa.analytics.DiscardReasonParams
-import com.fansauchiwa.analytics.DiscardReasonSurvey
 import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
@@ -111,7 +108,6 @@ class EditViewModelTest {
             editDecorationRepository = editDecorationRepository,
             templateRepository = templateRepository,
             fontSessionTracker = fontSessionTracker,
-            discardReasonSurvey = DiscardReasonSurvey(),
             savedStateHandle = savedStateHandle
         )
     }
@@ -1422,28 +1418,6 @@ class EditViewModelTest {
         verify(exactly = 0) { fontSessionTracker.onFontSwitched(any()) }
         coVerify(exactly = 0) {
             analyticsRepository.logEvent(match { it.name == AnalyticsActions.SELECT_EDIT_ALL_TEXT })
-        }
-    }
-
-    // endregion
-
-    // region 破棄した理由の調査（#265・一時的）
-
-    @Test
-    fun answerDiscardReason_ReasonSelected_LogsReasonParamValue() = runTest {
-        val viewModel = createViewModel(uchiwaId = null)
-        advanceUntilIdle()
-
-        viewModel.answerDiscardReason(DiscardReason.NO_TIME)
-        advanceUntilIdle()
-
-        coVerify {
-            analyticsRepository.logEvent(
-                AnalyticsEvent(
-                    name = AnalyticsActions.ANSWER_DISCARD_REASON,
-                    params = mapOf(DiscardReasonParams.PARAM_DISCARD_REASON to "no_time")
-                )
-            )
         }
     }
 

@@ -61,7 +61,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -153,7 +152,6 @@ fun EditScreen(
     val graphicsLayer = rememberGraphicsLayer()
     val coroutineScope = rememberCoroutineScope()
     val showBackDialog = remember { mutableStateOf(false) }
-    val showDiscardReasonDialog = rememberSaveable { mutableStateOf(false) }
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
@@ -539,26 +537,11 @@ fun EditScreen(
                                 viewModel.fontSessionParamsForDiscardEvent()
                         )
                         showBackDialog.value = false
-                        if (viewModel.consumeDiscardReasonAskChance()) {
-                            showDiscardReasonDialog.value = true
-                        } else {
-                            onBack()
-                        }
+                        onBack()
                     }
                 ) {
                     Text(text = stringResource(R.string.discard))
                 }
-            }
-        )
-    }
-
-    // 破棄した理由を聞くダイアログ（#265・一時的な調査）。答えても答えなくても、閉じたら戻る
-    if (showDiscardReasonDialog.value) {
-        DiscardReasonSurveyDialog(
-            onAnswer = { reason ->
-                viewModel.answerDiscardReason(reason)
-                showDiscardReasonDialog.value = false
-                onBack()
             }
         )
     }
