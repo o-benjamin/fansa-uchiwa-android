@@ -1,11 +1,14 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -94,33 +97,34 @@ class HomeScreenTest {
         val myDesignTabLabel = context.getString(R.string.my_design)
         val templateSectionTitle = context.getString(R.string.template_section_title)
         // 見出しはタブの名前と同じ「マイデザイン」なので、選べるタブを除いて探す
-        val myDesignSectionHeader = hasText(context.getString(R.string.my_design_section_title)) and !isSelectable()
+        val isMyDesignSectionTitle = hasText(context.getString(R.string.my_design_section_title)) and !isSelectable()
 
         composeTestRule.onNodeWithText(homeTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(myDesignTabLabel).assertIsDisplayed()
         composeTestRule.onNodeWithText(templateSectionTitle).assertIsDisplayed()
         // テンプレートのカードは押せる（子の意味をまとめる）ので、カードの中のタグはまとめる前の木で探す
         composeTestRule.onNodeWithTag("template-preview-template_1", useUnmergedTree = true).assertIsDisplayed()
-        composeTestRule.onNode(myDesignSectionHeader).assertDoesNotExist()
+        composeTestRule.onNode(isMyDesignSectionTitle).assertDoesNotExist()
         composeTestRule.onNodeWithText("masterpiece_1").assertDoesNotExist()
 
         composeTestRule.onNodeWithText(myDesignTabLabel).performClick()
 
         composeTestRule.onNodeWithText(templateSectionTitle).assertDoesNotExist()
         composeTestRule.onNodeWithTag("template-preview-template_1", useUnmergedTree = true).assertDoesNotExist()
-        composeTestRule.onNode(myDesignSectionHeader).assertIsDisplayed()
+        composeTestRule.onNode(isMyDesignSectionTitle).assertIsDisplayed()
         composeTestRule.onNodeWithText("masterpiece_1").assertIsDisplayed()
     }
 
     @Test
     fun createTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
-        // 色の欄は横スクロールなので、幅の狭い端末でも画面に入る先頭の色を選ぶ
+        val initialColor = DecorationColors.PINK
+        // 色の欄は横スクロールなので、幅の狭い端末でも画面に入る先頭の RED を選ぶ（初期値の PINK とは別の色）
         val targetColor = DecorationColors.RED
 
         composeTestRule.setContent {
             val selectedMemberColorState = androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(DecorationColors.PINK)
+                androidx.compose.runtime.mutableStateOf(initialColor)
             }
 
             HomeTabContent(
@@ -142,10 +146,11 @@ class HomeScreenTest {
 
         composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).performClick()
         composeTestRule.onNodeWithTag(mainColorChipTag(targetColor.value)).assertIsSelected()
+        composeTestRule.onNodeWithTag(mainColorChipTag(initialColor.value)).assertIsNotSelected()
     }
 
     @Test
-    fun nameTemplateInputDialog_displaysThreeInputHints() {
+    fun nameTemplateInputDialog_fieldFocused_showsItsPlaceholder() {
         composeTestRule.setContent {
             val lastNameState = androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableStateOf("")
@@ -171,14 +176,21 @@ class HomeScreenTest {
 
         val context = getContext()
         composeTestRule.onNodeWithText(context.getString(R.string.name_template_dialog_title)).assertIsDisplayed()
-        // ラベルのある欄の入力例は、その欄を押して入力中になったときだけ出る
+        // ラベルのある欄の入力例は、その欄を押して入力中になったときだけ出る。
+        // 名前の欄は入力例がラベルと同じ文字なので、押す前後でその文字が1つ増えることで確かめる
         listOf(
             R.string.name_template_last_name to R.string.name_template_last_name_placeholder,
             R.string.name_template_first_name to R.string.name_template_first_name_placeholder,
             R.string.name_template_honorific to R.string.name_template_honorific_placeholder
         ).forEach { (labelResId, placeholderResId) ->
+            val placeholder = context.getString(placeholderResId)
+            val placeholderCountBeforeFocus = composeTestRule
+                .onAllNodesWithText(placeholder, useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .size
             composeTestRule.onNodeWithText(context.getString(labelResId)).performClick()
-            composeTestRule.onNodeWithText(context.getString(placeholderResId)).assertIsDisplayed()
+            composeTestRule.onAllNodesWithText(placeholder, useUnmergedTree = true)
+                .assertCountEquals(placeholderCountBeforeFocus + 1)
         }
     }
 
