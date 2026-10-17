@@ -149,10 +149,22 @@ class UchiwaPreviewViewModel @Inject constructor(
                     if (!saveTriggered) {
                         val state = uiState.value
                         savedStateHandle[UI_STATE_KEY] = state.copy(isSaveButtonPressed = false)
+                        // saveTriggered が false なのは、広告を見せたが報酬を得ずに閉じられたときだけ
+                        loadRewardedAdAfterClosedWithoutReward()
                     }
                 }
             )
         }
+    }
+
+    /**
+     * 広告を見せたが報酬を得ずに閉じられたときに呼ぶ。もう一度保存・共有を押されたときに出せるよう次の広告をロードしておく。
+     * 報酬を得たあとはこの画面では広告を出さないため、呼ばない（使われずに捨てられ、表示率を下げるため。#218）。
+     * 広告を出せなかったとき（onAdFailedOrSkipped が呼ばれたとき）も呼ばない。その場合は AdMobRepository が
+     * ロードし直すので、ここでも頼むと二重になる
+     */
+    private fun loadRewardedAdAfterClosedWithoutReward() {
+        adMobRepository.loadRewardedAd()
     }
 
     /**
@@ -253,6 +265,8 @@ class UchiwaPreviewViewModel @Inject constructor(
             return
         }
 
+        // 広告を出せなかったか（onAdFailedOrSkipped は onAdDismissed より先に呼ばれる。AdMobRepository参照）
+        var adFailedOrSkipped = false
         adMobRepository.showRewardedAd(
             activity = activity,
             placement = AnalyticsScreens.PREVIEW_SCREEN,
@@ -261,12 +275,18 @@ class UchiwaPreviewViewModel @Inject constructor(
                 hasEarnedRewardInSession = true
             },
             onAdFailedOrSkipped = {
-                // 広告が表示されなかった場合は onAdDismissed が来ないためここで共有を実行
+                adFailedOrSkipped = true
+                // 広告が表示されなかった場合も続けて onAdDismissed が呼ばれるが、共有はここで先に実行する
+                // （setShareImagePath は同じパスを入れ直すだけなので、続けて呼ばれても問題ない）
                 setShareImagePath()
             },
             onAdDismissed = {
                 // 広告が閉じられた後（画面が前面に戻ってから）共有シートを起動
                 setShareImagePath()
+                // 広告を見せたが報酬を得ずに閉じられたときだけ（保存の saveTriggered と同じ判定）
+                if (!adFailedOrSkipped && !hasEarnedRewardInSession) {
+                    loadRewardedAdAfterClosedWithoutReward()
+                }
             }
         )
     }
