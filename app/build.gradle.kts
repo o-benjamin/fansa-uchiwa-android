@@ -109,6 +109,11 @@ android {
         compose = true
         buildConfig = true
     }
+    sourceSets {
+        // debug と beta は同じデバッグ用の App Check provider を使う（#337）
+        getByName("debug").java.srcDir("src/appCheckDebug/java")
+        getByName("beta").java.srcDir("src/appCheckDebug/java")
+    }
 }
 
 kotlin {
@@ -202,5 +207,13 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+    // 匿名ログインと App Check（#337）。AI 素材のサーバーを、本物のアプリの利用者からだけ呼べるようにする
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.appcheck)
+    // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。
+    // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う
+    releaseImplementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
+    "betaImplementation"(libs.firebase.appcheck.debug)
 
 }
