@@ -211,7 +211,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck)
     // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。
-    // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う
+    // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う。
+    // Play Integrity は beta の R8 確認に入らないので、更新したら :app:minifyReleaseWithR8 も通す（.agents/r8.md）
     releaseImplementation(libs.firebase.appcheck.playintegrity)
     debugImplementation(libs.firebase.appcheck.debug)
     "betaImplementation"(libs.firebase.appcheck.debug)

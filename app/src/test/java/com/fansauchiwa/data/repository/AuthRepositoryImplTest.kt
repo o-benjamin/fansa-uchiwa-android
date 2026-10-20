@@ -32,27 +32,27 @@ class AuthRepositoryImplTest {
     }
 
     @Test
-    fun ensureSignedIn_alreadySignedIn_returnsCurrentUserIdWithoutSigningIn() = runTest {
+    fun prepareForServerCall_alreadySignedIn_returnsCurrentUserIdWithoutSigningIn() = runTest {
         every { authDataSource.getCurrentUserId() } returns "uid-existing"
 
-        assertEquals("uid-existing", repository.ensureSignedIn())
+        assertEquals("uid-existing", repository.prepareForServerCall())
         coVerify(exactly = 0) { authDataSource.signInAnonymously() }
     }
 
     @Test
-    fun ensureSignedIn_notSignedIn_signsInAnonymouslyAndReturnsNewUserId() = runTest {
+    fun prepareForServerCall_notSignedIn_signsInAnonymouslyAndReturnsNewUserId() = runTest {
         every { authDataSource.getCurrentUserId() } returns null
         coEvery { authDataSource.signInAnonymously() } returns "uid-new"
 
-        assertEquals("uid-new", repository.ensureSignedIn())
+        assertEquals("uid-new", repository.prepareForServerCall())
     }
 
     @Test
-    fun ensureSignedIn_notSignedIn_installsAppCheckBeforeSigningIn() = runTest {
+    fun prepareForServerCall_notSignedIn_installsAppCheckBeforeSigningIn() = runTest {
         every { authDataSource.getCurrentUserId() } returns null
         coEvery { authDataSource.signInAnonymously() } returns "uid-new"
 
-        repository.ensureSignedIn()
+        repository.prepareForServerCall()
 
         coVerifyOrder {
             appCheckDataSource.installProviderIfNeeded()
@@ -61,27 +61,27 @@ class AuthRepositoryImplTest {
     }
 
     @Test
-    fun ensureSignedIn_alreadySignedIn_stillInstallsAppCheck() = runTest {
+    fun prepareForServerCall_alreadySignedIn_stillInstallsAppCheck() = runTest {
         every { authDataSource.getCurrentUserId() } returns "uid-existing"
 
-        repository.ensureSignedIn()
+        repository.prepareForServerCall()
 
         verify(exactly = 1) { appCheckDataSource.installProviderIfNeeded() }
     }
 
     @Test
-    fun ensureSignedIn_signInFails_throwsAndSucceedsOnRetry() = runTest {
+    fun prepareForServerCall_signInFails_throwsAndSucceedsOnRetry() = runTest {
         every { authDataSource.getCurrentUserId() } returns null
         coEvery { authDataSource.signInAnonymously() } throws IOException("offline") andThen "uid-new"
 
-        val failure = runCatching { repository.ensureSignedIn() }.exceptionOrNull()
+        val failure = runCatching { repository.prepareForServerCall() }.exceptionOrNull()
 
         assertTrue(failure is IOException)
-        assertEquals("uid-new", repository.ensureSignedIn())
+        assertEquals("uid-new", repository.prepareForServerCall())
     }
 
     @Test
-    fun ensureSignedIn_calledConcurrently_signsInOnlyOnce() = runTest {
+    fun prepareForServerCall_calledConcurrently_signsInOnlyOnce() = runTest {
         var currentUserId: String? = null
         val signInStarted = CompletableDeferred<Unit>()
         val finishSignIn = CompletableDeferred<Unit>()
@@ -92,8 +92,8 @@ class AuthRepositoryImplTest {
             "uid-new".also { currentUserId = it }
         }
 
-        val first = async { repository.ensureSignedIn() }
-        val second = async { repository.ensureSignedIn() }
+        val first = async { repository.prepareForServerCall() }
+        val second = async { repository.prepareForServerCall() }
         signInStarted.await()
         finishSignIn.complete(Unit)
 

@@ -14,10 +14,10 @@ interface AuthRepository {
      * サーバーを呼ぶ直前に必ず呼ぶ。App Check を有効にし、まだなら匿名でログインして、利用者の ID を返す。
      *
      * アプリの起動時には呼ばない。AI 素材を使わない人のために Play Integrity を呼んだり、
-     * 利用者を作ったりしないため（Firebase の設定前に出しても、今の動きが変わらない）。
+     * 利用者を作ったりしないため。
      * 通信できないとき、Firebase で匿名ログインが有効になっていないときは例外を投げる
      */
-    suspend fun ensureSignedIn(): String
+    suspend fun prepareForServerCall(): String
 }
 
 class AuthRepositoryImpl @Inject constructor(
@@ -28,7 +28,7 @@ class AuthRepositoryImpl @Inject constructor(
     // 同時に呼ばれても匿名の利用者を2人作らない（2人目で ID が変わり、無料の回数が増えてしまう）
     private val signInMutex = Mutex()
 
-    override suspend fun ensureSignedIn(): String {
+    override suspend fun prepareForServerCall(): String {
         appCheckDataSource.installProviderIfNeeded()
         return signInMutex.withLock {
             authDataSource.getCurrentUserId() ?: authDataSource.signInAnonymously()
