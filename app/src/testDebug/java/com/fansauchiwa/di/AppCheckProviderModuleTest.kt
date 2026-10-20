@@ -5,7 +5,7 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 /**
- * ユニットテストは debug ビルドで動くので、debug 用の provider が選ばれていることを確かめる
+ * debug 用の provider が選ばれていることを確かめる。release には debug 用の provider がないので、debug のユニットテスト（`src/testDebug`）にだけ置く
  */
 class AppCheckProviderModuleTest {
 
