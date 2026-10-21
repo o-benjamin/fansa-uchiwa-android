@@ -40,7 +40,6 @@ import com.fansauchiwa.ui.theme.shipporiMinchoB1FontFamily
 import com.fansauchiwa.ui.theme.shipporiMinchoFontFamily
 import com.fansauchiwa.ui.theme.stickyFontFamily
 import com.fansauchiwa.ui.theme.trainOneFontFamily
-import com.fansauchiwa.ui.theme.wdxlLubrifontJpNFontFamily
 import com.fansauchiwa.ui.theme.yomogiFontFamily
 import com.fansauchiwa.ui.theme.yuseiMagicFontFamily
 import com.fansauchiwa.ui.theme.zenAntiqueFontFamily
@@ -56,17 +55,21 @@ import kotlinx.serialization.Serializable
  * 文字入れで選べるフォント。宣言順がフォント選択画面の表示順と「1位〜5位」のバッジになる。
  * 並びは GA4 の `select_edit_text_font` の選択回数の多い順（#241、2026-08-23〜09-19 の28日間）。
  * `isNew = true` のフォントは先頭に置き、順位の対象から外している。NEW の中の並びは採用を決めたときの順で、データの順ではない。
- * 今の NEW は v2.9.0 で追加した9個（#286）。外して並べ替える作業は #298。
+ * 今の NEW は v2.9.0 で追加した9個（#286）のうち、選択画面から外した WDXL Lubrifont JP N（#346）を除く8個。NEW を外して並べ替える作業は #298。
+ * `isRetired = true` のフォントは選択画面に出さない（[selectableFontFamilies]）。保存済みのうちわを読み込めるように enum の値だけ残し、末尾に置く（#346）。
  * 並べ替えの手順と `isNew` の運用ルールは `.agents/sticker-font-order.md` を参照。
  */
 @Serializable
-enum class FontFamilies(val value: FontFamily, val isNew: Boolean = false) {
+enum class FontFamilies(
+    val value: FontFamily,
+    val isNew: Boolean = false,
+    val isRetired: Boolean = false,
+) {
     CHERRY_BOMB_ONE(cherryBombOneFontFamily, isNew = true),
     DARUMADROP_ONE(darumadropOneFontFamily, isNew = true),
     MONOMANIAC_ONE(monomaniacOneFontFamily, isNew = true),
     CHOKOKUTAI(chokokutaiFontFamily, isNew = true),
     PALETTE_MOSAIC(paletteMosaicFontFamily, isNew = true),
-    WDXL_LUBRIFONT_JP_N(wdxlLubrifontJpNFontFamily, isNew = true),
     KAISEI_DECOL(kaiseiDecolFontFamily, isNew = true),
     KAISEI_TOKUMIN(kaiseiTokuminFontFamily, isNew = true),
     AOBOSHI_ONE(aoboshiOneFontFamily, isNew = true),
@@ -110,10 +113,22 @@ enum class FontFamilies(val value: FontFamily, val isNew: Boolean = false) {
     NOTO_SERIF_JP(notoSerifJPFontFamily),
     ZEN_KAKU_GOTHIC_ANTIQUE(zenKakuGothicAntiqueFontFamily),
     KLEE_ONE(kleeOneFontFamily),
+
+    // ここから下は選択画面に出さないフォント。順位も持たない（[fontRankIndexMap]）。選べるフォントの並び（GA4 の順）と混ざらないように末尾に置く
+
+    /**
+     * v2.9.0 で足したが、Android のダウンロード式フォントの一覧（https://fonts.gstatic.com/s/a/directory.xml）になく、
+     * どの端末でも取得できなかった（#346）。取得に失敗すると標準の書体で描かれていたので、保存済みのうちわの見た目が変わらないように [FontFamily.Default] で描く。
+     */
+    WDXL_LUBRIFONT_JP_N(FontFamily.Default, isRetired = true),
 }
 
+/** フォント選択画面（文字タブ・「全体」タブ）に並べるフォント。宣言順のまま、[FontFamilies.isRetired] のものを除く */
+val selectableFontFamilies: List<FontFamilies> = FontFamilies.entries.filterNot { it.isRetired }
+
 /**
- * フォント選択画面の「1位〜5位」のバッジと、GA4 の `final_font_rank_bucket` で使う順位（0始まり。NEW は null）。
+ * フォント選択画面の「1位〜5位」のバッジと、GA4 の `final_font_rank_bucket` で使う順位（0始まり。NEW と外したフォントは null）。
  * 2つの順位がずれないように、ここ1か所で求める。
  */
-val fontRankIndexMap: Map<FontFamilies, Int?> = buildRankIndexMap(FontFamilies.entries) { it.isNew }
+val fontRankIndexMap: Map<FontFamilies, Int?> =
+    buildRankIndexMap(FontFamilies.entries) { it.isNew || it.isRetired }

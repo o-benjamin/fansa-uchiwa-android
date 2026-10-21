@@ -312,11 +312,6 @@ val paletteMosaicFontFamily = FontFamily(
     Font(googleFont = PaletteMosaicFont, fontProvider = provider),
 )
 
-val WdxlLubrifontJpNFont = GoogleFont(name = "WDXL Lubrifont JP N")
-val wdxlLubrifontJpNFontFamily = FontFamily(
-    Font(googleFont = WdxlLubrifontJpNFont, fontProvider = provider),
-)
-
 val KaiseiDecolFont = GoogleFont(name = "Kaisei Decol")
 val kaiseiDecolFontFamily = FontFamily(
     Font(googleFont = KaiseiDecolFont, fontProvider = provider),

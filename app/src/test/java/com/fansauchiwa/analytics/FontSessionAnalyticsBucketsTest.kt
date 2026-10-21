@@ -1,6 +1,7 @@
 package com.fansauchiwa.analytics
 
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.edit.selectableFontFamilies
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -38,8 +39,8 @@ class FontSessionAnalyticsBucketsTest {
 
     // region finalFontRankBucket
 
-    // NEW を除いた宣言順。フォント選択画面のバッジの順位と同じ
-    private val rankedFonts = FontFamilies.entries.filterNot { it.isNew }
+    // 選択画面に並ぶフォントから NEW を除いた宣言順。フォント選択画面のバッジの順位と同じ
+    private val rankedFonts = selectableFontFamilies.filterNot { it.isNew }
 
     @Test
     fun finalFontRankBucket_firstRankedFont_returnsTopBucket() {
@@ -68,6 +69,13 @@ class FontSessionAnalyticsBucketsTest {
         // NEW を外したリリースでは確かめる対象がないので、成功ではなくスキップにする
         assumeTrue(newFonts.isNotEmpty())
         newFonts.forEach { font -> assertEquals("new", finalFontRankBucket(font)) }
+    }
+
+    @Test
+    fun finalFontRankBucket_retiredFonts_returnRetiredBucket() {
+        val retiredFonts = FontFamilies.entries.filter { it.isRetired }
+        assumeTrue(retiredFonts.isNotEmpty())
+        retiredFonts.forEach { font -> assertEquals("retired", finalFontRankBucket(font)) }
     }
 
     // endregion

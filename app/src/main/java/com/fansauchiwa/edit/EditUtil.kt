@@ -145,16 +145,16 @@ internal val TextUnit.nonScaledSp: TextUnit
     get() = (value / LocalDensity.current.fontScale).sp
 
 /**
- * isNew でないエントリに 0 始まりの通し番号を付与するマップを作成する。
- * isNew = true のエントリには null が割り当てられる。
+ * 順位の対象から外さないエントリに 0 始まりの通し番号を付与するマップを作成する。
+ * isUnranked が true のエントリ（NEW・選択画面から外したもの）には null が割り当てられ、後ろの番号もずれない。
  */
 fun <T> buildRankIndexMap(
     entries: List<T>,
-    isNew: (T) -> Boolean
+    isUnranked: (T) -> Boolean
 ): Map<T, Int?> {
     var rank = 0
     return entries.associateWith { entry ->
-        if (!isNew(entry)) rank++ else null
+        if (!isUnranked(entry)) rank++ else null
     }
 }
 
