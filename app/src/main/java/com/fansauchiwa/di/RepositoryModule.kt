@@ -13,6 +13,8 @@ import com.fansauchiwa.data.infra.MasterpieceDataSource
 import com.fansauchiwa.data.infra.MasterpieceLocalSource
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AdMobRepositoryImpl
+import com.fansauchiwa.data.repository.AffiliateRepository
+import com.fansauchiwa.data.repository.AffiliateRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.CrashReportingRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
@@ -110,6 +112,12 @@ abstract class RepositoryModule {
     abstract fun bindEventRepository(
         impl: EventRepositoryImpl
     ): EventRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAffiliateRepository(
+        impl: AffiliateRepositoryImpl
+    ): AffiliateRepository
 }
 
 @Module

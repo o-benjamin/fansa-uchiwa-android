@@ -35,12 +35,6 @@ class SettingsViewModelTest {
             hapticEnabled = enabled
         }
 
-        override fun getHasSeenEditCompletionTooltipStream(): Flow<Boolean> = MutableSharedFlow()
-
-        override suspend fun fetchHasSeenEditCompletionTooltip() = Unit
-
-        override suspend fun setHasSeenEditCompletionTooltip(hasSeen: Boolean) = Unit
-
         override fun getHasSeenApologyDialogStream(): Flow<Boolean> = MutableSharedFlow()
 
         override suspend fun fetchHasSeenApologyDialog() = Unit

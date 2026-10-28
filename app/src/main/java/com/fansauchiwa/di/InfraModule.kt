@@ -10,17 +10,20 @@ import com.fansauchiwa.data.infra.CrashReportingDataSource
 import com.fansauchiwa.data.infra.EventDataSource
 import com.fansauchiwa.data.infra.EventLocalSource
 import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
+import com.fansauchiwa.data.infra.FirebaseRemoteConfigRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
 import com.fansauchiwa.data.infra.InAppReviewDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryLocalSource
 import com.fansauchiwa.data.infra.PlayInAppReviewRemoteSource
+import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
 import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -46,6 +49,25 @@ abstract class CrashReportingModule {
         @Singleton
         fun provideFirebaseCrashlytics(): FirebaseCrashlytics {
             return FirebaseCrashlytics.getInstance()
+        }
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RemoteConfigModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindRemoteConfigDataSource(
+        impl: FirebaseRemoteConfigRemoteSource
+    ): RemoteConfigDataSource
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideFirebaseRemoteConfig(): FirebaseRemoteConfig {
+            return FirebaseRemoteConfig.getInstance()
         }
     }
 }

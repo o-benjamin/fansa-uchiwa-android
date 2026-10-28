@@ -20,6 +20,7 @@
     <action>テスト広告が表示されたら、閉じるボタンが出るまで待ってから閉じる</action>
     <action>Google Play のレビュー依頼が表示されていたら閉じる</action>
     <action>「保存成功」と表示されていることを確かめる</action>
+    <action>うちわの材料のリンク欄が出ていたら、「PR」と「Amazonのアソシエイトとして、…」の文が一緒に出ていることを確かめる（リンクは押さない。出ていなければそのまま進む）</action>
     <action>「OK」をタップする</action>
   </actions>
 </journey>

@@ -45,19 +45,12 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.TooltipDefaults.rememberTooltipPositionProvider
-import androidx.compose.material3.TooltipState
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -97,17 +90,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
@@ -126,7 +114,13 @@ import com.fansauchiwa.edit.decorationitem.PuffyShaderParams
 import com.fansauchiwa.edit.decorationitem.PuffyTextRenderer
 import com.fansauchiwa.edit.decorationitem.StickerItemContent
 import com.fansauchiwa.edit.decorationitem.TextItemContent
+import com.fansauchiwa.edit.decorationitem.decorationTextFrameSize
+import com.fansauchiwa.edit.decorationitem.decorationTextSize
+import com.fansauchiwa.edit.decorationitem.fontWeight
 import com.fansauchiwa.edit.decorationitem.generateSdfTexture
+import com.fansauchiwa.edit.decorationitem.maxStroke
+import com.fansauchiwa.edit.decorationitem.measureDecorationText
+import com.fansauchiwa.edit.decorationitem.resolveTextDecorationTypefaces
 import com.fansauchiwa.edit.decorationitem.supportsPukuPukuEffect
 import com.fansauchiwa.edit.pager.EditPager
 import com.fansauchiwa.edit.pager.EditPagerActions
@@ -164,7 +158,6 @@ fun EditScreen(
     val layoutDirection = LocalLayoutDirection.current
     val context = LocalContext.current
     val hapticManager = rememberFansaHapticManager()
-    val completionTooltipState = rememberTooltipState(isPersistent = true)
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
@@ -183,14 +176,6 @@ fun EditScreen(
             viewModel.resetIsUchiwaSaved()
             viewModel.finishFontSessionForPreview()
             onPreview(URLEncoder.encode(it, "UTF-8"))
-        }
-    }
-
-    LaunchedEffect(uiState.showCompletionTooltip) {
-        if (uiState.showCompletionTooltip) {
-            completionTooltipState.show()
-        } else {
-            completionTooltipState.dismiss()
         }
     }
 
@@ -247,8 +232,6 @@ fun EditScreen(
                         )
                     }
                     CompleteEditButton(
-                        completionTooltipState = completionTooltipState,
-                        onTooltipDismissed = viewModel::onTooltipDismissed,
                         onClick = {
                             viewModel.logEvent(AnalyticsActions.TAP_EDIT_COMPLETE)
                             viewModel.saveUchiwa { uchiwaId ->
@@ -399,6 +382,9 @@ fun EditScreen(
                             uiState.decorations,
                             uiState.isOverallBorderPuffyEnabled
                         ),
+                        allTextStyle = remember(uiState.decorations) {
+                            AllTextStyle.of(uiState.decorations)
+                        },
                         decorations = uiState.decorations,
                         selectedDecorationId = uiState.selectedDecorationId,
                         isPukuPukuSupported = uiState.isPukuPukuSupported
@@ -464,6 +450,14 @@ fun EditScreen(
                         onOverallBorderWeightChanged = viewModel::updateOverallBorderWidth,
                         onOverallBorderWeightChangedFinished = viewModel::finishOverallBorderWidthChange,
                         onAllPuffyEnabledChanged = viewModel::updateAllPuffyEnabled,
+                        onAllTextFontSelected = viewModel::updateAllTextFont,
+                        onAllTextColorSelected = viewModel::updateAllTextColor,
+                        onAllTextStrokeColorSelected = viewModel::updateAllTextStrokeColor,
+                        onAllTextStrokeWeightChanged = viewModel::updateAllTextStrokeWidth,
+                        onAllTextStrokeWeightChangedFinished = viewModel::finishAllTextStrokeWidthChange,
+                        onAllTextSecondBorderColorSelected = viewModel::updateAllTextSecondBorderColor,
+                        onAllTextSecondBorderWeightChanged = viewModel::updateAllTextSecondBorderWidth,
+                        onAllTextSecondBorderWeightChangedFinished = viewModel::finishAllTextSecondBorderWidthChange,
                         onDecorationClick = viewModel::selectDecoration,
                         onMoveDecoration = { fromIndex, toIndex ->
                             hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
@@ -718,6 +712,8 @@ fun UchiwaPreview(
         }
     }
 
+    // フォントの取得が終わって文字の形が変わったときも、縁取りを作り直す
+    val textTypefaces = resolveTextDecorationTypefaces(decorations)
     LaunchedEffect(
         decorations,
         images,
@@ -725,7 +721,8 @@ fun UchiwaPreview(
         overallBorderColor,
         isOverallBorderPuffyEnabled,
         shouldRenderOverallBorder,
-        decorationLayerSize
+        decorationLayerSize,
+        textTypefaces
     ) {
         clearOverallBorderBitmaps()
         if (!shouldRenderOverallBorder) return@LaunchedEffect
@@ -955,21 +952,16 @@ fun UchiwaPreview(
                         )
                         when (decoration) {
                             is Decoration.Text -> {
-                                val textMeasurer = rememberTextMeasurer()
-                                val layoutResult = textMeasurer.measure(
-                                    decoration.text,
-                                    TextStyle(
-                                        fontFamily = decoration.font.value,
-                                        fontWeight = FontWeight(decoration.width),
-                                        fontSize = 24.sp.nonScaledSp,
-                                        platformStyle = PlatformTextStyle(includeFontPadding = false)
-                                    )
+                                // 見た目（TextItemContent）と同じ測り方にして、つかめる範囲を文字の形にそろえる
+                                val layoutResult = measureDecorationText(
+                                    text = decoration.text,
+                                    fontFamily = decoration.font.value,
+                                    fontWeight = decoration.fontWeight,
+                                    fontSize = decorationTextSize
                                 )
-                                val maxStroke =
-                                    decoration.strokeWidth + decoration.secondBorderWidth
-                                val decorationSize = Size(
-                                    layoutResult.size.width + maxStroke,
-                                    layoutResult.size.height + maxStroke
+                                val decorationSize = decorationTextFrameSize(
+                                    layoutResult.size,
+                                    decoration.maxStroke
                                 )
                                 val decorationDpSize = with(density) { decorationSize.toDpSize() }
                                 val handleOffset = calculateHandleOffset(
@@ -1328,10 +1320,9 @@ private fun TextItem(
             .wrapContentSize()
     )
     {
-        val textSize = 24.sp.nonScaledSp
         TextItemContent(
             decoration = decoration,
-            textSize = textSize,
+            textSize = decorationTextSize,
             modifier = Modifier
         )
     }
@@ -1493,57 +1484,30 @@ private fun UndoRedoRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompleteEditButton(
-    completionTooltipState: TooltipState,
-    onTooltipDismissed: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val hapticManager = rememberFansaHapticManager()
-    TooltipBox(
-        positionProvider = rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-        state = completionTooltipState,
-        tooltip = {
-            RichTooltip(
-                title = { Text(text = stringResource(R.string.edit_completion_tooltip_title)) },
-                action = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.CenterEnd
-                    ) {
-                        TextButton(onClick = onTooltipDismissed) {
-                            Text(text = stringResource(R.string.ok))
-                        }
-                    }
-                },
-                caretShape = TooltipDefaults.caretShape()
-            ) {
-                Text(text = stringResource(R.string.edit_completion_tooltip_message))
-            }
+    Button(
+        onClick = {
+            hapticManager.perform(FansaHapticType.CONFIRM)
+            onClick()
         },
-        modifier = modifier
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        modifier = modifier.padding(end = 8.dp)
     ) {
-        Button(
-            onClick = {
-                hapticManager.perform(FansaHapticType.CONFIRM)
-                onClick()
-            },
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            modifier = Modifier.padding(end = 8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.complete),
-                style = MaterialTheme.typography.labelLarge
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = stringResource(R.string.complete),
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }
 
@@ -1625,15 +1589,12 @@ private fun UndoRedoRowPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 private fun CompleteEditButtonPreview() {
     FansaUchiwaTheme {
         Box(modifier = Modifier.padding(16.dp)) {
             CompleteEditButton(
-                completionTooltipState = rememberTooltipState(true),
-                onTooltipDismissed = {},
                 onClick = {}
             )
         }

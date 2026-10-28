@@ -38,8 +38,8 @@ android {
         applicationId = "com.fansauchiwa"
         minSdk = 29
         targetSdk = 36
-        versionCode = 28
-        versionName = "2.9.0"
+        versionCode = 30
+        versionName = "2.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -170,6 +170,9 @@ dependencies {
     // Unity Ads（AdMob メディエーション、issue #213）
     implementation(libs.unity.ads.mediation)
     implementation(libs.unity.ads)
+    // Liftoff Monetize（Vungle。AdMob メディエーション、issue #213）
+    implementation(libs.liftoff.mediation)
+    implementation(libs.liftoff.ads)
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
@@ -198,5 +201,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.config)
 
 }

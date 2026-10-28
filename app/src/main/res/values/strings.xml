@@ -50,8 +50,11 @@
     <string name="save_success_message">作成したうちわデザインが端末の写真フォルダに保存されました</string>
     <string name="ok">OK</string>
     <string name="save_success_share">SNSでシェア</string>
-    <string name="edit_completion_tooltip_title">完成したらタップ</string>
-    <string name="edit_completion_tooltip_message">写真フォルダへの保存や、プリントアプリ連携ができます</string>
+    <!-- 保存完了のダイアログのうちわの材料のリンク（#311）。PR の表示とアソシエイトの表示文は、ステマ規制と Amazon アソシエイトの規約で必要 -->
+    <string name="affiliate_pr_label">PR</string>
+    <string name="affiliate_section_title">うちわの材料をそろえる</string>
+    <string name="affiliate_link_label">%1$sをAmazonで見る</string>
+    <string name="affiliate_disclosure">Amazonのアソシエイトとして、ファンサうちわは適格販売により収入を得ています。</string>
     <string name="ad_failed_to_load">広告を読み込めませんでした</string>
     <string name="uchiwa_color">うちわ色</string>
     <string name="background_color">背景色</string>
@@ -134,6 +137,9 @@
     <string name="edit_tab_overall">全体</string>
     <string name="edit_tab_layers">レイヤー</string>
     <string name="overall_border">全体の縁</string>
+    <string name="all_text_style_title">すべての文字</string>
+    <string name="all_text_color">文字色</string>
+    <string name="all_text_font">フォント</string>
 
     <!-- SelectionCircleIcon -->
     <string name="selection_circle_icon_selected">選択中</string>
@@ -144,7 +150,7 @@
     <string name="settings_title">アプリ設定</string>
     <string name="settings_haptic_feedback">触覚フィードバック</string>
     <string name="settings_license_title">素材のライセンス</string>
-    <string name="settings_license_message">ステッカーとして提供している一部の素材は、Apache License 2.0に基づいて配布されています（Material Icons・Material Symbols）。「ブラウザで開く」で全文を読めます。</string>
+    <string name="settings_license_message">一部のステッカーとフォントは、Apache License 2.0に基づいて配布されています（Material Icons・Material Symbols・けいふぉんと）。「ブラウザで開く」で全文を読めます。</string>
     <string name="settings_license_phosphor_intro">一部のステッカーは Phosphor Icons を元にしており、次の MIT License に基づいて配布されています。</string>
     <!-- MIT License は著作権表示と許諾文をそのまま載せる決まりのため、訳さずに原文で載せる（#287） -->
     <string name="settings_license_phosphor_notice" translatable="false">MIT License\n\nCopyright (c) 2023 Phosphor Icons\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</string>

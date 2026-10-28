@@ -32,6 +32,7 @@ import com.fansauchiwa.analytics.AnalyticsUndoRedoActions
 import com.fansauchiwa.analytics.BackGroundColorParams
 import com.fansauchiwa.analytics.DiscardReason
 import com.fansauchiwa.analytics.DiscardReasonSurvey
+import com.fansauchiwa.analytics.EditAllTextTargetParams
 import com.fansauchiwa.analytics.EditStickerTargetParams
 import com.fansauchiwa.analytics.EditTextTargetParams
 import com.fansauchiwa.analytics.FontFamilyParams
@@ -47,15 +48,12 @@ import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalImageRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
-import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.TemplateRepository
 import com.morayl.footprint.footprint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 private const val UI_STATE_KEY = "ui_state"
@@ -69,7 +67,6 @@ class EditViewModel @Inject constructor(
     private val masterpieceRepository: MasterpieceRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val editDecorationRepository: EditDecorationRepository,
-    private val settingsRepository: SettingsRepository,
     private val templateRepository: TemplateRepository,
     private val fontSessionTracker: FontSessionTracker,
     private val discardReasonSurvey: DiscardReasonSurvey,
@@ -88,33 +85,11 @@ class EditViewModel @Inject constructor(
     private val undoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private val redoStack: ArrayDeque<HistorySnapshot> = ArrayDeque()
     private var pendingSliderSnapshot: HistorySnapshot? = null
-    private var hasShownCompletionTooltipInSession = false
 
     init {
         fontSessionTracker.startSession()
-        observeCompletionTooltip()
-        fetchCompletionTooltip()
         loadExistingDecorations()
         loadAllImages()
-    }
-
-    private fun observeCompletionTooltip() {
-        settingsRepository.getHasSeenEditCompletionTooltipStream()
-            .onEach { hasSeen ->
-                // Skip when already persisted, or after this screen instance has already displayed it once.
-                if (hasSeen || hasShownCompletionTooltipInSession) return@onEach
-
-                val currentState = uiState.value
-                savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = true)
-                markCompletionTooltipShown()
-            }
-            .launchIn(viewModelScope)
-    }
-
-    private fun fetchCompletionTooltip() {
-        viewModelScope.launch {
-            settingsRepository.fetchHasSeenEditCompletionTooltip()
-        }
     }
 
     fun logScreenView() {
@@ -686,6 +661,109 @@ class EditViewModel @Inject constructor(
         }
     }
 
+    /** うちわの中の文字すべてのフォントを変える（#308） */
+    fun updateAllTextFont(newFont: FontFamilies) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(font = newFont) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        // 文字の数によらず1回の切り替えとして数える。どの文字も同じフォントになるので、記録する文字は先頭の1つでよい
+        val firstText = decorations.first { it is Decoration.Text }
+        fontSessionTracker.onFontSwitched(firstText.id)
+        // フォントの並び順（#241）は select_edit_text_font の回数で決めるので、まとめて選んだときも1回送る
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_TEXT_FONT,
+            mapOf(FontFamilyParams.PARAM_FONT_FAMILY to newFont.name)
+        )
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf(
+                "target" to EditAllTextTargetParams.FONT,
+                FontFamilyParams.PARAM_FONT_FAMILY to newFont.name
+            )
+        )
+    }
+
+    /** うちわの中の文字すべての文字色を変える（#308） */
+    fun updateAllTextColor(newColor: Color) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(color = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.TEXT_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線（1つめの縁）の色を変える（#308） */
+    fun updateAllTextStrokeColor(newColor: Color) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(strokeColor = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_1_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線（1つめの縁）の太さを変える（#308）。スライダーを離したら [finishAllTextStrokeWidthChange] */
+    fun updateAllTextStrokeWidth(newWidth: Float) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(strokeWidth = newWidth) } ?: return
+        capturePendingSliderSnapshot()
+        setDecorations(decorations)
+    }
+
+    fun finishAllTextStrokeWidthChange() {
+        if (!savePendingSliderSnapshot()) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_1_WEIGHT)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線2（2つめの縁）の色を変える（#331） */
+    fun updateAllTextSecondBorderColor(newColor: Color) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(secondBorderColor = newColor) } ?: return
+        saveSnapshot()
+        setDecorations(decorations)
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_2_COLOR)
+        )
+    }
+
+    /** うちわの中の文字すべての枠線2（2つめの縁）の太さを変える（#331）。スライダーを離したら [finishAllTextSecondBorderWidthChange] */
+    fun updateAllTextSecondBorderWidth(newWidth: Float) {
+        val decorations = decorationsWithAllTextsChanged { it.copy(secondBorderWidth = newWidth) } ?: return
+        capturePendingSliderSnapshot()
+        setDecorations(decorations)
+    }
+
+    fun finishAllTextSecondBorderWidthChange() {
+        if (!savePendingSliderSnapshot()) return
+        logEvent(
+            AnalyticsActions.SELECT_EDIT_ALL_TEXT,
+            mapOf("target" to EditAllTextTargetParams.STROKE_2_WEIGHT)
+        )
+    }
+
+    /**
+     * 文字すべてに [transform] を当てた装飾の一覧。変わる文字がない（文字がない・すでに全部その値）ときは null。
+     * 何も変わらない操作で「元に戻す」の履歴を積んだり、イベントを送ったりしないため
+     */
+    private fun decorationsWithAllTextsChanged(
+        transform: (Decoration.Text) -> Decoration.Text
+    ): List<Decoration>? {
+        val decorations = uiState.value.decorations
+        val changedDecorations = decorations.map { decoration ->
+            if (decoration is Decoration.Text) transform(decoration) else decoration
+        }
+        return changedDecorations.takeIf { it != decorations }
+    }
+
+    private fun setDecorations(decorations: List<Decoration>) {
+        savedStateHandle[UI_STATE_KEY] = uiState.value.copy(decorations = decorations)
+    }
+
     fun updateUchiwaColor(color: Color) {
         saveSnapshot()
         logEvent(
@@ -1004,11 +1082,6 @@ class EditViewModel @Inject constructor(
         )
     }
 
-    fun onTooltipDismissed() {
-        val currentState = uiState.value
-        savedStateHandle[UI_STATE_KEY] = currentState.copy(showCompletionTooltip = false)
-    }
-
     fun resetDataFromTemplate(template: Template) {
         viewModelScope.launch {
             val currentState = uiState.value
@@ -1031,12 +1104,6 @@ class EditViewModel @Inject constructor(
                 overallBorderWidth = template.savedUchiwa.overallBorderWidth,
                 isOverallBorderPuffyEnabled = template.savedUchiwa.isOverallBorderPuffyEnabled
             )
-        }
-    }
-
-    private fun markCompletionTooltipShown() {
-        viewModelScope.launch {
-            settingsRepository.setHasSeenEditCompletionTooltip(true)
         }
     }
 }

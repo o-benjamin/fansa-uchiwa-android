@@ -14,6 +14,7 @@ import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.PuffyStateParams
 import com.fansauchiwa.data.repository.AdMobRepository
+import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.edit.FontFamilies
@@ -27,6 +28,7 @@ import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -46,6 +48,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var adMobRepository: AdMobRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var inAppReviewRepository: InAppReviewRepository
+    private lateinit var affiliateRepository: AffiliateRepository
     private lateinit var fontSessionTracker: FontSessionTracker
     private lateinit var puffyStateAnalytics: PuffyStateAnalytics
     private lateinit var exportedFontAnalytics: ExportedFontAnalytics
@@ -57,11 +60,13 @@ class UchiwaPreviewSaveTest {
         adMobRepository = mockk(relaxed = true)
         analyticsRepository = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
+        affiliateRepository = mockk(relaxed = true)
         fontSessionTracker = mockk(relaxed = true)
         puffyStateAnalytics = mockk(relaxed = true)
         exportedFontAnalytics = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
+        every { affiliateRepository.getAffiliateLinksStream() } returns emptyFlow()
         coEvery { fontSessionTracker.exportParams(any()) } returns emptyMap()
         coEvery { puffyStateAnalytics.exportParams(any()) } returns emptyMap()
         coEvery { exportedFontAnalytics.fontEvents(any()) } returns emptyList()
@@ -87,6 +92,7 @@ class UchiwaPreviewSaveTest {
             fontSessionTracker = fontSessionTracker,
             puffyStateAnalytics = puffyStateAnalytics,
             exportedFontAnalytics = exportedFontAnalytics,
+            affiliateRepository = affiliateRepository,
             savedStateHandle = savedStateHandle
         )
     }
