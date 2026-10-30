@@ -26,6 +26,7 @@ import com.fansauchiwa.edit.ColorAndWeightControl
 import com.fansauchiwa.edit.FontFamilies
 import com.fansauchiwa.edit.HeaderTitle
 import com.fansauchiwa.edit.TestTags
+import com.fansauchiwa.edit.selectableFontFamilies
 import com.fansauchiwa.ui.composable.ColorPickerRow
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 
@@ -61,7 +62,7 @@ fun LazyGridScope.allTextStyleItems(
             modifier = Modifier.padding(top = 24.dp)
         )
     }
-    items(FontFamilies.entries.toList()) { fontFamily ->
+    items(selectableFontFamilies) { fontFamily ->
         FontFamilyButton(
             fontFamily = fontFamily,
             isSelected = style.font == fontFamily,

@@ -409,4 +409,50 @@ class UchiwaPreviewShareTest {
     }
 
     // endregion
+
+    // region 広告を閉じたあとのロード（#218）
+
+    @Test
+    fun showRewardedAdAndShare_UserEarnedRewardThenAdDismissed_DoesNotLoadNextAd() = runTest {
+        // 報酬を得たあとはこの画面で広告を出さないので、使われない広告をロードしない
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        adMobRepository.stubShowRewardedAd { onUserEarnedReward, onAdDismissed ->
+            onUserEarnedReward()
+            onAdDismissed()
+        }
+
+        viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
+    }
+
+    @Test
+    fun showRewardedAdAndShare_AdDismissedWithoutReward_LoadsNextAdForLaterSave() = runTest {
+        // 報酬を得ずに閉じても共有はできるが、このあと保存すると広告を出すので、次の広告をロードしておく
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        adMobRepository.stubShowRewardedAd { _, onAdDismissed -> onAdDismissed() }
+
+        viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+        advanceUntilIdle()
+
+        // 画面を開いたときと、広告を閉じたあとの2回
+        verify(exactly = 2) { adMobRepository.loadRewardedAd() }
+    }
+
+    @Test
+    fun showRewardedAdAndShare_AdFailedOrSkipped_DoesNotLoadNextAd() = runTest {
+        // 広告を出せなかったときは AdMobRepository がロードし直すので、ViewModel からは頼まない（二重にしない）
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        adMobRepository.stubShowRewardedAdFailedOrSkipped()
+
+        viewModel.showRewardedAdAndShare(mockk<Activity>(), ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
+        advanceUntilIdle()
+
+        // 画面を開いたときの1回だけ
+        verify(exactly = 1) { adMobRepository.loadRewardedAd() }
+    }
+
+    // endregion
 }

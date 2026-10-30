@@ -21,12 +21,14 @@ fun fontSwitchBucket(switchCount: Int): String = when {
  * 最終的に選ばれたフォントの順位（1始まり）を GA4 のバケット文字列に変換する（#242）。
  *
  * 順位はフォント選択画面の「1位〜5位」のバッジと同じ [fontRankIndexMap]（NEW を除いた [FontFamilies] の宣言順）を使う。
- * #241 で宣言順を実使用データ順に並べ替えたため、この順位と人気順はそろっている。
+ * 宣言順は GA4 の選択回数の順に並べている（手順は `.agents/sticker-font-order.md`）ため、この順位と人気順はそろっている。
  * NEW のフォントは順位を持たないので "new" を返す。NEW は選択画面の先頭に並ぶため、
  * 表示位置で数えると既存のフォントの順位が NEW の数だけずれ、#242 の判定（上位5件への着地）が
  * NEW を足したリリースの前後で比べられなくなる（#286）。
+ * 外したフォント（[FontFamilies.isRetired]）は選択画面にないので "retired" を返す。この値になるのは、そのフォントで保存した古いうちわを開き、フォントを変えずに保存したときだけ（#346）。
  */
 fun finalFontRankBucket(font: FontFamilies): String {
+    if (font.isRetired) return "retired"
     val rankIndex = fontRankIndexMap[font] ?: return "new"
     val rank = rankIndex + 1
     return when {
