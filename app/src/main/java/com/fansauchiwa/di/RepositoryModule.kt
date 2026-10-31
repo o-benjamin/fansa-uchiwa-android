@@ -15,6 +15,8 @@ import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AdMobRepositoryImpl
 import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.AffiliateRepositoryImpl
+import com.fansauchiwa.data.repository.AuthRepository
+import com.fansauchiwa.data.repository.AuthRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.CrashReportingRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
@@ -118,6 +120,12 @@ abstract class RepositoryModule {
     abstract fun bindAffiliateRepository(
         impl: AffiliateRepositoryImpl
     ): AffiliateRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        impl: AuthRepositoryImpl
+    ): AuthRepository
 }
 
 @Module
