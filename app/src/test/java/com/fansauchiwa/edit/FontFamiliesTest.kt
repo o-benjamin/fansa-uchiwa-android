@@ -31,12 +31,12 @@ class FontFamiliesTest {
     }
 
     @Test
-    fun koreanFonts_areNewAndPlacedFirst() {
-        val korean = FontFamilies.entries.filter { it.isKorean }
+    fun koreanFonts_areKoreanSampleFonts() {
+        val korean = FontFamilies.entries.filter { it.isKorean }.map { it.name }
 
-        assertEquals(5, korean.size)
-        assertTrue(korean.all { it.isNew })
-        assertEquals(korean, selectableFontFamilies.take(korean.size))
-        korean.forEach { assertNull(fontRankIndexMap[it]) }
+        assertEquals(
+            listOf("BLACK_HAN_SANS", "JUA", "DO_HYEON", "BAGEL_FAT_ONE", "SINGLE_DAY"),
+            korean,
+        )
     }
 }

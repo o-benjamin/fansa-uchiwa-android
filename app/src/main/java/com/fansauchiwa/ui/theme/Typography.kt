@@ -346,7 +346,7 @@ val lightNovelPopFontFamily = FontFamily(
     Font(R.font.lightnovelpopv2)
 )
 
-// 韓国語フォント（#367）。ハングルと英字だけ書ける。漢字・かなは端末の標準の書体になる
+// 韓国語フォント（#367）。書ける字の範囲は FontFamilies.isKorean を参照
 val BlackHanSansFont = GoogleFont(name = "Black Han Sans")
 val blackHanSansFontFamily = FontFamily(
     Font(googleFont = BlackHanSansFont, fontProvider = provider),

@@ -242,7 +242,7 @@ fun FontFamilyButton(
         ) {
             val density = LocalDensity.current
             Text(
-                text = if (fontFamily.isKorean) "사랑해" else "あA!",
+                text = stringResource(if (fontFamily.isKorean) R.string.font_sample_korean else R.string.font_sample_japanese),
                 fontSize = (20.dp.value / density.fontScale).sp,
                 fontFamily = fontFamily.value,
                 maxLines = 1,
