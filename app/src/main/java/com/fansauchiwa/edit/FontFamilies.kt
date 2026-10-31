@@ -3,12 +3,16 @@ package com.fansauchiwa.edit
 import androidx.compose.ui.text.font.FontFamily
 import com.fansauchiwa.ui.theme.akazukinPopFontFamily
 import com.fansauchiwa.ui.theme.aoboshiOneFontFamily
+import com.fansauchiwa.ui.theme.bagelFatOneFontFamily
+import com.fansauchiwa.ui.theme.blackHanSansFontFamily
 import com.fansauchiwa.ui.theme.cherryBombOneFontFamily
 import com.fansauchiwa.ui.theme.chokokutaiFontFamily
 import com.fansauchiwa.ui.theme.darumadropOneFontFamily
 import com.fansauchiwa.ui.theme.delaGothicOneFontFamily
+import com.fansauchiwa.ui.theme.doHyeonFontFamily
 import com.fansauchiwa.ui.theme.dotGothic16FontFamily
 import com.fansauchiwa.ui.theme.hachiMaruPopFontFamily
+import com.fansauchiwa.ui.theme.juaFontFamily
 import com.fansauchiwa.ui.theme.kaiseiDecolFontFamily
 import com.fansauchiwa.ui.theme.kaiseiTokuminFontFamily
 import com.fansauchiwa.ui.theme.keiFontFamily
@@ -38,6 +42,7 @@ import com.fansauchiwa.ui.theme.shipporiAntiqueBFontFamily
 import com.fansauchiwa.ui.theme.shipporiAntiqueFontFamily
 import com.fansauchiwa.ui.theme.shipporiMinchoB1FontFamily
 import com.fansauchiwa.ui.theme.shipporiMinchoFontFamily
+import com.fansauchiwa.ui.theme.singleDayFontFamily
 import com.fansauchiwa.ui.theme.stickyFontFamily
 import com.fansauchiwa.ui.theme.trainOneFontFamily
 import com.fansauchiwa.ui.theme.yomogiFontFamily
@@ -56,7 +61,8 @@ import kotlinx.serialization.Serializable
  * 並びは GA4 の `select_edit_text_font` の選択回数の多い順（#298、2026-09-19〜10-16 の28日間）。
  * v2.9.0（10-05 公開）で足した8個（#286。`licenses/materials.md` の「追加」列が v2.9.0 のもの）は、28日のうち公開後の12日分の回数で並んでいる。
  * 12日分だけで並べると `CHERRY_BOMB_ONE` が上位5個に入るが、その間8個は NEW 付きで先頭にあって多めに選ばれやすかった（推測）ので、28日間の合計のままにした。次の並べ替えで28日分そろう。
- * `isNew = true` のフォントは先頭に置き、順位の対象から外す。今の NEW はない。
+ * `isNew = true` のフォントは先頭に置き、順位の対象から外す。今の NEW は v2.12.0 で足した韓国語フォント5個（#367）。
+ * `isKorean = true` のフォントは、フォント一覧の見本の文字をハングルにする（#328）。ハングルと英字だけ書けて、漢字・かなは端末の標準の書体になる。
  * `isRetired = true` のフォントは選択画面に出さない（[selectableFontFamilies]）。保存済みのうちわを読み込めるように enum の値だけ残し、末尾に置く（#346）。
  * 並べ替えの手順と `isNew` の運用ルールは `.agents/sticker-font-order.md` を参照。
  */
@@ -65,7 +71,13 @@ enum class FontFamilies(
     val value: FontFamily,
     val isNew: Boolean = false,
     val isRetired: Boolean = false,
+    val isKorean: Boolean = false,
 ) {
+    BLACK_HAN_SANS(blackHanSansFontFamily, isNew = true, isKorean = true),
+    JUA(juaFontFamily, isNew = true, isKorean = true),
+    DO_HYEON(doHyeonFontFamily, isNew = true, isKorean = true),
+    BAGEL_FAT_ONE(bagelFatOneFontFamily, isNew = true, isKorean = true),
+    SINGLE_DAY(singleDayFontFamily, isNew = true, isKorean = true),
     MOCHIY_POP_ONE(mochiyPopOneFontFamily),
     M_PLUS_ROUNDED_1C(mPlusRounded1cFontFamily),
     MOCHIY_POP_P_ONE(mochiyPopPOneFontFamily),
