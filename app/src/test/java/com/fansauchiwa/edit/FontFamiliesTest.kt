@@ -29,4 +29,14 @@ class FontFamiliesTest {
             assertNull(fontRankIndexMap[font])
         }
     }
+
+    @Test
+    fun koreanFonts_areNewAndPlacedFirst() {
+        val korean = FontFamilies.entries.filter { it.isKorean }
+
+        assertEquals(5, korean.size)
+        assertTrue(korean.all { it.isNew })
+        assertEquals(korean, selectableFontFamilies.take(korean.size))
+        korean.forEach { assertNull(fontRankIndexMap[it]) }
+    }
 }

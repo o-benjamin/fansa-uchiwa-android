@@ -13,12 +13,16 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | enum | フォント | ライセンス | 著作権表示 | 追加 |
 |---|---|---|---|---|
 | `AOBOSHI_ONE` | Aoboshi One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/aoboshione/OFL.txt) | Copyright 2020 The Aoboshi Font Project Authors (https://github.com/matsuba723/Aoboshi), all rights reserved. | v2.9.0（#286） |
+| `BAGEL_FAT_ONE` | Bagel Fat One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/bagelfatone/OFL.txt) | Copyright 2022 The Bagel Fat Project Authors (https://github.com/JAMO-TYPEFACE/BagelFat) | v2.12.0（#367） |
+| `BLACK_HAN_SANS` | Black Han Sans | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/blackhansans/OFL.txt) | Copyright 2015 The Black Han Sans Project Authors (https://github.com/zesstype/Black-Han-Sans) | v2.12.0（#367） |
 | `CHERRY_BOMB_ONE` | Cherry Bomb One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/cherrybombone/OFL.txt) | Copyright 2019 The Cherry Bomb Project Authors (https://github.com/satsuyako/CherryBomb) | v2.9.0（#286） |
 | `CHOKOKUTAI` | Chokokutai | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/chokokutai/OFL.txt) | Copyright 2020 The Chokokutai Project Authors (https://github.com/go108go/Chokokutai) | v2.9.0（#286） |
 | `DARUMADROP_ONE` | Darumadrop One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/darumadropone/OFL.txt) | Copyright 2020 The Darumadrop One Project Authors (https://github.com/ManiackersDesign/darumadrop) | v2.9.0（#286） |
 | `DELA_GOTHIC_ONE` | Dela Gothic One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/delagothicone/OFL.txt) | Copyright 2020 The Dela Gothic Project Authors (https://github.com/syakuzen/DelaGothic) | — |
+| `DO_HYEON` | Do Hyeon | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/dohyeon/OFL.txt) | Copyright 2018 The Do Hyeon Project Authors | v2.12.0（#367） |
 | `DOT_GOTHIC_16` | DotGothic16 | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/dotgothic16/OFL.txt) | Copyright 2020 The DotGothic16 Project Authors (https://github.com/fontworks-fonts/DotGothic16) | — |
 | `HACHI_MARU_POP` | Hachi Maru Pop | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/hachimarupop/OFL.txt) | Copyright 2020 The Hachi Maru Pop Project Authors (https://github.com/noriokanisawa/HachiMaruPop) | — |
+| `JUA` | Jua | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/jua/OFL.txt) | Copyright 2018 The Jua Project Authors | v2.12.0（#367） |
 | `KAISEI_DECOL` | Kaisei Decol | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/kaiseidecol/OFL.txt) | Copyright 2020 The Kaisei Project Authors (https://github.com/Font-Kai/Kaisei) | v2.9.0（#286） |
 | `KAISEI_TOKUMIN` | Kaisei Tokumin | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/kaiseitokumin/OFL.txt) | Copyright 2020 The Kaisei Project Authors (https://github.com/Font-Kai/Kaisei) | v2.9.0（#286） |
 | `KIWI_MARU` | Kiwi Maru | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/kiwimaru/OFL.txt) | Copyright 2020 The Kiwi Maru Project Authors (https://github.com/Kiwi-KawagotoKajiru/Kiwi-Maru) | — |
@@ -46,6 +50,7 @@ Google Fonts の表はフォント名の ABC 順に並べている（enum の並
 | `SHIPPORI_ANTIQUE_B1` | Shippori Antique B1 | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/shipporiantiqueb1/OFL.txt) | Copyright 2020 The Shippori Antique Project Authors (https://github.com/fontdasu/ShipporiAntique) | — |
 | `SHIPPORI_MINCHO` | Shippori Mincho | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/shipporimincho/OFL.txt) | Copyright 2021 The Shippori Mincho Project Authors (https://github.com/fontdasu/ShipporiMincho) | — |
 | `SHIPPORI_MINCHO_B1` | Shippori Mincho B1 | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/shipporiminchob1/OFL.txt) | Copyright 2021 The Shippori Mincho Project Authors (https://github.com/fontdasu/ShipporiMincho) | — |
+| `SINGLE_DAY` | Single Day | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/singleday/OFL.txt) | Copyright 2015 DXKorea Inc. All rights reserved. | v2.12.0（#367） |
 | `STICK` | Stick | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/stick/OFL.txt) | Copyright 2020 The Stick Project Authors (https://github.com/fontworks-fonts/Stick) | — |
 | `TRAIN_ONE` | Train One | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/trainone/OFL.txt) | Copyright 2020 The Train Project Authors (https://github.com/fontworks-fonts/Train) | — |
 | `YOMOGI` | Yomogi | [OFL 1.1](https://github.com/google/fonts/blob/main/ofl/yomogi/OFL.txt) | Copyright 2020 The Yomogi Project Authors (https://github.com/satsuyako/YomogiFont), all rights reserved. | — |
