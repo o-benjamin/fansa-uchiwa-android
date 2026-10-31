@@ -90,7 +90,8 @@ fun BannerAd(
                         adValue = adValue,
                         adFormat = AdFormat.BANNER,
                         placement = placement,
-                        responseInfo = responseInfo
+                        responseInfo = responseInfo,
+                        isCollapsible = isCollapsible
                     )
             }
             loadAd(

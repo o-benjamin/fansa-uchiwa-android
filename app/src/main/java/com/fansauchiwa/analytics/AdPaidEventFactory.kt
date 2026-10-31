@@ -5,7 +5,7 @@ import com.google.android.gms.ads.AdValue
 /**
  * 広告の収益（OnPaidEventListener で受け取る AdValue）を Analytics イベントに変換する
  *
- * GA4 のレポートで ad_format / placement / ad_source / precision を軸に使うには、
+ * GA4 のレポートで ad_format / placement / ad_source / precision / collapsible を軸に使うには、
  * GA4 の管理画面でイベントスコープのカスタムディメンションとして登録する必要がある。
  */
 object AdPaidEventFactory {
@@ -17,6 +17,7 @@ object AdPaidEventFactory {
     const val PARAM_AD_FORMAT = "ad_format"
     const val PARAM_PLACEMENT = "placement"
     const val PARAM_AD_SOURCE = "ad_source"
+    const val PARAM_COLLAPSIBLE = "collapsible"
 
     const val PRECISION_UNKNOWN = "unknown"
     const val PRECISION_ESTIMATED = "estimated"
@@ -30,6 +31,7 @@ object AdPaidEventFactory {
      * @param adFormat 広告フォーマット（[AdFormat]）
      * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param adSource 広告を配信したネットワーク名（不明なら null）
+     * @param isCollapsible 折りたたみ式で表示されたか。バナー以外は null で、パラメータを付けない
      */
     fun create(
         valueMicros: Long,
@@ -37,7 +39,8 @@ object AdPaidEventFactory {
         precisionType: Int,
         adFormat: String,
         placement: String,
-        adSource: String?
+        adSource: String?,
+        isCollapsible: Boolean?
     ): AnalyticsEvent = AnalyticsEvent(
         name = AnalyticsActions.AD_PAID_EVENT,
         params = buildMap {
@@ -49,6 +52,7 @@ object AdPaidEventFactory {
             put(PARAM_AD_FORMAT, adFormat)
             put(PARAM_PLACEMENT, placement)
             if (!adSource.isNullOrBlank()) put(PARAM_AD_SOURCE, adSource)
+            if (isCollapsible != null) put(PARAM_COLLAPSIBLE, isCollapsible.toString())
         }
     )
 
