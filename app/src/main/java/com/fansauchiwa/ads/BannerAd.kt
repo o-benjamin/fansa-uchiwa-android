@@ -91,6 +91,8 @@ fun BannerAd(
                         adFormat = AdFormat.BANNER,
                         placement = placement,
                         responseInfo = responseInfo,
+                        // The served result, not the requested value: a collapsible request can return
+                        // a normal banner, and only the result tells the two apart in revenue reports.
                         isCollapsible = isCollapsible
                     )
             }

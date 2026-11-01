@@ -31,7 +31,10 @@ object AdPaidEventFactory {
      * @param adFormat 広告フォーマット（[AdFormat]）
      * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param adSource 広告を配信したネットワーク名（不明なら null）
-     * @param isCollapsible 折りたたみ式で表示されたか。バナー以外は null で、パラメータを付けない
+     * @param isCollapsible 折りたたみ式で配信されたか（要求したかではなく結果）。バナー以外は null で、パラメータを付けない
+     * - false には「要求していない」「要求したが通常のバナーが返った」「読み取りに失敗した」が混ざる
+     * - 収益の通知が来た時点の AdView から読むので、リフレッシュと重なると別の広告の値になりうる（コードからの推定で未再現）
+     * - レポートの (not set) には、バナー以外とこのパラメータを送る前の版のバナーが混ざる
      */
     fun create(
         valueMicros: Long,
