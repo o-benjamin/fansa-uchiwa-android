@@ -10,6 +10,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.BuildConfig
 import com.fansauchiwa.EDIT_INPUT_ARG
 import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.FIRST_NAME_1_ARG
@@ -1000,8 +1001,9 @@ class EditViewModel @Inject constructor(
                 overallBorderWidth = state.overallBorderWidth,
                 isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
             )
-            val code = TemplateExportUtil.exportToKotlinCode(savedUchiwa)
-            Log.d("TemplateExport", code)
+            if (BuildConfig.DEBUG) {
+                Log.d("TemplateExport", TemplateExportUtil.exportToKotlinCode(savedUchiwa))
+            }
 
             localDatabaseRepository.saveUchiwa(
                 Uchiwa(
