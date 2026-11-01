@@ -1,6 +1,6 @@
 # テンプレートの候補（debug ビルドで調整してから取り込む）
 
-新しいテンプレートは、候補を debug ビルドのホームに出し、実機で微調整して保存した結果だけを `TemplateList.kt` に入れる。HTML などの見本では中心の小さなずれを直せないので、最後の見た目は実機で決める。
+新しいテンプレートは、候補を debug ビルドのホームに出し、実機で微調整して保存した結果だけを `TemplateList.kt` に入れる。画面の外で作った見本では中心の小さなずれを直せないので、最後の見た目は実機で決める。
 
 - 名前だけのテンプレートは種類が足りているので作らず、行動を促す決まり文句を足す
 - 段数・文字の大小・並びなどの型は参考にしてよいが、特定の作品や他社アプリのテンプレートをそのまま写さない。実在の名前や写真を入れない
@@ -17,7 +17,7 @@
 1. 候補を `TemplateCandidateList.kt` に足す
 2. 実機の Play 版を消して debug ビルドを入れる。同じアプリ ID（`com.fansauchiwa`）で署名が違うので、消さないと入らない。その端末のうちわは消える。debug はテスト広告で、計測も送らない
 3. 候補を開いて調整し「完成」で保存する。保存しなかった候補は取り込まない
-4. 保存データを取り出して `Template(...)` に直し、`TemplateList.kt` の末尾に足す（下の節）
+4. 保存データを取り出して `Template(...)` に直し、`TemplateList.kt` の末尾に足す（「保存データの取り出し」の節）
 5. 取り込んだ候補とやめた候補を `TemplateCandidateList.kt` から消す
 6. 実機の debug ビルドを消して Play 版に戻す。消すと保存も消えるので、必ず 4 のあとにする。`candidate_N` の番号は次の回に使い回すので、前回の保存を残したまま次の回を始めない
 
@@ -26,6 +26,7 @@
 - テンプレートの id は `candidate_N`、飾りの id は `candidate_N_M`。保存データでどの候補から作ったかを見分けるのに使うので変えない
 - `isNameInputPlaceholderEnabled = false` だけ。名前入りは入力で文字が置き換わり、保存データからプレースホルダーに戻せない
 - 文字の色と全体の縁はホームで選ぶメインカラーで上書きされる（`applyTemplateMainColor`）。調整しても残らないので、組み方・フォント・ステッカーで差をつける
+- ぷくぷく（`isPuffyEnabled`・`isPukupuku`・`isOverallBorderPuffyEnabled`）は Android 13 未満では出ない。今のテンプレートには使っていない。使うなら API 29 でも見た目が成り立つかを確かめる
 
 ## 保存データの取り出し
 
@@ -45,4 +46,4 @@ adb shell wm density
 - 位置は端末の px のまま保存され、文字の大きさは密度で変わる。基準の密度は 2.625（Pixel_10）。`wm density` の値（Override があればそちら）を 160 で割り、取り込んだ `Template` のコメントに残す。基準と違えば、ほかの機種でずれないかを確かめる
 - シェイクの書き出し（ログ `TemplateExport`）は `isPuffyEnabled`・`isPukupuku` を出さないので、取り込みには使わない
 
-会社の作業リポジトリの `scripts/materials/template_lab.py`（`candidates` と `pull`）は、この手順を自動にしたもの。なくても上の手順でできる。
+会社の作業リポジトリの `scripts/materials/template_lab.py`（`candidates` と `pull`）は、この手順を自動にしたもの。なくても上の手順でできる。`candidates` は `TemplateCandidateList.kt` を丸ごと作り直すので、手で直した分は消える。

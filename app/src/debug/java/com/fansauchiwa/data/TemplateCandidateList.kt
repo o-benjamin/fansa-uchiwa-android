@@ -4,8 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.edit.FontFamilies
 
-// debug ビルドのホームにだけ出すテンプレートの候補。書き出しツールが丸ごと作り直すので、手で直した分は次の書き出しで消える。
-// 手順は .agents/template-candidates.md
+// debug ビルドのホームにだけ出すテンプレートの候補。手順と注意は .agents/template-candidates.md
 val templateCandidateList: List<Template> = listOf(
     // 型A 主役の語＋添え（ピースして）
     Template(
