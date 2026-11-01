@@ -1,6 +1,7 @@
 package com.fansauchiwa.di
 
 import android.content.Context
+import com.fansauchiwa.data.TemplateCandidates
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.UuidProviderImpl
 import com.fansauchiwa.data.infra.GalleryImageDataSource
@@ -36,6 +37,7 @@ import com.fansauchiwa.data.repository.TemplateRepository
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
+import dagger.BindsOptionalOf
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -82,6 +84,10 @@ abstract class RepositoryModule {
     abstract fun bindTemplateRepository(
         impl: DefaultTemplateRepository
     ): TemplateRepository
+
+    // 候補を渡すのは debug の TemplateCandidateModule だけ。release と beta では空になる
+    @BindsOptionalOf
+    abstract fun bindOptionalTemplateCandidates(): TemplateCandidates
 
     @Binds
     @Singleton
