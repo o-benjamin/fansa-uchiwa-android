@@ -22,7 +22,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | コンポーザブル・Preview・Haptic・Semantics を作成・変更する | `.agents/ui.md` |
 | テストを作成・変更する、ロジックを追加する | `.agents/testing.md` |
 | ステッカー・フォントを追加・削除する、並び順や NEW ラベルを変える、素材のライセンス台帳を直す | `.agents/sticker-font-order.md` |
-| テンプレートを足す、開発版の候補を変える | `.agents/template-candidates.md` |
+| テンプレートを足す、debug ビルドの候補を変える | `.agents/template-candidates.md` |
 | リリースビルド設定・ProGuard ルール・`@Keep` を扱う、依存ライブラリを追加・更新する | `.agents/r8.md` |
 | Analytics のイベント・パラメータを追加・変更する、分析用のコードを扱う | `.agents/analytics.md` |
 | Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials` を設定する | `.agents/remote-config.md` |

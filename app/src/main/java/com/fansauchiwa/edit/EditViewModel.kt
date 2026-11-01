@@ -993,15 +993,16 @@ class EditViewModel @Inject constructor(
     fun exportTemplateCode(onDecorationSave: (String) -> Unit) {
         viewModelScope.launch {
             val state = uiState.value
-            val savedUchiwa = SavedUchiwa(
-                decorations = state.decorations,
-                uchiwaColor = state.uchiwaColor,
-                backgroundColor = state.backgroundColor,
-                overallBorderColor = state.overallBorderColor,
-                overallBorderWidth = state.overallBorderWidth,
-                isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
-            )
+            // ダイアログは debuggable のときしか出ないが、入力した文字をログに出す処理を release に残さない
             if (BuildConfig.DEBUG) {
+                val savedUchiwa = SavedUchiwa(
+                    decorations = state.decorations,
+                    uchiwaColor = state.uchiwaColor,
+                    backgroundColor = state.backgroundColor,
+                    overallBorderColor = state.overallBorderColor,
+                    overallBorderWidth = state.overallBorderWidth,
+                    isOverallBorderPuffyEnabled = state.isOverallBorderPuffyEnabled
+                )
                 Log.d("TemplateExport", TemplateExportUtil.exportToKotlinCode(savedUchiwa))
             }
 
