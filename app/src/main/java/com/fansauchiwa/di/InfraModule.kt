@@ -8,6 +8,8 @@ import com.fansauchiwa.data.infra.AppCheckDataSource
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.AppInstallLocalSource
 import com.fansauchiwa.data.infra.AiMaterialDataSource
+import com.fansauchiwa.data.infra.AiMaterialImageDataSource
+import com.fansauchiwa.data.infra.AiMaterialImageLocalSource
 import com.fansauchiwa.data.infra.AuthDataSource
 import com.fansauchiwa.data.infra.CrashReportingDataSource
 import com.fansauchiwa.data.infra.EventDataSource
@@ -121,6 +123,12 @@ abstract class AiMaterialModule {
     abstract fun bindAiMaterialDataSource(
         impl: FirebaseFunctionsAiMaterialRemoteSource
     ): AiMaterialDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindAiMaterialImageDataSource(
+        impl: AiMaterialImageLocalSource
+    ): AiMaterialImageDataSource
 
     companion object {
         // サーバーのリージョン（functions/src/index.ts）とそろえる
