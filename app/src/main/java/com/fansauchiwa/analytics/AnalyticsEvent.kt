@@ -62,6 +62,9 @@ object AnalyticsActions {
     const val BACKGROUND_REMOVAL_SUCCESS = "background_removal_success"
     const val BACKGROUND_REMOVAL_FAILURE = "background_removal_failure"
 
+    const val GENERATE_AI_MATERIAL = "generate_ai_material"
+    const val SAVE_AI_MATERIAL = "save_ai_material"
+
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
     const val TAP_PREVIEW_SHARE = "tap_preview_share"
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
