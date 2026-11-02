@@ -11,14 +11,16 @@ class AdPaidEventFactoryTest {
         valueMicros: Long = 1_500L,
         currencyCode: String = "JPY",
         precisionType: Int = AdValue.PrecisionType.PRECISE,
-        adSource: String? = "AdMob Network"
+        adSource: String? = "AdMob Network",
+        isCollapsible: Boolean? = null
     ) = AdPaidEventFactory.create(
         valueMicros = valueMicros,
         currencyCode = currencyCode,
         precisionType = precisionType,
         adFormat = AdFormat.REWARDED,
         placement = "preview_screen",
-        adSource = adSource
+        adSource = adSource,
+        isCollapsible = isCollapsible
     )
 
     @Test
@@ -43,6 +45,21 @@ class AdPaidEventFactoryTest {
         assertEquals(AdFormat.REWARDED, params[AdPaidEventFactory.PARAM_AD_FORMAT])
         assertEquals("preview_screen", params[AdPaidEventFactory.PARAM_PLACEMENT])
         assertEquals("AdMob Network", params[AdPaidEventFactory.PARAM_AD_SOURCE])
+    }
+
+    @Test
+    fun create_CollapsibleBanner_IncludesTrue() {
+        assertEquals("true", create(isCollapsible = true).params[AdPaidEventFactory.PARAM_COLLAPSIBLE])
+    }
+
+    @Test
+    fun create_NormalBanner_IncludesFalse() {
+        assertEquals("false", create(isCollapsible = false).params[AdPaidEventFactory.PARAM_COLLAPSIBLE])
+    }
+
+    @Test
+    fun create_NotBanner_OmitsCollapsible() {
+        assertFalse(create(isCollapsible = null).params.containsKey(AdPaidEventFactory.PARAM_COLLAPSIBLE))
     }
 
     @Test
