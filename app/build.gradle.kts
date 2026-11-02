@@ -181,6 +181,8 @@ dependencies {
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
+    // AI素材の元画像に顔があれば送らない
+    implementation(libs.play.services.mlkit.face.detection)
     // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
     implementation(libs.play.services.base)
 
