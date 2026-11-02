@@ -210,6 +210,7 @@ dependencies {
     // 匿名ログインと App Check（#337）。AI 素材のサーバーを、本物のアプリの利用者からだけ呼べるようにする
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck)
+    implementation(libs.firebase.functions)
     // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。
     // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う。
     // Play Integrity は beta の R8 確認に入らないので、更新したら :app:minifyReleaseWithR8 も通す（.agents/r8.md）

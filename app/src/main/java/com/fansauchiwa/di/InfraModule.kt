@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.fansauchiwa.data.infra.AppCheckDataSource
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.AppInstallLocalSource
+import com.fansauchiwa.data.infra.AiMaterialDataSource
 import com.fansauchiwa.data.infra.AuthDataSource
 import com.fansauchiwa.data.infra.CrashReportingDataSource
 import com.fansauchiwa.data.infra.EventDataSource
@@ -14,6 +15,7 @@ import com.fansauchiwa.data.infra.EventLocalSource
 import com.fansauchiwa.data.infra.FirebaseAppCheckRemoteSource
 import com.fansauchiwa.data.infra.FirebaseAuthRemoteSource
 import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
+import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource
 import com.fansauchiwa.data.infra.FirebaseRemoteConfigRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
@@ -29,6 +31,7 @@ import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import dagger.Binds
 import dagger.Module
@@ -105,6 +108,28 @@ abstract class AuthModule {
         @Singleton
         fun provideFirebaseAppCheck(): FirebaseAppCheck {
             return FirebaseAppCheck.getInstance()
+        }
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AiMaterialModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindAiMaterialDataSource(
+        impl: FirebaseFunctionsAiMaterialRemoteSource
+    ): AiMaterialDataSource
+
+    companion object {
+        // サーバーのリージョン（functions/src/index.ts）とそろえる
+        private const val FUNCTIONS_REGION = "asia-northeast1"
+
+        @Provides
+        @Singleton
+        fun provideFirebaseFunctions(): FirebaseFunctions {
+            return FirebaseFunctions.getInstance(FUNCTIONS_REGION)
         }
     }
 }
