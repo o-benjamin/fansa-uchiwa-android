@@ -30,7 +30,7 @@
 | `total_daily_limit` | resource-exhausted | 全体の安全上限に当たった（今日は止める） |
 | `generation_failed` | unavailable | 作れなかった（Gemini の失敗・審査の答えを読めなかった・Firestore の一時的な障害）。回数は戻してあるので、やり直せる |
 
-成功したときは `{ image（base64）, mimeType, paidWith: "free" | "ticket", ticketsRemaining, model }` を返す。`model` は画像を作ったモデルで、利用者が報告するときにアプリが `reportMaterial` へ返す。アプリは `model` のない応答を失敗として扱う（回数は減ったまま）ので、応答から外さない・名前を変えない。
+成功したときは `{ image（base64）, mimeType, paidWith: "free" | "ticket", ticketsRemaining, model }` を返す。`model` は画像を作ったモデルで、利用者が報告するときにアプリが `reportMaterial` へ返す。`model` がないとアプリは報告のモデル名を `unknown` として送るので、応答から外さない・名前を変えない。
 
 画像・元画像・文章はサーバーに残さず、ログにも書かない。ログには結果の種類・モデル名・かかった時間・失敗の理由（Gemini のエラーや終わり方）を書く。回数を戻せなかったときだけ、手で戻すために uid と注文番号も書く。
 

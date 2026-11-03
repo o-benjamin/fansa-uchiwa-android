@@ -44,7 +44,11 @@ const REASON_LABELS: Record<ReportReason, string> = {
 export const MAX_REPORTS_PER_DAY = 10;
 /** 報告を残す日数。頼んだ文章が入るので、見直しに要る間だけ残す。 */
 export const REPORT_RETENTION_DAYS = 180;
-const REPORT_USAGE_RETENTION_DAYS = 2;
+/**
+ * reportUsage を残す日数。日本時間の日付で数え直すので、最後の報告から日付が変わるまで残れば足りる。
+ * 24時間たてば日付は必ず変わっていて1日でも足りるが、日付の境目を考えずに読めるよう余裕を見て2日にする
+ */
+export const REPORT_USAGE_RETENTION_DAYS = 2;
 // model はアプリが送り返す値で、そのまま Discord の知らせと Firestore に書く。
 // モデル名に使う文字（`models/...` の形の `/` を含む）だけを通し、メンションやリンクを書き込めないようにする
 const MAX_MODEL_LENGTH = 100;

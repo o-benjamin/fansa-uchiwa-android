@@ -81,9 +81,12 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
         parseResponse(validBody + ("paidWith" to "coupon"))
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun parseResponse_missingModel_throws() {
-        parseResponse(validBody - "model")
+    @Test
+    fun parseResponse_missingModel_returnsUnknownModel() {
+        assertEquals(
+            FirebaseFunctionsAiMaterialRemoteSource.UNKNOWN_MODEL,
+            parseResponse(validBody - "model").model
+        )
     }
 
     @Test

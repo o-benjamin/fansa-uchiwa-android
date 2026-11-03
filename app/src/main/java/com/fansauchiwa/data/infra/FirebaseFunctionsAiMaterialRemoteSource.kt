@@ -49,6 +49,7 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
         private const val GENERATE_FUNCTION_NAME = "generateMaterial"
         private const val REPORT_FUNCTION_NAME = "reportMaterial"
         private const val REPORT_LIMIT_REASON = "too_many_reports"
+        internal const val UNKNOWN_MODEL = "unknown"
 
         // 既定の70秒だと、サーバー（timeoutSeconds: 120）が作り終える前に諦めて、回数だけ減ってしまう
         private const val CALL_TIMEOUT_SECONDS = 130L
@@ -93,7 +94,8 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
                 ticketsRemaining = requireNotNull((body["ticketsRemaining"] as? Number)?.toInt()) {
                     "応答に ticketsRemaining がない"
                 },
-                model = requireNotNull(body["model"] as? String) { "応答に model がない" }
+                // 回数はもう減っているので、model のない古いサーバーでも絵は渡す（報告のモデル名が unknown になるだけ）
+                model = body["model"] as? String ?: UNKNOWN_MODEL
             )
         }
     }

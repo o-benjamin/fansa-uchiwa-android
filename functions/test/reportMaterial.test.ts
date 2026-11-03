@@ -6,6 +6,7 @@ import {
   MAX_REPORTS_PER_DAY,
   REPORT_RETENTION_DAYS,
   REPORT_USAGE_COLLECTION,
+  REPORT_USAGE_RETENTION_DAYS,
   REPORTS_COLLECTION,
 } from "../src/reportMaterial";
 import type { ReportMaterialDeps } from "../src/reportMaterial";
@@ -51,7 +52,7 @@ test("報告を残し、文章を書かずにオーナーへ知らせる", async
 
   const usage = (await db.collection(REPORT_USAGE_COLLECTION).doc(uid).get()).data();
   assert.equal(usage?.count, 1);
-  assert.equal(usage?.expireAt.toMillis(), daysLater(day, 2).toMillis());
+  assert.equal(usage?.expireAt.toMillis(), daysLater(day, REPORT_USAGE_RETENTION_DAYS).toMillis());
 });
 
 test("models/ の形のモデル名も受け付ける", async () => {
@@ -100,7 +101,8 @@ test("1人1日の上限を超えたら断り、次の日はまた受け付ける
 });
 
 test("Firestore に書けなければ report_failed で断り、知らせない", async () => {
-  const { notifications } = fakeDeps(uniqueDay());
+  const { deps, notifications } = fakeDeps(uniqueDay());
+  // runTransaction だけを失敗させ、ほかはエミュレーターの Firestore をそのまま使う
   const failingDb = Object.create(db, {
     runTransaction: {
       value: async () => {
@@ -108,14 +110,10 @@ test("Firestore に書けなければ report_failed で断り、知らせない"
       },
     },
   });
-  const deps: ReportMaterialDeps = {
-    db: failingDb,
-    notifyOwner: async (message) => {
-      notifications.push(message);
-    },
-    now: () => uniqueDay(),
-  };
-  await assert.rejects(handleReportMaterial(uniqueUid(), REPORT, deps), rejectsWith("report_failed", "unavailable"));
+  await assert.rejects(
+    handleReportMaterial(uniqueUid(), REPORT, { ...deps, db: failingDb }),
+    rejectsWith("report_failed", "unavailable"),
+  );
   assert.equal(notifications.length, 0);
 });
 

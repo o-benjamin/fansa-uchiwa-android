@@ -89,7 +89,7 @@ class AiMaterialRepositoryImpl @Inject constructor(
 
     // Play 開発者サービス（ML Kit）や Firebase の Task が取り消されたときも await() は CancellationException を投げる。
     // 呼び出し元のコルーチンが取り消されたときだけそのまま投げ、それ以外は失敗として画面に出す
-    // （投げたままにすると、画面が「作っています」「送っています」のまま戻れなくなる）
+    // （投げたままにすると、画面が「作っています」のまま、または報告のボタンが押せないまま戻れなくなる）
     private suspend fun <T> runServerCall(block: suspend () -> T): Result<T> = try {
         Result.success(block())
     } catch (e: CancellationException) {
