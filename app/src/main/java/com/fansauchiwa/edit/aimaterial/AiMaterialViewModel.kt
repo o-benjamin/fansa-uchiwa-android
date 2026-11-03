@@ -7,6 +7,7 @@ import com.fansauchiwa.analytics.AiMaterialParams
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
@@ -36,6 +37,12 @@ class AiMaterialViewModel @Inject constructor(
 
     // 二度押しで同じ素材を2回置かない・2回数えない
     private var isConfirmed = false
+
+    fun logScreenView() {
+        viewModelScope.launch {
+            analyticsRepository.logScreenView(AnalyticsScreens.AI_MATERIAL_SCREEN)
+        }
+    }
 
     fun updatePrompt(prompt: String) = updateInput { it.copy(prompt = prompt) }
 

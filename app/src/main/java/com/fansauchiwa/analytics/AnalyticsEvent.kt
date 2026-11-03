@@ -21,6 +21,7 @@ object AnalyticsScreens {
     const val PREVIEW_SCREEN = "preview_screen"
     const val IMAGE_PREVIEW_SCREEN = "image_preview_screen"
     const val EVENT_TIMELINE_SCREEN = "event_timeline_screen"
+    const val AI_MATERIAL_SCREEN = "ai_material_screen"
 }
 
 /**
