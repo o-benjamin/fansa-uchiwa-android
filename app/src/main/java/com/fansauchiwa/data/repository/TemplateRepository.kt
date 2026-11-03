@@ -24,12 +24,14 @@ class DefaultTemplateRepository @Inject constructor(
     private val templates = templateList + candidates.map { it.templates }.orElse(emptyList())
 
     override suspend fun getTemplates(): List<Template> {
-        val density = displayDensityDataSource.getDensityStream().first()
+        val density = currentDensity()
         return templates.map { it.scaledToDensity(density) }
     }
 
     override suspend fun getTemplateById(id: String): Template? {
-        val density = displayDensityDataSource.getDensityStream().first()
+        val density = currentDensity()
         return templates.find { it.id == id }?.scaledToDensity(density)
     }
+
+    private suspend fun currentDensity(): Float = displayDensityDataSource.getDensityStream().first()
 }

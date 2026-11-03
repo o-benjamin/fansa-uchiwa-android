@@ -8,6 +8,10 @@ import com.fansauchiwa.NAME_TEMPLATE_HONORIFIC_PLACEHOLDER_TEXT
 import com.fansauchiwa.NAME_TEMPLATE_LAST_NAME_PLACEHOLDER_TEXT
 import com.fansauchiwa.edit.FontFamilies
 
+/**
+ * 組み込みのテンプレート。位置と縁の太さは基準の密度（[TEMPLATE_BASE_DENSITY]）の px で持ち、
+ * `TemplateRepository` が端末の密度に合わせて伸ばして返す（[scaledToDensity]）。画面に出すときは直接読まず `TemplateRepository` を通す。
+ */
 val templateList: List<Template> = listOf(
 
     Template(

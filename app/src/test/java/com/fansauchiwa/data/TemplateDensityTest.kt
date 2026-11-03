@@ -55,24 +55,25 @@ class TemplateDensityTest {
         // 3.5 / 2.625 = 4/3
         val scaled = template.scaledToDensity(3.5f).savedUchiwa.decorations[0] as Decoration.Text
 
-        assertEquals(-28f, scaled.offset.x, DELTA)
-        assertEquals(200f, scaled.offset.y, DELTA)
-        assertEquals(13.333333f, scaled.strokeWidth, DELTA)
-        assertEquals(20f, scaled.secondBorderWidth, DELTA)
+        assertEquals(-21f * 4f / 3f, scaled.offset.x, DELTA)
+        assertEquals(150f * 4f / 3f, scaled.offset.y, DELTA)
+        assertEquals(10f * 4f / 3f, scaled.strokeWidth, DELTA)
+        assertEquals(15f * 4f / 3f, scaled.secondBorderWidth, DELTA)
     }
 
     @Test
     fun scaledToDensity_lowerDensity_shrinksStickerOffset() {
-        // 2.0 / 2.625 = 0.7619...
+        // 2.0 / 2.625 = 16/21
         val scaled = template.scaledToDensity(2.0f).savedUchiwa.decorations[1] as Decoration.Sticker
 
-        assertEquals(152.38095f, scaled.offset.x, DELTA)
-        assertEquals(-121.90476f, scaled.offset.y, DELTA)
+        assertEquals(200f * 16f / 21f, scaled.offset.x, DELTA)
+        assertEquals(-160f * 16f / 21f, scaled.offset.y, DELTA)
     }
 
     @Test
     fun scaledToDensity_higherDensity_scalesOverallBorderWidth() {
-        assertEquals(5.3333335f, template.scaledToDensity(3.5f).savedUchiwa.overallBorderWidth, DELTA)
+        // 3.5 / 2.625 = 4/3
+        assertEquals(4f * 4f / 3f, template.scaledToDensity(3.5f).savedUchiwa.overallBorderWidth, DELTA)
     }
 
     @Test
@@ -86,8 +87,8 @@ class TemplateDensityTest {
     fun scaledToDensity_higherDensity_scalesImageOffsetOnly() {
         val scaled = template.scaledToDensity(3.5f).savedUchiwa.decorations[2] as Decoration.Image
 
-        assertEquals(40f, scaled.offset.x, DELTA)
-        assertEquals(-80f, scaled.offset.y, DELTA)
+        assertEquals(30f * 4f / 3f, scaled.offset.x, DELTA)
+        assertEquals(-60f * 4f / 3f, scaled.offset.y, DELTA)
         assertEquals(image.copy(offset = scaled.offset), scaled)
     }
 
@@ -127,7 +128,8 @@ class TemplateDensityTest {
         val scaled = empty.scaledToDensity(2.0f)
 
         assertEquals(emptyList<Decoration>(), scaled.savedUchiwa.decorations)
-        assertEquals(3.047619f, scaled.savedUchiwa.overallBorderWidth, DELTA)
+        // 2.0 / 2.625 = 16/21
+        assertEquals(4f * 16f / 21f, scaled.savedUchiwa.overallBorderWidth, DELTA)
     }
 
     private companion object {

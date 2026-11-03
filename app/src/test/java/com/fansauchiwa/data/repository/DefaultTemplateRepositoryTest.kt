@@ -1,12 +1,12 @@
 package com.fansauchiwa.data.repository
 
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.TEMPLATE_BASE_DENSITY
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.TemplateCandidates
 import com.fansauchiwa.data.infra.DisplayDensityDataSource
-import com.fansauchiwa.data.scaledToDensity
 import com.fansauchiwa.data.templateList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -24,6 +24,7 @@ class DefaultTemplateRepositoryTest {
             decorations = emptyList(),
             uchiwaColor = Color.Black,
             backgroundColor = Color.Black,
+            // 飾りがないので、密度で変わる値を持たせて、候補も伸ばされたことを比べられるようにする
             overallBorderWidth = 4f
         )
     )
@@ -50,7 +51,15 @@ class DefaultTemplateRepositoryTest {
     fun getTemplates_higherDensity_returnsTemplatesAndCandidatesScaledToDensity() = runTest {
         val repository = DefaultTemplateRepository(Optional.of(TemplateCandidates(listOf(candidate))), densitySource(3.5f))
 
-        assertEquals((templateList + candidate).map { it.scaledToDensity(3.5f) }, repository.getTemplates())
+        val templates = repository.getTemplates()
+        val originalText = templateList.first().savedUchiwa.decorations.first() as Decoration.Text
+        val scaledText = templates.first().savedUchiwa.decorations.first() as Decoration.Text
+
+        assertEquals((templateList + candidate).map { it.id }, templates.map { it.id })
+        // 3.5 / 2.625 = 4/3
+        assertEquals(originalText.offset.x * 4f / 3f, scaledText.offset.x, DELTA)
+        assertEquals(originalText.offset.y * 4f / 3f, scaledText.offset.y, DELTA)
+        assertEquals(4f * 4f / 3f, templates.last().savedUchiwa.overallBorderWidth, DELTA)
     }
 
     @Test
@@ -63,8 +72,12 @@ class DefaultTemplateRepositoryTest {
     @Test
     fun getTemplateById_higherDensity_returnsTemplateScaledToDensity() = runTest {
         val repository = DefaultTemplateRepository(Optional.empty(), densitySource(3.5f))
+        val original = templateList.first()
 
-        assertEquals(templateList.first().scaledToDensity(3.5f), repository.getTemplateById(templateList.first().id))
+        val scaled = requireNotNull(repository.getTemplateById(original.id))
+
+        // 3.5 / 2.625 = 4/3
+        assertEquals(original.savedUchiwa.overallBorderWidth * 4f / 3f, scaled.savedUchiwa.overallBorderWidth, DELTA)
     }
 
     @Test
@@ -72,5 +85,9 @@ class DefaultTemplateRepositoryTest {
         val repository = DefaultTemplateRepository(Optional.empty(), densitySource())
 
         assertNull(repository.getTemplateById("candidate_1"))
+    }
+
+    private companion object {
+        const val DELTA = 0.0001f
     }
 }

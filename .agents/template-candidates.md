@@ -45,8 +45,8 @@ adb shell wm density
 - 対象は、飾りの id が `candidate_N_M` の行だけ。写真（`Decoration.Image`）が入った行は入れない。同じ候補が2行あれば、要るほうを選ぶ
 - 飾りは JSON で、既定値の項目は保存されない。`Decoration.kt` の既定値で埋めて読む。色は `Color.value` を符号付きの Long にした値で、sRGB の色は上位32ビットが ARGB
 - `TemplateList.kt` には `Template(id = "template_N", ..., isNameInputPlaceholderEnabled = false)` の形で足す。`template_N` は連番、飾りの id は UUID にする
-- テンプレートと候補の位置・文字の縁（`strokeWidth`・`secondBorderWidth`）・全体の縁（`overallBorderWidth`）は、基準の密度 2.625（Pixel_10）の px で持つ。アプリは開くときにこれらを `密度 / 2.625` 倍する（`TemplateDensity.kt`、#381）。ステッカーの縁は 24×24 の座標の単位なので変えない
+- テンプレートと候補の位置・文字の縁（`strokeWidth`・`secondBorderWidth`）・全体の縁（`overallBorderWidth`）は、基準の密度 2.625（Pixel_10）の px で持つ。アプリは `TemplateRepository` から取り出すとき（ホームの一覧も編集画面も）に、これらを `密度 / 2.625` 倍する（`TemplateDensity.kt`、#381）。ステッカーの縁はベクター画像の viewport（24×24）の座標で描かれ、ステッカーと一緒に伸びるので変えない
 - 保存データはその端末の px なので、取り込むときは上の値を `密度 / 2.625` で割って基準の密度に戻す。密度は `wm density` の値（Override があればそちら）を 160 で割ったもの。取り込んだ `Template` のコメントに残す
-- シェイクの書き出し（ログ `TemplateExport`）は `isPuffyEnabled`・`isPukupuku` を出さないので、取り込みには使わない
+- シェイクの書き出し（ログ `TemplateExport`）は `isPuffyEnabled`・`isPukupuku` を出さず、位置と縁の太さも端末の px のまま出す（そのまま貼ると二重に伸びる）ので、取り込みには使わない
 
 会社の作業リポジトリの `scripts/materials/template_lab.py`（`candidates` と `pull`）は、この手順を自動にしたもの。なくても上の手順でできる。`candidates` は `TemplateCandidateList.kt` を丸ごと作り直すので、手で直した分は消える。
