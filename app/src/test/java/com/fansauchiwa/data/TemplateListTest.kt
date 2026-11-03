@@ -2,7 +2,9 @@ package com.fansauchiwa.data
 
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.edit.FontFamilies
+import com.fansauchiwa.ui.StickerAsset
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TemplateListTest {
@@ -65,5 +67,26 @@ class TemplateListTest {
         assertEquals(selectedMainColor, frontText.color)
         assertEquals(Color.White, otherText.color)
         assertEquals(DecorationColors.BLUE.value, sticker.color)
+    }
+
+    // 名前を間違えたステッカーは例外を出さず描かれないので、ここで止める
+    @Test
+    fun templateList_stickers_existInStickerAssets() {
+        val knownLabels = StickerAsset.entries.map { it.type }
+        val labels = templateList
+            .flatMap { it.savedUchiwa.decorations }
+            .filterIsInstance<Decoration.Sticker>()
+            .map { it.label }
+
+        assertTrue(knownLabels.containsAll(labels))
+    }
+
+    @Test
+    fun templateList_decorationIds_areUniqueWithinTemplate() {
+        templateList.forEach { template ->
+            val ids = template.savedUchiwa.decorations.map { it.id }
+
+            assertEquals(template.id, ids.size, ids.toSet().size)
+        }
     }
 }
