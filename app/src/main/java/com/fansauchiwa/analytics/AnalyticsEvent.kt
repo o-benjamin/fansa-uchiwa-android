@@ -21,6 +21,7 @@ object AnalyticsScreens {
     const val PREVIEW_SCREEN = "preview_screen"
     const val IMAGE_PREVIEW_SCREEN = "image_preview_screen"
     const val EVENT_TIMELINE_SCREEN = "event_timeline_screen"
+    const val AI_MATERIAL_SCREEN = "ai_material_screen"
 }
 
 /**
@@ -61,6 +62,9 @@ object AnalyticsActions {
 
     const val BACKGROUND_REMOVAL_SUCCESS = "background_removal_success"
     const val BACKGROUND_REMOVAL_FAILURE = "background_removal_failure"
+
+    const val GENERATE_AI_MATERIAL = "generate_ai_material"
+    const val SAVE_AI_MATERIAL = "save_ai_material"
 
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
     const val TAP_PREVIEW_SHARE = "tap_preview_share"
