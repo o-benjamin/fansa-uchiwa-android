@@ -227,6 +227,16 @@
     <string name="ai_material_error_generation_failed">うまく作れませんでした。回数は減っていません。もう一度お試しください</string>
     <string name="ai_material_error_unavailable">今は作れません。時間をおいてお試しください</string>
     <string name="ai_material_error_failed">作れませんでした。通信状況を確認して、もう一度お試しください</string>
+    <string name="ai_material_report">この素材を報告する</string>
+    <string name="ai_material_report_message">頼んだ文章と選んだ理由を、匿名の利用者 ID とあわせて開発者に送ります。絵は送りません</string>
+    <string name="ai_material_report_reason_inappropriate">不快・不適切な内容</string>
+    <string name="ai_material_report_reason_real_person">実在の人に似ている</string>
+    <string name="ai_material_report_reason_rights">ほかの作品やキャラクターに似ている</string>
+    <string name="ai_material_report_reason_other">その他</string>
+    <string name="ai_material_report_send">送る</string>
+    <string name="ai_material_report_sent">報告を送りました。ありがとうございます</string>
+    <string name="ai_material_report_limit_reached">今日はこれ以上報告できません。明日また送ってください</string>
+    <string name="ai_material_report_failed">報告を送れませんでした。通信状況を確認して、もう一度お試しください</string>
 
     <!-- お詫びダイアログ -->
     <string name="apology_dialog_title">お詫びとお知らせ</string>

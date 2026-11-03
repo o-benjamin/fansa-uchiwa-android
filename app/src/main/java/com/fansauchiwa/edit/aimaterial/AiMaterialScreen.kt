@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,6 +54,7 @@ import com.fansauchiwa.R
 import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
@@ -88,7 +93,8 @@ fun AiMaterialScreen(
         onRemoveSourceImage = { viewModel.updateSourceImage(null) },
         onGenerate = viewModel::generate,
         onDiscardResult = viewModel::discardResult,
-        onConfirm = viewModel::confirm
+        onConfirm = viewModel::confirm,
+        onReport = viewModel::report
     )
 }
 
@@ -102,7 +108,8 @@ private fun AiMaterialScreenContent(
     onRemoveSourceImage: () -> Unit,
     onGenerate: () -> Unit,
     onDiscardResult: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    onReport: (AiMaterialReportReason) -> Unit
 ) {
     val generation = uiState.generation
     val isGenerating = generation is AiMaterialGeneration.Generating
@@ -152,8 +159,10 @@ private fun AiMaterialScreenContent(
             if (generation is AiMaterialGeneration.Succeeded) {
                 AiMaterialResult(
                     image = generation.image,
+                    reportStatus = uiState.reportStatus,
                     onDiscardResult = onDiscardResult,
-                    onConfirm = onConfirm
+                    onConfirm = onConfirm,
+                    onReport = onReport
                 )
             } else {
                 AiMaterialInput(
@@ -277,10 +286,24 @@ private fun AiMaterialSourceImage(
 @Composable
 private fun AiMaterialResult(
     image: AiMaterialImage,
+    reportStatus: AiMaterialReportStatus,
     onDiscardResult: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    onReport: (AiMaterialReportReason) -> Unit
 ) {
     val hapticManager = rememberFansaHapticManager()
+    var showReportDialog by remember { mutableStateOf(false) }
+
+    if (showReportDialog) {
+        AiMaterialReportDialog(
+            initialReason = null,
+            onSend = { reason ->
+                showReportDialog = false
+                onReport(reason)
+            },
+            onDismiss = { showReportDialog = false }
+        )
+    }
 
     AsyncImage(
         model = image.uri,
@@ -310,6 +333,107 @@ private fun AiMaterialResult(
     OutlinedButton(onClick = onDiscardResult, modifier = Modifier.fillMaxWidth()) {
         Text(text = stringResource(R.string.ai_material_discard))
     }
+
+    AiMaterialReportSection(
+        reportStatus = reportStatus,
+        onClick = { showReportDialog = true }
+    )
+}
+
+// Google Play の AI 生成コンテンツのポリシーで、不快な生成物をアプリの中から報告できることが要る
+@Composable
+private fun AiMaterialReportSection(
+    reportStatus: AiMaterialReportStatus,
+    onClick: () -> Unit
+) {
+    when (reportStatus) {
+        AiMaterialReportStatus.SENT -> Text(
+            text = stringResource(R.string.ai_material_report_sent),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        AiMaterialReportStatus.LIMIT_REACHED -> Text(
+            text = stringResource(R.string.ai_material_report_limit_reached),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        AiMaterialReportStatus.NOT_SENT,
+        AiMaterialReportStatus.SENDING,
+        AiMaterialReportStatus.FAILED -> {
+            // 送っている間は押せない（同じ素材を2回送らない）
+            TextButton(
+                onClick = onClick,
+                enabled = reportStatus != AiMaterialReportStatus.SENDING,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = stringResource(R.string.ai_material_report))
+            }
+            if (reportStatus == AiMaterialReportStatus.FAILED) {
+                Text(
+                    text = stringResource(R.string.ai_material_report_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiMaterialReportDialog(
+    initialReason: AiMaterialReportReason?,
+    onSend: (AiMaterialReportReason) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedReason by remember { mutableStateOf(initialReason) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.ai_material_report)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(text = stringResource(R.string.ai_material_report_message))
+                Column(modifier = Modifier.selectableGroup()) {
+                    AiMaterialReportReason.entries.forEach { reason ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = reason == selectedReason,
+                                    onClick = { selectedReason = reason },
+                                    role = Role.RadioButton
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            RadioButton(selected = reason == selectedReason, onClick = null)
+                            Text(text = stringResource(reason.labelResId()))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { selectedReason?.let(onSend) },
+                enabled = selectedReason != null
+            ) {
+                Text(text = stringResource(R.string.ai_material_report_send))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@StringRes
+private fun AiMaterialReportReason.labelResId(): Int = when (this) {
+    AiMaterialReportReason.INAPPROPRIATE -> R.string.ai_material_report_reason_inappropriate
+    AiMaterialReportReason.REAL_PERSON -> R.string.ai_material_report_reason_real_person
+    AiMaterialReportReason.RIGHTS -> R.string.ai_material_report_reason_rights
+    AiMaterialReportReason.OTHER -> R.string.ai_material_report_reason_other
 }
 
 @Composable
@@ -387,16 +511,77 @@ private fun AiMaterialScreenSucceededPreview() {
     AiMaterialScreenPreview(
         AiMaterialUiState(
             prompt = "笑顔の星",
-            generation = AiMaterialGeneration.Succeeded(
-                AiMaterialImage(
-                    uri = Uri.EMPTY,
-                    backgroundRemoved = false,
-                    payment = AiMaterialPayment.FREE,
-                    ticketsRemaining = 0
-                )
-            )
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE.copy(backgroundRemoved = false))
         )
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenReportSendingPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE),
+            reportStatus = AiMaterialReportStatus.SENDING
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenReportSentPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE),
+            reportStatus = AiMaterialReportStatus.SENT
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenReportFailedPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE),
+            reportStatus = AiMaterialReportStatus.FAILED
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenReportLimitReachedPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE),
+            reportStatus = AiMaterialReportStatus.LIMIT_REACHED
+        )
+    )
+}
+
+@Preview
+@Composable
+private fun AiMaterialReportDialogPreview() {
+    FansaUchiwaTheme {
+        AiMaterialReportDialog(initialReason = null, onSend = {}, onDismiss = {})
+    }
+}
+
+@Preview
+@Composable
+private fun AiMaterialReportDialogSelectedPreview() {
+    FansaUchiwaTheme {
+        AiMaterialReportDialog(
+            initialReason = AiMaterialReportReason.REAL_PERSON,
+            onSend = {},
+            onDismiss = {}
+        )
+    }
 }
 
 @Composable
@@ -410,7 +595,16 @@ private fun AiMaterialScreenPreview(uiState: AiMaterialUiState) {
             onRemoveSourceImage = {},
             onGenerate = {},
             onDiscardResult = {},
-            onConfirm = {}
+            onConfirm = {},
+            onReport = {}
         )
     }
 }
+
+private val PREVIEW_IMAGE = AiMaterialImage(
+    uri = Uri.EMPTY,
+    backgroundRemoved = true,
+    payment = AiMaterialPayment.FREE,
+    ticketsRemaining = 0,
+    model = "gemini-3.1-flash-lite-image"
+)

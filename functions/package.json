@@ -1,7 +1,7 @@
 {
   "name": "fansa-uchiwa-functions",
   "private": true,
-  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）",
+  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）と報告（reportMaterial）",
   "main": "lib/src/index.js",
   "engines": {
     "node": "22"
