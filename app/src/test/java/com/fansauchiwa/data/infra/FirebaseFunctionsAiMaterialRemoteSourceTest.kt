@@ -2,10 +2,12 @@ package com.fansauchiwa.data.infra
 
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialSourceImage
 import com.fansauchiwa.data.GeneratedAiMaterial
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.parseResponse
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.rejectReasonFrom
+import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.toReportRequest
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.toRequest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -17,7 +19,8 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
         "image" to "aW1n",
         "mimeType" to "image/png",
         "paidWith" to "ticket",
-        "ticketsRemaining" to 4
+        "ticketsRemaining" to 4,
+        "model" to "gemini-3.1-flash-lite-image"
     )
 
     @Test
@@ -50,7 +53,7 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
     @Test
     fun parseResponse_valid_returnsMaterial() {
         assertEquals(
-            GeneratedAiMaterial("aW1n", "image/png", AiMaterialPayment.TICKET, 4),
+            GeneratedAiMaterial("aW1n", "image/png", AiMaterialPayment.TICKET, 4, "gemini-3.1-flash-lite-image"),
             parseResponse(validBody)
         )
     }
@@ -73,5 +76,18 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
     @Test(expected = IllegalArgumentException::class)
     fun parseResponse_unknownPayment_throws() {
         parseResponse(validBody + ("paidWith" to "coupon"))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun parseResponse_missingModel_throws() {
+        parseResponse(validBody - "model")
+    }
+
+    @Test
+    fun toReportRequest_sendsPromptReasonServerValueAndModel() {
+        assertEquals(
+            mapOf("prompt" to "星", "reason" to "real_person", "model" to "gemini-3.1-flash-lite-image"),
+            toReportRequest("星", AiMaterialReportReason.REAL_PERSON, "gemini-3.1-flash-lite-image")
+        )
     }
 }

@@ -5,15 +5,18 @@ import com.fansauchiwa.data.AiMaterialFaceCheckException
 import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.infra.AiMaterialDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageDataSource
+import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
 /**
- * AI 素材の生成（#338）
+ * AI 素材の生成（#338）と報告・入口スイッチ（#339）
  */
 interface AiMaterialRepository {
     /**
@@ -23,6 +26,17 @@ interface AiMaterialRepository {
      * `AiMaterialFaceCheckException`
      */
     suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage>
+
+    /**
+     * 作った素材を報告する。頼んだ文章・理由・モデル名をサーバーに送る（画像は送らない）
+     */
+    suspend fun report(prompt: String, reason: AiMaterialReportReason, model: String): Result<Unit>
+
+    /**
+     * 入口を出してよいか（Remote Config の `ai_material_enabled`。既定は false）。
+     * 取得を試みてから流す。サーバーも同じ値を見て断るので、ここが true でも作れないことはある
+     */
+    fun isEntryEnabledStream(): Flow<Boolean>
 }
 
 class AiMaterialRepositoryImpl @Inject constructor(
@@ -30,7 +44,8 @@ class AiMaterialRepositoryImpl @Inject constructor(
     private val imageProcessingRepository: ImageProcessingRepository,
     private val aiMaterialDataSource: AiMaterialDataSource,
     private val aiMaterialImageDataSource: AiMaterialImageDataSource,
-    private val crashReportingRepository: CrashReportingRepository
+    private val crashReportingRepository: CrashReportingRepository,
+    private val remoteConfigDataSource: RemoteConfigDataSource
 ) : AiMaterialRepository {
 
     override suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage> = try {
@@ -55,7 +70,8 @@ class AiMaterialRepositoryImpl @Inject constructor(
                 uri = cutOutUri ?: generatedUri,
                 backgroundRemoved = cutOutUri != null,
                 payment = material.payment,
-                ticketsRemaining = material.ticketsRemaining
+                ticketsRemaining = material.ticketsRemaining,
+                model = material.model
             )
         )
     } catch (e: CancellationException) {
@@ -67,4 +83,23 @@ class AiMaterialRepositoryImpl @Inject constructor(
     } catch (e: Exception) {
         Result.failure(e)
     }
+
+    override suspend fun report(
+        prompt: String,
+        reason: AiMaterialReportReason,
+        model: String
+    ): Result<Unit> = try {
+        authRepository.prepareForServerCall()
+        aiMaterialDataSource.reportMaterial(prompt, reason, model)
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        // generate と同じく、Firebase の Task の取り消しは失敗として画面に出す
+        currentCoroutineContext().ensureActive()
+        Result.failure(e)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override fun isEntryEnabledStream(): Flow<Boolean> =
+        remoteConfigDataSource.getAiMaterialEnabledStream()
 }

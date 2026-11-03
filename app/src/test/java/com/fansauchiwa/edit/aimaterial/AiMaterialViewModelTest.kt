@@ -10,6 +10,7 @@ import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import io.mockk.coEvery
@@ -23,6 +24,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -50,7 +52,8 @@ class AiMaterialViewModelTest {
             uri = resultUri,
             backgroundRemoved = true,
             payment = AiMaterialPayment.TICKET,
-            ticketsRemaining = 4
+            ticketsRemaining = 4,
+            model = MODEL
         )
     }
 
@@ -280,7 +283,120 @@ class AiMaterialViewModelTest {
         assertFalse(AiMaterialGeneration.Rejected(AiMaterialRejectReason.MODERATION).offersPurchase)
     }
 
+    @Test
+    fun `報告すると文章と理由とモデル名を送り、送れたことを持って計測する`() = runTest(testDispatcher) {
+        stubGenerate(Result.success(image))
+        coEvery { repository.report(any(), any(), any()) } returns Result.success(Unit)
+        val viewModel = generatedViewModel("  ピンクのハート  ")
+
+        viewModel.report(AiMaterialReportReason.REAL_PERSON)
+        advanceUntilIdle()
+
+        assertEquals(AiMaterialReportStatus.SENT, viewModel.uiState.value.reportStatus)
+        assertFalse(viewModel.uiState.value.canReport)
+        coVerify { repository.report("ピンクのハート", AiMaterialReportReason.REAL_PERSON, MODEL) }
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.REPORT_AI_MATERIAL,
+                    mapOf(
+                        AiMaterialParams.PARAM_REASON to "real_person",
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `報告を送れなければ例外を記録し、もう一度送れるようにする`() = runTest(testDispatcher) {
+        val error = IllegalStateException("通信できない")
+        stubGenerate(Result.success(image))
+        coEvery { repository.report(any(), any(), any()) } returns Result.failure(error)
+        val viewModel = generatedViewModel("ハート")
+
+        viewModel.report(AiMaterialReportReason.OTHER)
+        advanceUntilIdle()
+
+        assertEquals(AiMaterialReportStatus.FAILED, viewModel.uiState.value.reportStatus)
+        assertTrue(viewModel.uiState.value.canReport)
+        verify { crashReportingRepository.recordException(error) }
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.REPORT_AI_MATERIAL,
+                    mapOf(
+                        AiMaterialParams.PARAM_REASON to "other",
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `送っている間と送ったあとは、同じ素材をもう一度報告しない`() = runTest(testDispatcher) {
+        val pending = CompletableDeferred<Result<Unit>>()
+        stubGenerate(Result.success(image))
+        coEvery { repository.report(any(), any(), any()) } coAnswers { pending.await() }
+        val viewModel = generatedViewModel("ハート")
+
+        viewModel.report(AiMaterialReportReason.OTHER)
+        viewModel.report(AiMaterialReportReason.OTHER)
+        advanceUntilIdle()
+        assertEquals(AiMaterialReportStatus.SENDING, viewModel.uiState.value.reportStatus)
+
+        pending.complete(Result.success(Unit))
+        advanceUntilIdle()
+        viewModel.report(AiMaterialReportReason.OTHER)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { repository.report(any(), any(), any()) }
+    }
+
+    @Test
+    fun `結果がないときは報告しない`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.updatePrompt("ハート")
+        viewModel.report(AiMaterialReportReason.OTHER)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.report(any(), any(), any()) }
+        assertEquals(AiMaterialReportStatus.NOT_SENT, viewModel.uiState.value.reportStatus)
+    }
+
+    @Test
+    fun `送っている間に捨てたら、次の素材に報告の結果を持ち越さない`() = runTest(testDispatcher) {
+        val pending = CompletableDeferred<Result<Unit>>()
+        stubGenerate(Result.success(image))
+        coEvery { repository.report(any(), any(), any()) } coAnswers { pending.await() }
+        val viewModel = generatedViewModel("ハート")
+
+        viewModel.report(AiMaterialReportReason.OTHER)
+        advanceUntilIdle()
+        viewModel.discardResult()
+        assertEquals(AiMaterialReportStatus.NOT_SENT, viewModel.uiState.value.reportStatus)
+
+        viewModel.generate()
+        advanceUntilIdle()
+        pending.complete(Result.success(Unit))
+        advanceUntilIdle()
+
+        assertEquals(AiMaterialReportStatus.NOT_SENT, viewModel.uiState.value.reportStatus)
+        assertTrue(viewModel.uiState.value.canReport)
+    }
+
+    private fun TestScope.generatedViewModel(prompt: String): AiMaterialViewModel {
+        val viewModel = createViewModel()
+        viewModel.updatePrompt(prompt)
+        viewModel.generate()
+        advanceUntilIdle()
+        return viewModel
+    }
+
     private companion object {
         const val RESULT_URI = "file:///cache/material.png"
+        const val MODEL = "gemini-3.1-flash-lite-image"
     }
 }

@@ -9,6 +9,7 @@ import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -83,7 +84,10 @@ class AiMaterialViewModel @Inject constructor(
     fun discardResult() {
         _uiState.update { state ->
             if (state.generation is AiMaterialGeneration.Succeeded) {
-                state.copy(generation = AiMaterialGeneration.Idle)
+                state.copy(
+                    generation = AiMaterialGeneration.Idle,
+                    reportStatus = AiMaterialReportStatus.NOT_SENT
+                )
             } else {
                 state
             }
@@ -102,6 +106,47 @@ class AiMaterialViewModel @Inject constructor(
                 )
             )
             _confirmEvent.emit(image.uri.toString())
+        }
+    }
+
+    /**
+     * 見ている素材を報告する。頼んだ文章は結果を見ている間は変わらないので、入力欄の文章をそのまま送る
+     */
+    fun report(reason: AiMaterialReportReason) {
+        val state = _uiState.value
+        if (!state.canReport) return
+        val generation = state.generation as AiMaterialGeneration.Succeeded
+        _uiState.value = state.copy(reportStatus = AiMaterialReportStatus.SENDING)
+        viewModelScope.launch {
+            val result = aiMaterialRepository.report(state.prompt.trim(), reason, generation.image.model)
+            result.onFailure { crashReportingRepository.recordException(it) }
+            // 送っている間に捨てられたら、次の素材に結果を持ち越さない（同じ絵が返っても別の結果として扱う）
+            _uiState.update {
+                if (it.generation !== generation) {
+                    it
+                } else {
+                    it.copy(
+                        reportStatus = if (result.isSuccess) {
+                            AiMaterialReportStatus.SENT
+                        } else {
+                            AiMaterialReportStatus.FAILED
+                        }
+                    )
+                }
+            }
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.REPORT_AI_MATERIAL,
+                    params = mapOf(
+                        AiMaterialParams.PARAM_REASON to reason.serverValue,
+                        AiMaterialParams.PARAM_RESULT to if (result.isSuccess) {
+                            AiMaterialParams.RESULT_SUCCESS
+                        } else {
+                            AiMaterialParams.RESULT_FAILED
+                        }
+                    )
+                )
+            )
         }
     }
 

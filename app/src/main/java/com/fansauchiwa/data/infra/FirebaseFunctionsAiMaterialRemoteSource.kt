@@ -3,6 +3,7 @@ package com.fansauchiwa.data.infra
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialSourceImage
 import com.fansauchiwa.data.GeneratedAiMaterial
 import com.google.firebase.functions.FirebaseFunctions
@@ -29,8 +30,19 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
         return parseResponse(response.getData())
     }
 
+    override suspend fun reportMaterial(
+        prompt: String,
+        reason: AiMaterialReportReason,
+        model: String
+    ) {
+        functions.getHttpsCallable(REPORT_FUNCTION_NAME)
+            .call(toReportRequest(prompt, reason, model))
+            .await()
+    }
+
     companion object {
         private const val FUNCTION_NAME = "generateMaterial"
+        private const val REPORT_FUNCTION_NAME = "reportMaterial"
 
         // 既定の70秒だと、サーバー（timeoutSeconds: 120）が作り終える前に諦めて、回数だけ減ってしまう
         private const val CALL_TIMEOUT_SECONDS = 130L
@@ -48,6 +60,16 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
             }
         }
 
+        internal fun toReportRequest(
+            prompt: String,
+            reason: AiMaterialReportReason,
+            model: String
+        ): Map<String, Any> = mapOf(
+            "prompt" to prompt,
+            "reason" to reason.serverValue,
+            "model" to model
+        )
+
         internal fun rejectReasonFrom(details: Any?): AiMaterialRejectReason? =
             AiMaterialRejectReason.fromServerValue((details as? Map<*, *>)?.get("reason") as? String)
 
@@ -61,7 +83,8 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
                 ) { "応答の paidWith が想定外" },
                 ticketsRemaining = requireNotNull((body["ticketsRemaining"] as? Number)?.toInt()) {
                     "応答に ticketsRemaining がない"
-                }
+                },
+                model = requireNotNull(body["model"] as? String) { "応答に model がない" }
             )
         }
     }

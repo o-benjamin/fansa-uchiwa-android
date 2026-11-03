@@ -65,6 +65,7 @@ object AnalyticsActions {
 
     const val GENERATE_AI_MATERIAL = "generate_ai_material"
     const val SAVE_AI_MATERIAL = "save_ai_material"
+    const val REPORT_AI_MATERIAL = "report_ai_material"
 
     const val TAP_PREVIEW_EXPORT = "tap_preview_export"
     const val TAP_PREVIEW_SHARE = "tap_preview_share"

@@ -6,9 +6,10 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 | パラメータ | 型 | 使い道 | 初期値 |
 |---|---|---|---|
 | `affiliate_materials` | String（JSON） | 保存完了のダイアログに出す、うちわの材料の Amazon アソシエイトのリンク | 空文字（リンクの欄を出さない） |
+| `ai_material_enabled` | Boolean | AI 素材（#315）の入口を出すか。サーバー（`functions/src/entrySwitch.ts`）も同じ値を見て、閉じていれば生成を断る | false（入口を出さない） |
 | `ai_material_enabled` | Boolean | AI 素材の入口（#315）。いまはサーバー（`functions/` の generateMaterial）だけが読み、アプリは #339 で読む。初期値も条件の値もすべて `false` なら、古いアプリからの呼び出しもサーバーが断る（`functions/README.md`） | `false`（入口を出さない） |
 
-取得は、うちわのプレビュー画面を開いたとき。最小取得間隔は1時間なので、**コンソールで公開してから端末に届くまで最大約1時間**かかる。取得に失敗したら前回の値を使う（なければ空）。
+`affiliate_materials` の取得は、うちわのプレビュー画面を開いたとき（`ai_material_enabled` は入口を出す画面が取る。#340）。最小取得間隔は1時間なので、**コンソールで公開してから端末に届くまで最大約1時間**かかる。取得に失敗したら前回の値を使う（なければ空）。
 
 ## `affiliate_materials` の書き方
 
@@ -30,7 +31,13 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 
 **初めて公開する前に**、プライバシーポリシーの外部サービス一覧とデータセーフティの申告に、Remote Config と Amazon アソシエイトが載っていることを確かめる（経緯は #313）。
 
-## 止める・確かめる・うまく出ないとき
+## `ai_material_enabled` の使い方
+
+- アプリは値が `true` のときだけ入口を出す。だれに出すかは、Remote Config の条件（版・国・ユーザーの割合など）で分ける
+- サーバーは端末の条件を評価できないので、初期値と条件の値の**どれか1つでも `true` なら開いている**とみなす。すぐ止めたいときは、すべて `false` にして公開する（サーバーは1分以内に断り始め、アプリの入口は最大約1時間で消える）
+- 開ける前にそろえるもの（プライバシーポリシー・報告の TTL・断る名前の一覧など）は `functions/README.md` の「入口を初めて開ける前に」
+
+## 止める・確かめる・うまく出ないとき（`affiliate_materials`）
 
 - **止める**：値を空文字にして公開する（アプリの出し直しは要らない。反映まで最大約1時間）
 - **確かめる**：beta ビルドを入れてうちわを保存する。DebugView に `view_preview_affiliate`（保存完了のダイアログにリンクを出したとき）と `tap_preview_affiliate` が出る

@@ -6,15 +6,18 @@ import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialSourceImage
 import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.GeneratedAiMaterial
 import com.fansauchiwa.data.infra.AiMaterialDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageDataSource
+import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.io.IOException
@@ -22,6 +25,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -39,13 +44,14 @@ class AiMaterialRepositoryImplTest {
     private lateinit var dataSource: AiMaterialDataSource
     private lateinit var imageDataSource: AiMaterialImageDataSource
     private lateinit var crashReportingRepository: CrashReportingRepository
+    private lateinit var remoteConfigDataSource: RemoteConfigDataSource
     private lateinit var repository: AiMaterialRepositoryImpl
 
     private val sourceUri = mockk<Uri>()
     private val generatedUri = mockk<Uri>()
     private val cutOutUri = mockk<Uri>()
     private val encodedSource = AiMaterialSourceImage("image/jpeg", "c3Jj")
-    private val material = GeneratedAiMaterial("aW1n", "image/png", AiMaterialPayment.TICKET, 4)
+    private val material = GeneratedAiMaterial("aW1n", "image/png", AiMaterialPayment.TICKET, 4, MODEL)
 
     @Before
     fun setUp() {
@@ -54,6 +60,7 @@ class AiMaterialRepositoryImplTest {
         dataSource = mockk()
         imageDataSource = mockk()
         crashReportingRepository = mockk(relaxed = true)
+        remoteConfigDataSource = mockk()
         coEvery { authRepository.prepareForServerCall() } returns "uid"
         coEvery { imageDataSource.encodeSourceImage(sourceUri) } returns encodedSource
         coEvery { imageDataSource.writeGeneratedImage(material) } returns generatedUri
@@ -64,7 +71,8 @@ class AiMaterialRepositoryImplTest {
             imageProcessingRepository,
             dataSource,
             imageDataSource,
-            crashReportingRepository
+            crashReportingRepository,
+            remoteConfigDataSource
         )
     }
 
@@ -73,7 +81,7 @@ class AiMaterialRepositoryImplTest {
         coEvery { dataSource.generateMaterial("星", null) } returns material
 
         assertEquals(
-            AiMaterialImage(cutOutUri, true, AiMaterialPayment.TICKET, 4),
+            AiMaterialImage(cutOutUri, true, AiMaterialPayment.TICKET, 4, MODEL),
             repository.generate("星", null).getOrThrow()
         )
         coVerifyOrder {
@@ -125,7 +133,7 @@ class AiMaterialRepositoryImplTest {
             Result.failure(cause)
 
         assertEquals(
-            AiMaterialImage(generatedUri, false, AiMaterialPayment.TICKET, 4),
+            AiMaterialImage(generatedUri, false, AiMaterialPayment.TICKET, 4, MODEL),
             repository.generate("星", null).getOrThrow()
         )
         verify(exactly = 1) { crashReportingRepository.recordException(cause) }
@@ -171,5 +179,44 @@ class AiMaterialRepositoryImplTest {
 
         assertTrue(job.isCancelled)
         assertNull(result)
+    }
+
+    @Test
+    fun report_success_preparesAuthThenSendsReport() = runTest {
+        coEvery { dataSource.reportMaterial(any(), any(), any()) } returns Unit
+
+        assertTrue(repository.report("星", AiMaterialReportReason.RIGHTS, MODEL).isSuccess)
+        coVerifyOrder {
+            authRepository.prepareForServerCall()
+            dataSource.reportMaterial("星", AiMaterialReportReason.RIGHTS, MODEL)
+        }
+    }
+
+    @Test
+    fun report_serverFails_returnsFailure() = runTest {
+        coEvery { dataSource.reportMaterial(any(), any(), any()) } throws IOException("offline")
+
+        assertTrue(
+            repository.report("星", AiMaterialReportReason.OTHER, MODEL).exceptionOrNull() is IOException
+        )
+    }
+
+    @Test
+    fun report_authFails_returnsFailureWithoutCallingServer() = runTest {
+        coEvery { authRepository.prepareForServerCall() } throws IOException("offline")
+
+        assertTrue(repository.report("星", AiMaterialReportReason.OTHER, MODEL).isFailure)
+        coVerify(exactly = 0) { dataSource.reportMaterial(any(), any(), any()) }
+    }
+
+    @Test
+    fun isEntryEnabledStream_returnsRemoteConfigValue() = runTest {
+        every { remoteConfigDataSource.getAiMaterialEnabledStream() } returns flowOf(true)
+
+        assertTrue(repository.isEntryEnabledStream().first())
+    }
+
+    private companion object {
+        const val MODEL = "gemini-3.1-flash-lite-image"
     }
 }
