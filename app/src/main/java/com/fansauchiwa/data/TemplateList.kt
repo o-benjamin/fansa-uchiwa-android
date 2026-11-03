@@ -728,6 +728,207 @@ val templateList: List<Template> = listOf(
             isOverallBorderPuffyEnabled = false
         ),
         isNameInputPlaceholderEnabled = false
+    ),
+
+    // ピースして（基準の密度 2.625 で確認）
+    Template(
+        id = "template_9",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "ピース",
+                    id = "f7a43e21-1f92-4c33-aefe-e9ba950dc2d1",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = -4.0f,
+                    scale = 3.1f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "2701b0f1-5693-42ef-929b-8a55c2b81470",
+                    offset = Offset(-70.0f, 100.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "hand_peace",
+                    id = "9fdc8051-14a3-4050-b2e1-3fe66c5afb4f",
+                    offset = Offset(150.0f, 115.0f),
+                    rotation = 14.0f,
+                    scale = 1.0f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "68a38e94-6712-4296-bdbf-0bff598e287a",
+                    offset = Offset(-195.0f, -195.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // 手ふって（基準の密度 2.625 で確認）
+    Template(
+        id = "template_10",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "手",
+                    id = "4357ef8a-71ff-4425-8272-c8708ff37314",
+                    offset = Offset(-60.0f, -85.0f),
+                    rotation = -5.0f,
+                    scale = 5.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "ふって",
+                    id = "1f2d7f9f-f697-4942-a034-5b9bd26148a1",
+                    offset = Offset(5.0f, 150.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "waving_hand",
+                    id = "d5b2a179-6434-4106-b84f-776dd62d0321",
+                    offset = Offset(170.0f, -80.0f),
+                    rotation = 15.0f,
+                    scale = 1.0f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // 投げキスして（基準の密度 2.625 で確認）
+    Template(
+        id = "template_11",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "投げ",
+                    id = "d1cc25df-7c41-4c75-a75e-1a3f04f1643c",
+                    offset = Offset(-85.0f, -215.0f),
+                    rotation = -4.0f,
+                    scale = 1.9f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Text(
+                    text = "キス",
+                    id = "26d60870-a872-4bef-96d4-4d3563a2f333",
+                    offset = Offset(0.0f, -30.0f),
+                    rotation = -4.0f,
+                    scale = 3.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 8.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 8.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "4a76a629-5e4e-4182-af36-9bb70f718de7",
+                    offset = Offset(70.0f, 140.0f),
+                    rotation = 0.0f,
+                    scale = 2.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Sticker(
+                    label = "kiss_lips",
+                    id = "7ad460bb-d0ed-42f1-9f4f-f004ac0d6bae",
+                    offset = Offset(115.0f, -215.0f),
+                    rotation = 15.0f,
+                    scale = 0.75f,
+                    color = DecorationColors.RED.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "e99c4899-22ee-4617-a541-2a8f7e9af84e",
+                    offset = Offset(-130.0f, 145.0f),
+                    rotation = -20.0f,
+                    scale = 0.7f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
     )
 )
 
