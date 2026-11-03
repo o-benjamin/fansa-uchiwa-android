@@ -5,6 +5,7 @@ import com.fansauchiwa.analytics.AiMaterialParams
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
@@ -72,6 +73,16 @@ class AiMaterialViewModelTest {
 
     private fun stubGenerate(result: Result<AiMaterialImage>) {
         coEvery { repository.generate(any(), any()) } returns result
+    }
+
+    @Test
+    fun `画面の表示を計測する`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.logScreenView()
+        advanceUntilIdle()
+
+        coVerify { analyticsRepository.logScreenView(AnalyticsScreens.AI_MATERIAL_SCREEN) }
     }
 
     @Test
