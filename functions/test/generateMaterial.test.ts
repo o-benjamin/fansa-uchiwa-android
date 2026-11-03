@@ -64,7 +64,13 @@ test("無料の1回で画像を返す", async () => {
   const { deps, calls } = fakeDeps(uniqueDay());
   const response = await handleGenerateMaterial(uid, { prompt: " 王冠のうさぎ " }, deps);
 
-  assert.deepEqual(response, { image: "AAAA", mimeType: "image/png", paidWith: "free", ticketsRemaining: 0 });
+  assert.deepEqual(response, {
+    image: "AAAA",
+    mimeType: "image/png",
+    paidWith: "free",
+    ticketsRemaining: 0,
+    model: DEFAULT_SETTINGS.imageModel,
+  });
   assert.equal(calls.judge, 1);
   assert.equal(await freeUsed(uid), true);
 });
