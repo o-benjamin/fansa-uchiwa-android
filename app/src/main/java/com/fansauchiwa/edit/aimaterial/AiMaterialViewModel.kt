@@ -77,7 +77,8 @@ class AiMaterialViewModel @Inject constructor(
     }
 
     /**
-     * 作った素材を捨てて入力に戻る。作り直すと回数が減るので、[generate] は押し直しでは走らせない
+     * 作った素材を捨てて入力に戻る。作り直すと回数が減るので、ここでは作り直さない
+     * （もう一度「作る」を押したときだけ [generate] が走る）
      */
     fun discardResult() {
         _uiState.update { state ->
@@ -120,8 +121,14 @@ class AiMaterialViewModel @Inject constructor(
             AiMaterialParams.PARAM_REASON to reason.serverValue
         )
         is AiMaterialGeneration.Succeeded -> mapOf(
-            AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS
+            AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS,
+            AiMaterialParams.PARAM_BACKGROUND_REMOVED to image.backgroundRemoved.toString()
         )
-        else -> mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED)
+        // Idle と Generating は generate() の結果にならない
+        AiMaterialGeneration.Failed,
+        AiMaterialGeneration.Idle,
+        AiMaterialGeneration.Generating -> mapOf(
+            AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED
+        )
     }
 }

@@ -214,6 +214,9 @@
     <string name="ai_material_background_not_removed">背景は切り抜けませんでした。置いたあとに画像として調整できます</string>
     <string name="ai_material_confirm">うちわに置く</string>
     <string name="ai_material_discard">この素材を捨てる</string>
+    <string name="ai_material_leave_result_title">うちわに置かずに戻りますか？</string>
+    <string name="ai_material_leave_result_message">作った素材は残りません。作り直すと、また回数を使います</string>
+    <string name="ai_material_leave_result_leave">置かずに戻る</string>
     <string name="ai_material_error_invalid_prompt">文章を見直して、もう一度お試しください</string>
     <string name="ai_material_error_invalid_image">この画像は使えません。別の画像を選んでください</string>
     <string name="ai_material_error_face_in_source">人の顔が写っている画像は使えません。別の画像を選んでください</string>

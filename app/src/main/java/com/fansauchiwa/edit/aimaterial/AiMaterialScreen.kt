@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,10 +31,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -101,16 +106,31 @@ private fun AiMaterialScreenContent(
 ) {
     val generation = uiState.generation
     val isGenerating = generation is AiMaterialGeneration.Generating
+    val isShowingResult = generation is AiMaterialGeneration.Succeeded
+    var showLeaveResultDialog by remember { mutableStateOf(false) }
+    val onBackClick = { if (isShowingResult) showLeaveResultDialog = true else onBack() }
 
     // 生成中に戻ると、回数だけ減って絵が残らない
     BackHandler(enabled = isGenerating) {}
+    // 結果を見ている間に戻ると、回数を使った素材を置かずに捨てることになるので確かめる
+    BackHandler(enabled = isShowingResult) { showLeaveResultDialog = true }
+
+    if (showLeaveResultDialog) {
+        AiMaterialLeaveResultDialog(
+            onLeave = {
+                showLeaveResultDialog = false
+                onBack()
+            },
+            onDismiss = { showLeaveResultDialog = false }
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = stringResource(R.string.ai_material_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack, enabled = !isGenerating) {
+                    IconButton(onClick = onBackClick, enabled = !isGenerating) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
@@ -159,7 +179,6 @@ private fun AiMaterialInput(
     onGenerate: () -> Unit
 ) {
     val hapticManager = rememberFansaHapticManager()
-    val promptLength = uiState.prompt.trim().let { it.codePointCount(0, it.length) }
 
     OutlinedTextField(
         value = uiState.prompt,
@@ -168,12 +187,12 @@ private fun AiMaterialInput(
         enabled = !isGenerating,
         label = { Text(text = stringResource(R.string.ai_material_prompt_label)) },
         placeholder = { Text(text = stringResource(R.string.ai_material_prompt_placeholder)) },
-        isError = promptLength > AI_MATERIAL_MAX_PROMPT_LENGTH,
+        isError = uiState.isPromptTooLong,
         supportingText = {
             Text(
                 text = stringResource(
                     R.string.ai_material_prompt_counter,
-                    promptLength,
+                    uiState.promptLength,
                     AI_MATERIAL_MAX_PROMPT_LENGTH
                 )
             )
@@ -291,6 +310,28 @@ private fun AiMaterialResult(
     OutlinedButton(onClick = onDiscardResult, modifier = Modifier.fillMaxWidth()) {
         Text(text = stringResource(R.string.ai_material_discard))
     }
+}
+
+@Composable
+private fun AiMaterialLeaveResultDialog(
+    onLeave: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.ai_material_leave_result_title)) },
+        text = { Text(text = stringResource(R.string.ai_material_leave_result_message)) },
+        confirmButton = {
+            TextButton(onClick = onLeave) {
+                Text(text = stringResource(R.string.ai_material_leave_result_leave))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @StringRes

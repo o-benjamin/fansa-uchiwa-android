@@ -1,6 +1,7 @@
 package com.fansauchiwa.data.repository
 
 import android.net.Uri
+import com.fansauchiwa.data.AiMaterialFaceCheckException
 import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
@@ -15,20 +16,29 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import io.mockk.verify
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AiMaterialRepositoryImplTest {
 
     private lateinit var authRepository: AuthRepository
     private lateinit var imageProcessingRepository: ImageProcessingRepository
     private lateinit var dataSource: AiMaterialDataSource
     private lateinit var imageDataSource: AiMaterialImageDataSource
+    private lateinit var crashReportingRepository: CrashReportingRepository
     private lateinit var repository: AiMaterialRepositoryImpl
 
     private val sourceUri = mockk<Uri>()
@@ -43,6 +53,7 @@ class AiMaterialRepositoryImplTest {
         imageProcessingRepository = mockk()
         dataSource = mockk()
         imageDataSource = mockk()
+        crashReportingRepository = mockk(relaxed = true)
         coEvery { authRepository.prepareForServerCall() } returns "uid"
         coEvery { imageDataSource.encodeSourceImage(sourceUri) } returns encodedSource
         coEvery { imageDataSource.writeGeneratedImage(material) } returns generatedUri
@@ -52,7 +63,8 @@ class AiMaterialRepositoryImplTest {
             authRepository,
             imageProcessingRepository,
             dataSource,
-            imageDataSource
+            imageDataSource,
+            crashReportingRepository
         )
     }
 
@@ -94,24 +106,29 @@ class AiMaterialRepositoryImplTest {
     }
 
     @Test
-    fun generate_faceCheckFails_returnsFailureWithoutCallingServer() = runTest {
-        coEvery { imageProcessingRepository.containsFace(sourceUri) } returns
-            Result.failure(IOException("module"))
+    fun generate_faceCheckFails_returnsFaceCheckFailureWithoutCallingServer() = runTest {
+        val cause = IOException("module")
+        coEvery { imageProcessingRepository.containsFace(sourceUri) } returns Result.failure(cause)
 
-        assertTrue(repository.generate("星", sourceUri).exceptionOrNull() is IOException)
+        val error = repository.generate("星", sourceUri).exceptionOrNull()
+
+        assertTrue(error is AiMaterialFaceCheckException)
+        assertEquals(cause, error?.cause)
         coVerify(exactly = 0) { dataSource.generateMaterial(any(), any()) }
     }
 
     @Test
-    fun generate_backgroundRemovalFails_returnsGeneratedImage() = runTest {
+    fun generate_backgroundRemovalFails_returnsGeneratedImageAndRecordsCause() = runTest {
+        val cause = BackgroundRemovalException(BackgroundRemovalFailureReason.NO_SUBJECT)
         coEvery { dataSource.generateMaterial("星", null) } returns material
         coEvery { imageProcessingRepository.removeBackground(generatedUri) } returns
-            Result.failure(BackgroundRemovalException(BackgroundRemovalFailureReason.NO_SUBJECT))
+            Result.failure(cause)
 
         assertEquals(
             AiMaterialImage(generatedUri, false, AiMaterialPayment.TICKET, 4),
             repository.generate("星", null).getOrThrow()
         )
+        verify(exactly = 1) { crashReportingRepository.recordException(cause) }
     }
 
     @Test
@@ -135,10 +152,24 @@ class AiMaterialRepositoryImplTest {
         coVerify(exactly = 0) { dataSource.generateMaterial(any(), any()) }
     }
 
-    @Test(expected = CancellationException::class)
-    fun generate_cancelled_rethrows() = runTest {
-        coEvery { dataSource.generateMaterial(any(), any()) } throws CancellationException("cancel")
+    @Test
+    fun generate_taskCancelledWhileCallerActive_returnsFailure() = runTest {
+        // Play 開発者サービスや Firebase の Task が取り消されたとき。画面を「作っています」のまま止めない
+        coEvery { dataSource.generateMaterial(any(), any()) } throws CancellationException("task")
 
-        repository.generate("星", null)
+        assertTrue(repository.generate("星", null).exceptionOrNull() is CancellationException)
+    }
+
+    @Test
+    fun generate_callerCancelled_rethrows() = runTest {
+        coEvery { dataSource.generateMaterial(any(), any()) } coAnswers { awaitCancellation() }
+        var result: Result<AiMaterialImage>? = null
+
+        val job = launch { result = repository.generate("星", null) }
+        runCurrent()
+        job.cancelAndJoin()
+
+        assertTrue(job.isCancelled)
+        assertNull(result)
     }
 }

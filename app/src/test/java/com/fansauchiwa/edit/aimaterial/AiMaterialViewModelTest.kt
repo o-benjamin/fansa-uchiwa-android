@@ -86,7 +86,7 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `成功すると結果を持ち、成功を計測する`() = runTest(testDispatcher) {
+    fun `成功すると結果を持ち、成功と切り抜けたかを計測する`() = runTest(testDispatcher) {
         stubGenerate(Result.success(image))
         val viewModel = createViewModel()
 
@@ -100,7 +100,10 @@ class AiMaterialViewModelTest {
             analyticsRepository.logEvent(
                 AnalyticsEvent(
                     AnalyticsActions.GENERATE_AI_MATERIAL,
-                    mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS)
+                    mapOf(
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS,
+                        AiMaterialParams.PARAM_BACKGROUND_REMOVED to "true"
+                    )
                 )
             )
         }
@@ -174,6 +177,16 @@ class AiMaterialViewModelTest {
         val state = AiMaterialUiState(prompt = "💖".repeat(AI_MATERIAL_MAX_PROMPT_LENGTH))
 
         assertTrue(state.canGenerate)
+    }
+
+    @Test
+    fun `文字数は前後の空白を除いて数え、上限を超えたら超えたと出す`() {
+        val atLimit = AiMaterialUiState(prompt = "  " + "あ".repeat(AI_MATERIAL_MAX_PROMPT_LENGTH) + "  ")
+        val overLimit = AiMaterialUiState(prompt = "あ".repeat(AI_MATERIAL_MAX_PROMPT_LENGTH + 1))
+
+        assertEquals(AI_MATERIAL_MAX_PROMPT_LENGTH, atLimit.promptLength)
+        assertFalse(atLimit.isPromptTooLong)
+        assertTrue(overLimit.isPromptTooLong)
     }
 
     @Test

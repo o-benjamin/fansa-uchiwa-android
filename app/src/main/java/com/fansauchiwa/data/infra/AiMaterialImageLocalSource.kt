@@ -2,8 +2,11 @@ package com.fansauchiwa.data.infra
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.net.Uri
+import androidx.core.graphics.createBitmap
 import com.fansauchiwa.data.AiMaterialSourceImage
 import com.fansauchiwa.data.GeneratedAiMaterial
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -41,7 +44,8 @@ class AiMaterialImageLocalSource @Inject constructor(
                 decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             }
             val bytes = ByteArrayOutputStream().use { output ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, SOURCE_IMAGE_JPEG_QUALITY, output)
+                bitmap.flattenedOnWhite()
+                    .compress(Bitmap.CompressFormat.JPEG, SOURCE_IMAGE_JPEG_QUALITY, output)
                 output.toByteArray()
             }
             AiMaterialSourceImage(
@@ -57,4 +61,15 @@ class AiMaterialImageLocalSource @Inject constructor(
             file.writeBytes(Base64.getDecoder().decode(material.imageBase64))
             Uri.fromFile(file)
         }
+
+    // JPEG は透明を持てず、透明なところが黒になる。透過 PNG のイラストなどは白の上に描いてから送る
+    private fun Bitmap.flattenedOnWhite(): Bitmap {
+        if (!hasAlpha()) return this
+        val opaque = createBitmap(width, height)
+        Canvas(opaque).apply {
+            drawColor(Color.WHITE)
+            drawBitmap(this@flattenedOnWhite, 0f, 0f, null)
+        }
+        return opaque
+    }
 }

@@ -5,6 +5,8 @@ import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import javax.inject.Inject
 
 interface ImageProcessingRepository {
@@ -48,7 +50,10 @@ class ImageProcessingRepositoryImpl @Inject constructor(
     override suspend fun containsFace(sourceUri: Uri): Result<Boolean> = try {
         Result.success(imageProcessingDataSource.containsFace(sourceUri))
     } catch (e: CancellationException) {
-        throw e
+        // ML Kit の Task が取り消されたときも CancellationException になる。
+        // 呼び出し元のコルーチンが取り消されたときだけそのまま投げ、それ以外は「確かめられなかった」にする
+        currentCoroutineContext().ensureActive()
+        Result.failure(e)
     } catch (e: Exception) {
         Result.failure(e)
     }
