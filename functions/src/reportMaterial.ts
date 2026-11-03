@@ -20,6 +20,9 @@ import { jstDateKey } from "./jstDate";
  * reportUsage/{uid}
  *   dateKey: string      日本時間の日付
  *   count: number        その日に送った報告の数（1人1日の上限を数える）
+ *   expireAt: Timestamp  最後の報告の2日後。日付が変われば数え直すので、それより長く残さない
+ *
+ * expireAt での削除（TTL）は firestore.indexes.json の fieldOverrides に書いてあり、deploy で入る
  */
 
 export const REPORTS_COLLECTION = "reports";
@@ -29,6 +32,7 @@ export const REPORT_USAGE_COLLECTION = "reportUsage";
 export const REPORT_REASONS = ["inappropriate", "real_person", "rights", "other"] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number];
 
+/** Discord の知らせに出す名前。アプリの選択肢（`strings.xml` の `ai_material_report_reason_*`）とそろえる。 */
 const REASON_LABELS: Record<ReportReason, string> = {
   inappropriate: "不快・不適切",
   real_person: "実在の人に似ている",
@@ -40,8 +44,11 @@ const REASON_LABELS: Record<ReportReason, string> = {
 export const MAX_REPORTS_PER_DAY = 10;
 /** 報告を残す日数。頼んだ文章が入るので、見直しに要る間だけ残す。 */
 export const REPORT_RETENTION_DAYS = 180;
+const REPORT_USAGE_RETENTION_DAYS = 2;
+// model はアプリが送り返す値で、そのまま Discord の知らせと Firestore に書く。
+// モデル名に使う文字（`models/...` の形の `/` を含む）だけを通し、メンションやリンクを書き込めないようにする
 const MAX_MODEL_LENGTH = 100;
-const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface ReportMaterialRequest {
@@ -58,12 +65,14 @@ export interface ReportMaterialDeps {
 }
 
 /** 断ったときに `HttpsError` の `details.reason` に入れる理由。 */
-export type ReportRejectReason = "unauthenticated" | "invalid_report" | "too_many_reports";
+export type ReportRejectReason = "unauthenticated" | "invalid_report" | "too_many_reports" | "report_failed";
 
 const ERROR_CODES: Record<ReportRejectReason, FunctionsErrorCode> = {
   unauthenticated: "unauthenticated",
   invalid_report: "invalid-argument",
   too_many_reports: "resource-exhausted",
+  // Firestore に書けなかった（一時的な障害など）。アプリは押し直せる
+  report_failed: "unavailable",
 };
 
 function refuse(reason: ReportRejectReason): never {
@@ -75,7 +84,7 @@ function isReportReason(value: unknown): value is ReportReason {
   return typeof value === "string" && (REPORT_REASONS as readonly string[]).includes(value);
 }
 
-/** アプリから届いた中身を確かめる。文章は generateMaterial と同じ1〜200文字、モデル名は英数字と `.` `_` `-`。 */
+/** アプリから届いた中身を確かめる。文章は generateMaterial と同じ1〜200文字、モデル名は英数字と `.` `_` `/` `-`。 */
 export function parseReportRequest(data: unknown): ReportMaterialRequest {
   const body = (data ?? {}) as { prompt?: unknown; reason?: unknown; model?: unknown };
   const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
@@ -103,21 +112,31 @@ export async function handleReportMaterial(uid: string | undefined, data: unknow
   const reportRef = deps.db.collection(REPORTS_COLLECTION).doc();
   const usageRef = deps.db.collection(REPORT_USAGE_COLLECTION).doc(uid);
 
-  const accepted = await deps.db.runTransaction(async (tx) => {
-    const usage = (await tx.get(usageRef)).data();
-    const count = usage?.dateKey === dateKey && typeof usage.count === "number" ? usage.count : 0;
-    if (count >= MAX_REPORTS_PER_DAY) return false;
-    tx.set(reportRef, {
-      uid,
-      prompt: request.prompt,
-      reason: request.reason,
-      model: request.model,
-      createdAt: Timestamp.fromDate(now),
-      expireAt: Timestamp.fromMillis(now.getTime() + REPORT_RETENTION_DAYS * DAY_MS),
+  let accepted: boolean;
+  try {
+    accepted = await deps.db.runTransaction(async (tx) => {
+      const usage = (await tx.get(usageRef)).data();
+      const count = usage?.dateKey === dateKey && typeof usage.count === "number" ? usage.count : 0;
+      if (count >= MAX_REPORTS_PER_DAY) return false;
+      tx.set(reportRef, {
+        uid,
+        prompt: request.prompt,
+        reason: request.reason,
+        model: request.model,
+        createdAt: Timestamp.fromDate(now),
+        expireAt: Timestamp.fromMillis(now.getTime() + REPORT_RETENTION_DAYS * DAY_MS),
+      });
+      tx.set(usageRef, {
+        dateKey,
+        count: count + 1,
+        expireAt: Timestamp.fromMillis(now.getTime() + REPORT_USAGE_RETENTION_DAYS * DAY_MS),
+      });
+      return true;
     });
-    tx.set(usageRef, { dateKey, count: count + 1 });
-    return true;
-  });
+  } catch (error) {
+    logger.error("報告を残せなかった", { error: String(error) });
+    refuse("report_failed");
+  }
   if (!accepted) refuse("too_many_reports");
 
   // ログと Discord には頼んだ文章を書かない（中身は Firestore で見る）

@@ -5,12 +5,15 @@ import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialSourceImage
 import com.fansauchiwa.data.GeneratedAiMaterial
+import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.isReportLimit
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.parseResponse
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.rejectReasonFrom
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.toReportRequest
-import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.toRequest
+import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource.Companion.toGenerateRequest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FirebaseFunctionsAiMaterialRemoteSourceTest {
@@ -24,13 +27,13 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
     )
 
     @Test
-    fun toRequest_withoutSourceImage_sendsOnlyPrompt() {
-        assertEquals(mapOf("prompt" to "星"), toRequest("星", null))
+    fun toGenerateRequest_withoutSourceImage_sendsOnlyPrompt() {
+        assertEquals(mapOf("prompt" to "星"), toGenerateRequest("星", null))
     }
 
     @Test
-    fun toRequest_withSourceImage_sendsMimeTypeAndData() {
-        val request = toRequest("星", AiMaterialSourceImage("image/jpeg", "aW1n"))
+    fun toGenerateRequest_withSourceImage_sendsMimeTypeAndData() {
+        val request = toGenerateRequest("星", AiMaterialSourceImage("image/jpeg", "aW1n"))
 
         assertEquals(mapOf("mimeType" to "image/jpeg", "data" to "aW1n"), request["sourceImage"])
     }
@@ -89,5 +92,17 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
             mapOf("prompt" to "星", "reason" to "real_person", "model" to "gemini-3.1-flash-lite-image"),
             toReportRequest("星", AiMaterialReportReason.REAL_PERSON, "gemini-3.1-flash-lite-image")
         )
+    }
+
+    @Test
+    fun isReportLimit_tooManyReports_returnsTrue() {
+        assertTrue(isReportLimit(mapOf("reason" to "too_many_reports")))
+    }
+
+    @Test
+    fun isReportLimit_otherReasonOrNoDetails_returnsFalse() {
+        assertFalse(isReportLimit(mapOf("reason" to "report_failed")))
+        assertFalse(isReportLimit(null))
+        assertFalse(isReportLimit("too_many_reports"))
     }
 }

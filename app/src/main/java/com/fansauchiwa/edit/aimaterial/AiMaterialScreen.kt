@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -160,7 +160,6 @@ private fun AiMaterialScreenContent(
                 AiMaterialResult(
                     image = generation.image,
                     reportStatus = uiState.reportStatus,
-                    canReport = uiState.canReport,
                     onDiscardResult = onDiscardResult,
                     onConfirm = onConfirm,
                     onReport = onReport
@@ -288,7 +287,6 @@ private fun AiMaterialSourceImage(
 private fun AiMaterialResult(
     image: AiMaterialImage,
     reportStatus: AiMaterialReportStatus,
-    canReport: Boolean,
     onDiscardResult: () -> Unit,
     onConfirm: () -> Unit,
     onReport: (AiMaterialReportReason) -> Unit
@@ -298,6 +296,7 @@ private fun AiMaterialResult(
 
     if (showReportDialog) {
         AiMaterialReportDialog(
+            initialReason = null,
             onSend = { reason ->
                 showReportDialog = false
                 onReport(reason)
@@ -335,45 +334,56 @@ private fun AiMaterialResult(
         Text(text = stringResource(R.string.ai_material_discard))
     }
 
-    AiMaterialReport(
+    AiMaterialReportSection(
         reportStatus = reportStatus,
-        canReport = canReport,
         onClick = { showReportDialog = true }
     )
 }
 
 // Google Play の AI 生成コンテンツのポリシーで、不快な生成物をアプリの中から報告できることが要る
 @Composable
-private fun AiMaterialReport(
+private fun AiMaterialReportSection(
     reportStatus: AiMaterialReportStatus,
-    canReport: Boolean,
     onClick: () -> Unit
 ) {
-    if (reportStatus == AiMaterialReportStatus.SENT) {
-        Text(
+    when (reportStatus) {
+        AiMaterialReportStatus.SENT -> Text(
             text = stringResource(R.string.ai_material_report_sent),
             style = MaterialTheme.typography.bodyMedium
         )
-        return
-    }
-    TextButton(onClick = onClick, enabled = canReport, modifier = Modifier.fillMaxWidth()) {
-        Text(text = stringResource(R.string.ai_material_report))
-    }
-    if (reportStatus == AiMaterialReportStatus.FAILED) {
-        Text(
-            text = stringResource(R.string.ai_material_report_failed),
-            color = MaterialTheme.colorScheme.error,
+        AiMaterialReportStatus.LIMIT_REACHED -> Text(
+            text = stringResource(R.string.ai_material_report_limit_reached),
             style = MaterialTheme.typography.bodyMedium
         )
+        AiMaterialReportStatus.NOT_SENT,
+        AiMaterialReportStatus.SENDING,
+        AiMaterialReportStatus.FAILED -> {
+            // 送っている間は押せない（同じ素材を2回送らない）
+            TextButton(
+                onClick = onClick,
+                enabled = reportStatus != AiMaterialReportStatus.SENDING,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = stringResource(R.string.ai_material_report))
+            }
+            if (reportStatus == AiMaterialReportStatus.FAILED) {
+                Text(
+                    text = stringResource(R.string.ai_material_report_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun AiMaterialReportDialog(
+    initialReason: AiMaterialReportReason?,
     onSend: (AiMaterialReportReason) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var selectedReason by remember { mutableStateOf<AiMaterialReportReason?>(null) }
+    var selectedReason by remember { mutableStateOf(initialReason) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -501,15 +511,19 @@ private fun AiMaterialScreenSucceededPreview() {
     AiMaterialScreenPreview(
         AiMaterialUiState(
             prompt = "笑顔の星",
-            generation = AiMaterialGeneration.Succeeded(
-                AiMaterialImage(
-                    uri = Uri.EMPTY,
-                    backgroundRemoved = false,
-                    payment = AiMaterialPayment.FREE,
-                    ticketsRemaining = 0,
-                    model = "gemini-3.1-flash-lite-image"
-                )
-            )
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE.copy(backgroundRemoved = false))
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenReportSendingPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE),
+            reportStatus = AiMaterialReportStatus.SENDING
         )
     )
 }
@@ -538,11 +552,35 @@ private fun AiMaterialScreenReportFailedPreview() {
     )
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenReportLimitReachedPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Succeeded(PREVIEW_IMAGE),
+            reportStatus = AiMaterialReportStatus.LIMIT_REACHED
+        )
+    )
+}
+
 @Preview
 @Composable
 private fun AiMaterialReportDialogPreview() {
     FansaUchiwaTheme {
-        AiMaterialReportDialog(onSend = {}, onDismiss = {})
+        AiMaterialReportDialog(initialReason = null, onSend = {}, onDismiss = {})
+    }
+}
+
+@Preview
+@Composable
+private fun AiMaterialReportDialogSelectedPreview() {
+    FansaUchiwaTheme {
+        AiMaterialReportDialog(
+            initialReason = AiMaterialReportReason.REAL_PERSON,
+            onSend = {},
+            onDismiss = {}
+        )
     }
 }
 

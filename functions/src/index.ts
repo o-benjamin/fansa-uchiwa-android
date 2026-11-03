@@ -51,7 +51,8 @@ export const reportMaterial = onCall(
     region: "asia-northeast1",
     enforceAppCheck: true,
     secrets: [discordWebhookUrl],
-    // Firestore に1件書くだけなので、メモリは既定（256MiB）のまま。報告の数は1人1日の上限（MAX_REPORTS_PER_DAY）で抑える
+    // generateMaterial と同じく、インスタンスが増え続けないように抑える（同時実行の上限ではない）。
+    // Firestore に1件書くだけで1回が短いので2で足り、メモリも既定（256MiB）のまま。報告の数は1人1日の上限（MAX_REPORTS_PER_DAY）で抑える
     maxInstances: 2,
   },
   (request) =>

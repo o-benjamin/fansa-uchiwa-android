@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { HttpsError } from "firebase-functions/v2/https";
 import { MAX_PROMPT_LENGTH } from "../src/generateMaterial";
 import {
   handleReportMaterial,
   MAX_REPORTS_PER_DAY,
   REPORT_RETENTION_DAYS,
+  REPORT_USAGE_COLLECTION,
   REPORTS_COLLECTION,
 } from "../src/reportMaterial";
 import type { ReportMaterialDeps } from "../src/reportMaterial";
-import { daysLater, emulatorDb, uniqueDay, uniqueUid } from "./helpers";
+import { daysLater, emulatorDb, rejectsWith, uniqueDay, uniqueUid } from "./helpers";
 
 const db = emulatorDb();
 const REPORT = { prompt: " 王冠のうさぎ ", reason: "inappropriate", model: "gemini-3.1-flash-lite-image" };
@@ -26,15 +26,6 @@ function fakeDeps(day: Date, notifyOwner?: (message: string) => Promise<void>) {
     now: () => day,
   };
   return { deps, notifications };
-}
-
-function rejectsWith(reason: string, code: string) {
-  return (error: unknown) => {
-    assert.ok(error instanceof HttpsError);
-    assert.equal(error.code, code);
-    assert.equal((error.details as { reason: string }).reason, reason);
-    return true;
-  };
 }
 
 async function reportsOf(uid: string) {
@@ -57,6 +48,17 @@ test("報告を残し、文章を書かずにオーナーへ知らせる", async
   assert.equal(notifications.length, 1);
   assert.match(notifications[0], /不快・不適切/);
   assert.doesNotMatch(notifications[0], /うさぎ/);
+
+  const usage = (await db.collection(REPORT_USAGE_COLLECTION).doc(uid).get()).data();
+  assert.equal(usage?.count, 1);
+  assert.equal(usage?.expireAt.toMillis(), daysLater(day, 2).toMillis());
+});
+
+test("models/ の形のモデル名も受け付ける", async () => {
+  const uid = uniqueUid();
+  const { deps } = fakeDeps(uniqueDay());
+  await handleReportMaterial(uid, { ...REPORT, model: "models/gemini-3.1-flash-image" }, deps);
+  assert.equal((await reportsOf(uid))[0].model, "models/gemini-3.1-flash-image");
 });
 
 test("ログインしていなければ断る", async () => {
@@ -93,9 +95,28 @@ test("1人1日の上限を超えたら断り、次の日はまた受け付ける
   assert.equal((await reportsOf(uid)).length, MAX_REPORTS_PER_DAY);
   assert.equal(notifications.length, MAX_REPORTS_PER_DAY);
 
-  const nextDay = new Date(day.getTime() + 24 * 60 * 60 * 1000);
-  await handleReportMaterial(uid, REPORT, fakeDeps(nextDay).deps);
+  await handleReportMaterial(uid, REPORT, fakeDeps(daysLater(day, 1).toDate()).deps);
   assert.equal((await reportsOf(uid)).length, MAX_REPORTS_PER_DAY + 1);
+});
+
+test("Firestore に書けなければ report_failed で断り、知らせない", async () => {
+  const { notifications } = fakeDeps(uniqueDay());
+  const failingDb = Object.create(db, {
+    runTransaction: {
+      value: async () => {
+        throw new Error("unavailable");
+      },
+    },
+  });
+  const deps: ReportMaterialDeps = {
+    db: failingDb,
+    notifyOwner: async (message) => {
+      notifications.push(message);
+    },
+    now: () => uniqueDay(),
+  };
+  await assert.rejects(handleReportMaterial(uniqueUid(), REPORT, deps), rejectsWith("report_failed", "unavailable"));
+  assert.equal(notifications.length, 0);
 });
 
 test("Discord に知らせられなくても、報告は受け付ける", async () => {

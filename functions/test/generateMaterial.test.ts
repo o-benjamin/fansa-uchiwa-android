@@ -7,7 +7,7 @@ import type { GenerateMaterialDeps } from "../src/generateMaterial";
 import { jstDateKey } from "../src/jstDate";
 import { DEFAULT_SETTINGS } from "../src/settings";
 import type { AiMaterialSettings } from "../src/settings";
-import { daysLater, emulatorDb, uniqueDay, uniqueUid } from "./helpers";
+import { daysLater, emulatorDb, rejectsWith, uniqueDay, uniqueUid } from "./helpers";
 
 const db = emulatorDb();
 const IMAGE: ImageResult = { kind: "image", mimeType: "image/png", data: "AAAA" };
@@ -44,15 +44,6 @@ function fakeDeps(day: Date, options: FakeOptions = {}) {
     now: () => day,
   };
   return { deps, calls };
-}
-
-function rejectsWith(reason: string, code: string) {
-  return (error: unknown) => {
-    assert.ok(error instanceof HttpsError);
-    assert.equal(error.code, code);
-    assert.equal((error.details as { reason: string }).reason, reason);
-    return true;
-  };
 }
 
 async function freeUsed(uid: string) {

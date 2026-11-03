@@ -1,6 +1,7 @@
 package com.fansauchiwa.edit.aimaterial
 
 import android.net.Uri
+import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.analytics.AiMaterialParams
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
@@ -10,6 +11,7 @@ import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
@@ -21,6 +23,7 @@ import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -328,6 +331,59 @@ class AiMaterialViewModelTest {
                     mapOf(
                         AiMaterialParams.PARAM_REASON to "other",
                         AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `1人1日の上限で断られたら、押せなくして上限と計測し、例外は記録しない`() = runTest(testDispatcher) {
+        stubGenerate(Result.success(image))
+        coEvery { repository.report(any(), any(), any()) } returns
+            Result.failure(AiMaterialReportLimitException())
+        val viewModel = generatedViewModel("ハート")
+
+        viewModel.report(AiMaterialReportReason.INAPPROPRIATE)
+        advanceUntilIdle()
+
+        assertEquals(AiMaterialReportStatus.LIMIT_REACHED, viewModel.uiState.value.reportStatus)
+        assertFalse(viewModel.uiState.value.canReport)
+        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.REPORT_AI_MATERIAL,
+                    mapOf(
+                        AiMaterialParams.PARAM_REASON to "inappropriate",
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_REJECTED
+                    )
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `送っている間に画面を閉じても、報告を送り終えて計測する`() = runTest(testDispatcher) {
+        val pending = CompletableDeferred<Result<Unit>>()
+        stubGenerate(Result.success(image))
+        coEvery { repository.report(any(), any(), any()) } coAnswers { pending.await() }
+        val viewModel = generatedViewModel("ハート")
+
+        viewModel.report(AiMaterialReportReason.OTHER)
+        advanceUntilIdle()
+        // 画面を閉じると ViewModel が片づけられ、viewModelScope が取り消される
+        viewModel.viewModelScope.cancel()
+        pending.complete(Result.success(Unit))
+        advanceUntilIdle()
+
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.REPORT_AI_MATERIAL,
+                    mapOf(
+                        AiMaterialParams.PARAM_REASON to "other",
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS
                     )
                 )
             )

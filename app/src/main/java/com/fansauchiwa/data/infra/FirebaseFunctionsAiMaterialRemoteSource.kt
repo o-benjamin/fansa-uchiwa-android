@@ -3,6 +3,7 @@ package com.fansauchiwa.data.infra
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialSourceImage
 import com.fansauchiwa.data.GeneratedAiMaterial
@@ -20,10 +21,10 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
         prompt: String,
         sourceImage: AiMaterialSourceImage?
     ): GeneratedAiMaterial {
-        val callable = functions.getHttpsCallable(FUNCTION_NAME)
+        val callable = functions.getHttpsCallable(GENERATE_FUNCTION_NAME)
         callable.setTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         val response = try {
-            callable.call(toRequest(prompt, sourceImage)).await()
+            callable.call(toGenerateRequest(prompt, sourceImage)).await()
         } catch (e: FirebaseFunctionsException) {
             throw rejectReasonFrom(e.details)?.let(::AiMaterialRejectedException) ?: e
         }
@@ -35,19 +36,24 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
         reason: AiMaterialReportReason,
         model: String
     ) {
-        functions.getHttpsCallable(REPORT_FUNCTION_NAME)
-            .call(toReportRequest(prompt, reason, model))
-            .await()
+        try {
+            functions.getHttpsCallable(REPORT_FUNCTION_NAME)
+                .call(toReportRequest(prompt, reason, model))
+                .await()
+        } catch (e: FirebaseFunctionsException) {
+            throw if (isReportLimit(e.details)) AiMaterialReportLimitException() else e
+        }
     }
 
     companion object {
-        private const val FUNCTION_NAME = "generateMaterial"
+        private const val GENERATE_FUNCTION_NAME = "generateMaterial"
         private const val REPORT_FUNCTION_NAME = "reportMaterial"
+        private const val REPORT_LIMIT_REASON = "too_many_reports"
 
         // 既定の70秒だと、サーバー（timeoutSeconds: 120）が作り終える前に諦めて、回数だけ減ってしまう
         private const val CALL_TIMEOUT_SECONDS = 130L
 
-        internal fun toRequest(
+        internal fun toGenerateRequest(
             prompt: String,
             sourceImage: AiMaterialSourceImage?
         ): Map<String, Any> = buildMap {
@@ -69,6 +75,9 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
             "reason" to reason.serverValue,
             "model" to model
         )
+
+        internal fun isReportLimit(details: Any?): Boolean =
+            (details as? Map<*, *>)?.get("reason") == REPORT_LIMIT_REASON
 
         internal fun rejectReasonFrom(details: Any?): AiMaterialRejectReason? =
             AiMaterialRejectReason.fromServerValue((details as? Map<*, *>)?.get("reason") as? String)

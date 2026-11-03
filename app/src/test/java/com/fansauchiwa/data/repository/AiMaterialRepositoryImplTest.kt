@@ -210,10 +210,10 @@ class AiMaterialRepositoryImplTest {
     }
 
     @Test
-    fun isEntryEnabledStream_returnsRemoteConfigValue() = runTest {
+    fun getEntryEnabledStream_returnsRemoteConfigValue() = runTest {
         every { remoteConfigDataSource.getAiMaterialEnabledStream() } returns flowOf(true)
 
-        assertTrue(repository.isEntryEnabledStream().first())
+        assertTrue(repository.getEntryEnabledStream().first())
     }
 
     private companion object {

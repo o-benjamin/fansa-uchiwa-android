@@ -9,11 +9,13 @@ import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.AiMaterialRejectedException
+import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class AiMaterialViewModel @Inject constructor(
@@ -115,38 +118,18 @@ class AiMaterialViewModel @Inject constructor(
     fun report(reason: AiMaterialReportReason) {
         val state = _uiState.value
         if (!state.canReport) return
-        val generation = state.generation as AiMaterialGeneration.Succeeded
+        val generation = state.generation as? AiMaterialGeneration.Succeeded ?: return
         _uiState.value = state.copy(reportStatus = AiMaterialReportStatus.SENDING)
         viewModelScope.launch {
-            val result = aiMaterialRepository.report(state.prompt.trim(), reason, generation.image.model)
-            result.onFailure { crashReportingRepository.recordException(it) }
-            // 送っている間に捨てられたら、次の素材に結果を持ち越さない（同じ絵が返っても別の結果として扱う）
-            _uiState.update {
-                if (it.generation !== generation) {
-                    it
-                } else {
-                    it.copy(
-                        reportStatus = if (result.isSuccess) {
-                            AiMaterialReportStatus.SENT
-                        } else {
-                            AiMaterialReportStatus.FAILED
-                        }
-                    )
-                }
+            // 送っている間に「うちわに置く」や戻るで画面を閉じても、報告と計測は最後まで送る
+            val status = withContext(NonCancellable) {
+                sendReport(state.prompt.trim(), reason, generation.image.model)
             }
-            analyticsRepository.logEvent(
-                AnalyticsEvent(
-                    name = AnalyticsActions.REPORT_AI_MATERIAL,
-                    params = mapOf(
-                        AiMaterialParams.PARAM_REASON to reason.serverValue,
-                        AiMaterialParams.PARAM_RESULT to if (result.isSuccess) {
-                            AiMaterialParams.RESULT_SUCCESS
-                        } else {
-                            AiMaterialParams.RESULT_FAILED
-                        }
-                    )
-                )
-            )
+            // 送っている間に捨てられたら、次の素材に結果を持ち越さない。
+            // Succeeded は data class で、中身が同じ結果は == では見分けられないので、参照で比べる
+            _uiState.update {
+                if (it.generation === generation) it.copy(reportStatus = status) else it
+            }
         }
     }
 
@@ -158,6 +141,41 @@ class AiMaterialViewModel @Inject constructor(
                 else -> change(state).copy(generation = AiMaterialGeneration.Idle)
             }
         }
+    }
+
+    // 上限に当たったのは押し直しても送れないだけで不具合ではないので、Crashlytics には残さない
+    private suspend fun sendReport(
+        prompt: String,
+        reason: AiMaterialReportReason,
+        model: String
+    ): AiMaterialReportStatus {
+        val status = when (val error = aiMaterialRepository.report(prompt, reason, model).exceptionOrNull()) {
+            null -> AiMaterialReportStatus.SENT
+            is AiMaterialReportLimitException -> AiMaterialReportStatus.LIMIT_REACHED
+            else -> {
+                crashReportingRepository.recordException(error)
+                AiMaterialReportStatus.FAILED
+            }
+        }
+        analyticsRepository.logEvent(
+            AnalyticsEvent(
+                name = AnalyticsActions.REPORT_AI_MATERIAL,
+                params = mapOf(
+                    AiMaterialParams.PARAM_REASON to reason.serverValue,
+                    AiMaterialParams.PARAM_RESULT to status.toAnalyticsResult()
+                )
+            )
+        )
+        return status
+    }
+
+    private fun AiMaterialReportStatus.toAnalyticsResult(): String = when (this) {
+        AiMaterialReportStatus.SENT -> AiMaterialParams.RESULT_SUCCESS
+        AiMaterialReportStatus.LIMIT_REACHED -> AiMaterialParams.RESULT_REJECTED
+        // NOT_SENT と SENDING は report() の結果にならない
+        AiMaterialReportStatus.FAILED,
+        AiMaterialReportStatus.NOT_SENT,
+        AiMaterialReportStatus.SENDING -> AiMaterialParams.RESULT_FAILED
     }
 
     private fun AiMaterialGeneration.toAnalyticsParams(): Map<String, Any> = when (this) {
