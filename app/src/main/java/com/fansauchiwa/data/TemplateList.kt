@@ -730,7 +730,8 @@ val templateList: List<Template> = listOf(
         isNameInputPlaceholderEnabled = false
     ),
 
-    // ピースして（基準の密度 2.625 で確認）
+    // template_9〜11 は保存データではなく候補の値のまま入れた（基準の密度 2.625 で確認。手順と例外は .agents/template-candidates.md）
+    // ピースして
     Template(
         id = "template_9",
         savedUchiwa = SavedUchiwa(
@@ -796,7 +797,7 @@ val templateList: List<Template> = listOf(
         ),
         isNameInputPlaceholderEnabled = false
     ),
-    // 手ふって（基準の密度 2.625 で確認）
+    // 手ふって
     Template(
         id = "template_10",
         savedUchiwa = SavedUchiwa(
@@ -850,7 +851,7 @@ val templateList: List<Template> = listOf(
         ),
         isNameInputPlaceholderEnabled = false
     ),
-    // 投げキスして（基準の密度 2.625 で確認）
+    // 投げキスして
     Template(
         id = "template_11",
         savedUchiwa = SavedUchiwa(
