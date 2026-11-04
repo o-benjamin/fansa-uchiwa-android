@@ -7,6 +7,12 @@ import kotlinx.coroutines.flow.Flow
  */
 interface RemoteConfigDataSource {
     /**
+     * 日付ごとの今日のお題（`daily_prompts`。#359）の JSON。
+     * 取得を試みてから、有効になっている値を流す。取得に失敗したときは前回取得した値、未設定なら空文字
+     */
+    fun getDailyPromptsJsonStream(): Flow<String>
+
+    /**
      * うちわの材料のアフィリエイトのリンク（`affiliate_materials`。#311）の JSON。
      * 取得を試みてから、有効になっている値を流す。取得に失敗したときは前回取得した値、未設定なら空文字
      */

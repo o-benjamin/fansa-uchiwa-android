@@ -11,6 +11,7 @@ import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
@@ -20,6 +21,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -30,11 +33,16 @@ class HomeViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
     private val templateRepository: TemplateRepository,
     private val settingsRepository: SettingsRepository,
+    private val dailyPromptRepository: DailyPromptRepository,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    init {
+        observeDailyPrompt()
+    }
 
     fun logScreenView() {
         viewModelScope.launch {
@@ -129,6 +137,21 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setHasSeenApologyDialog(true)
             _uiState.update { it.copy(showApologyDialog = false) }
+        }
+    }
+
+    private fun observeDailyPrompt() {
+        dailyPromptRepository.getDailyPromptStream()
+            .onEach { prompt -> _uiState.update { it.copy(dailyPrompt = prompt) } }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * ホームを開くたびに呼ぶ。日付が変わっていればお題も変わる。Remote Config の取得は最小間隔（1時間）で間引かれる
+     */
+    fun fetchDailyPrompt() {
+        viewModelScope.launch {
+            dailyPromptRepository.fetchDailyPrompt()
         }
     }
 

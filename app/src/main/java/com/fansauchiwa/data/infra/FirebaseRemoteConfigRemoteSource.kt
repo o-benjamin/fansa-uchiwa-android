@@ -23,6 +23,11 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         )
     }
 
+    override fun getDailyPromptsJsonStream(): Flow<String> = flow {
+        fetchAndActivate()
+        emit(remoteConfig.getString(KEY_DAILY_PROMPTS))
+    }
+
     override fun getAffiliateMaterialsJsonStream(): Flow<String> = flow {
         fetchAndActivate()
         emit(remoteConfig.getString(KEY_AFFILIATE_MATERIALS))
@@ -44,6 +49,7 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
 
     private companion object {
         const val TAG = "RemoteConfig"
+        const val KEY_DAILY_PROMPTS = "daily_prompts"
         const val KEY_AFFILIATE_MATERIALS = "affiliate_materials"
         const val MINIMUM_FETCH_INTERVAL_SECONDS = 60L * 60
         const val FETCH_TIMEOUT_SECONDS = 10L

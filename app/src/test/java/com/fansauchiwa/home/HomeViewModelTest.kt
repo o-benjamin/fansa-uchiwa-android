@@ -2,11 +2,13 @@ package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
 import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
@@ -17,6 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -25,6 +28,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -39,6 +43,8 @@ class HomeViewModelTest {
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var templateRepository: TemplateRepository
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var dailyPromptRepository: DailyPromptRepository
+    private val dailyPromptStream = MutableSharedFlow<DailyPrompt?>(replay = 1)
     private lateinit var uuidProvider: UuidProvider
 
     @Before
@@ -49,6 +55,8 @@ class HomeViewModelTest {
         analyticsRepository = mockk(relaxed = true)
         templateRepository = mockk(relaxed = true)
         settingsRepository = mockk(relaxed = true)
+        dailyPromptRepository = mockk(relaxed = true)
+        every { dailyPromptRepository.getDailyPromptStream() } returns dailyPromptStream
         uuidProvider = mockk(relaxed = true)
     }
 
@@ -64,6 +72,7 @@ class HomeViewModelTest {
             analyticsRepository = analyticsRepository,
             templateRepository = templateRepository,
             settingsRepository = settingsRepository,
+            dailyPromptRepository = dailyPromptRepository,
             uuidProvider = uuidProvider
         )
     }
@@ -76,6 +85,39 @@ class HomeViewModelTest {
             backgroundColor = Color.Black
         )
     )
+
+    @Test
+    fun init_dailyPromptEmitted_updatesDailyPrompt() = runTest {
+        val viewModel = createViewModel()
+        val prompt = DailyPrompt("20261024", "ピースして")
+
+        dailyPromptStream.emit(prompt)
+        advanceUntilIdle()
+
+        assertEquals(prompt, viewModel.uiState.value.dailyPrompt)
+    }
+
+    @Test
+    fun init_dailyPromptStopped_clearsDailyPrompt() = runTest {
+        val viewModel = createViewModel()
+
+        dailyPromptStream.emit(DailyPrompt("20261024", "ピースして"))
+        advanceUntilIdle()
+        dailyPromptStream.emit(null)
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.dailyPrompt)
+    }
+
+    @Test
+    fun fetchDailyPrompt_callsRepositoryFetch() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.fetchDailyPrompt()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { dailyPromptRepository.fetchDailyPrompt() }
+    }
 
     @Test
     fun onTabSelected_updatesSelectedTab() = runTest {

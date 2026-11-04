@@ -361,6 +361,7 @@ fun HomeScreen(
         viewModel.loadTemplates()
         viewModel.observeApologyDialogState()
         viewModel.fetchApologyDialogState()
+        viewModel.fetchDailyPrompt()
     }
 
     if (uiState.showApologyDialog) {
