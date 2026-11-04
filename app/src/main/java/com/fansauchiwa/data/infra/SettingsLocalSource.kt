@@ -5,10 +5,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import javax.inject.Inject
 
 class SettingsLocalSource @Inject constructor(
@@ -51,6 +54,32 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
+    override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[KEY_DAILY_PROMPT_DISMISSED_DATE]?.let(::parseDateOrNull)
+        }
+
+    override suspend fun setDailyPromptDismissedDate(date: LocalDate) {
+        dataStore.edit { preferences ->
+            preferences[KEY_DAILY_PROMPT_DISMISSED_DATE] = date.toString()
+        }
+    }
+
+    // 読めない値は「閉じていない」とみなす（カードが1日余計に出るだけで済むため）
+    private fun parseDateOrNull(value: String): LocalDate? =
+        try {
+            LocalDate.parse(value)
+        } catch (e: DateTimeParseException) {
+            null
+        }
+
     companion object {
         // "last_saved_font_name" は v2.7.x が分析（#242 font_same_as_last）用に書き込んでいたキー。
         // v2.8.0 で使うのをやめた（#267）。既存の端末には値が残るが読まない。
@@ -63,6 +92,9 @@ class SettingsLocalSource @Inject constructor(
             booleanPreferencesKey("haptic_feedback_enabled")
         private val KEY_HAS_SEEN_APOLOGY_DIALOG =
             booleanPreferencesKey("has_seen_apology_dialog")
+        // ISO 8601 の日付（例 2026-11-04）で持つ
+        private val KEY_DAILY_PROMPT_DISMISSED_DATE =
+            stringPreferencesKey("daily_prompt_dismissed_date")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
         private const val DEFAULT_HAS_SEEN_APOLOGY_DIALOG = false
     }

@@ -11,6 +11,8 @@ data class UchiwaPreviewUiState(
     val isLoadingAd: Boolean = false,
     val isSaveButtonPressed: Boolean = false,
     val shareImagePath: String? = null,
-    val affiliateLinks: List<AffiliateLink> = emptyList()
+    val affiliateLinks: List<AffiliateLink> = emptyList(),
+    // 今日のお題から作り始めたうちわか（#360）。共有文に #今日のファンサお題 を足す
+    val isStartedFromDailyPrompt: Boolean = false
 ) : Parcelable
 

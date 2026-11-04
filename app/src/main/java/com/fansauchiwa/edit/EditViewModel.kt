@@ -206,6 +206,15 @@ class EditViewModel @Inject constructor(
                 return
             }
         }
+        val dailyPromptText = inputArg?.dailyPromptText
+        // プロセスが作り直されたときは、復元した装飾（お題の文字を直したもの）を残す
+        if (dailyPromptText != null && currentState.decorations.isEmpty()) {
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                uchiwaId = uchiwaId,
+                decorations = listOf(editDecorationRepository.createDailyPromptText(dailyPromptText))
+            )
+            return
+        }
         savedStateHandle[UI_STATE_KEY] = currentState.copy(uchiwaId = uchiwaId)
     }
 

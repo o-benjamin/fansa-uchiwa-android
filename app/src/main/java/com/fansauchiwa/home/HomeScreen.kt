@@ -106,6 +106,7 @@ import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.R
 import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
@@ -535,6 +536,12 @@ fun HomeScreen(
             onImageLongPress = {
                 viewModel.enterSelectionMode()
             },
+            dailyPrompt = uiState.dailyPrompt,
+            onDailyPromptShown = viewModel::onDailyPromptShown,
+            onDailyPromptCreate = { prompt ->
+                onImageClick(viewModel.onDailyPromptCreate(prompt))
+            },
+            onDailyPromptDismiss = viewModel::dismissDailyPrompt,
             statusBarPadding = innerPadding.calculateTopPadding(),
             bottomPadding = innerPadding.calculateBottomPadding()
         )
@@ -554,6 +561,10 @@ internal fun HomeTabContent(
     onImageClick: (String) -> Unit,
     onTemplateClick: (Template) -> Unit,
     onImageLongPress: () -> Unit,
+    dailyPrompt: DailyPrompt?,
+    onDailyPromptShown: (DailyPrompt) -> Unit,
+    onDailyPromptCreate: (DailyPrompt) -> Unit,
+    onDailyPromptDismiss: () -> Unit,
     statusBarPadding: Dp,
     bottomPadding: Dp,
     modifier: Modifier = Modifier,
@@ -566,6 +577,10 @@ internal fun HomeTabContent(
             selectedMainColor = selectedMainColor,
             onMainColorSelected = onMainColorSelected,
             onTemplateClick = onTemplateClick,
+            dailyPrompt = dailyPrompt,
+            onDailyPromptShown = onDailyPromptShown,
+            onDailyPromptCreate = onDailyPromptCreate,
+            onDailyPromptDismiss = onDailyPromptDismiss,
             statusBarPadding = statusBarPadding,
             bottomPadding = bottomPadding,
             modifier = modifier,
@@ -593,6 +608,10 @@ private fun HomeTabHomeContent(
     selectedMainColor: DecorationColors,
     onMainColorSelected: (DecorationColors) -> Unit,
     onTemplateClick: (Template) -> Unit,
+    dailyPrompt: DailyPrompt?,
+    onDailyPromptShown: (DailyPrompt) -> Unit,
+    onDailyPromptCreate: (DailyPrompt) -> Unit,
+    onDailyPromptDismiss: () -> Unit,
     statusBarPadding: Dp,
     bottomPadding: Dp,
     modifier: Modifier = Modifier,
@@ -623,6 +642,17 @@ private fun HomeTabHomeContent(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        if (dailyPrompt != null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DailyPromptCard(
+                    prompt = dailyPrompt,
+                    onShown = { onDailyPromptShown(dailyPrompt) },
+                    onCreate = { onDailyPromptCreate(dailyPrompt) },
+                    onDismiss = onDailyPromptDismiss,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+        }
         item(span = { GridItemSpan(maxLineSpan) }) {
             SectionHeader(
                 title = stringResource(R.string.main_color_section_title),
@@ -1169,6 +1199,29 @@ private fun HomeTabHomeContentPreview() {
         selectedMainColor = DecorationColors.PINK,
         onMainColorSelected = {},
         onTemplateClick = {},
+        dailyPrompt = null,
+        onDailyPromptShown = {},
+        onDailyPromptCreate = {},
+        onDailyPromptDismiss = {},
+        statusBarPadding = 0.dp,
+        bottomPadding = 0.dp,
+        isPreview = true
+    )
+}
+
+@Preview(showBackground = true, name = "ホームタブ（今日のお題あり）")
+@Composable
+private fun HomeTabHomeContentWithDailyPromptPreview() {
+    HomeTabHomeContent(
+        modifier = Modifier.fillMaxSize(),
+        templates = previewTemplates(),
+        selectedMainColor = DecorationColors.PINK,
+        onMainColorSelected = {},
+        onTemplateClick = {},
+        dailyPrompt = DailyPrompt(id = "default_peace", text = "ピースして"),
+        onDailyPromptShown = {},
+        onDailyPromptCreate = {},
+        onDailyPromptDismiss = {},
         statusBarPadding = 0.dp,
         bottomPadding = 0.dp,
         isPreview = true

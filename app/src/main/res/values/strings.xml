@@ -35,6 +35,9 @@
          リンクの referrer（utm_source=app_share と utm_campaign=share_default_text）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える（Play Console は utm_source と utm_campaign の両方がそろったものだけを集計する）。
          URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く -->
     <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share%26utm_campaign%3Dshare_default_text</string>
+    <!-- 今日のお題から作ったうちわの共有文（#360）。share_default_text に #今日のファンサお題 を足したもの。
+         リンクの referrer は share_default_text と同じにして、共有経由のインストールの数え方を変えない -->
+    <string name="share_daily_prompt_text" formatted="false">ファンサうちわできた！\n#今日のファンサお題 #ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share%26utm_campaign%3Dshare_default_text</string>
     <string name="confirm_save_dialog_title">ここまでの作業を保存しますか?</string>
     <string name="save_and_back">保存して戻る</string>
     <string name="discard">破棄</string>
@@ -206,4 +209,11 @@
     <string name="apology_dialog_title">お詫びとお知らせ</string>
     <string name="apology_dialog_message">いつもご利用いただきありがとうございます。\n\n前回のバージョンで発生していた、クラッシュする不具合を修正いたしました。ご不便をおかけして申し訳ありません。再発防止対策を講じ、今後はこのようなことが起こらないよう努めますので、どうか引き続きアプリをお楽しみください。</string>
 
+    <!-- 今日のお題のカード（#360） -->
+    <string name="daily_prompt_card_title">今日のお題</string>
+    <string name="daily_prompt_create_button">このお題で作る</string>
+    <string name="daily_prompt_help_description">うちわの持ち込みについて</string>
+    <string name="daily_prompt_close_description">今日のお題を閉じる</string>
+    <string name="daily_prompt_help_message">手作りうちわが禁止の公演もあるよ。持ち込みの決まりは公演ごとに確かめてね</string>
+    <string name="daily_prompt_help_close">閉じる</string>
 </resources>

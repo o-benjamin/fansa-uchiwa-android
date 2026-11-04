@@ -85,6 +85,10 @@ class HomeScreenTest {
                     onImageClick = {},
                     onTemplateClick = {},
                     onImageLongPress = {},
+                    dailyPrompt = null,
+                    onDailyPromptShown = {},
+                    onDailyPromptCreate = {},
+                    onDailyPromptDismiss = {},
                     statusBarPadding = 0.dp,
                     bottomPadding = 0.dp,
                     isPreview = true
@@ -138,6 +142,10 @@ class HomeScreenTest {
                 onImageClick = {},
                 onTemplateClick = {},
                 onImageLongPress = {},
+                dailyPrompt = null,
+                onDailyPromptShown = {},
+                onDailyPromptCreate = {},
+                onDailyPromptDismiss = {},
                 statusBarPadding = 0.dp,
                 bottomPadding = 0.dp,
                 isPreview = true

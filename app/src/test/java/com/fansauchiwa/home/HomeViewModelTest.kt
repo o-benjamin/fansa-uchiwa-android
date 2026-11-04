@@ -1,14 +1,20 @@
 package com.fansauchiwa.home
 
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.EditScreenInputArg
+import com.fansauchiwa.analytics.AnalyticsActions
+import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
+import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
 import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.DailyPromptRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
@@ -17,9 +23,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -45,6 +53,12 @@ class HomeViewModelTest {
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var dailyPromptRepository: DailyPromptRepository
     private val dailyPromptStream = MutableSharedFlow<DailyPrompt?>(replay = 1)
+    private val dailyPromptDismissedDateStream = MutableStateFlow<LocalDate?>(null)
+    private lateinit var dailyPromptUchiwaRepository: DailyPromptUchiwaRepositoryImpl
+    private val today = LocalDate.of(2026, 11, 4)
+    private val todayProvider = object : TodayProvider {
+        override fun today(): LocalDate = today
+    }
     private lateinit var uuidProvider: UuidProvider
 
     @Before
@@ -57,6 +71,8 @@ class HomeViewModelTest {
         settingsRepository = mockk(relaxed = true)
         dailyPromptRepository = mockk(relaxed = true)
         every { dailyPromptRepository.getDailyPromptStream() } returns dailyPromptStream
+        every { settingsRepository.getDailyPromptDismissedDateStream() } returns dailyPromptDismissedDateStream
+        dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl()
         uuidProvider = mockk(relaxed = true)
     }
 
@@ -73,6 +89,8 @@ class HomeViewModelTest {
             templateRepository = templateRepository,
             settingsRepository = settingsRepository,
             dailyPromptRepository = dailyPromptRepository,
+            dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
+            todayProvider = todayProvider,
             uuidProvider = uuidProvider
         )
     }
@@ -110,6 +128,29 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun init_dailyPromptDismissedToday_hidesDailyPrompt() = runTest {
+        val viewModel = createViewModel()
+
+        dailyPromptDismissedDateStream.value = today
+        dailyPromptStream.emit(DailyPrompt("20261104", "ピースして"))
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.dailyPrompt)
+    }
+
+    @Test
+    fun init_dailyPromptDismissedYesterday_showsDailyPrompt() = runTest {
+        val viewModel = createViewModel()
+        val prompt = DailyPrompt("20261104", "ピースして")
+
+        dailyPromptDismissedDateStream.value = today.minusDays(1)
+        dailyPromptStream.emit(prompt)
+        advanceUntilIdle()
+
+        assertEquals(prompt, viewModel.uiState.value.dailyPrompt)
+    }
+
+    @Test
     fun fetchDailyPrompt_callsRepositoryFetch() = runTest {
         val viewModel = createViewModel()
 
@@ -117,6 +158,73 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { dailyPromptRepository.fetchDailyPrompt() }
+        coVerify(exactly = 1) { settingsRepository.fetchDailyPromptDismissedDate() }
+    }
+
+    @Test
+    fun dismissDailyPrompt_savesToday() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.dismissDailyPrompt()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { settingsRepository.setDailyPromptDismissedDate(today) }
+    }
+
+    @Test
+    fun onDailyPromptShown_samePromptTwice_logsViewOnce() = runTest {
+        val viewModel = createViewModel()
+        val prompt = DailyPrompt("20261104", "ピースして")
+
+        viewModel.onDailyPromptShown(prompt)
+        viewModel.onDailyPromptShown(prompt)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.VIEW_DAILY_PROMPT,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to "20261104")
+                )
+            )
+        }
+    }
+
+    @Test
+    fun onDailyPromptShown_nextDayPrompt_logsViewAgain() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.onDailyPromptShown(DailyPrompt("20261104", "ピースして"))
+        viewModel.onDailyPromptShown(DailyPrompt("20261105", "手ふって"))
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.VIEW_DAILY_PROMPT })
+        }
+    }
+
+    @Test
+    fun onDailyPromptCreate_returnsBlankArgWithPromptTextAndMarksUchiwa() = runTest {
+        every { uuidProvider.generate() } returns "new-uchiwa-id"
+        val viewModel = createViewModel()
+
+        val inputArg = viewModel.onDailyPromptCreate(DailyPrompt("20261104", "ピースして"))
+        advanceUntilIdle()
+
+        assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        assertTrue(dailyPromptUchiwaRepository.isStartedFromPrompt("new-uchiwa-id"))
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.TAP_DAILY_PROMPT,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to "20261104")
+                )
+            )
+        }
+        // 白紙からの新規作成とは別に数える
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_HOME_NEW_CREATE })
+        }
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.fansauchiwa.settings
 
 import com.fansauchiwa.data.repository.SettingsRepository
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +41,12 @@ class SettingsViewModelTest {
         override suspend fun fetchHasSeenApologyDialog() = Unit
 
         override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) = Unit
+
+        override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> = MutableSharedFlow()
+
+        override suspend fun fetchDailyPromptDismissedDate() = Unit
+
+        override suspend fun setDailyPromptDismissedDate(date: LocalDate) = Unit
 
         fun isHapticEnabled(): Boolean = hapticEnabled
     }

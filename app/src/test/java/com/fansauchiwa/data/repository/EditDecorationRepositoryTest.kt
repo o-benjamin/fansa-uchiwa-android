@@ -1,5 +1,6 @@
 package com.fansauchiwa.data.repository
 
+import androidx.compose.ui.geometry.Offset
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.edit.FontFamilies
@@ -25,6 +26,32 @@ class EditDecorationRepositoryTest {
 
         assertEquals("text-id", decoration.id)
         assertEquals(FontFamilies.HACHI_MARU_POP, decoration.font)
+    }
+
+    @Test
+    fun createDailyPromptText_shortText_placesTextAtCenterWithFullScale() {
+        val repository = EditDecorationRepositoryImpl(
+            uuidProvider = FakeUuidProvider(ArrayDeque(listOf("text-id")))
+        )
+
+        val decoration = repository.createDailyPromptText("ピースして")
+
+        assertEquals("text-id", decoration.id)
+        assertEquals("ピースして", decoration.text)
+        assertEquals(FontFamilies.M_PLUS_ROUNDED_1C, decoration.font)
+        assertEquals(Offset.Zero, decoration.offset)
+        assertEquals(1f, decoration.scale)
+    }
+
+    @Test
+    fun createDailyPromptText_sixteenChars_shrinksToFitTenChars() {
+        val repository = EditDecorationRepositoryImpl(
+            uuidProvider = FakeUuidProvider(ArrayDeque(listOf("text-id")))
+        )
+
+        val decoration = repository.createDailyPromptText("ハロウィンの仮装を見せてください")
+
+        assertEquals(10f / 16f, decoration.scale)
     }
 
     @Test
