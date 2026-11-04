@@ -3,6 +3,7 @@ package com.fansauchiwa.data.repository
 import android.util.Log
 import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DailyPromptSelector
+import com.fansauchiwa.data.DailyPromptsConfig
 import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import io.mockk.every
@@ -12,9 +13,13 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.IOException
 import java.time.LocalDate
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -25,7 +30,9 @@ import org.junit.Test
 class DailyPromptRepositoryImplTest {
 
     private val today: LocalDate = LocalDate.of(2026, 10, 24)
-    private val defaultForToday = DailyPromptSelector.select(null, today)
+    private val defaultForToday = DailyPromptSelector.select(DailyPromptsConfig.Unset, today)
+    private val todayJson = """{"prompts": [{"date": "2026-10-24", "id": "20261024", "text": "ピースして"}]}"""
+    private val todayPrompt = DailyPrompt("20261024", "ピースして")
 
     private lateinit var remoteConfigDataSource: RemoteConfigDataSource
     private lateinit var crashReportingRepository: CrashReportingRepository
@@ -36,6 +43,7 @@ class DailyPromptRepositoryImplTest {
     fun setUp() {
         mockkStatic(Log::class)
         every { Log.w(any(), any<String>(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
         remoteConfigDataSource = mockk()
         crashReportingRepository = mockk(relaxed = true)
@@ -51,13 +59,50 @@ class DailyPromptRepositoryImplTest {
 
     @Test
     fun fetchDailyPrompt_remoteHasToday_emitsRemotePrompt() = runTest {
+        every { remoteConfigDataSource.getDailyPromptsJsonStream() } returns flowOf(todayJson)
+
+        repository.fetchDailyPrompt()
+
+        assertEquals(todayPrompt, repository.getDailyPromptStream().first())
+        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
+    }
+
+    @Test
+    fun fetchDailyPrompt_cachedValueThenFetched_emitsCachedBeforeFetchCompletes() = runTest {
+        val fetchCompleted = CompletableDeferred<Unit>()
+        every { remoteConfigDataSource.getDailyPromptsJsonStream() } returns flow {
+            emit("")
+            fetchCompleted.await()
+            emit(todayJson)
+        }
+
+        launch { repository.fetchDailyPrompt() }
+        runCurrent()
+
+        // 取得を待たずに、端末に残っていた値（ここでは未設定なので控え）が流れている
+        assertEquals(defaultForToday, repository.getDailyPromptStream().first())
+
+        fetchCompleted.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(todayPrompt, repository.getDailyPromptStream().first())
+    }
+
+    @Test
+    fun fetchDailyPrompt_someItemsDropped_logsPositionsWithoutRecording() = runTest {
         every { remoteConfigDataSource.getDailyPromptsJsonStream() } returns flowOf(
-            """{"prompts": [{"date": "2026-10-24", "id": "20261024", "text": "ピースして"}]}"""
+            """
+            {"prompts": [
+              {"date": "2026-10-24", "id": "20261024", "text": "ピースして"},
+              {"date": "2026-10-25", "id": "20261025", "text": "https://a.jp"}
+            ]}
+            """.trimIndent()
         )
 
         repository.fetchDailyPrompt()
 
-        assertEquals(DailyPrompt("20261024", "ピースして"), repository.getDailyPromptStream().first())
+        assertEquals(todayPrompt, repository.getDailyPromptStream().first())
+        verify(exactly = 1) { Log.w("DailyPrompt", match<String> { it.contains("2 件目") }) }
         verify(exactly = 0) { crashReportingRepository.recordException(any()) }
     }
 
@@ -132,6 +177,20 @@ class DailyPromptRepositoryImplTest {
         repository.fetchDailyPrompt()
 
         assertEquals(defaultForToday, repository.getDailyPromptStream().first())
+        verify(exactly = 1) { crashReportingRepository.recordException(error) }
+    }
+
+    @Test
+    fun fetchDailyPrompt_dataSourceThrowsAfterCachedValue_keepsCachedPrompt() = runTest {
+        val error = IOException("取得の途中で失敗")
+        every { remoteConfigDataSource.getDailyPromptsJsonStream() } returns flow {
+            emit(todayJson)
+            throw error
+        }
+
+        repository.fetchDailyPrompt()
+
+        assertEquals(todayPrompt, repository.getDailyPromptStream().first())
         verify(exactly = 1) { crashReportingRepository.recordException(error) }
     }
 

@@ -25,7 +25,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | テンプレートを足す、debug ビルドの候補を変える | `.agents/template-candidates.md` |
 | リリースビルド設定・ProGuard ルール・`@Keep` を扱う、依存ライブラリを追加・更新する | `.agents/r8.md` |
 | Analytics のイベント・パラメータを追加・変更する、分析用のコードを扱う | `.agents/analytics.md` |
-| Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials` を設定する | `.agents/remote-config.md` |
+| Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials`・`daily_prompts`（今日のお題）を設定する・止める | `.agents/remote-config.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
 | Android の API を調べる（`android docs search`）、頼まれたときや不具合の調査でアプリを動かす、既存の journey（`journeys/`）が通る画面の文言や手順を変える | `.agents/android-cli.md` |
 

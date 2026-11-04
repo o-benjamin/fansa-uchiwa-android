@@ -147,7 +147,7 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * ホームを開くたびに呼ぶ。日付が変わっていればお題も変わる。Remote Config の取得は最小間隔（1時間）で間引かれる
+     * ホームが前に出るたび（ON_START）に呼ぶ。日付が変わっていればお題も変わる。Remote Config の取得は最小間隔（1時間）で間引かれる
      */
     fun fetchDailyPrompt() {
         viewModelScope.launch {

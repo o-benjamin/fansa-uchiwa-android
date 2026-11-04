@@ -8,24 +8,28 @@ import java.time.LocalDate
 object DailyPromptSelector {
 
     /**
-     * @param scheduled Remote Config の日付ごとのお題（[DailyPromptsParser.parse] の結果）。
-     *   null は Remote Config が使えない（未設定・読めない）ことを、空の Map はお題を止めていることを表す
+     * @param config Remote Config の `daily_prompts` を読んだ結果
      * @param today 端末の今日の日付
-     * @param defaults 今日の分がないときに使う控え
+     * @param defaults 未設定・今日の分がないときに使う控え
      * @return 今日のお題。止めているとき（と控えが空のとき）は null
      */
     fun select(
-        scheduled: Map<LocalDate, DailyPrompt>?,
+        config: DailyPromptsConfig,
         today: LocalDate,
         defaults: List<DailyPrompt> = DailyPromptDefaults.PROMPTS
-    ): DailyPrompt? {
-        if (scheduled != null && scheduled.isEmpty()) return null
-        return scheduled?.get(today) ?: pickDefault(today, defaults)
-    }
+    ): DailyPrompt? =
+        when (config) {
+            DailyPromptsConfig.Stopped -> null
+            DailyPromptsConfig.Unset -> pickDefault(today, defaults)
+            is DailyPromptsConfig.Scheduled -> config.prompts[today] ?: pickDefault(today, defaults)
+        }
 
-    /** 日付の通し番号で控えを順に回す。端末どうしで同じ日なら同じ1件になる */
+    /**
+     * 日付の通し番号で控えを順に回す。端末どうしで同じ日なら同じ1件になる。
+     * `mod` は割る数と同じ符号の余りを返すので、1970年より前で通し番号が負でも範囲に収まる
+     */
     private fun pickDefault(today: LocalDate, defaults: List<DailyPrompt>): DailyPrompt? {
         if (defaults.isEmpty()) return null
-        return defaults[Math.floorMod(today.toEpochDay(), defaults.size.toLong()).toInt()]
+        return defaults[today.toEpochDay().mod(defaults.size)]
     }
 }

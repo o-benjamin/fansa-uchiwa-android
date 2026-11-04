@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface RemoteConfigDataSource {
     /**
      * 日付ごとの今日のお題（`daily_prompts`。#359）の JSON。
-     * 取得を試みてから、有効になっている値を流す。取得に失敗したときは前回取得した値、未設定なら空文字
+     * 端末に残っている値（前回取得した値、未設定なら空文字）を先に流し、取得を試みてから、有効になっている値をもう一度流す
      */
     fun getDailyPromptsJsonStream(): Flow<String>
 

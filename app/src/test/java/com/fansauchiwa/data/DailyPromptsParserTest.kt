@@ -2,7 +2,6 @@ package com.fansauchiwa.data
 
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,9 +10,10 @@ class DailyPromptsParserTest {
 
     private val oct24: LocalDate = LocalDate.of(2026, 10, 24)
     private val oct25: LocalDate = LocalDate.of(2026, 10, 25)
+    private val oct26: LocalDate = LocalDate.of(2026, 10, 26)
 
     @Test
-    fun parse_validPrompts_returnsPromptsByDate() {
+    fun parse_validPrompts_returnsScheduledPromptsByDate() {
         val json = """
             {"notify": true, "prompts": [
               {"date": "2026-10-24", "id": "20261024", "text": "ピースして"},
@@ -22,34 +22,39 @@ class DailyPromptsParserTest {
         """.trimIndent()
 
         assertEquals(
-            mapOf(
-                oct24 to DailyPrompt("20261024", "ピースして"),
-                oct25 to DailyPrompt("20261025", "手ふって")
+            DailyPromptsConfig.Scheduled(
+                mapOf(
+                    oct24 to DailyPrompt("20261024", "ピースして"),
+                    oct25 to DailyPrompt("20261025", "手ふって")
+                )
             ),
             DailyPromptsParser.parse(json)
         )
     }
 
     @Test
-    fun parse_emptyString_returnsNull() {
-        assertNull(DailyPromptsParser.parse(""))
+    fun parse_emptyString_returnsUnset() {
+        assertEquals(DailyPromptsConfig.Unset, DailyPromptsParser.parse(""))
     }
 
     @Test
-    fun parse_blankString_returnsNull() {
-        assertNull(DailyPromptsParser.parse("  \n"))
+    fun parse_blankString_returnsUnset() {
+        assertEquals(DailyPromptsConfig.Unset, DailyPromptsParser.parse("  \n"))
     }
 
     @Test
-    fun parse_emptyPrompts_returnsEmptyMap() {
-        assertEquals(emptyMap<LocalDate, DailyPrompt>(), DailyPromptsParser.parse("""{"prompts": []}"""))
+    fun parse_emptyPrompts_returnsStopped() {
+        assertEquals(DailyPromptsConfig.Stopped, DailyPromptsParser.parse("""{"prompts": []}"""))
     }
 
     @Test
-    fun parse_textWithSurroundingSpaces_trimsText() {
+    fun parse_fieldsWithSurroundingSpaces_trimsIdAndText() {
         val json = """{"prompts": [{"date": "2026-10-24", "id": " a ", "text": "  ピースして  "}]}"""
 
-        assertEquals(mapOf(oct24 to DailyPrompt("a", "ピースして")), DailyPromptsParser.parse(json))
+        assertEquals(
+            DailyPromptsConfig.Scheduled(mapOf(oct24 to DailyPrompt("a", "ピースして"))),
+            DailyPromptsParser.parse(json)
+        )
     }
 
     @Test
@@ -57,7 +62,10 @@ class DailyPromptsParserTest {
         val text = "あ".repeat(DailyPromptsParser.MAX_TEXT_LENGTH)
         val json = """{"prompts": [{"date": "2026-10-24", "id": "a", "text": "$text"}]}"""
 
-        assertEquals(mapOf(oct24 to DailyPrompt("a", text)), DailyPromptsParser.parse(json))
+        assertEquals(
+            DailyPromptsConfig.Scheduled(mapOf(oct24 to DailyPrompt("a", text))),
+            DailyPromptsParser.parse(json)
+        )
     }
 
     @Test
@@ -69,16 +77,22 @@ class DailyPromptsParserTest {
             ]}
         """.trimIndent()
 
-        assertEquals(mapOf(oct25 to DailyPrompt("ok", "手ふって")), DailyPromptsParser.parse(json))
+        assertEquals(
+            DailyPromptsConfig.Scheduled(mapOf(oct25 to DailyPrompt("ok", "手ふって")), droppedPositions = listOf(1)),
+            DailyPromptsParser.parse(json)
+        )
     }
 
     @Test
-    fun parse_textWithEmojiAtMaxLength_countsCodePoints() {
-        // 絵文字は UTF-16 で2つ分だが、1文字として数える
+    fun parse_singleCodePointEmojiAtMaxLength_keepsItem() {
+        // 1コードポイントの絵文字は UTF-16 で2つ分だが、1文字として数える
         val text = "😀".repeat(DailyPromptsParser.MAX_TEXT_LENGTH)
         val json = """{"prompts": [{"date": "2026-10-24", "id": "a", "text": "$text"}]}"""
 
-        assertEquals(mapOf(oct24 to DailyPrompt("a", text)), DailyPromptsParser.parse(json))
+        assertEquals(
+            DailyPromptsConfig.Scheduled(mapOf(oct24 to DailyPrompt("a", text))),
+            DailyPromptsParser.parse(json)
+        )
     }
 
     @Test
@@ -92,13 +106,13 @@ class DailyPromptsParserTest {
         """.trimIndent()
 
         assertEquals(
-            mapOf(LocalDate.of(2026, 10, 26) to DailyPrompt("ok", "ピースして")),
+            DailyPromptsConfig.Scheduled(mapOf(oct26 to DailyPrompt("ok", "ピースして")), droppedPositions = listOf(1, 2)),
             DailyPromptsParser.parse(json)
         )
     }
 
     @Test
-    fun parse_itemsMissingFields_dropsThem() {
+    fun parse_itemsMissingFields_dropsThemWithPositions() {
         val json = """
             {"prompts": [
               {"date": "2026-10-20", "text": "idなし"},
@@ -114,13 +128,16 @@ class DailyPromptsParserTest {
         """.trimIndent()
 
         assertEquals(
-            mapOf(LocalDate.of(2026, 10, 26) to DailyPrompt("ok", "ピースして")),
+            DailyPromptsConfig.Scheduled(
+                mapOf(oct26 to DailyPrompt("ok", "ピースして")),
+                droppedPositions = listOf(1, 2, 3, 4, 5, 6, 7, 8)
+            ),
             DailyPromptsParser.parse(json)
         )
     }
 
     @Test
-    fun parse_duplicateDate_keepsFirst() {
+    fun parse_duplicateDate_keepsFirstAndDropsSecond() {
         val json = """
             {"prompts": [
               {"date": "2026-10-24", "id": "first", "text": "ピースして"},
@@ -128,7 +145,10 @@ class DailyPromptsParserTest {
             ]}
         """.trimIndent()
 
-        assertEquals(mapOf(oct24 to DailyPrompt("first", "ピースして")), DailyPromptsParser.parse(json))
+        assertEquals(
+            DailyPromptsConfig.Scheduled(mapOf(oct24 to DailyPrompt("first", "ピースして")), droppedPositions = listOf(2)),
+            DailyPromptsParser.parse(json)
+        )
     }
 
     @Test
