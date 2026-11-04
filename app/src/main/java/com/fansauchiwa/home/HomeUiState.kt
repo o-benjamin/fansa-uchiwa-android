@@ -2,6 +2,7 @@ package com.fansauchiwa.home
 
 import android.os.Parcelable
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
 import kotlinx.parcelize.Parcelize
@@ -22,5 +23,7 @@ data class HomeUiState(
     val isSelectionMode: Boolean = false,
     val selectedPaths: List<String> = emptyList(),
     val templates: @RawValue List<Template> = emptyList(),
-    val showApologyDialog: Boolean = false
+    val showApologyDialog: Boolean = false,
+    // 今日のお題。null なら出さない（Remote Config で止めている）
+    val dailyPrompt: DailyPrompt? = null
 ) : Parcelable

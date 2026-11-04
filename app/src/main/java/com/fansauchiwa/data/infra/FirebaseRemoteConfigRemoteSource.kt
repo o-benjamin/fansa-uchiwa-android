@@ -23,9 +23,30 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         )
     }
 
+    override fun getDailyPromptsJsonStream(): Flow<String> = flow {
+        // 取得を待つと、遅い回線では取得のタイムアウトまでお題が出ないので、端末に残っている値を先に流す
+        awaitInitialized()
+        emit(remoteConfig.getString(KEY_DAILY_PROMPTS))
+        fetchAndActivate()
+        emit(remoteConfig.getString(KEY_DAILY_PROMPTS))
+    }
+
     override fun getAffiliateMaterialsJsonStream(): Flow<String> = flow {
         fetchAndActivate()
         emit(remoteConfig.getString(KEY_AFFILIATE_MATERIALS))
+    }
+
+    /**
+     * 前回までに有効にした値を端末から読み込む。読み込む前の getString は初期値（空文字）を返すため
+     */
+    private suspend fun awaitInitialized() {
+        try {
+            remoteConfig.ensureInitialized().await()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Remote Config の読み込みに失敗", e)
+        }
     }
 
     /**
@@ -44,6 +65,7 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
 
     private companion object {
         const val TAG = "RemoteConfig"
+        const val KEY_DAILY_PROMPTS = "daily_prompts"
         const val KEY_AFFILIATE_MATERIALS = "affiliate_materials"
         const val MINIMUM_FETCH_INTERVAL_SECONDS = 60L * 60
         const val FETCH_TIMEOUT_SECONDS = 10L

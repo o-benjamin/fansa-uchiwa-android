@@ -96,6 +96,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -361,6 +363,11 @@ fun HomeScreen(
         viewModel.loadTemplates()
         viewModel.observeApologyDialogState()
         viewModel.fetchApologyDialogState()
+    }
+
+    // ホームを開いたまま裏に回して翌日戻ったときも、その日のお題に変える
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.fetchDailyPrompt()
     }
 
     if (uiState.showApologyDialog) {
