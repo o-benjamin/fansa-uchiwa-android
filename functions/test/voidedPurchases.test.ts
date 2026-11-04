@@ -44,7 +44,7 @@ test("返金された購入の回数券を消し、残っていた回数と返�
 
   const summary = await handleRevokeVoidedPurchases({ db, play, now: () => now });
 
-  assert.deepEqual(summary, { voided: 1, revoked: 1, unknown: 0 });
+  assert.deepEqual(summary, { voided: 1, revoked: 1, noRecord: 0, failed: 0 });
   const user = (await db.collection("users").doc(uid).get()).data();
   assert.equal(user?.packs[purchaseId], undefined);
   const record = (await db.collection("purchases").doc(purchaseId).get()).data();
@@ -61,7 +61,7 @@ test("毎日同じ返金が返ってきても、2回目からは飛ばす", asyn
   await handleRevokeVoidedPurchases({ db, play: fakePlay(now, [page]).play, now: () => now });
   const second = await handleRevokeVoidedPurchases({ db, play: fakePlay(now, [page]).play, now: () => now });
 
-  assert.deepEqual(second, { voided: 1, revoked: 0, unknown: 0 });
+  assert.deepEqual(second, { voided: 1, revoked: 0, noRecord: 0, failed: 0 });
 });
 
 test("記録のない購入は数えるだけで、ほかの利用者の回数券には触らない", async () => {
@@ -71,8 +71,23 @@ test("記録のない購入は数えるだけで、ほかの利用者の回数�
 
   const summary = await handleRevokeVoidedPurchases({ db, play, now: () => now });
 
-  assert.equal(summary.unknown, 1);
+  assert.equal(summary.noRecord, 1);
   assert.equal((await db.collection("users").doc(uid).get()).get(new FieldPath("packs", purchaseId, "remaining")), 5);
+});
+
+test("1件が取り消せなくても、ほかの件は取り消す", async () => {
+  const now = uniqueDay();
+  const broken = await buyTicket(now);
+  const healthy = await buyTicket(now);
+  // 時刻が数値でないと、記録に書く Timestamp を作れずトランザクションが落ちる
+  const brokenEntry = { ...voided(broken.purchaseToken, now), voidedTimeMillis: "not-a-number" };
+  const { play } = fakePlay(now, [{ voidedPurchases: [brokenEntry, voided(healthy.purchaseToken, now)] }]);
+
+  const summary = await handleRevokeVoidedPurchases({ db, play, now: () => now });
+
+  assert.deepEqual(summary, { voided: 2, revoked: 1, noRecord: 0, failed: 1 });
+  assert.equal((await db.collection("users").doc(healthy.uid).get()).get(new FieldPath("packs", healthy.purchaseId)), undefined);
+  assert.equal((await db.collection("users").doc(broken.uid).get()).get(new FieldPath("packs", broken.purchaseId, "remaining")), 5);
 });
 
 test("次のページがある間はたどる", async () => {

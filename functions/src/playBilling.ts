@@ -3,17 +3,25 @@ const API_BASE = "https://androidpublisher.googleapis.com/androidpublisher/v3/ap
 /** Play の答えを待つ時間の上限。購入の確認は利用者が画面で待っているので、短めにする。 */
 const TIMEOUT_MS = 15_000;
 
-/** Play Developer API の `purchases.products.get` の答えのうち、使うところ。 */
+/** `ProductPurchase.purchaseState` の値 */
+export const PurchaseState = { PURCHASED: 0, CANCELED: 1, PENDING: 2 } as const;
+/** `ProductPurchase.consumptionState` の値 */
+export const ConsumptionState = { NOT_CONSUMED: 0, CONSUMED: 1 } as const;
+
+/**
+ * Play Developer API の `purchases.products.get` の答えのうち、使うところ。
+ * 数値の項目は、既定値（0）のとき答えから省かれることがあるので、ないときは 0 として読む。
+ */
 export interface ProductPurchase {
-  /** 0：購入済み、1：取り消し、2：支払い待ち（コンビニ払いなど） */
+  /** `PurchaseState`（購入済み・取り消し・支払い待ち（コンビニ払いなど）） */
   purchaseState?: number;
-  /** 0：まだ消費していない、1：消費済み */
+  /** `ConsumptionState`（まだ消費していない・消費済み） */
   consumptionState?: number;
   /** Play の注文番号（`GPA.` で始まる）。問い合わせで利用者が見せるのはこの番号 */
   orderId?: string;
   /** 購入した時刻（ミリ秒。API は文字列で返す） */
   purchaseTimeMillis?: string;
-  /** 数量。Play Console で数量の選択を有効にしなければ、付かないか1 */
+  /** 数量。Play Console で数量の選択を有効にしない（functions/README.md の「本番に出す」）ので、付かないか1 */
   quantity?: number;
 }
 

@@ -63,6 +63,7 @@ export const generateMaterial = onCall(
 
 /** 回数券の購入を確かめて回数を足す（#348）。中身は verifyPurchase.ts、運用は functions/README.md。 */
 export const verifyPurchase = onCall(
+  // maxInstances はインスタンスが増え続けないように抑える（generateMaterial と同じ）
   { region: "asia-northeast1", enforceAppCheck: true, maxInstances: 5 },
   (request) => handleVerifyPurchase(request.auth?.uid, request.data, { db, play, now: () => new Date() }),
 );

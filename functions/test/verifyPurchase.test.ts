@@ -1,12 +1,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
-import { HttpsError } from "firebase-functions/v2/https";
 import { addMonthsJst } from "../src/jstDate";
 import type { PlayBillingClient, ProductPurchase } from "../src/playBilling";
 import { PlayHttpError } from "../src/playBilling";
 import { handleVerifyPurchase, purchaseIdOf, TICKET_PRODUCT_ID } from "../src/verifyPurchase";
-import { daysLater, emulatorDb, uniqueDay, uniqueUid } from "./helpers";
+import { daysLater, emulatorDb, rejectsWith, uniqueDay, uniqueUid } from "./helpers";
 
 const db = emulatorDb();
 
@@ -35,16 +34,6 @@ function fakeDeps(now: Date, options: FakeOptions = {}) {
 
 function requestFor(purchaseToken: string) {
   return { productId: TICKET_PRODUCT_ID, purchaseToken };
-}
-
-async function rejectionReason(work: Promise<unknown>): Promise<string> {
-  try {
-    await work;
-  } catch (error) {
-    assert.ok(error instanceof HttpsError);
-    return (error.details as { reason: string }).reason;
-  }
-  assert.fail("断られなかった");
 }
 
 async function userOf(uid: string) {
@@ -126,7 +115,7 @@ test("ほかの利用者が受け取り済みの購入は owned_by_other で断�
   await handleVerifyPurchase(uniqueUid(), requestFor(token), deps);
 
   const other = uniqueUid();
-  assert.equal(await rejectionReason(handleVerifyPurchase(other, requestFor(token), deps)), "owned_by_other");
+  await assert.rejects(handleVerifyPurchase(other, requestFor(token), deps), rejectsWith("owned_by_other", "permission-denied"));
   assert.equal(await userOf(other), undefined);
 });
 
@@ -139,8 +128,8 @@ test("支払い待ちは pending、取り消された購入は not_purchased で
   const pending = fakeDeps(now, { purchase: async () => ({ purchaseState: 2 }) }).deps;
   const canceled = fakeDeps(now, { purchase: async () => ({ purchaseState: 1 }) }).deps;
 
-  assert.equal(await rejectionReason(handleVerifyPurchase(uid, requestFor(pendingToken), pending)), "pending");
-  assert.equal(await rejectionReason(handleVerifyPurchase(uid, requestFor(canceledToken), canceled)), "not_purchased");
+  await assert.rejects(handleVerifyPurchase(uid, requestFor(pendingToken), pending), rejectsWith("pending", "failed-precondition"));
+  await assert.rejects(handleVerifyPurchase(uid, requestFor(canceledToken), canceled), rejectsWith("not_purchased", "permission-denied"));
   assert.equal((await db.collection("purchases").doc(purchaseIdOf(pendingToken)).get()).exists, false);
   assert.equal(await userOf(uid), undefined);
 });
@@ -152,9 +141,9 @@ test("Play が知らないトークンは not_purchased、権限がない・障�
   const denied = fakeDeps(now, { purchase: () => Promise.reject(new PlayHttpError(403, "PERMISSION_DENIED")) }).deps;
   const down = fakeDeps(now, { purchase: () => Promise.reject(new Error("timeout")) }).deps;
 
-  assert.equal(await rejectionReason(handleVerifyPurchase(uid, requestFor(randomUUID()), unknown)), "not_purchased");
-  assert.equal(await rejectionReason(handleVerifyPurchase(uid, requestFor(randomUUID()), denied)), "verification_failed");
-  assert.equal(await rejectionReason(handleVerifyPurchase(uid, requestFor(randomUUID()), down)), "verification_failed");
+  await assert.rejects(handleVerifyPurchase(uid, requestFor(randomUUID()), unknown), rejectsWith("not_purchased", "permission-denied"));
+  await assert.rejects(handleVerifyPurchase(uid, requestFor(randomUUID()), denied), rejectsWith("verification_failed", "unavailable"));
+  await assert.rejects(handleVerifyPurchase(uid, requestFor(randomUUID()), down), rejectsWith("verification_failed", "unavailable"));
   assert.equal(await userOf(uid), undefined);
 });
 
@@ -193,6 +182,27 @@ test("Play で消費済みの購入は、足すが消費は呼ばない", async 
   assert.equal(calls.consume, 0);
 });
 
+test("Play の答えに purchaseState がなければ購入済み（既定値の 0 が省かれた）として足す", async () => {
+  const now = uniqueDay();
+  const { deps } = fakeDeps(now, { purchase: async () => ({ orderId: "GPA.5678", purchaseTimeMillis: String(now.getTime()) }) });
+
+  const response = await handleVerifyPurchase(uniqueUid(), requestFor(randomUUID()), deps);
+
+  assert.equal(response.ticketsAdded, 5);
+});
+
+test("数量の付いた購入は、数量の分だけ足す", async () => {
+  const now = uniqueDay();
+  const { deps } = fakeDeps(now, {
+    purchase: async () => ({ purchaseState: 0, consumptionState: 0, quantity: 2, purchaseTimeMillis: String(now.getTime()) }),
+  });
+
+  const response = await handleVerifyPurchase(uniqueUid(), requestFor(randomUUID()), deps);
+
+  assert.equal(response.ticketsAdded, 10);
+  assert.equal(response.ticketsRemaining, 10);
+});
+
 test("返金で取り消し済みの購入は、同じ利用者が送り直しても not_purchased", async () => {
   const now = uniqueDay();
   const uid = uniqueUid();
@@ -201,17 +211,17 @@ test("返金で取り消し済みの購入は、同じ利用者が送り直し�
   await handleVerifyPurchase(uid, requestFor(token), deps);
   await db.collection("purchases").doc(purchaseIdOf(token)).update({ voidedAt: daysLater(now, 1) });
 
-  assert.equal(await rejectionReason(handleVerifyPurchase(uid, requestFor(token), deps)), "not_purchased");
+  await assert.rejects(handleVerifyPurchase(uid, requestFor(token), deps), rejectsWith("not_purchased", "permission-denied"));
 });
 
 test("ログインしていない・アイテムが違う・トークンがないときは Play に聞かずに断る", async () => {
   const now = uniqueDay();
   const { deps, calls } = fakeDeps(now);
 
-  assert.equal(await rejectionReason(handleVerifyPurchase(undefined, requestFor("t"), deps)), "unauthenticated");
+  await assert.rejects(handleVerifyPurchase(undefined, requestFor("t"), deps), rejectsWith("unauthenticated", "unauthenticated"));
   const wrongProduct = { productId: "other_item", purchaseToken: "t" };
-  assert.equal(await rejectionReason(handleVerifyPurchase(uniqueUid(), wrongProduct, deps)), "invalid_purchase");
+  await assert.rejects(handleVerifyPurchase(uniqueUid(), wrongProduct, deps), rejectsWith("invalid_purchase", "invalid-argument"));
   const noToken = { productId: TICKET_PRODUCT_ID, purchaseToken: "" };
-  assert.equal(await rejectionReason(handleVerifyPurchase(uniqueUid(), noToken, deps)), "invalid_purchase");
+  await assert.rejects(handleVerifyPurchase(uniqueUid(), noToken, deps), rejectsWith("invalid_purchase", "invalid-argument"));
   assert.equal(calls.get, 0);
 });

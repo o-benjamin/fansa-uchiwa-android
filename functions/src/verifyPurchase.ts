@@ -6,15 +6,18 @@ import { Timestamp } from "firebase-admin/firestore";
 import type { DocumentData, Firestore } from "firebase-admin/firestore";
 import { addMonthsJst } from "./jstDate";
 import type { PlayBillingClient, ProductPurchase } from "./playBilling";
-import { PlayHttpError } from "./playBilling";
-import { countUsableTickets } from "./quota";
+import { ConsumptionState, PlayHttpError, PurchaseState } from "./playBilling";
+import { countUsableTickets, USERS_COLLECTION } from "./quota";
 
 /**
  * 回数券のアイテム ID（Play Console のアプリ内アイテム。消費型）。値段は Play Console で決め、ここには書かない
- * （公開後に Play の価格実験で値段を変えるため。会社リポジトリ `company/decisions/2026-10-31-ai-material-price-experiment.md`）。
+ * （公開後に Play の価格実験で値段を変えるため）。
  */
 export const TICKET_PRODUCT_ID = "ai_material_ticket_5";
-/** 1購入で足す回数。支払った額（価格実験で変わる）によらず同じ */
+/**
+ * 1購入（数量1）で足す回数。支払った額（価格実験で変わる）によらず同じ。数量の付いた購入は数量の分だけ足すが、
+ * Play Console で数量の選択は有効にしない（数量の一部だけの返金を、返金の取り消しで拾わないため）
+ */
 export const TICKETS_PER_PURCHASE = 5;
 /** 回数券を使える期間（購入から）。6か月以内にするのは資金決済法の対象外にするため */
 export const TICKET_VALID_MONTHS = 6;
@@ -77,8 +80,12 @@ export interface VerifyPurchaseDeps {
   now: () => Date;
 }
 
-function refuse(reason: PurchaseRejectReason, details: Record<string, unknown> = {}): never {
-  logger.info("verifyPurchase", { result: reason, ...details });
+/**
+ * 断る。アプリには理由だけを返し、`logFields`（購入 ID・注文番号・Play の状態など）はログにだけ書く
+ * （generateMaterial.ts の `refuse` と違い、`details` に足さない）。
+ */
+function refuse(reason: PurchaseRejectReason, logFields: Record<string, unknown> = {}): never {
+  logger.info("verifyPurchase", { result: reason, ...logFields });
   throw new HttpsError(ERROR_CODES[reason], reason, { reason });
 }
 
@@ -114,17 +121,19 @@ export async function handleVerifyPurchase(
   const purchaseId = purchaseIdOf(request.purchaseToken);
   const purchaseRef = deps.db.collection(PURCHASES_COLLECTION).doc(purchaseId);
 
-  const existing = await failIfThrows(purchaseRef.get(), "購入の記録を読めなかった", purchaseId);
+  const existing = await refuseIfThrows(purchaseRef.get(), "購入の記録を読めなかった", purchaseId);
   if (existing.exists) return answerAlreadyGranted(uid, purchaseId, existing.data() ?? {}, request, deps);
 
   const purchase = await fetchPurchase(deps.play, request, purchaseId);
-  if (purchase.purchaseState === 2) refuse("pending", { purchaseId });
-  if (purchase.purchaseState !== 0) refuse("not_purchased", { purchaseId, purchaseState: purchase.purchaseState });
+  const purchaseState = purchase.purchaseState ?? PurchaseState.PURCHASED;
+  const logFields = { purchaseId, orderId: purchase.orderId };
+  if (purchaseState === PurchaseState.PENDING) refuse("pending", logFields);
+  if (purchaseState !== PurchaseState.PURCHASED) refuse("not_purchased", { ...logFields, purchaseState });
 
-  const granted = await failIfThrows(grantTickets(deps, uid, purchaseId, request, purchase), "回数を足せなかった", purchaseId);
+  const granted = await refuseIfThrows(grantTickets(deps, uid, purchaseId, request, purchase), "回数を足せなかった", purchaseId);
   if (!granted.ok) return answerAlreadyGranted(uid, purchaseId, granted.existing, request, deps);
 
-  if (purchase.consumptionState !== 1) await consume(deps, request, purchaseId);
+  if (purchase.consumptionState !== ConsumptionState.CONSUMED) await consume(deps, request, purchaseId);
   logger.info("verifyPurchase", { result: "granted", purchaseId, orderId: purchase.orderId, tickets: granted.tickets });
   return {
     ticketsAdded: granted.tickets,
@@ -169,9 +178,9 @@ async function grantTickets(
   const now = deps.now();
   const purchasedAt = purchase.purchaseTimeMillis ? new Date(Number(purchase.purchaseTimeMillis)) : now;
   const expiresAt = addMonthsJst(purchasedAt, TICKET_VALID_MONTHS);
-  const tickets = TICKETS_PER_PURCHASE * Math.max(1, purchase.quantity ?? 1);
+  const tickets = TICKETS_PER_PURCHASE * (purchase.quantity ?? 1);
   const purchaseRef = deps.db.collection(PURCHASES_COLLECTION).doc(purchaseId);
-  const userRef = deps.db.collection("users").doc(uid);
+  const userRef = deps.db.collection(USERS_COLLECTION).doc(uid);
 
   return deps.db.runTransaction(async (transaction) => {
     const [purchaseSnapshot, userSnapshot] = await transaction.getAll(purchaseRef, userRef);
@@ -185,21 +194,24 @@ async function grantTickets(
       purchasedAt: Timestamp.fromDate(purchasedAt),
       expiresAt: Timestamp.fromDate(expiresAt),
       grantedAt: Timestamp.fromDate(now),
-      consumed: purchase.consumptionState === 1,
+      consumed: purchase.consumptionState === ConsumptionState.CONSUMED,
     });
     transaction.set(
       userRef,
       { packs: { [purchaseId]: { remaining: tickets, expiresAt: Timestamp.fromDate(expiresAt) } } },
       { merge: true },
     );
+    // 足す購入は期限内（消費しないまま3日たつと Play が返金するので、6か月前の未消費の購入は届かない）
     const before = countUsableTickets(userSnapshot.data(), now);
-    return { ok: true, tickets, ticketsRemaining: before + (expiresAt > now ? tickets : 0), expiresAt };
+    return { ok: true, tickets, ticketsRemaining: before + tickets, expiresAt };
   });
 }
 
 /**
  * 足し済みの購入がまた届いたとき。同じ利用者なら、まだなら消費をやり直して、足したときの内容を返す。
- * 別の利用者（別の端末・入れ直して ID が変わった）には渡さない。返金で取り消し済みなら `not_purchased`。
+ * 別の利用者（別の端末・入れ直して ID が変わった）には渡さず、消費もしない。消費しないままなら3日で Play が返金し、
+ * revokeVoidedPurchases が前の ID の回数を消す（ここで消費すると、払った人は回数も返金も受け取れない）。
+ * 返金で取り消し済みなら `not_purchased`。
  */
 async function answerAlreadyGranted(
   uid: string,
@@ -208,11 +220,12 @@ async function answerAlreadyGranted(
   request: VerifyPurchaseRequest,
   deps: VerifyPurchaseDeps,
 ): Promise<VerifyPurchaseResponse> {
-  if (record.uid !== uid) refuse("owned_by_other", { purchaseId });
-  if (record.voidedAt) refuse("not_purchased", { purchaseId, voided: true });
+  // 問い合わせで回数券を手で直せるよう、注文番号と両方の uid を残す（generateMaterial の「回数を戻せなかった」と同じ扱い）
+  if (record.uid !== uid) refuse("owned_by_other", { purchaseId, orderId: record.orderId, uid, ownerUid: record.uid });
+  if (record.voidedAt) refuse("not_purchased", { purchaseId, orderId: record.orderId, voided: true });
   if (record.consumed !== true) await consume(deps, request, purchaseId);
 
-  const user = await failIfThrows(deps.db.collection("users").doc(uid).get(), "回数を読めなかった", purchaseId);
+  const user = await refuseIfThrows(deps.db.collection(USERS_COLLECTION).doc(uid).get(), "回数を読めなかった", purchaseId);
   logger.info("verifyPurchase", { result: "already_granted", purchaseId });
   return {
     ticketsAdded: record.tickets,
@@ -236,7 +249,7 @@ async function consume(deps: VerifyPurchaseDeps, request: VerifyPurchaseRequest,
 }
 
 /** Firestore を読み書きできなかったときは、やり直せるよう `verification_failed` で断る。 */
-async function failIfThrows<T>(work: Promise<T>, message: string, purchaseId: string): Promise<T> {
+async function refuseIfThrows<T>(work: Promise<T>, message: string, purchaseId: string): Promise<T> {
   try {
     return await work;
   } catch (error) {

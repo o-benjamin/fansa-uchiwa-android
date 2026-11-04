@@ -11,7 +11,7 @@ import { jstDateKey } from "./jstDate";
  *                               （無料の非常ブレーキ）で抑える
  *   packs: {                    回数券。キーは購入ごとの ID（購入トークンの SHA-256。verifyPurchase.ts が足し、
  *                               返金されたら voidedPurchases.ts が消す。購入の記録は purchases/{同じ ID}）
- *     <packId>: { remaining: number, expiresAt: Timestamp }   期限は購入から6ヶ月
+ *     <packId>: { remaining: number, expiresAt: Timestamp }   期限は購入から6か月
  *   }
  *
  * dailyUsage/{日本時間の日付}
@@ -21,6 +21,7 @@ import { jstDateKey } from "./jstDate";
  *   totalLimitAlerted: boolean  全体の安全上限に当たったことを Discord に知らせたか（1日1回だけ知らせる）
  */
 
+export const USERS_COLLECTION = "users";
 export const DAILY_USAGE_COLLECTION = "dailyUsage";
 
 export interface DailyLimits {
@@ -84,7 +85,7 @@ export async function reserveCredit(
   now: Date,
 ): Promise<ReserveOutcome> {
   const dateKey = jstDateKey(now);
-  const userRef = db.collection("users").doc(uid);
+  const userRef = db.collection(USERS_COLLECTION).doc(uid);
   const usageRef = db.collection(DAILY_USAGE_COLLECTION).doc(dateKey);
 
   return db.runTransaction(async (transaction) => {
@@ -129,7 +130,7 @@ export async function reserveCredit(
  * 回数券は、購入の取り消しなどで消えていれば戻さない。全体の回数は、おさえた日の分を戻す。
  */
 export async function refundCredit(db: Firestore, uid: string, reservation: Reservation): Promise<void> {
-  const userRef = db.collection("users").doc(uid);
+  const userRef = db.collection(USERS_COLLECTION).doc(uid);
   const usageRef = db.collection(DAILY_USAGE_COLLECTION).doc(reservation.dateKey);
 
   await db.runTransaction(async (transaction) => {
