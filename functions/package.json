@@ -1,7 +1,7 @@
 {
   "name": "fansa-uchiwa-functions",
   "private": true,
-  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）",
+  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）と回数券の購入（verifyPurchase・revokeVoidedPurchases）",
   "main": "lib/src/index.js",
   "engines": {
     "node": "22"
@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "firebase-admin": "^14.5.0",
-    "firebase-functions": "^7.4.0"
+    "firebase-functions": "^7.4.0",
+    "google-auth-library": "^11.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -9,7 +9,8 @@ import { jstDateKey } from "./jstDate";
  *   freeUsed: boolean           無料の1回を使ったか（匿名ログインの ID ごとに1回。日ごとには戻らない）。
  *                               アプリを入れ直すと ID が変わり、もう1回使えるので、無料の総数は下の全体の1日の上限
  *                               （無料の非常ブレーキ）で抑える
- *   packs: {                    回数券。キーは購入ごとの ID（Play の注文番号。購入の確認 #348 が足す）
+ *   packs: {                    回数券。キーは購入ごとの ID（購入トークンの SHA-256。verifyPurchase.ts が足し、
+ *                               返金されたら voidedPurchases.ts が消す。購入の記録は purchases/{同じ ID}）
  *     <packId>: { remaining: number, expiresAt: Timestamp }   期限は購入から6ヶ月
  *   }
  *
@@ -64,6 +65,11 @@ function usablePacks(userData: DocumentData | undefined, now: Date): Pack[] {
 
 function sumRemaining(packs: Pack[]): number {
   return packs.reduce((sum, pack) => sum + pack.remaining, 0);
+}
+
+/** 使える回数券の残り（期限内のものの合計）。 */
+export function countUsableTickets(userData: DocumentData | undefined, now: Date): number {
+  return sumRemaining(usablePacks(userData, now));
 }
 
 /**
