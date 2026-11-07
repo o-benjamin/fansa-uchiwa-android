@@ -46,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +77,7 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.ShareAnalyticsParams
+import com.fansauchiwa.analytics.ShareTargetReceiver
 import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
@@ -95,8 +97,9 @@ fun UchiwaPreviewScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var pendingRewardConsentAction by remember { mutableStateOf<RewardConsentAction?>(null) }
-    // 広告の確認ダイアログを挟んでも、どの導線から共有したかを tap_preview_share に残すために覚えておく（#244）
-    var pendingShareEntryPoint by remember {
+    // 広告の確認ダイアログを挟んでも、どの導線から共有したかを tap_preview_share（#244）と、共有の画面で選ばれたアプリの
+    // select_share_target（#362）に残すために覚えておく。広告の表示中に画面が作り直されても残るよう保存する
+    var pendingShareEntryPoint by rememberSaveable {
         mutableStateOf(ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
     }
 
@@ -175,7 +178,16 @@ fun UchiwaPreviewScreen(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
-            Intent.createChooser(shareIntent, shareChooserTitle)
+            Intent.createChooser(
+                shareIntent,
+                shareChooserTitle,
+                // 選ばれたアプリを select_share_target で送る（#362）
+                ShareTargetReceiver.chooserCallback(
+                    context,
+                    pendingShareEntryPoint,
+                    uiState.isStartedFromDailyPrompt
+                )
+            )
         )
         viewModel.clearShareImage()
     }

@@ -71,6 +71,10 @@ object AnalyticsActions {
     const val TAP_PREVIEW_GO_HOME = "tap_preview_go_home"
     const val TAP_PREVIEW_BACK = "tap_preview_back"
 
+    // 共有の画面で選ばれたアプリ（#362）。アプリを選ばずに閉じたときは送らない。パラメータは ShareAnalyticsParams、送り方は ShareTargetReceiver を参照。
+    // 名前に画面名を入れないのは、ほかの画面から共有するようになっても同じイベントで数え、導線は entry_point で分けるため
+    const val SELECT_SHARE_TARGET = "select_share_target"
+
     // 保存完了のダイアログのうちわの材料のリンク（#311）。表示はクリック率の分母。パラメータは AffiliateAnalyticsParams
     const val VIEW_PREVIEW_AFFILIATE = "view_preview_affiliate"
     const val TAP_PREVIEW_AFFILIATE = "tap_preview_affiliate"
