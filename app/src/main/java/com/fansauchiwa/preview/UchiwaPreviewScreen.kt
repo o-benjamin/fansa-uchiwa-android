@@ -76,6 +76,7 @@ import com.fansauchiwa.ads.BannerAd
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.ShareAnalyticsParams
+import com.fansauchiwa.analytics.ShareTargetReceiver
 import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import java.io.File
@@ -175,7 +176,16 @@ fun UchiwaPreviewScreen(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
-            Intent.createChooser(shareIntent, shareChooserTitle)
+            Intent.createChooser(
+                shareIntent,
+                shareChooserTitle,
+                // 選ばれたアプリを select_share_target で送る（#362）
+                ShareTargetReceiver.chooserCallback(
+                    context,
+                    pendingShareEntryPoint,
+                    uiState.isStartedFromDailyPrompt
+                )
+            )
         )
         viewModel.clearShareImage()
     }
