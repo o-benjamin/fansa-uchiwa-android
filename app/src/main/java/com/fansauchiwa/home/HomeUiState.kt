@@ -24,6 +24,6 @@ data class HomeUiState(
     val selectedPaths: List<String> = emptyList(),
     val templates: @RawValue List<Template> = emptyList(),
     val showApologyDialog: Boolean = false,
-    // 今日のお題。null なら出さない（Remote Config で止めている）
+    // ホームのカードに出す今日のお題。null なら出さない（Remote Config で止めている、または今日はカードを閉じた）
     val dailyPrompt: DailyPrompt? = null
 ) : Parcelable

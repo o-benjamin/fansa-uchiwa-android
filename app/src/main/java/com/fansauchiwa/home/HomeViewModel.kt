@@ -2,16 +2,22 @@ package com.fansauchiwa.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
+import com.fansauchiwa.analytics.DailyPromptViewTracker
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.DailyPromptRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
@@ -21,6 +27,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -34,6 +41,9 @@ class HomeViewModel @Inject constructor(
     private val templateRepository: TemplateRepository,
     private val settingsRepository: SettingsRepository,
     private val dailyPromptRepository: DailyPromptRepository,
+    private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
+    private val dailyPromptViewTracker: DailyPromptViewTracker,
+    private val todayProvider: TodayProvider,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
 
@@ -42,6 +52,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         observeDailyPrompt()
+        fetchDailyPromptDismissedDate()
     }
 
     fun logScreenView() {
@@ -141,17 +152,64 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun observeDailyPrompt() {
-        dailyPromptRepository.getDailyPromptStream()
+        combine(
+            dailyPromptRepository.getDailyPromptStream(),
+            settingsRepository.getDailyPromptDismissedDateStream()
+        ) { prompt, dismissedDate ->
+            // カードを閉じた日はもう出さず、翌日また出す
+            prompt?.takeUnless { dismissedDate == todayProvider.today() }
+        }
             .onEach { prompt -> _uiState.update { it.copy(dailyPrompt = prompt) } }
             .launchIn(viewModelScope)
     }
 
     /**
-     * ホームが前に出るたび（ON_START）に呼ぶ。日付が変わっていればお題も変わる。Remote Config の取得は最小間隔（1時間）で間引かれる
+     * 閉じた日付は × でしか変わらず、変えたときは Repository が流し直すので、ホームを作ったときに1回だけ読む。
+     * ON_START のたびに読み直すと、読み終わる前に × を押されたとき古い値（閉じていない）が後から流れて、カードがまた出る
+     */
+    private fun fetchDailyPromptDismissedDate() {
+        viewModelScope.launch {
+            settingsRepository.fetchDailyPromptDismissedDate()
+        }
+    }
+
+    /**
+     * ホームが前に出るたび（ON_START）に呼ぶ。日付が変わっていればお題も変わり、前の日に閉じたカードもまた出る
+     * （お題が流れるたびに、閉じた日付と今日の日付を比べ直すため）。Remote Config の取得は最小間隔（1時間）で間引かれる
      */
     fun fetchDailyPrompt() {
         viewModelScope.launch {
             dailyPromptRepository.fetchDailyPrompt()
+        }
+    }
+
+    /** お題のカードが画面に出たときに呼ぶ */
+    fun onDailyPromptShown(prompt: DailyPrompt) {
+        dailyPromptViewTracker.viewEventIfFirstShown(prompt.id)?.let { event ->
+            viewModelScope.launch {
+                analyticsRepository.logEvent(event)
+            }
+        }
+    }
+
+    /**
+     * 「このお題で作る」を押したときに呼び、白紙のうちわにお題の文字を置いて編集画面を開くための引数を返す。
+     * 白紙からの新規作成と保存の率を比べるため、tap_home_new_create は送らない
+     */
+    fun onDailyPromptCreate(prompt: DailyPrompt): EditScreenInputArg {
+        logEvent(
+            AnalyticsActions.TAP_DAILY_PROMPT,
+            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
+        )
+        val uchiwaId = uuidProvider.generate()
+        dailyPromptUchiwaRepository.markStartedFromPrompt(uchiwaId)
+        return EditScreenInputArg(uchiwaId = uchiwaId, dailyPromptText = prompt.text)
+    }
+
+    /** お題のカードの×。今日はもう出さない */
+    fun dismissDailyPrompt() {
+        viewModelScope.launch {
+            settingsRepository.setDailyPromptDismissedDate(todayProvider.today())
         }
     }
 

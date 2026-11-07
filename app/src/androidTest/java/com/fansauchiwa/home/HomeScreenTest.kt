@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.fansauchiwa.R
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
@@ -85,6 +86,10 @@ class HomeScreenTest {
                     onImageClick = {},
                     onTemplateClick = {},
                     onImageLongPress = {},
+                    dailyPrompt = null,
+                    onDailyPromptShown = {},
+                    onDailyPromptCreate = {},
+                    onDailyPromptDismiss = {},
                     statusBarPadding = 0.dp,
                     bottomPadding = 0.dp,
                     isPreview = true
@@ -116,6 +121,38 @@ class HomeScreenTest {
     }
 
     @Test
+    fun homeTabContent_withDailyPrompt_showsCardAndTemplates() {
+        val prompt = DailyPrompt(id = "default_peace", text = "ピースして")
+        composeTestRule.setContent {
+            HomeTabContent(
+                selectedTab = HomeTab.HOME,
+                masterpiecePathList = emptyList(),
+                templates = previewTemplates(),
+                selectedMainColor = DecorationColors.PINK,
+                onMainColorSelected = {},
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
+                onImageClick = {},
+                onTemplateClick = {},
+                onImageLongPress = {},
+                dailyPrompt = prompt,
+                onDailyPromptShown = {},
+                onDailyPromptCreate = {},
+                onDailyPromptDismiss = {},
+                statusBarPadding = 0.dp,
+                bottomPadding = 0.dp,
+                isPreview = true
+            )
+        }
+
+        val context = getContext()
+        composeTestRule.onNodeWithText(prompt.text).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.daily_prompt_create_button)).assertIsDisplayed()
+        // カードを足しても、テンプレートの一覧はそのまま出る
+        composeTestRule.onNodeWithText(context.getString(R.string.template_section_title)).assertIsDisplayed()
+    }
+
+    @Test
     fun createTabColorSelector_updatesSelectedChipState() {
         val templates = previewTemplates()
         val initialColor = DecorationColors.PINK
@@ -138,6 +175,10 @@ class HomeScreenTest {
                 onImageClick = {},
                 onTemplateClick = {},
                 onImageLongPress = {},
+                dailyPrompt = null,
+                onDailyPromptShown = {},
+                onDailyPromptCreate = {},
+                onDailyPromptDismiss = {},
                 statusBarPadding = 0.dp,
                 bottomPadding = 0.dp,
                 isPreview = true

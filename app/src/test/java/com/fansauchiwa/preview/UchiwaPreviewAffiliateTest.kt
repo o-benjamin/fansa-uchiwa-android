@@ -13,6 +13,7 @@ import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AffiliateRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import io.mockk.coVerify
@@ -75,6 +76,7 @@ class UchiwaPreviewAffiliateTest {
         puffyStateAnalytics = mockk<PuffyStateAnalytics>(relaxed = true),
         exportedFontAnalytics = mockk<ExportedFontAnalytics>(relaxed = true),
         affiliateRepository = affiliateRepository,
+        dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl(),
         savedStateHandle = SavedStateHandle().apply {
             set(IMAGE_PATH_ARG, URLEncoder.encode(imagePath, "UTF-8"))
         }

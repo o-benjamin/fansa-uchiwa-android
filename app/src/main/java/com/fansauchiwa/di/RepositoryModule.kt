@@ -22,6 +22,8 @@ import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.CrashReportingRepositoryImpl
 import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.DailyPromptRepositoryImpl
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
@@ -134,6 +136,13 @@ abstract class RepositoryModule {
     abstract fun bindDailyPromptRepository(
         impl: DailyPromptRepositoryImpl
     ): DailyPromptRepository
+
+    // お題から作り始めたうちわの ID をメモリに持つので、アプリで1つにする
+    @Binds
+    @Singleton
+    abstract fun bindDailyPromptUchiwaRepository(
+        impl: DailyPromptUchiwaRepositoryImpl
+    ): DailyPromptUchiwaRepository
 
     @Binds
     @Singleton

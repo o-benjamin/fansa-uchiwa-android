@@ -7,12 +7,14 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
 import com.fansauchiwa.analytics.ExportedFontAnalytics
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.ShareAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AffiliateRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import io.mockk.coEvery
@@ -50,6 +52,7 @@ class UchiwaPreviewShareTest {
     private lateinit var exportedFontAnalytics: ExportedFontAnalytics
     private lateinit var inAppReviewRepository: InAppReviewRepository
     private lateinit var affiliateRepository: AffiliateRepository
+    private lateinit var dailyPromptUchiwaRepository: DailyPromptUchiwaRepositoryImpl
 
     @Before
     fun setUp() {
@@ -62,6 +65,7 @@ class UchiwaPreviewShareTest {
         exportedFontAnalytics = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
         affiliateRepository = mockk(relaxed = true)
+        dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl()
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
         every { affiliateRepository.getAffiliateLinksStream() } returns emptyFlow()
@@ -88,6 +92,7 @@ class UchiwaPreviewShareTest {
             puffyStateAnalytics = puffyStateAnalytics,
             exportedFontAnalytics = exportedFontAnalytics,
             affiliateRepository = affiliateRepository,
+            dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -356,6 +361,55 @@ class UchiwaPreviewShareTest {
                         mapOf(
                             ShareAnalyticsParams.PARAM_ENTRY_POINT to
                                 ShareAnalyticsParams.ENTRY_POINT_AFTER_SAVE
+                        )
+                    )
+                )
+            }
+        }
+
+    // endregion
+
+    // region 今日のお題から作ったうちわ（#360）
+
+    @Test
+    fun init_startedFromDailyPrompt_isStartedFromDailyPromptIsTrue() = runTest {
+        dailyPromptUchiwaRepository.markStartedFromPrompt("uchiwa-1")
+
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png")
+
+        assertEquals(true, viewModel.uiState.value.isStartedFromDailyPrompt)
+    }
+
+    @Test
+    fun init_anotherUchiwaStartedFromDailyPrompt_isStartedFromDailyPromptIsFalse() = runTest {
+        dailyPromptUchiwaRepository.markStartedFromPrompt("uchiwa-2")
+
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png")
+
+        assertEquals(false, viewModel.uiState.value.isStartedFromDailyPrompt)
+    }
+
+    @Test
+    fun showRewardedAdAndShare_startedFromDailyPrompt_logsTapPreviewShareWithDailyPromptSource() =
+        runTest {
+            dailyPromptUchiwaRepository.markStartedFromPrompt("uchiwa-1")
+            val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png")
+
+            viewModel.showRewardedAdAndShare(
+                mockk<Activity>(),
+                ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON
+            )
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                analyticsRepository.logEvent(
+                    AnalyticsEvent(
+                        AnalyticsActions.TAP_PREVIEW_SHARE,
+                        mapOf(
+                            ShareAnalyticsParams.PARAM_ENTRY_POINT to
+                                ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON,
+                            DailyPromptAnalyticsParams.PARAM_SOURCE to
+                                DailyPromptAnalyticsParams.SOURCE_DAILY_PROMPT
                         )
                     )
                 )

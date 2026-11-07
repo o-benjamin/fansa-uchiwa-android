@@ -149,7 +149,10 @@ fun UchiwaPreviewScreen(
 
     // 共有シートの発火
     val shareChooserTitle = stringResource(R.string.share_chooser_title)
-    val shareDefaultText = stringResource(R.string.share_default_text)
+    // お題から作ったうちわには #今日のファンサお題 を足す（#360）
+    val shareText = stringResource(
+        if (uiState.isStartedFromDailyPrompt) R.string.share_daily_prompt_text else R.string.share_default_text
+    )
     LaunchedEffect(uiState.shareImagePath) {
         val shareImagePath = uiState.shareImagePath ?: return@LaunchedEffect
         val sourceFile = File(shareImagePath)
@@ -168,7 +171,7 @@ fun UchiwaPreviewScreen(
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, contentUri)
-            putExtra(Intent.EXTRA_TEXT, shareDefaultText)
+            putExtra(Intent.EXTRA_TEXT, shareText)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(
