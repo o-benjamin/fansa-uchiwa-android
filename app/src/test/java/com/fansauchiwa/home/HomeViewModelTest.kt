@@ -6,6 +6,7 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
+import com.fansauchiwa.analytics.DailyPromptViewTracker
 import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
@@ -90,6 +91,7 @@ class HomeViewModelTest {
             settingsRepository = settingsRepository,
             dailyPromptRepository = dailyPromptRepository,
             dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
+            dailyPromptViewTracker = DailyPromptViewTracker(),
             todayProvider = todayProvider,
             uuidProvider = uuidProvider
         )
@@ -158,6 +160,16 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { dailyPromptRepository.fetchDailyPrompt() }
+    }
+
+    @Test
+    fun fetchDailyPrompt_calledAgain_readsDismissedDateOnlyAtInit() = runTest {
+        val viewModel = createViewModel()
+
+        viewModel.fetchDailyPrompt()
+        viewModel.fetchDailyPrompt()
+        advanceUntilIdle()
+
         coVerify(exactly = 1) { settingsRepository.fetchDailyPromptDismissedDate() }
     }
 

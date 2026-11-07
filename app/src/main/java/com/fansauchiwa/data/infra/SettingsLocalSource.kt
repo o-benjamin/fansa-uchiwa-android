@@ -18,7 +18,8 @@ class SettingsLocalSource @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : SettingsDataSource {
 
-    override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = dataStore.data
+    // 読めないとき（IOException）は、すべて初期値として扱う
+    private val preferencesStream: Flow<Preferences> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -26,6 +27,8 @@ class SettingsLocalSource @Inject constructor(
                 throw exception
             }
         }
+
+    override fun getHapticFeedbackEnabledStream(): Flow<Boolean> = preferencesStream
         .map { preferences ->
             preferences[KEY_HAPTIC_FEEDBACK_ENABLED] ?: DEFAULT_HAPTIC_FEEDBACK_ENABLED
         }
@@ -36,14 +39,7 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
-    override fun getHasSeenApologyDialogStream(): Flow<Boolean> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
+    override fun getHasSeenApologyDialogStream(): Flow<Boolean> = preferencesStream
         .map { preferences ->
             preferences[KEY_HAS_SEEN_APOLOGY_DIALOG] ?: DEFAULT_HAS_SEEN_APOLOGY_DIALOG
         }
@@ -54,14 +50,7 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
-    override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> = dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
+    override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> = preferencesStream
         .map { preferences ->
             preferences[KEY_DAILY_PROMPT_DISMISSED_DATE]?.let(::parseDateOrNull)
         }

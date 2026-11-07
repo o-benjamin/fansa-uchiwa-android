@@ -8,6 +8,7 @@ import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
+import com.fansauchiwa.analytics.DailyPromptViewTracker
 import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
@@ -41,6 +42,7 @@ class HomeViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val dailyPromptRepository: DailyPromptRepository,
     private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
+    private val dailyPromptViewTracker: DailyPromptViewTracker,
     private val todayProvider: TodayProvider,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
@@ -48,12 +50,9 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // view_daily_prompt を送ったお題の id。カードがスクロールで隠れて戻るたび・タブを切り替えるたびに送らないよう、
-    // ホームが開いている間は1つのお題につき1回にする
-    private val loggedDailyPromptViewIds = mutableSetOf<String>()
-
     init {
         observeDailyPrompt()
+        fetchDailyPromptDismissedDate()
     }
 
     fun logScreenView() {
@@ -165,14 +164,20 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * ホームが前に出るたび（ON_START）に呼ぶ。日付が変わっていればお題も変わり、前の日に閉じたカードもまた出る。
-     * Remote Config の取得は最小間隔（1時間）で間引かれる
+     * 閉じた日付は × でしか変わらず、変えたときは Repository が流し直すので、ホームを作ったときに1回だけ読む。
+     * ON_START のたびに読み直すと、読み終わる前に × を押されたとき古い値（閉じていない）が後から流れて、カードがまた出る
      */
-    fun fetchDailyPrompt() {
+    private fun fetchDailyPromptDismissedDate() {
         viewModelScope.launch {
             settingsRepository.fetchDailyPromptDismissedDate()
         }
-        // Remote Config の取得を待つ間も、閉じた日付は先に読めるよう分けて起動する
+    }
+
+    /**
+     * ホームが前に出るたび（ON_START）に呼ぶ。日付が変わっていればお題も変わり、前の日に閉じたカードもまた出る
+     * （お題が流れるたびに、閉じた日付と今日の日付を比べ直すため）。Remote Config の取得は最小間隔（1時間）で間引かれる
+     */
+    fun fetchDailyPrompt() {
         viewModelScope.launch {
             dailyPromptRepository.fetchDailyPrompt()
         }
@@ -180,11 +185,11 @@ class HomeViewModel @Inject constructor(
 
     /** お題のカードが画面に出たときに呼ぶ */
     fun onDailyPromptShown(prompt: DailyPrompt) {
-        if (!loggedDailyPromptViewIds.add(prompt.id)) return
-        logEvent(
-            AnalyticsActions.VIEW_DAILY_PROMPT,
-            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
-        )
+        dailyPromptViewTracker.viewEventIfFirstShown(prompt.id)?.let { event ->
+            viewModelScope.launch {
+                analyticsRepository.logEvent(event)
+            }
+        }
     }
 
     /**

@@ -80,5 +80,6 @@ private val DAILY_PROMPT_FONT = FontFamilies.M_PLUS_ROUNDED_1C
 // お題は16文字まで届く（DailyPromptsParser.MAX_TEXT_LENGTH）ので、これより長いときは縮めてはみ出さないようにする
 private const val DAILY_PROMPT_CHARS_AT_FULL_SCALE = 10
 
+// 文字数は DailyPromptsParser と同じくコードポイントで数える（絵文字1つを2文字と数えて縮めすぎないため）
 private fun dailyPromptTextScale(text: String): Float =
-    min(1f, DAILY_PROMPT_CHARS_AT_FULL_SCALE.toFloat() / text.length)
+    min(1f, DAILY_PROMPT_CHARS_AT_FULL_SCALE.toFloat() / text.codePointCount(0, text.length))

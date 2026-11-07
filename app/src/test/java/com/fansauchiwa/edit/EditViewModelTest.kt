@@ -83,9 +83,11 @@ class EditViewModelTest {
         firstName1: String? = null,
         firstName2: String? = null,
         honorific: String? = null,
-        dailyPromptText: String? = null
+        dailyPromptText: String? = null,
+        // プロセスが作り直されたあとの復元を試すときに、前の ViewModel のものを渡す
+        savedStateHandle: SavedStateHandle = SavedStateHandle()
     ): EditViewModel {
-        val savedStateHandle = SavedStateHandle().apply {
+        savedStateHandle.apply {
             if (uchiwaId != null) {
                 set(
                     EDIT_INPUT_ARG,
@@ -1020,6 +1022,37 @@ class EditViewModelTest {
         assertEquals(uchiwaId, state.uchiwaId)
         assertEquals(listOf(promptText), state.decorations)
         assertEquals(EditUiState().uchiwaColor, state.uchiwaColor)
+    }
+
+    @Test
+    fun applyNewUchiwaState_dailyPromptTextDeletedThenRestored_doesNotPlaceAgain() = runTest {
+        val uchiwaId = "new-uchiwa-id"
+        val savedStateHandle = SavedStateHandle()
+        coEvery { localDatabaseRepository.getUchiwa(uchiwaId) } returns null
+        every { localImageRepository.getAllImages() } returns emptyList()
+        every { editDecorationRepository.createDailyPromptText("ピースして") } returns Decoration.Text(
+            id = "prompt-text-id",
+            text = "ピースして",
+            font = FontFamilies.M_PLUS_ROUNDED_1C
+        )
+        val viewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            dailyPromptText = "ピースして",
+            savedStateHandle = savedStateHandle
+        )
+        advanceUntilIdle()
+        viewModel.deleteDecoration("prompt-text-id")
+
+        // プロセスが作り直されたときと同じく、保存した状態から ViewModel を作り直す
+        val restoredViewModel = createViewModel(
+            uchiwaId = uchiwaId,
+            dailyPromptText = "ピースして",
+            savedStateHandle = savedStateHandle
+        )
+        advanceUntilIdle()
+
+        assertTrue(restoredViewModel.uiState.value.decorations.isEmpty())
+        verify(exactly = 1) { editDecorationRepository.createDailyPromptText(any()) }
     }
 
     @Test

@@ -10,10 +10,11 @@ package com.fansauchiwa.analytics
  * お題から作ったかどうかは、共有文のタグにも使うので `DailyPromptUchiwaRepository` が持つ（分析のためだけの値ではないため）。
  *
  * 計測をやめるときに消すもの：
- * - このファイルと、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT
+ * - このファイル、[DailyPromptViewTracker]、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT
  * - HomeViewModel の onDailyPromptShown（と DailyPromptCard の LaunchedEffect）、onDailyPromptCreate の logEvent
  * - UchiwaPreviewViewModel の logExportEvent と showRewardedAdAndShare で sourceParams を足しているところ
- * - テスト：HomeViewModelTest のお題の計測、UchiwaPreviewSaveTest と UchiwaPreviewShareTest の source のテスト
+ * - テスト：DailyPromptViewTrackerTest、HomeViewModelTest のお題の計測、UchiwaPreviewSaveTest と
+ *   UchiwaPreviewShareTest の source のテスト
  */
 object DailyPromptAnalyticsParams {
     const val PARAM_PROMPT_ID = "prompt_id"

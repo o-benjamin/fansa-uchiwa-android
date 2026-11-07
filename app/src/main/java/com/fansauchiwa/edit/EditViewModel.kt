@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 
 private const val UI_STATE_KEY = "ui_state"
 private const val UCHIWA_ID_KEY = "uchiwa_id"
+private const val DAILY_PROMPT_PLACED_KEY = "daily_prompt_placed"
 private const val MAX_HISTORY_SIZE = 50
 
 @HiltViewModel
@@ -207,8 +208,9 @@ class EditViewModel @Inject constructor(
             }
         }
         val dailyPromptText = inputArg?.dailyPromptText
-        // プロセスが作り直されたときは、復元した装飾（お題の文字を直したもの）を残す
-        if (dailyPromptText != null && currentState.decorations.isEmpty()) {
+        // お題の文字は最初の1回だけ置く。プロセスが作り直されたときは、復元した装飾（お題の文字を直した・消したもの）を残す
+        if (dailyPromptText != null && savedStateHandle.get<Boolean>(DAILY_PROMPT_PLACED_KEY) != true) {
+            savedStateHandle[DAILY_PROMPT_PLACED_KEY] = true
             savedStateHandle[UI_STATE_KEY] = currentState.copy(
                 uchiwaId = uchiwaId,
                 decorations = listOf(editDecorationRepository.createDailyPromptText(dailyPromptText))
