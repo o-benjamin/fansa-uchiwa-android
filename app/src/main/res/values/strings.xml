@@ -33,7 +33,8 @@
          #244 では「X は外部リンク付きの投稿を伸ばしにくい」ためリンクを入れなかったが、#269 で見た人がストアへ行ける導線を優先する方針に変えた。
          効果は共有経由のインストール数で公開4週間後に判断し、増えていなければリンクを外す案に戻す。
          リンクの referrer（utm_source=app_share と utm_campaign=share_default_text）で、共有から来たインストールを Play Console の「ストアの掲載情報での獲得」で数える（Play Console は utm_source と utm_campaign の両方がそろったものだけを集計する）。
-         URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く -->
+         URL 中の %3D は書式指定ではないため formatted="false" にし、& は &amp; と書く。
+         share_daily_prompt_text（#360）にも同じ文とリンクがあるので、変えるときは両方直す -->
     <string name="share_default_text" formatted="false">ファンサうちわできた！\n#ファンサうちわ\nhttps://play.google.com/store/apps/details?id=com.fansauchiwa&amp;referrer=utm_source%3Dapp_share%26utm_campaign%3Dshare_default_text</string>
     <!-- 今日のお題から作ったうちわの共有文（#360）。share_default_text に #今日のファンサお題 を足したもの。
          リンクの referrer は share_default_text と同じにして、共有経由のインストールの数え方を変えない -->

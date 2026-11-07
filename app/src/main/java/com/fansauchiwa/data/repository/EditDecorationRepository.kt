@@ -76,7 +76,8 @@ class EditDecorationRepositoryImpl @Inject constructor(
 // お題の文字のフォント。かなと漢字がそろっていて、角の丸いやわらかい形のもの
 private val DAILY_PROMPT_FONT = FontFamilies.M_PLUS_ROUNDED_1C
 
-// 編集画面の文字の大きさのまま、横長のうちわの幅に収まる文字数の目安（推測。実機では確かめていない）。
+// 編集画面の文字の大きさのまま、横長のうちわの幅に収まる文字数の目安（推測。実機では確かめていない。
+// 確かめ方は .agents/remote-config.md の daily_prompts の `text`）。
 // お題は16文字まで届く（DailyPromptsParser.MAX_TEXT_LENGTH）ので、これより長いときは縮めてはみ出さないようにする
 private const val DAILY_PROMPT_CHARS_AT_FULL_SCALE = 10
 

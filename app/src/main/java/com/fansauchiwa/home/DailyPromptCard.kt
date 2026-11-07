@@ -49,7 +49,7 @@ internal fun DailyPromptCard(
 ) {
     var isHelpShown by rememberSaveable { mutableStateOf(false) }
 
-    // 同じお題を何度も数えない判定は ViewModel が持つ
+    // カードが出るたびに呼ぶ。同じお題を2回送らない判定は DailyPromptViewTracker が持つ
     LaunchedEffect(prompt.id) {
         onShown()
     }
@@ -61,6 +61,7 @@ internal fun DailyPromptCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
     ) {
+        // ×の IconButton（タッチ領域 48dp）を右端に寄せるため end は 4dp にし、お題の文字は 12dp 足して見た目の余白を 16dp にする
         Column(modifier = Modifier.padding(start = 16.dp, end = 4.dp, bottom = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
