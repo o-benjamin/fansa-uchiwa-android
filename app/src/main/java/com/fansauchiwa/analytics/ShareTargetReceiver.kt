@@ -26,7 +26,8 @@ import kotlinx.coroutines.launch
  * - このファイル、ShareTargetReceiverEntryPoint.kt、AndroidManifest.xml の receiver、AnalyticsActions の SELECT_SHARE_TARGET
  * - ShareAnalyticsParams の PARAM_TARGET と selectShareTargetParams（KDoc の見出しの SELECT_SHARE_TARGET も）、
  *   UchiwaPreviewScreen で [chooserCallback] を渡しているところと pendingShareEntryPoint のコメントの #362
- * - DailyPromptAnalyticsParams の「計測をやめるときに消すもの」の selectShareTargetParams と ShareAnalyticsParamsTest の行
+ * - DailyPromptAnalyticsParams の「計測をやめるときに消すもの」の selectShareTargetParams・ShareAnalyticsParamsTest・
+ *   ShareTargetReceiverTest の行
  * - テスト：ShareAnalyticsParamsTest（ファイルごと）、androidTest の ShareTargetReceiverTest（ファイルごと）
  * - GA4：カスタムディメンション `target` は編集画面のイベントで、`entry_point` は tap_preview_share で使っているので残す
  */
@@ -34,15 +35,14 @@ class ShareTargetReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val params = paramsFrom(intent)
-        val appContext = context.applicationContext
         // logEvent は suspend なので、送り終えるまでレシーバーを生かしておく
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                entryPoint(appContext).analyticsRepository()
+                hiltEntryPoint(context).analyticsRepository()
                     .logEvent(AnalyticsEvent(AnalyticsActions.SELECT_SHARE_TARGET, params))
             } catch (e: Exception) {
-                recordException(appContext, e)
+                recordException(context, e)
             } finally {
                 pendingResult.finish()
             }
@@ -70,9 +70,7 @@ class ShareTargetReceiver : BroadcastReceiver() {
             isStartedFromDailyPrompt: Boolean
         ): IntentSender? = try {
             // システムが選ばれたアプリ（EXTRA_CHOSEN_COMPONENT）を書き足すので、書き換えられる PendingIntent にする
-            // （Android 12 以上は FLAG_MUTABLE の指定が要る。PendingIntentCompat が版ごとに付け分ける）。
-            // 宛先をクラスで指定した明示的な Intent なので、Android 14 以上の「書き換えられる暗黙の PendingIntent」の禁止には
-            // 当たらない（action で呼ぶ形に変えない）
+            // （Android 12 以上は FLAG_MUTABLE の指定が要る。PendingIntentCompat が版ごとに付け分ける）
             PendingIntentCompat.getBroadcast(
                 context,
                 REQUEST_CODE,
@@ -85,7 +83,12 @@ class ShareTargetReceiver : BroadcastReceiver() {
             null
         }
 
-        /** [chooserCallback] の PendingIntent が包む Intent。導線とお題かどうかを extras で載せる */
+        /**
+         * [chooserCallback] の PendingIntent が包む Intent。導線とお題かどうかを extras で載せる
+         *
+         * 書き換えられる PendingIntent で包むので、宛先をクラスで指定した明示的な Intent のままにする
+         * （Android 14 以上は書き換えられる暗黙の PendingIntent を作れない。action で呼ぶ形に変えない）
+         */
         internal fun callbackIntent(
             context: Context,
             entryPoint: String,
@@ -108,12 +111,12 @@ class ShareTargetReceiver : BroadcastReceiver() {
             )
         }
 
-        private fun entryPoint(context: Context): ShareTargetReceiverEntryPoint =
+        private fun hiltEntryPoint(context: Context): ShareTargetReceiverEntryPoint =
             EntryPointAccessors.fromApplication(context.applicationContext, ShareTargetReceiverEntryPoint::class.java)
 
         // 記録そのもの（Hilt から取り出すところを含む）が失敗しても、共有とアプリは止めない
         private fun recordException(context: Context, e: Exception) {
-            runCatching { entryPoint(context).crashReportingRepository().recordException(e) }
+            runCatching { hiltEntryPoint(context).crashReportingRepository().recordException(e) }
         }
     }
 }

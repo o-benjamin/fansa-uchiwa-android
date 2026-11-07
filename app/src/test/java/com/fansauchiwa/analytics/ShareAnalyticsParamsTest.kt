@@ -56,14 +56,11 @@ class ShareAnalyticsParamsTest {
         val params = ShareAnalyticsParams.selectShareTargetParams(
             chosenPackage = null,
             entryPoint = ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON,
-            isStartedFromDailyPrompt = true
+            isStartedFromDailyPrompt = false
         )
 
         assertEquals(
-            mapOf(
-                ShareAnalyticsParams.PARAM_ENTRY_POINT to ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON,
-                DailyPromptAnalyticsParams.PARAM_SOURCE to DailyPromptAnalyticsParams.SOURCE_DAILY_PROMPT
-            ),
+            mapOf(ShareAnalyticsParams.PARAM_ENTRY_POINT to ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON),
             params
         )
     }
