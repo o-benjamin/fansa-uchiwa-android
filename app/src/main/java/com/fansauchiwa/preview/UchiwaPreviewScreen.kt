@@ -46,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,8 +97,9 @@ fun UchiwaPreviewScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var pendingRewardConsentAction by remember { mutableStateOf<RewardConsentAction?>(null) }
-    // 広告の確認ダイアログを挟んでも、どの導線から共有したかを tap_preview_share に残すために覚えておく（#244）
-    var pendingShareEntryPoint by remember {
+    // 広告の確認ダイアログを挟んでも、どの導線から共有したかを tap_preview_share（#244）と、共有の画面で選ばれたアプリの
+    // select_share_target（#362）に残すために覚えておく。広告の表示中に画面が作り直されても残るよう保存する
+    var pendingShareEntryPoint by rememberSaveable {
         mutableStateOf(ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON)
     }
 

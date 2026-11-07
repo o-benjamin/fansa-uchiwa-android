@@ -1,7 +1,6 @@
 package com.fansauchiwa.analytics
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ShareAnalyticsParamsTest {
@@ -53,24 +52,33 @@ class ShareAnalyticsParamsTest {
     }
 
     @Test
-    fun selectShareTargetParams_NoChosenPackage_ReturnsNull() {
+    fun selectShareTargetParams_NoChosenPackage_ReturnsParamsWithoutTarget() {
         val params = ShareAnalyticsParams.selectShareTargetParams(
             chosenPackage = null,
             entryPoint = ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON,
             isStartedFromDailyPrompt = true
         )
 
-        assertNull(params)
+        assertEquals(
+            mapOf(
+                ShareAnalyticsParams.PARAM_ENTRY_POINT to ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON,
+                DailyPromptAnalyticsParams.PARAM_SOURCE to DailyPromptAnalyticsParams.SOURCE_DAILY_PROMPT
+            ),
+            params
+        )
     }
 
     @Test
-    fun selectShareTargetParams_BlankChosenPackage_ReturnsNull() {
+    fun selectShareTargetParams_BlankChosenPackage_ReturnsParamsWithoutTarget() {
         val params = ShareAnalyticsParams.selectShareTargetParams(
             chosenPackage = " ",
             entryPoint = ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON,
             isStartedFromDailyPrompt = false
         )
 
-        assertNull(params)
+        assertEquals(
+            mapOf(ShareAnalyticsParams.PARAM_ENTRY_POINT to ShareAnalyticsParams.ENTRY_POINT_PREVIEW_BUTTON),
+            params
+        )
     }
 }
