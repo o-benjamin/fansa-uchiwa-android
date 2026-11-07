@@ -121,7 +121,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun homeTabContent_withDailyPrompt_showsCardAboveTemplates() {
+    fun homeTabContent_withDailyPrompt_showsCardAndTemplates() {
         val prompt = DailyPrompt(id = "default_peace", text = "ピースして")
         composeTestRule.setContent {
             HomeTabContent(

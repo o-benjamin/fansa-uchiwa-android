@@ -15,6 +15,7 @@ import javax.inject.Singleton
 @Singleton
 class DailyPromptViewTracker @Inject constructor() {
 
+    // HomeViewModel から呼ばれる @Singleton。呼ぶスレッドを決めていないので、並行に触っても壊れない集合にする
     private val loggedPromptIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     /** はじめて出たお題なら送るイベントを返し、前に送ったお題なら null を返す */

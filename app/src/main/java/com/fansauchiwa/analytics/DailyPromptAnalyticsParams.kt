@@ -20,7 +20,8 @@ package com.fansauchiwa.analytics
  *   （HomeTabContent・HomeTabHomeContent・プレビュー）、HomeScreenTest の引数
  * - UchiwaPreviewViewModel の logExportEvent と showRewardedAdAndShare で sourceParams を足しているところ
  * - テスト：DailyPromptViewTrackerTest、HomeViewModelTest のお題の計測、UchiwaPreviewSaveTest と
- *   UchiwaPreviewShareTest の source のテスト
+ *   UchiwaPreviewShareTest の source のテスト、DailyPromptCardTest の onShown（setCard の引数と、
+ *   onShown が1回呼ばれることの確認。お題の文言が出ることの確認は残す）
  * - GA4：カスタムディメンション `prompt_id` と、ほかのイベントで使っていなければ `source` をアーカイブする
  */
 object DailyPromptAnalyticsParams {
