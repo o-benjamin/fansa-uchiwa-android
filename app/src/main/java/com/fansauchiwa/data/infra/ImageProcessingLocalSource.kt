@@ -13,14 +13,16 @@ import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.EraserPath
 import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.OptionalModuleApi
 import com.google.android.gms.common.moduleinstall.InstallStatusListener
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate.InstallState
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetectorOptions
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter
 import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -37,6 +39,9 @@ import javax.inject.Inject
 
 // ML Kit のモジュールのダウンロードを待つ上限。超えても裏でダウンロードは続き、次の試行で使える
 private const val MODULE_INSTALL_TIMEOUT_MILLIS = 60_000L
+
+// 顔の幅が画像の幅のこの割合より小さいと見つけない。既定の 0.1 では集合写真や遠くの人を取りこぼすので下げる
+private const val FACE_DETECTION_MIN_FACE_SIZE = 0.05f
 
 class ImageProcessingLocalSource @Inject constructor(
     @ApplicationContext private val context: Context
@@ -79,13 +84,14 @@ class ImageProcessingLocalSource @Inject constructor(
     }
 
     /**
-     * 背景透過の ML Kit モジュールが端末になければダウンロードし、完了まで待つ。
+     * ML Kit のモジュール（背景透過・顔検出）が端末になければダウンロードし、完了まで待つ。
      * マニフェストの `com.google.mlkit.vision.DEPENDENCIES` によるインストール時の取得は、
      * Play ストア以外から入れた場合や取得が済んでいない場合には効かないため、ここでも確かめる。
+     * 失敗は顔検出でも [BackgroundRemovalException] で投げる（顔検出の呼び出し元が `AiMaterialFaceCheckException` で包む）
      */
-    private suspend fun ensureModuleInstalled(segmenter: SubjectSegmenter) {
+    private suspend fun ensureModuleInstalled(api: OptionalModuleApi) {
         val moduleInstallClient = ModuleInstall.getClient(context)
-        val isAvailable = moduleInstallClient.areModulesAvailable(segmenter)
+        val isAvailable = moduleInstallClient.areModulesAvailable(api)
             .awaitOrModuleUnavailable()
             .areModulesAvailable()
         if (isAvailable) return
@@ -105,7 +111,7 @@ class ImageProcessingLocalSource @Inject constructor(
             }
         }
         val request = ModuleInstallRequest.newBuilder()
-            .addApi(segmenter)
+            .addApi(api)
             .setListener(listener)
             .build()
 
@@ -117,6 +123,26 @@ class ImageProcessingLocalSource @Inject constructor(
                 ?: throw BackgroundRemovalException(BackgroundRemovalFailureReason.MODULE_TIMEOUT)
         } finally {
             moduleInstallClient.unregisterListener(listener)
+        }
+    }
+
+    override suspend fun containsFace(sourceUri: Uri): Boolean {
+        // 顔があれば断るための確認なので、速さより取りこぼしの少なさを取る
+        val options = FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
+            .setMinFaceSize(FACE_DETECTION_MIN_FACE_SIZE)
+            .build()
+        val detector = FaceDetection.getClient(options)
+
+        try {
+            // モジュールの取得前は結果が空で返ることがあり、顔なしと区別できないので先に確かめる
+            ensureModuleInstalled(detector)
+            val inputImage = withContext(Dispatchers.IO) {
+                InputImage.fromFilePath(context, sourceUri)
+            }
+            return detector.process(inputImage).await().isNotEmpty()
+        } finally {
+            detector.close()
         }
     }
 

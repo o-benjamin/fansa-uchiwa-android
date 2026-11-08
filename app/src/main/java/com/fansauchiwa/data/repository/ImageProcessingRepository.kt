@@ -4,6 +4,9 @@ import android.net.Uri
 import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.EraserPath
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import javax.inject.Inject
 
 interface ImageProcessingRepository {
@@ -12,6 +15,12 @@ interface ImageProcessingRepository {
      * @return 透過後の画像URI。失敗時は [BackgroundRemovalException] を持つ failure
      */
     suspend fun removeBackground(sourceUri: Uri): Result<Uri>
+
+    /**
+     * 画像に人の顔が写っているかを確かめる
+     * @return 顔があれば true。確かめられなければ failure（呼び出し側は送らずに断る）
+     */
+    suspend fun containsFace(sourceUri: Uri): Result<Boolean>
 
     /**
      * 手動修正（消しゴム）のパスを画像に適用する
@@ -35,6 +44,17 @@ class ImageProcessingRepositoryImpl @Inject constructor(
     override suspend fun removeBackground(sourceUri: Uri): Result<Uri> = try {
         Result.success(imageProcessingDataSource.removeBackground(sourceUri))
     } catch (e: BackgroundRemovalException) {
+        Result.failure(e)
+    }
+
+    override suspend fun containsFace(sourceUri: Uri): Result<Boolean> = try {
+        Result.success(imageProcessingDataSource.containsFace(sourceUri))
+    } catch (e: CancellationException) {
+        // ML Kit の Task が取り消されたときも CancellationException になる。
+        // 呼び出し元のコルーチンが取り消されたときだけそのまま投げ、それ以外は「確かめられなかった」にする
+        currentCoroutineContext().ensureActive()
+        Result.failure(e)
+    } catch (e: Exception) {
         Result.failure(e)
     }
 
