@@ -1,7 +1,7 @@
 {
   "name": "fansa-uchiwa-functions",
   "private": true,
-  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）と回数券の購入（verifyPurchase・revokeVoidedPurchases）",
+  "description": "ファンサうちわのサーバー（Cloud Functions）。AI 素材の生成（generateMaterial）と報告（reportMaterial）、回数券の購入（verifyPurchase・revokeVoidedPurchases）",
   "main": "lib/src/index.js",
   "engines": {
     "node": "22"
