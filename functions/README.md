@@ -129,9 +129,10 @@ Voided Purchases API で過去30日分の返金・取り消しを読み、その
   - 見つからない：サーバーで回数を足しておらず、消費もしていない。3日で Play が自動で返金するので、Play Console の「注文管理」で状態を見る。ログを `orderId` で探すと、断った理由（`pending` など）が分かる
   - `voidedAt` がある：返金済み
   - 別の `uid` に付いている（入れ直して匿名ログインの ID が変わった。ログの `owned_by_other` に両方の `uid` がある）：Play Console で返金する。翌日の `revokeVoidedPurchases` が前の ID の残りを消す
-- **`Play で購入を確かめられなかった` が続く**：ログの `error` の状態を見る。403（`PERMISSION_DENIED`）は、関数のサービス アカウントが Play Console の「ユーザーと権限」にいないか権限が足りない（下の「本番に出す」の 7）。401 はスコープかアカウントの設定。Play の障害なら待つ（利用者には `verification_failed` で返り、回数は足していない）
+- **`Play で購入を確かめられなかった` が続く**：ログの `error` の状態を見る。403（`PERMISSION_DENIED`）は、購入専用のサービス アカウント（`purchase-functions@…`）が Play Console の「ユーザーと権限」にいないか権限が足りない（下の「本番に出す」の 8）。401 はスコープかアカウントの設定。Play の障害なら待つ（利用者には `verification_failed` で返り、回数は足していない）
+- **`購入の記録を読めなかった`・`回数を足せなかった`・`回数を読めなかった`**：Firestore を読み書きできなかった（利用者には `verification_failed`）。ログの `error` が `PERMISSION_DENIED` なら、購入専用のサービス アカウントに `Cloud Datastore ユーザー` のロールがない（「本番に出す」の 4）
 - **`消費できなかった`**：回数は足してあり、アプリが送り直せば消費をやり直す。3日続くと Play が自動で返金し、回数券も取り消される。続くなら上と同じく権限を見る
-- **`revokeVoidedPurchases` が失敗している**（毎日の件数のログ `revokeVoidedPurchases` が出ない・この関数の ERROR がある）：止まっている間、返金された回数券は使えるまま。403 なら「本番に出す」の 7 の権限。直したら Google Cloud コンソールの Cloud Scheduler でジョブを強制実行し、件数のログが出るのを確かめる。30日を超えて止まった分は取り消せない
+- **`revokeVoidedPurchases` が失敗している**（毎日の件数のログ `revokeVoidedPurchases` が出ない・この関数の ERROR がある）：止まっている間、返金された回数券は使えるまま。403 なら「本番に出す」の 8（Play）か 4（Firestore）の権限。直したら Google Cloud コンソールの Cloud Scheduler でジョブを強制実行し、件数のログが出るのを確かめる。30日を超えて止まった分は取り消せない
 - **`返金された回数券を取り消せなかった`**：その1件だけ取り消せなかった（翌日やり直す）。続くなら、ログの `orderId` で `purchases` の記録の中身を見る
 - **`返金の一覧をたどりきれなかった`**：1回で20ページ（2万件）を超えた。返金が急に増えていないかを Play Console で見る
 
@@ -164,11 +165,12 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 1. Blaze（従量課金）・Firestore（東京）・匿名ログインが有効になっている。App Check は Play Integrity で有効にし、Play Console の「アプリの完全性」で Play Integrity API を同じ Cloud プロジェクトにつなぎ、Firebase のアプリ設定にアプリ署名鍵の SHA-256 を登録する（どちらかが漏れると、全件が App Check で断られる）
 2. Cloud Billing に予算アラートを置く（Gemini の請求が想定を超えたら知らせる）。Google Cloud コンソールの「割り当て」で Generative Language API の1日のリクエスト数を絞っておくと、なおよい
 3. Secret を登録する：`firebase functions:secrets:set GEMINI_API_KEY`（Google AI Studio の有料枠のキー）、`firebase functions:secrets:set DISCORD_WEBHOOK_URL`
-4. `firebase deploy --only functions,firestore`（`firestore` はルールと `firestore.indexes.json` の TTL。`--only` なしの `firebase deploy` は Hosting・関数・Firestore をすべて出す。Hosting だけなら `--only hosting`）
-5. `config/aiMaterial` に `blockedNames` を書く（`tools/write-settings.mjs`）
-6. サーバーの関数は Remote Config のテンプレートを読む。実行のサービス アカウント（既定は Compute Engine の既定のサービス アカウント）に Remote Config を読む権限（`Firebase Remote Config 閲覧者`）がなければ足す。読めないと入口は閉じたままになる
-7. 回数券（`verifyPurchase`・`revokeVoidedPurchases`）：Google Cloud コンソールで「Google Play Android Developer API」を有効にし、Play Console の「ユーザーと権限」に 6 のサービス アカウントのメールアドレスを招待する。アプリの権限は「財務データの表示」と「注文と定期購入の管理」。権限が届くまで最大1日かかることがある。今は全関数が同じサービス アカウントで動くので、購入と関係のない関数もこの権限を持つ（購入専用のアカウントに分けるのは #393）。`revokeVoidedPurchases` は Cloud Scheduler のジョブとして出る（`firebase deploy` が API を有効にする）
-8. Play Console でアプリ内アイテム（消費型）を ID `ai_material_ticket_5` で作る。値段はここで決める（コードには書かない）。数量の選択（複数個の購入）は有効にしない（数量の一部だけの返金を、返金の取り消しで拾わないため）
+4. 回数券の関数（`verifyPurchase`・`revokeVoidedPurchases`）を動かす購入専用のサービス アカウントを作る（#393）。Google Cloud コンソールの「IAM と管理」→「サービス アカウント」で ID `purchase-functions` を作り、「IAM」でこのアカウントにロール `Cloud Datastore ユーザー`（Firestore）と `ログ書き込み` を付ける。ID は `src/index.ts` の `purchaseServiceAccount` と同じにする（ないと次の deploy でこの2つの関数を作れない）。ほかの関数は既定のサービス アカウントで動く。デプロイする人がプロジェクトのオーナーでなければ、このアカウントに対する `サービス アカウント ユーザー` も要る
+5. `firebase deploy --only functions,firestore`（`firestore` はルールと `firestore.indexes.json` の TTL。`--only` なしの `firebase deploy` は Hosting・関数・Firestore をすべて出す。Hosting だけなら `--only hosting`）
+6. `config/aiMaterial` に `blockedNames` を書く（`tools/write-settings.mjs`）
+7. `generateMaterial` は Remote Config のテンプレートを読む。動かすサービス アカウント（Compute Engine の既定のサービス アカウント。購入専用のアカウントには要らない）に Remote Config を読む権限（`Firebase Remote Config 閲覧者`）がなければ足す。読めないと入口は閉じたままになる
+8. 回数券（`verifyPurchase`・`revokeVoidedPurchases`）：Google Cloud コンソールで「Google Play Android Developer API」を有効にし、Play Console の「ユーザーと権限」に 4 の購入専用のサービス アカウント（`purchase-functions@<プロジェクト ID>.iam.gserviceaccount.com`）を招待する。アプリの権限は「財務データの表示」と「注文と定期購入の管理」。権限が届くまで最大1日かかることがある。既定のサービス アカウントは招待しない（招待すると、購入と関係のない関数も返金ができるようになる）。`revokeVoidedPurchases` は Cloud Scheduler のジョブとして出る（`firebase deploy` が API を有効にする）
+9. Play Console でアプリ内アイテム（消費型）を ID `ai_material_ticket_5` で作る。値段はここで決める（コードには書かない）。数量の選択（複数個の購入）は有効にしない（数量の一部だけの返金を、返金の取り消しで拾わないため）
 
 ### 入口を初めて開ける前に
 
@@ -177,8 +179,8 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 - プライバシーポリシーと Play Console のデータセーフティに、文章と画像を Google の Gemini API に送ること（作るときの文章と画像はサーバーに残さないこと）を書いてある
 - 同じく、回数券を買った人の購入の記録（匿名ログインの ID・注文番号・購入時刻）をサーバーに残すことと、その期間（上の「verifyPurchase」）を書いてある（データセーフティの「購入履歴」に当たるかは Play のヘルプで確かめる）
 - 生成した画像を報告するボタンがアプリに入っている（#339）。報告では頼んだ文章をサーバーに180日残すので、そのこともプライバシーポリシーに書いてある
-- Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 4 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
+- Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 5 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
 - `config/aiMaterial.blockedNames` を書いてある
 - 上の「本番に出す」の予算アラートと、ログベースのアラートを置いてある
 
-持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。アプリを別の Play Console アカウントへ移したら、「本番に出す」の 7 の招待と権限をやり直す（しないと購入の確認が全件 `verification_failed` になり、返金の取り消しも止まる）。Firebase プロジェクトを替えると匿名ログインの ID が変わり、買われた回数券は引き継がれない。プロジェクトごと移すか、最後の購入から6か月たってから替える。
+持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。アプリを別の Play Console アカウントへ移したら、「本番に出す」の 8 の招待と権限をやり直す（しないと購入の確認が全件 `verification_failed` になり、返金の取り消しも止まる）。Firebase プロジェクトを替えると匿名ログインの ID が変わり、買われた回数券は引き継がれない。プロジェクトごと移すか、最後の購入から6か月たってから替える。
