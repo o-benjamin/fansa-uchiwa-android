@@ -2,20 +2,27 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Expression } from "firebase-functions/params";
 import { RESET_VALUE } from "firebase-functions/v2/options";
-import { generateMaterial, reportMaterial, revokeVoidedPurchases, verifyPurchase } from "../src/index";
+import * as functions from "../src/index";
 
-// 購入専用のサービス アカウントは Play Console で返金ができる（#393）。デプロイの設定なので、
-// 関数が書き出す設定（firebase deploy が読むもの）で、そのアカウントで動く関数を確かめる
+// 関数の __endpoint は、firebase deploy が読む設定（サービス アカウントもここに入る）。
+// 購入専用のアカウントは Play Console で返金ができる（#393）ので、どの関数がそのアカウントで動くかをここで確かめる
 
-test("回数券の2つの関数は、購入専用のサービス アカウントで動き、メールアドレスはデプロイのときに最後まで埋まる", () => {
-  for (const fn of [verifyPurchase, revokeVoidedPurchases]) {
-    const serviceAccount = fn.__endpoint.serviceAccountEmail;
-    assert.ok(serviceAccount instanceof Expression);
-    assert.equal(serviceAccount.toCEL(), "purchase-functions@{{ params.PROJECT_ID }}.iam.gserviceaccount.com");
+const PURCHASE_FUNCTIONS = ["verifyPurchase", "revokeVoidedPurchases"] as const;
+
+test("回数券の2つの関数は、購入専用のサービス アカウントのメールアドレス（プロジェクト ID はデプロイのときに入る）で動く", () => {
+  for (const name of PURCHASE_FUNCTIONS) {
+    const serviceAccount = functions[name].__endpoint.serviceAccountEmail;
+    assert.ok(serviceAccount instanceof Expression, name);
+    assert.equal(serviceAccount.toCEL(), "purchase-functions@{{ params.PROJECT_ID }}.iam.gserviceaccount.com", name);
   }
 });
 
-test("ほかの関数は既定のサービス アカウントのまま（RESET_VALUE はデプロイで既定に戻す印）で、購入の権限を持たない", () => {
-  assert.equal(generateMaterial.__endpoint.serviceAccountEmail, RESET_VALUE);
-  assert.equal(reportMaterial.__endpoint.serviceAccountEmail, RESET_VALUE);
+test("回数券でない関数は、すべて既定のサービス アカウントで動く", () => {
+  // RESET_VALUE は、デプロイで既定のサービス アカウントに戻す印。setGlobalOptions などで serviceAccount を
+  // まとめて付けたり、新しい関数に付けたりすると、その関数にも返金ができる権限が付くので、ここで落とす
+  const purchaseFunctions = new Set<string>(PURCHASE_FUNCTIONS);
+  for (const [name, fn] of Object.entries(functions)) {
+    if (purchaseFunctions.has(name)) continue;
+    assert.equal(fn.__endpoint.serviceAccountEmail, RESET_VALUE, name);
+  }
 });

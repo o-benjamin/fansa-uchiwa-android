@@ -32,13 +32,14 @@ const loadSettings = createSettingsLoader(db);
 /**
  * 回数券の関数（verifyPurchase・revokeVoidedPurchases）だけを動かすサービス アカウント（#393）。
  * Play Console で返金ができる権限を持たせるので、ほかの関数（既定のサービス アカウント）とは分ける。
- * 作り方と権限は functions/README.md の「本番に出す」。「名前@」の省略形は Cloud Scheduler のジョブには
- * 展開されずに渡るので、メールアドレスを最後まで書く（プロジェクト ID はデプロイのときに入る）
+ * 作り方と権限は functions/README.md の「本番に出す」。`"purchase-functions@"` と省略して書くと、関数には
+ * 展開されるが Cloud Scheduler のジョブ（revokeVoidedPurchases）にはそのまま渡る（firebase-tools 15.5.1 で確かめた）ので、
+ * メールアドレスを最後まで書く（プロジェクト ID はデプロイのときに入る）
  */
 const purchaseServiceAccount = expr`purchase-functions@${projectID}.iam.gserviceaccount.com`;
 
-// Play Developer API は、呼ぶ関数を動かすサービス アカウントで呼ぶ。呼ぶのは回数券の関数だけなので
-// purchaseServiceAccount になる。Play Console の「ユーザーと権限」にはこのアカウントだけを足す
+// Play Developer API は、呼んだ関数のサービス アカウントで呼ぶ。回数券でない関数で play を使うと
+// 既定のサービス アカウントで呼ぶことになり、403 で断られる
 const playAuth = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/androidpublisher"] });
 const play = createPlayBillingClient(ANDROID_PACKAGE_NAME, async () => {
   const token = await playAuth.getAccessToken();
@@ -90,8 +91,13 @@ export const reportMaterial = onCall(
 
 /** 回数券の購入を確かめて回数を足す（#348）。中身は verifyPurchase.ts、運用は functions/README.md。 */
 export const verifyPurchase = onCall(
-  // maxInstances はインスタンスが増え続けないように抑える（generateMaterial と同じ）
-  { region: "asia-northeast1", enforceAppCheck: true, maxInstances: 5, serviceAccount: purchaseServiceAccount },
+  {
+    region: "asia-northeast1",
+    enforceAppCheck: true,
+    // インスタンスが増え続けないように抑える（generateMaterial と同じ）
+    maxInstances: 5,
+    serviceAccount: purchaseServiceAccount,
+  },
   (request) => handleVerifyPurchase(request.auth?.uid, request.data, { db, play, now: () => new Date() }),
 );
 
