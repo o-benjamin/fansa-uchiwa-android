@@ -72,7 +72,7 @@
 </ul>
 
 <div class="note">
-    <strong>広告配信、分析、および品質管理について</strong><br>
+    <strong>本アプリが利用する第三者サービス</strong><br>
     本アプリでは、以下の第三者サービスを利用しています。<br>
     ・<span class="highlight">Google AdMob</span>：広告の最適化および配信のため。<br>
     ・<span class="highlight">Unity Ads</span>：広告の配信のため（Google AdMob のメディエーション経由）。<br>
@@ -80,52 +80,55 @@
     ・<span class="highlight">Google Analytics for Firebase</span>：アプリの利用状況分析による機能改善のため。<br>
     ・<span class="highlight">Firebase Crashlytics</span>：クラッシュ発生時の原因究明とアプリの安定性向上のため。<br>
     ・<span class="highlight">Firebase Remote Config</span>：アプリの設定値（おすすめ材料のリンク、今日のお題など）を配信するため。<br>
-    ・<span class="highlight">Firebase Authentication</span>：AI素材の機能で、無料の回数と回数券を利用者ごとに数えるため（匿名の利用者 ID のみ）。<br>
-    ・<span class="highlight">Firebase App Check（Google Play Integrity）</span>：AI素材のサーバーへの呼び出しが、ストアから入れた本アプリからのものかを確かめ、不正利用を防ぐため。<br>
+    ・<span class="highlight">Firebase Authentication</span>：AI素材の機能で、無料の1回と回数券（AI素材を作れる回数を、アプリ内で購入するもの）を利用者ごとに数えるため（匿名の利用者IDのみ）。<br>
+    ・<span class="highlight">Firebase App Check（Google Play Integrity）</span>：AI素材の機能でサーバーを呼び出すとき、ストアから入れた本アプリからの呼び出しかを確かめ、不正利用を防ぐため。<br>
     ・<span class="highlight">Cloud Functions for Firebase・Cloud Firestore</span>：AI素材の作成の受け付け、回数・購入・報告の記録のため。<br>
-    ・<span class="highlight">Google Gemini API</span>：AI素材の機能で、入力された文章と元画像の審査、および素材の画像の作成のため。<br>
+    ・<span class="highlight">Google Gemini API</span>：AI素材の機能で、入力した文章と元画像が作ってよい内容かの自動の確認と、素材の画像の作成のため。<br>
     ・<span class="highlight">Google Play 請求サービス</span>：AI素材の回数券の購入のため。<br>
+    ・<span class="highlight">Discord</span>：AI素材の報告が届いたことを提供者が知るため（報告の理由と AI のモデル名のみ）。<br>
     ・<span class="highlight">Amazonアソシエイト・プログラム</span>：うちわの材料を紹介するリンクを表示し、リンク先での購入を計測するため（リンク先では Amazon が情報を取得します）。<br>
     Amazonのアソシエイトとして、ファンサうちわは適格販売により収入を得ています。
 </div>
 
 <h2>AI素材の機能で送信・保存する情報</h2>
 <p>
-    文章（と任意の元画像）からうちわに置く素材を作る「AI素材」の機能を使うときに限り、以下の情報を送信・保存します。この機能を使わなければ、これらの情報は送信されません。</p>
+    文章（元画像を添えることもできます）からうちわに置く素材を作る「AIで素材を作る」の機能（以下「AI素材の機能」）を使うときに限り、以下の情報を送信・保存します。この機能を使わなければ、これらの情報は送信されません。</p>
 <ul>
-    <li><strong>匿名の利用者 ID：</strong> AI素材の機能を初めて使うときに、Firebase Authentication でランダムな利用者 ID を作ります。お名前やメールアドレスなどはお預かりしません。ログインの際、不正防止のために IP アドレスが Firebase に記録されます。
+    <li><strong>匿名の利用者ID：</strong> AI素材の機能を初めて使うときに、Firebase Authentication でランダムな利用者IDを作ります。お客様がログインの操作をすることはなく、アプリが自動で行います。お名前やメールアドレスなどはお預かりしません。利用者IDを作るとき、不正防止のためにIPアドレスが Firebase に記録されます。
     </li>
-    <li><strong>アプリの正当性の確認：</strong> AI素材のサーバーを呼び出すとき、Firebase App Check を通じて Google Play Integrity の確認結果（トークン）を送信します。
+    <li><strong>アプリの正当性の確認：</strong> 素材を作る、回数券を購入する、素材を報告するときに、ストアから入れた本アプリからの呼び出しかを確かめて不正利用を防ぐため、Firebase App Check を通じて Google Play Integrity の確認結果（トークン）を送信します。
     </li>
-    <li><strong>入力した文章と元画像：</strong> 入力した文章と、選んだ場合は元画像1枚を、素材の作成のために提供者のサーバー（Cloud Functions for Firebase）を経由して <span
-            class="highlight">Google の Gemini API に送信します。</span>提供者のサーバーには、文章と画像を保存しません。Gemini API は有料プランで利用しており、Google の利用規約により、送信した内容は Google の製品の改善（AI の学習を含む）には使われません。ただし Google は、不正利用の検出などのために一定期間記録することがあります。元画像に人の顔が写っていないかの確認と、素材の背景の切り抜きは、端末内で行います。
+    <li><strong>入力した文章と元画像：</strong> 入力した文章と、選んだ場合は元画像1枚を、素材の作成のため（作ってよい内容かを AI が自動で確かめたうえで作ります）に、提供者のサーバー（Cloud Functions for Firebase）を経由して <span
+            class="highlight">Google の Gemini API に送信します。</span>提供者のサーバーには、文章と画像を保存しません。提供者は Gemini API を有料の契約で利用しており（無料の1回で作るときも同じです）、Google の利用規約により、送信した内容は Google の製品の改善（AI の学習を含む）には使われません。ただし Google は、不正利用の検出などのために一定期間記録することがあります。元画像に人の顔が写っていないかの確認と、素材の背景の切り抜きは、端末内で行います。
     </li>
-    <li><strong>回数の記録：</strong> 利用者 ID ごとに、無料の1回を使ったかどうかと、回数券の残りの回数・期限を Cloud Firestore に保存します。
+    <li><strong>回数の記録：</strong> 利用者IDごとに、無料の1回を使ったかどうかと、回数券の残りの回数・期限を Cloud Firestore に保存します。
     </li>
-    <li><strong>購入の記録：</strong> 回数券を購入したとき、Google Play の注文番号・購入した商品・購入日時・回数券の期限を、利用者 ID とあわせて保存します。お支払い方法（カード番号など）は Google Play が取り扱い、提供者は受け取りません。返金された購入は、Google Play から返金の情報を受け取り、回数券を取り消します。
+    <li><strong>購入の記録：</strong> 回数券を購入したとき、Google Play の注文番号・購入した商品・購入日時・回数券の期限を、利用者IDとあわせて保存します。お支払い方法（カード番号など）は Google Play が取り扱い、提供者は受け取りません。返金された購入は、Google Play から返金の情報を受け取り、回数券を取り消します。
     </li>
-    <li><strong>報告の内容：</strong> 作った素材を報告ボタンで報告したとき、確認画面でお知らせしたうえで、頼んだ文章・選んだ理由・素材を作った AI のモデル名を、利用者 ID とあわせて保存します（画像は送信しません）。報告の内容は、問題のある素材を防ぐ対策に使い、180日後に自動で削除します。
+    <li><strong>報告の内容：</strong> 作った素材を報告ボタンで報告したとき、確認画面でお知らせしたうえで、入力した文章・報告の理由（一覧から選んだもの）・素材を作った AI のモデル名を、利用者IDとあわせて保存します（画像は送信しません）。報告の内容は、問題のある素材を防ぐ対策に使います。1日に送れる報告の数を抑えるため、利用者IDごとにその日の報告の数も保存します。報告が届いたことを提供者が知るため、報告の理由とモデル名だけを Discord で提供者に知らせます（文章と利用者IDは送りません）。
     </li>
 </ul>
 
 <h2>データのローカル保存と写真へのアクセスについて</h2>
 <p>
-    本アプリは、ユーザーのプライバシーを最優先に設計されています。うちわのデータと写真は、以下のとおり端末内で扱います。</p>
+    本アプリは、ユーザーのプライバシーを最優先に設計されています。うちわのデータと写真は、以下のとおり端末内で扱います（AI素材の機能で選んだ元画像を除きます）。</p>
 <ul>
     <li><strong>うちわデータの保存：</strong> 本アプリで作成・編集したうちわのデータ（テキスト、配置、設定等）は、<span
-            class="highlight">すべてお客様の端末内にのみローカル保存されます。</span>提供者や第三者のサーバーに送信されることは一切ありません。
+            class="highlight">お客様の端末内に保存されます。</span>提供者や第三者のサーバーに送信されることはありません（下記の端末のバックアップを除きます）。
     </li>
     <li><strong>写真へのアクセス：</strong> うちわに画像を挿入する際、端末内の写真ライブラリにアクセスします。うちわに挿入する画像が<span
             class="highlight">外部サーバーにアップロードされたり、提供者がそれらを収集したりすることはありません。</span>背景の切り抜きなどの画像処理は端末内で行われます。ただし、AI素材の機能で元画像を選んだときに限り、その1枚を素材の作成のために送信します（上記「AI素材の機能で送信・保存する情報」）。
+    </li>
+    <li><strong>端末のバックアップ：</strong> Android のバックアップ機能をオンにしている場合、本アプリが端末内に保存したデータ（うちわのデータ、挿入した画像、AI素材の利用者IDなど）は、お客様の Google アカウントのバックアップに含まれることがあり、機種変更や再インストールのときに復元されます。バックアップは Google が管理し、提供者はその中身を見ることはできません。バックアップの設定は、端末の設定アプリで変えられます。
     </li>
 </ul>
 
 <h2>第三者への提供</h2>
 <p>
-    本アプリは、上記の目的のために、上記の第三者サービスへデータを送信します。AI素材の機能で入力した文章と選んだ元画像は、素材の作成のために Google（Gemini API）へ送信されます。本アプリが利用する第三者サービスのプライバシーポリシーについては、以下のリンクからご確認ください。</p>
+    本アプリは、上記の目的のために、上記の第三者サービスへデータを送信します。AI素材の機能で入力した文章と選んだ元画像は、素材の作成のために Google（Gemini API）へ送信されます。これらのサービスでの処理は、日本国外のサーバーで行われることがあります。本アプリが利用する第三者サービスのプライバシーポリシーについては、以下のリンクからご確認ください。</p>
 <ul>
     <li><a href="https://www.google.com/policies/privacy/" target="_blank"
-           rel="noopener noreferrer">Google Play Services</a></li>
+           rel="noopener noreferrer">Google（Google Play 開発者サービス・Gemini API・Google Play 請求サービス）</a></li>
     <li><a href="https://support.google.com/admob/answer/6128543?hl=ja" target="_blank"
            rel="noopener noreferrer">AdMob</a></li>
     <li><a href="https://unity.com/legal/game-player-and-app-user-privacy-policy" target="_blank"
@@ -136,19 +139,21 @@
            rel="noopener noreferrer">Firebase (Analytics / Crashlytics / Remote Config / Authentication / App Check / Cloud Functions / Cloud Firestore)</a></li>
     <li><a href="https://ai.google.dev/gemini-api/terms" target="_blank"
            rel="noopener noreferrer">Gemini API 利用規約</a></li>
+    <li><a href="https://discord.com/privacy" target="_blank"
+           rel="noopener noreferrer">Discord</a></li>
     <li><a href="https://www.amazon.co.jp/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ" target="_blank"
            rel="noopener noreferrer">Amazon（プライバシー通知）</a></li>
 </ul>
 
 <h2>オプトアウト権</h2>
 <p>
-    本アプリをアンインストールすることで、アプリによるすべての情報収集を停止できます。モバイルデバイスの標準的なアンインストール手順をご利用ください。アンインストールすると端末内の利用者 ID は消えますが、サーバーに保存した回数・購入・報告の記録は残ります（削除は次の項をご覧ください）。</p>
+    本アプリをアンインストールすることで、アプリによるすべての情報収集を停止できます。モバイルデバイスの標準的なアンインストール手順をご利用ください。アンインストールすると端末内の利用者IDは消えます（端末のバックアップから復元した場合は、同じ利用者IDに戻ります）。サーバーに保存した利用者ID・回数・購入・報告の記録は残ります（削除は次の項をご覧ください）。</p>
 
 <h2>データの保存期間と削除</h2>
 <p>
-    AI素材の機能の回数と購入の記録は、削除のご依頼があるまで保存します。報告の内容は、180日後に自動で削除します。</p>
+    匿名の利用者IDと、AI素材の機能の回数・購入の記録は、削除のご依頼があるまで保存します。報告の内容は180日後に、その日の報告の数は2日後に、自動で削除します。入力した文章と元画像は、提供者のサーバーには残りません（Google 側の記録は上記「AI素材の機能で送信・保存する情報」のとおりです）。サーバーの動作の記録（ログ）には、利用者IDや注文番号が残ることがあります（文章と画像は書きません）。ログは30日後に自動で削除され、個別には削除しません。</p>
 <p>
-    削除をご希望の場合は、下記のお問い合わせ先までご連絡ください。回数券を購入した方は、Google Play の注文番号（「GPA.」で始まる番号。Google Play の購入履歴や領収書のメールに記載されています）をお知らせいただくと、該当する記録を探して削除します。削除すると、残りの回数券は使えなくなります。報告の削除をご希望の場合は、報告した日と文章をお知らせください。回数券を購入していない方の記録は、匿名の利用者 ID と無料の1回を使ったかどうかだけで、お名前などとは結びついていません。</p>
+    削除をご希望の場合は、下記のお問い合わせ先までご連絡ください。回数券を購入した方は、Google Play の注文番号（「GPA.」で始まる番号。Google Play の購入履歴や領収書のメールに記載されています）をお知らせいただくと、その購入と、同じ利用者IDの記録を探して削除します。プロモーションコードで受け取ったときなど注文番号がない場合は、受け取った日時をお知らせください。削除すると、残りの回数券は使えなくなります。報告をした方は、報告した日と文章をお知らせいただくと、その報告と、同じ利用者IDの記録を削除します。どちらにも当たらない方の記録は、匿名の利用者IDと無料の1回を使ったかどうかだけで、お名前などとは結びついていないため、提供者の側でどなたの記録かを特定できず、個別に削除することはできません。</p>
 
 <h2>お子様のプライバシー</h2>
 <p>
@@ -162,7 +167,7 @@
 <p>
     本プライバシーポリシーは、理由を問わず更新されることがあります。変更の際は、このページを更新することで通知いたします。変更後の継続利用は、すべての変更を承認したものとみなされます。定期的に本ページを確認することをお勧めします。</p>
 
-<p><strong>発効日：</strong> 2026年01月01日（改訂：2026年11月8日）</p>
+<p><strong>発効日：</strong> 2026年01月01日（改訂：2026年11月08日）</p>
 
 <h2>同意</h2>
 <p>
