@@ -7,7 +7,7 @@
 - GitHub Pages が `master` の `docs/` から出します（https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html）。`release/vX.Y.Z` に入っただけでは公開されません。`release/vX.Y.Z` → `master` は公開の24時間後です
 - 機能の公開より先にページを出したいときは、`docs/privacy-policy.html` だけを変える `master` 向けの PR を作ります（例：#283・#341）
 - URL を使っている場所：`app/src/main/java/com/fansauchiwa/home/HomeScreen.kt`（メニューの「プライバシーポリシー」）、`web/public/index.html`、Play Console の「アプリのコンテンツ」。リポジトリを別のアカウントに移すと Pages の URL は転送されないので、この3か所を直します
-- 改訂日（ページの末尾）は、PR では直した日にしておきます。`master` に入って公開された日とずれていたら、公開ページを確かめる人が `master` 向けの PR で直します（今回の AI素材の改訂の分は、#398 の「入口を開ける前の公開ページの確認」で確かめます）
+- 改訂日（ページの末尾）は、PR では直した日にしておきます。`master` に入って公開された日とずれていたら、公開ページを確かめる人が `master` 向けの PR で直します（今回の AI素材の改訂の分は、#398 の「入口（`ai_material_enabled`）を開ける前に」の項で確かめます）
 
 ## 直すきっかけ
 
@@ -23,7 +23,7 @@
 
 ## 節ごとの根拠（2026-11 時点）
 
-この表は `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました。`functions/`・`AuthRepository.kt`・顔検出（#338）は、`release/v2.12.0` に入るまではこのブランチにありません。入ったときに表を見直します（#398）。見直したらこの段落は消します。
+`functions/`・`AuthRepository.kt`・顔検出（#338）はまだ `release/v2.12.0` に入っていないので、この表は `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました。入ったときに表を見直し（#398）、この段落は消します。
 
 | ページの記述 | 根拠 |
 |---|---|
