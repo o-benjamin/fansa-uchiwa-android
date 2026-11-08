@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getRemoteConfig } from "firebase-admin/remote-config";
-import { defineSecret } from "firebase-functions/params";
+import { defineSecret, expr, projectID } from "firebase-functions/params";
 import { onCall } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { GoogleAuth } from "google-auth-library";
@@ -29,8 +29,17 @@ const db = getFirestore();
 const isEntryOpen = createEntrySwitch(() => getRemoteConfig().getTemplate());
 const loadSettings = createSettingsLoader(db);
 
-// 関数を動かすサービス アカウントで Play Developer API を呼ぶ。Play Console の「ユーザーと権限」に
-// このアカウントを足しておく（functions/README.md の「本番に出す」）
+/**
+ * 回数券の関数（verifyPurchase・revokeVoidedPurchases）だけを動かすサービス アカウント（#393）。
+ * Play Console で返金ができる権限を持たせるので、ほかの関数（既定のサービス アカウント）とは分ける。
+ * 作り方と権限は functions/README.md の「本番に出す」。`"purchase-functions@"` と省略して書くと、関数には
+ * 展開されるが Cloud Scheduler のジョブ（revokeVoidedPurchases）にはそのまま渡る（firebase-tools 15.5.1 で確かめた）ので、
+ * メールアドレスを最後まで書く（プロジェクト ID はデプロイのときに入る）
+ */
+const purchaseServiceAccount = expr`purchase-functions@${projectID}.iam.gserviceaccount.com`;
+
+// Play Developer API は、呼んだ関数のサービス アカウントで呼ぶ。回数券でない関数で play を使うと
+// 既定のサービス アカウントで呼ぶことになり、403 で断られる
 const playAuth = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/androidpublisher"] });
 const play = createPlayBillingClient(ANDROID_PACKAGE_NAME, async () => {
   const token = await playAuth.getAccessToken();
@@ -82,14 +91,24 @@ export const reportMaterial = onCall(
 
 /** 回数券の購入を確かめて回数を足す（#348）。中身は verifyPurchase.ts、運用は functions/README.md。 */
 export const verifyPurchase = onCall(
-  // maxInstances はインスタンスが増え続けないように抑える（generateMaterial と同じ）
-  { region: "asia-northeast1", enforceAppCheck: true, maxInstances: 5 },
+  {
+    region: "asia-northeast1",
+    enforceAppCheck: true,
+    // インスタンスが増え続けないように抑える（generateMaterial と同じ）
+    maxInstances: 5,
+    serviceAccount: purchaseServiceAccount,
+  },
   (request) => handleVerifyPurchase(request.auth?.uid, request.data, { db, play, now: () => new Date() }),
 );
 
 /** 返金された購入の回数券を毎日取り消す（#348）。中身は voidedPurchases.ts。 */
 export const revokeVoidedPurchases = onSchedule(
-  { schedule: "every day 04:00", timeZone: "Asia/Tokyo", region: "asia-northeast1" },
+  {
+    schedule: "every day 04:00",
+    timeZone: "Asia/Tokyo",
+    region: "asia-northeast1",
+    serviceAccount: purchaseServiceAccount,
+  },
   async () => {
     await handleRevokeVoidedPurchases({ db, play, now: () => new Date() });
   },
