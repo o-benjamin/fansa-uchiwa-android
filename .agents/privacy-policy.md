@@ -7,7 +7,7 @@
 - GitHub Pages が `master` の `docs/` から出します（https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html）。`release/vX.Y.Z` に入っただけでは公開されません。`release/vX.Y.Z` → `master` は公開の24時間後です
 - 機能の公開より先にページを出したいときは、`docs/privacy-policy.html` だけを変える `master` 向けの PR を作ります（例：#283・#341）
 - URL を使っている場所：`app/src/main/java/com/fansauchiwa/home/HomeScreen.kt`（メニューの「プライバシーポリシー」）、`web/public/index.html`、Play Console の「アプリのコンテンツ」。リポジトリを別のアカウントに移すと Pages の URL は転送されないので、この3か所を直します
-- 改訂日（ページの末尾）は、PR では直した日にしておきます。`master` に入って公開された日とずれていたら、公開ページを確かめる人が `master` 向けの PR で直します（AI素材の分は #398 の入口を開ける前の確認）
+- 改訂日（ページの末尾）は、PR では直した日にしておきます。`master` に入って公開された日とずれていたら、公開ページを確かめる人が `master` 向けの PR で直します（今回の AI素材の改訂の分は、#398 の「入口を開ける前の公開ページの確認」で確かめます）
 
 ## 直すきっかけ
 
@@ -23,7 +23,7 @@
 
 ## 節ごとの根拠（2026-11 時点）
 
-`functions/`・`AuthRepository.kt`・顔検出は `feature/315-ai-material`（#315・#348）にあり、`release/v2.12.0` に入るまではこのブランチにありません。入ったときに表を見直します（#398）。見直したらこの段落は消します。
+この表は `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました。`functions/`・`AuthRepository.kt`・顔検出（#338）は、`release/v2.12.0` に入るまではこのブランチにありません。入ったときに表を見直します（#398）。見直したらこの段落は消します。
 
 | ページの記述 | 根拠 |
 |---|---|
@@ -31,7 +31,7 @@
 | ログに利用者IDや注文番号が残ることがある、ログは30日で消える | `generateMaterial.ts`・`verifyPurchase.ts`・`voidedPurchases.ts` のログ。30日は Cloud Logging の `_Default` バケットの既定の保存期間（変えたらページも直す） |
 | 購入の記録（注文番号・商品・日時・期限、トークンは残さない。注文番号はない場合がある） | `functions/src/verifyPurchase.ts` の「購入の記録」 |
 | 返金で回数券を取り消す | `functions/src/voidedPurchases.ts` |
-| 報告の内容は180日、その日の報告の数は2日で消える。Discord には理由とモデル名だけ | `functions/src/reportMaterial.ts`（`REPORT_RETENTION_DAYS`・`REPORT_USAGE_RETENTION_DAYS`、TTL、`notifyOwner`） |
+| 報告の内容は180日、1日ごとの報告の数は2日で消える。Discord には理由とモデル名だけ | `functions/src/reportMaterial.ts`（`REPORT_RETENTION_DAYS`・`REPORT_USAGE_RETENTION_DAYS`、TTL、`notifyOwner`） |
 | 回数（無料の1回、回数券の残りと期限） | `functions/src/quota.ts` |
 | App Check は素材を作る・回数券を買う・報告するとき | `functions/src/index.ts` の `enforceAppCheck: true` |
 | 利用者IDは AI素材の機能を初めて使うときに作る。作るとき IP アドレスが Firebase に記録される | `app/src/main/java/com/fansauchiwa/data/repository/AuthRepository.kt`（使うときに `signInAnonymously`）、[Firebase のデータの開示](https://firebase.google.com/docs/android/play-data-disclosure)（2026-10-16 に確認） |
