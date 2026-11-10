@@ -19,7 +19,7 @@
 - AI素材のサーバー（`functions/`）で、保存する項目・保存期間（TTL）・ログに書くもの・知らせる先（Discord）を変える。Gemini 以外のモデルに替える、API キーを替える（「AI素材の機能で送信・保存する情報」「データの保存期間と削除」）
 - バックアップの決まり（`app/src/main/res/xml/backup_rules.xml`・`data_extraction_rules.xml`）を変える（「端末のバックアップ」「オプトアウト権」）
 - Remote Config で配る値の種類を足す（「本アプリが利用する第三者サービス」の Firebase Remote Config の行。`.agents/remote-config.md` の「初めて公開する前に」も同じ確認）
-- まだ提供していない機能を提供し始める（AI素材なら Remote Config のキー `ai_material_enabled` で入口を開ける。キーの定義と開ける前の確認は、`feature/315-ai-material` の `.agents/remote-config.md` と `functions/README.md` の「入口を初めて開ける前に」）。その前に「今後のアップデートで提供する予定」の文（`git grep 今後のアップデート` で出る）を消し、消した版が `master` から公開されてから開けます。`release/vX.Y.Z` で消しても `master` に入るのは公開の24時間後なので、それより先に開けるときは上の `master` 向けの PR で消します。機能を出さないと決めたときは、その機能の記述をページからすべて消します。AI素材なら `git grep -n -e AI素材 -e 利用者ID -e 回数券 docs/privacy-policy.html` で洗い出し（端末のバックアップの項は `allowBackup` のために要るので、AI素材の利用者IDの部分だけ消す）、このファイルの AI素材の箇条と「節ごとの根拠」も消します
+- まだ提供していない機能を提供し始める（AI素材なら Remote Config のキー `ai_material_enabled` で入口を開ける。キーの定義と開ける前の確認は、`feature/315-ai-material` の `.agents/remote-config.md` と `functions/README.md` の「入口を初めて開ける前に」）。その前に「今後のアップデートで提供する予定」の文（`git grep 今後のアップデート` で出る）を消し、消した版が `master` から公開されてから開けます。`release/vX.Y.Z` で消しても `master` に入るのは公開の24時間後なので、それより先に開けるときは上の `master` 向けの PR で消します。機能を出さないと決めたときは、その機能の記述をページからすべて消します。AI素材なら `git grep -n -e AI素材 -e 利用者ID -e 回数券 docs/privacy-policy.html` で洗い出し（端末のバックアップの項は `allowBackup` のために要るので、AI素材の利用者IDの部分だけ消す）、「第三者への提供」のリンクのうち AI素材の分（Gemini・Play 請求サービス・Firebase の Authentication 以降・Discord。grep には出ない）と、このファイルの AI素材の箇条と「節ごとの根拠」も消します
 
 あわせて Play Console のデータセーフティの申告も見直します。申告は Play Console の権限がある人がします。
 
