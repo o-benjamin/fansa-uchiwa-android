@@ -1,5 +1,6 @@
 package com.fansauchiwa.edit.aimaterial
 
+import android.app.Activity
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,11 +9,17 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
+import com.fansauchiwa.data.PlayBillingException
+import com.fansauchiwa.data.TicketPurchaseOutcome
+import com.fansauchiwa.data.TicketPurchaseRejectReason
+import com.fansauchiwa.data.TicketPurchaseRejectedException
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
+import com.fansauchiwa.data.repository.TicketPurchaseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.NonCancellable
@@ -29,6 +36,7 @@ import kotlinx.coroutines.withContext
 @HiltViewModel
 class AiMaterialViewModel @Inject constructor(
     private val aiMaterialRepository: AiMaterialRepository,
+    private val ticketPurchaseRepository: TicketPurchaseRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val crashReportingRepository: CrashReportingRepository
 ) : ViewModel() {
@@ -42,10 +50,23 @@ class AiMaterialViewModel @Inject constructor(
     // 二度押しで同じ素材を2回置かない・2回数えない
     private var isConfirmed = false
 
+    // 画面を開いたときの送り直しは1回だけ（画面の回転などで何度も Play に問い合わせない）
+    private var hasGrantedOnOpen = false
+
     fun logScreenView() {
         viewModelScope.launch {
             analyticsRepository.logScreenView(AnalyticsScreens.AI_MATERIAL_SCREEN)
         }
+    }
+
+    /**
+     * 買ったのに回数を足せていない購入（支払いがあとで済んだコンビニ払い、足す前に通信が切れたなど）を足す。
+     * 購入の案内で「画面を開き直すと足す」と出しているので、画面を開いたときに呼ぶ
+     */
+    fun grantUnconsumedPurchasesOnOpen() {
+        if (hasGrantedOnOpen) return
+        hasGrantedOnOpen = true
+        viewModelScope.launch { grantUnconsumedPurchases() }
     }
 
     fun updatePrompt(prompt: String) = updateInput { it.copy(prompt = prompt) }
@@ -55,7 +76,7 @@ class AiMaterialViewModel @Inject constructor(
     fun generate() {
         val state = _uiState.value
         if (!state.canGenerate) return
-        _uiState.value = state.copy(generation = AiMaterialGeneration.Generating)
+        _uiState.value = state.copy(generation = AiMaterialGeneration.Generating, addedTickets = null)
         viewModelScope.launch {
             val generation = aiMaterialRepository
                 .generate(state.prompt.trim(), state.sourceImageUri)
@@ -70,11 +91,48 @@ class AiMaterialViewModel @Inject constructor(
                         }
                     }
                 )
-            _uiState.update { it.copy(generation = generation) }
+            _uiState.update { it.copy(generation = generation, ticketsRemaining = generation.ticketsRemaining(it)) }
             analyticsRepository.logEvent(
                 AnalyticsEvent(
                     name = AnalyticsActions.GENERATE_AI_MATERIAL,
                     params = generation.toAnalyticsParams()
+                )
+            )
+            if (generation is AiMaterialGeneration.Rejected && generation.offersPurchase) {
+                openPurchase(generation.reason)
+            }
+        }
+    }
+
+    /**
+     * 回数券を買う。買えたら案内を閉じて残りを出し、入力に戻る（作ると回数を使うので、自動では作り直さない）。
+     * [activity] は Play の購入の画面を出すのに使う
+     */
+    fun purchase(activity: Activity) {
+        val ready = _uiState.value.purchase as? AiMaterialPurchase.Ready ?: return
+        _uiState.update { it.copy(purchase = AiMaterialPurchase.Purchasing(ready.product)) }
+        viewModelScope.launch {
+            val result = ticketPurchaseRepository.purchase(activity)
+            val granted = (result.getOrNull() as? TicketPurchaseOutcome.Granted)?.tickets
+            val problem = result.fold(
+                onSuccess = { if (it == TicketPurchaseOutcome.Pending) AiMaterialPurchaseProblem.PENDING else null },
+                onFailure = { it.toPurchaseProblem() }
+            )
+            _uiState.update { state ->
+                if (granted != null) {
+                    state.copy(
+                        purchase = AiMaterialPurchase.Closed,
+                        ticketsRemaining = granted.ticketsRemaining,
+                        addedTickets = granted
+                    )
+                } else {
+                    state.copy(purchase = AiMaterialPurchase.Ready(ready.product, problem))
+                }
+            }
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.PURCHASE_AI_MATERIAL,
+                    params = result.toPurchaseAnalyticsParams()
                 )
             )
         }
@@ -133,6 +191,53 @@ class AiMaterialViewModel @Inject constructor(
         }
     }
 
+    private fun openPurchase(reason: AiMaterialRejectReason) {
+        if (_uiState.value.purchase != AiMaterialPurchase.Closed) return
+        _uiState.update { it.copy(purchase = AiMaterialPurchase.Preparing) }
+        viewModelScope.launch {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.VIEW_AI_MATERIAL_PAYWALL,
+                    params = mapOf(AiMaterialParams.PARAM_REASON to reason.serverValue)
+                )
+            )
+            // 支払いが済んでいて足せていない購入があれば、もう一度買わせずにそれを足す
+            if (grantUnconsumedPurchases()) {
+                _uiState.update { it.copy(purchase = AiMaterialPurchase.Closed) }
+                return@launch
+            }
+            val purchase = ticketPurchaseRepository.getTicketProduct().fold(
+                onSuccess = { AiMaterialPurchase.Ready(it, problem = null) },
+                onFailure = { error ->
+                    // アイテムが見つからないのは Play Console の設定の誤りなので、これも記録する
+                    recordUnlessExpected(error)
+                    AiMaterialPurchase.Unavailable
+                }
+            )
+            _uiState.update { it.copy(purchase = purchase) }
+        }
+    }
+
+    /**
+     * 足せていない購入をサーバーに送り直す。今回新しく足した分があれば知らせて true を返す。
+     * 足し済みだった分（前の呼び出しで足したが応答が届かなかったなど）は、残りだけ直して知らせない
+     */
+    private suspend fun grantUnconsumedPurchases(): Boolean {
+        val granted = ticketPurchaseRepository.grantUnconsumedPurchases()
+            .onFailure { recordUnlessExpected(it) }
+            .getOrNull()
+        val latest = granted?.lastOrNull() ?: return false
+        // 消費型は消費するまで1つしか持てないので、足せていない購入はふつう1件
+        val newlyGranted = granted.lastOrNull { !it.alreadyGranted }
+        _uiState.update {
+            it.copy(
+                ticketsRemaining = latest.ticketsRemaining,
+                addedTickets = newlyGranted ?: it.addedTickets
+            )
+        }
+        return newlyGranted != null
+    }
+
     // 待っている間と結果を見ている間は、入力を変えない。断られたあとに直したら、断りの表示を消す
     private fun updateInput(change: (AiMaterialUiState) -> AiMaterialUiState) {
         _uiState.update { state ->
@@ -167,6 +272,50 @@ class AiMaterialViewModel @Inject constructor(
             )
         )
         return status
+    }
+
+    // サーバーの断りと Play のエラーは利用者の状況（未払い・Play に入っていないなど）で起き、不具合ではないので記録しない
+    private fun recordUnlessExpected(error: Throwable) {
+        if (error is TicketPurchaseRejectedException || error is PlayBillingException) return
+        crashReportingRepository.recordException(error)
+    }
+
+    private fun Throwable.toPurchaseProblem(): AiMaterialPurchaseProblem {
+        recordUnlessExpected(this)
+        return when (this) {
+            is TicketPurchaseRejectedException ->
+                if (reason == TicketPurchaseRejectReason.PENDING) {
+                    AiMaterialPurchaseProblem.PENDING
+                } else {
+                    AiMaterialPurchaseProblem.REJECTED
+                }
+            is PlayBillingException -> AiMaterialPurchaseProblem.PLAY_ERROR
+            else -> AiMaterialPurchaseProblem.FAILED
+        }
+    }
+
+    // 回数がないと断られたら残りは 0。それ以外の断りと失敗では、分かっている残りを変えない
+    private fun AiMaterialGeneration.ticketsRemaining(state: AiMaterialUiState): Int = when {
+        this is AiMaterialGeneration.Succeeded -> image.ticketsRemaining
+        this is AiMaterialGeneration.Rejected && reason == AiMaterialRejectReason.NO_CREDITS -> 0
+        else -> state.ticketsRemaining
+    }
+
+    private fun Result<TicketPurchaseOutcome>.toPurchaseAnalyticsParams(): Map<String, Any> {
+        val error = exceptionOrNull()
+        val result = when {
+            error is TicketPurchaseRejectedException -> AiMaterialParams.RESULT_REJECTED
+            error != null -> AiMaterialParams.RESULT_FAILED
+            else -> when (getOrThrow()) {
+                is TicketPurchaseOutcome.Granted -> AiMaterialParams.RESULT_SUCCESS
+                TicketPurchaseOutcome.Pending -> AiMaterialParams.RESULT_PENDING
+                TicketPurchaseOutcome.Cancelled -> AiMaterialParams.RESULT_CANCELLED
+            }
+        }
+        return buildMap {
+            put(AiMaterialParams.PARAM_RESULT, result)
+            if (error is TicketPurchaseRejectedException) put(AiMaterialParams.PARAM_REASON, error.reason.serverValue)
+        }
     }
 
     private fun AiMaterialReportStatus.toAnalyticsResult(): String = when (this) {

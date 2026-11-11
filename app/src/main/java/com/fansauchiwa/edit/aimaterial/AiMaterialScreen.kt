@@ -1,5 +1,6 @@
 package com.fansauchiwa.edit.aimaterial
 
+import android.app.Activity
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -44,6 +46,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,10 +59,22 @@ import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialPayment
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialReportReason
+import com.fansauchiwa.data.GrantedTickets
+import com.fansauchiwa.data.TicketProduct
 import com.fansauchiwa.ui.rememberTransparencyGridBrush
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+// 回数券の購入の案内からリンクする。ページは `web/public/tokushoho.html`（Firebase Hosting）で、入口を開ける前に出す
+private const val COMMERCIAL_TRANSACTIONS_URL = "https://fansauchiwa-578d22ff.web.app/tokushoho.html"
+
+private val TicketExpiryFormatter =
+    DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN).withZone(ZoneId.systemDefault())
 
 @Composable
 fun AiMaterialScreen(
@@ -67,9 +83,11 @@ fun AiMaterialScreen(
     viewModel: AiMaterialViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
+        viewModel.grantUnconsumedPurchasesOnOpen()
     }
 
     LaunchedEffect(Unit) {
@@ -92,6 +110,7 @@ fun AiMaterialScreen(
         },
         onRemoveSourceImage = { viewModel.updateSourceImage(null) },
         onGenerate = viewModel::generate,
+        onPurchase = { (context as? Activity)?.let(viewModel::purchase) },
         onDiscardResult = viewModel::discardResult,
         onConfirm = viewModel::confirm,
         onReport = viewModel::report
@@ -107,6 +126,7 @@ private fun AiMaterialScreenContent(
     onPickSourceImage: () -> Unit,
     onRemoveSourceImage: () -> Unit,
     onGenerate: () -> Unit,
+    onPurchase: () -> Unit,
     onDiscardResult: () -> Unit,
     onConfirm: () -> Unit,
     onReport: (AiMaterialReportReason) -> Unit
@@ -171,7 +191,8 @@ private fun AiMaterialScreenContent(
                     onPromptChange = onPromptChange,
                     onPickSourceImage = onPickSourceImage,
                     onRemoveSourceImage = onRemoveSourceImage,
-                    onGenerate = onGenerate
+                    onGenerate = onGenerate,
+                    onPurchase = onPurchase
                 )
             }
         }
@@ -185,7 +206,8 @@ private fun AiMaterialInput(
     onPromptChange: (String) -> Unit,
     onPickSourceImage: () -> Unit,
     onRemoveSourceImage: () -> Unit,
-    onGenerate: () -> Unit
+    onGenerate: () -> Unit,
+    onPurchase: () -> Unit
 ) {
     val hapticManager = rememberFansaHapticManager()
 
@@ -224,6 +246,22 @@ private fun AiMaterialInput(
         )
     }
 
+    if (uiState.purchase != AiMaterialPurchase.Closed) {
+        AiMaterialPurchasePanel(purchase = uiState.purchase, onPurchase = onPurchase)
+    }
+
+    uiState.addedTickets?.let { addedTickets ->
+        Text(
+            text = stringResource(
+                R.string.ai_material_tickets_added,
+                addedTickets.ticketsAdded,
+                TicketExpiryFormatter.format(addedTickets.expiresAt)
+            ),
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+
     if (isGenerating) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -244,6 +282,115 @@ private fun AiMaterialInput(
     ) {
         Text(text = stringResource(R.string.ai_material_generate))
     }
+
+    if (uiState.ticketsRemaining > 0) {
+        Text(
+            text = stringResource(R.string.ai_material_tickets_remaining, uiState.ticketsRemaining),
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Composable
+private fun AiMaterialPurchasePanel(
+    purchase: AiMaterialPurchase,
+    onPurchase: () -> Unit
+) {
+    val uriHandler = LocalUriHandler.current
+
+    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.ai_material_purchase_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+            when (purchase) {
+                AiMaterialPurchase.Closed -> Unit
+                AiMaterialPurchase.Preparing -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text(text = stringResource(R.string.ai_material_purchase_preparing))
+                }
+                AiMaterialPurchase.Unavailable -> Text(
+                    text = stringResource(R.string.ai_material_purchase_unavailable),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                is AiMaterialPurchase.Ready -> AiMaterialPurchaseOffer(
+                    product = purchase.product,
+                    problem = purchase.problem,
+                    enabled = true,
+                    onPurchase = onPurchase
+                )
+                // Play の購入の画面を出している間とサーバーが確かめている間は、二度押しで2回買わせない
+                is AiMaterialPurchase.Purchasing -> AiMaterialPurchaseOffer(
+                    product = purchase.product,
+                    problem = null,
+                    enabled = false,
+                    onPurchase = onPurchase
+                )
+            }
+            TextButton(onClick = { uriHandler.openUri(COMMERCIAL_TRANSACTIONS_URL) }) {
+                Text(text = stringResource(R.string.ai_material_purchase_legal))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiMaterialPurchaseOffer(
+    product: TicketProduct,
+    problem: AiMaterialPurchaseProblem?,
+    enabled: Boolean,
+    onPurchase: () -> Unit
+) {
+    val hapticManager = rememberFansaHapticManager()
+
+    Text(
+        text = stringResource(
+            R.string.ai_material_purchase_product,
+            AI_MATERIAL_TICKETS_PER_PURCHASE,
+            product.formattedPrice
+        ),
+        style = MaterialTheme.typography.bodyLarge
+    )
+    // アプリを消すと回数券が使えなくなることは、買う前に知らせる（#392 の (a)）
+    listOf(
+        stringResource(R.string.ai_material_purchase_note_valid, AI_MATERIAL_TICKET_VALID_MONTHS),
+        stringResource(R.string.ai_material_purchase_note_refund),
+        stringResource(R.string.ai_material_purchase_note_reinstall)
+    ).forEach { note ->
+        Text(text = note, style = MaterialTheme.typography.bodySmall)
+    }
+    Button(
+        onClick = {
+            hapticManager.perform(FansaHapticType.CONFIRM)
+            onPurchase()
+        },
+        modifier = Modifier.fillMaxWidth(),
+        enabled = enabled
+    ) {
+        Text(text = stringResource(R.string.ai_material_purchase_buy, product.formattedPrice))
+    }
+    problem?.let {
+        Text(
+            text = stringResource(it.messageResId()),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@StringRes
+private fun AiMaterialPurchaseProblem.messageResId(): Int = when (this) {
+    AiMaterialPurchaseProblem.PENDING -> R.string.ai_material_purchase_pending
+    AiMaterialPurchaseProblem.REJECTED -> R.string.ai_material_purchase_rejected
+    AiMaterialPurchaseProblem.PLAY_ERROR -> R.string.ai_material_purchase_play_error
+    AiMaterialPurchaseProblem.FAILED -> R.string.ai_material_purchase_failed
 }
 
 @Composable
@@ -507,6 +654,81 @@ private fun AiMaterialScreenRejectedPreview() {
 
 @Preview(showBackground = true)
 @Composable
+private fun AiMaterialScreenPurchasePreparingPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Rejected(AiMaterialRejectReason.NO_CREDITS),
+            purchase = AiMaterialPurchase.Preparing
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenPurchaseReadyPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Rejected(AiMaterialRejectReason.NO_CREDITS),
+            purchase = AiMaterialPurchase.Ready(PREVIEW_PRODUCT, problem = null)
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenPurchasePendingPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            purchase = AiMaterialPurchase.Ready(PREVIEW_PRODUCT, AiMaterialPurchaseProblem.PENDING)
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenPurchasingPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            purchase = AiMaterialPurchase.Purchasing(PREVIEW_PRODUCT)
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenPurchaseUnavailablePreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            generation = AiMaterialGeneration.Rejected(AiMaterialRejectReason.FREE_DAILY_LIMIT),
+            purchase = AiMaterialPurchase.Unavailable
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenTicketsAddedPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(
+            prompt = "笑顔の星",
+            ticketsRemaining = 5,
+            addedTickets = GrantedTickets(
+                ticketsAdded = 5,
+                ticketsRemaining = 5,
+                expiresAt = Instant.parse("2027-05-12T00:00:00Z"),
+                alreadyGranted = false
+            )
+        )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
 private fun AiMaterialScreenSucceededPreview() {
     AiMaterialScreenPreview(
         AiMaterialUiState(
@@ -594,12 +816,15 @@ private fun AiMaterialScreenPreview(uiState: AiMaterialUiState) {
             onPickSourceImage = {},
             onRemoveSourceImage = {},
             onGenerate = {},
+            onPurchase = {},
             onDiscardResult = {},
             onConfirm = {},
             onReport = {}
         )
     }
 }
+
+private val PREVIEW_PRODUCT = TicketProduct(formattedPrice = "¥160")
 
 private val PREVIEW_IMAGE = AiMaterialImage(
     uri = Uri.EMPTY,
