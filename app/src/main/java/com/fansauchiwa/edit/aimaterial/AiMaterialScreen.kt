@@ -725,7 +725,7 @@ private fun AiMaterialScreenTicketsAddedPreview() {
             addedTickets = GrantedTickets(
                 ticketsAdded = 5,
                 ticketsRemaining = 5,
-                expiresAt = Instant.parse("2027-05-12T06:00:00Z"),
+                expiresAt = Instant.parse("2027-05-12T06:00:00Z"), // 日本時間の 2027/05/12 15:00（formatTicketExpiry の KDoc の例と同じ）
                 alreadyGranted = false
             )
         )
