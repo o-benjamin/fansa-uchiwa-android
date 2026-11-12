@@ -105,6 +105,7 @@
 - 足してから消費する。消費に失敗しても回数は残し、送り直しで消費をやり直す。消費しないまま3日たつと Play が自動で返金し、下の取り消しで回数も消える
 - 入口スイッチは見ない（閉じたあとでも、払った人には回数を渡す）
 - アイテム ID は `ai_material_ticket_5`（消費型）。Play Console のアプリ内アイテムをこの ID で作る
+- アイテム ID・1購入の回数・期間は、アプリにも同じ値を書いて購入の案内に出している（`PlayBillingRemoteSource.TICKET_PRODUCT_ID`、`AiMaterialUiState.kt` の `AI_MATERIAL_TICKETS_PER_PURCHASE`・`AI_MATERIAL_TICKET_VALID_MONTHS`）。変えるときはアプリも直して出し直す。出回っている古い版は前の値を出し続ける（アプリ側の決まりは `.agents/play-billing.md`）
 
 成功したときは `{ ticketsAdded, ticketsRemaining（使える回数券の残りの合計）, expiresAt（ISO 8601）, alreadyGranted }` を返す。断ったときは `details.reason` に理由が入る。
 
@@ -180,5 +181,6 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 - Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 4 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
 - `config/aiMaterial.blockedNames` を書いてある
 - 上の「本番に出す」の予算アラートと、ログベースのアラートを置いてある
+- 特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）が公開されていて、アプリの購入の案内のリンクから開ける
 
 持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。アプリを別の Play Console アカウントへ移したら、「本番に出す」の 7 の招待と権限をやり直す（しないと購入の確認が全件 `verification_failed` になり、返金の取り消しも止まる）。Firebase プロジェクトを替えると匿名ログインの ID が変わり、買われた回数券は引き継がれない。プロジェクトごと移すか、最後の購入から6か月たってから替える。

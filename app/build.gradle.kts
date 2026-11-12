@@ -213,6 +213,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck)
     implementation(libs.firebase.functions)
+    // AI 素材の回数券の購入（#348）。購入の確認と回数の付与はサーバーの verifyPurchase が行う
+    implementation(libs.billing.ktx)
     // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。
     // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う。
     // Play Integrity は beta の R8 確認に入らないので、更新したら :app:minifyReleaseWithR8 も通す（.agents/r8.md）

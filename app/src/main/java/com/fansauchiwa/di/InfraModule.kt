@@ -18,16 +18,20 @@ import com.fansauchiwa.data.infra.FirebaseAppCheckRemoteSource
 import com.fansauchiwa.data.infra.FirebaseAuthRemoteSource
 import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource
+import com.fansauchiwa.data.infra.FirebaseFunctionsTicketPurchaseRemoteSource
 import com.fansauchiwa.data.infra.FirebaseRemoteConfigRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
 import com.fansauchiwa.data.infra.InAppReviewDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryLocalSource
+import com.fansauchiwa.data.infra.PlayBillingDataSource
+import com.fansauchiwa.data.infra.PlayBillingRemoteSource
 import com.fansauchiwa.data.infra.PlayInAppReviewRemoteSource
 import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
 import com.fansauchiwa.data.infra.SettingsLocalSource
+import com.fansauchiwa.data.infra.TicketPurchaseDataSource
 import com.fansauchiwa.data.repository.ImageProcessingRepository
 import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
 import com.google.firebase.appcheck.FirebaseAppCheck
@@ -129,6 +133,19 @@ abstract class AiMaterialModule {
     abstract fun bindAiMaterialImageDataSource(
         impl: AiMaterialImageLocalSource
     ): AiMaterialImageDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindTicketPurchaseDataSource(
+        impl: FirebaseFunctionsTicketPurchaseRemoteSource
+    ): TicketPurchaseDataSource
+
+    // 購入の結果を受け取る BillingClient を1つにするため、Singleton にする
+    @Binds
+    @Singleton
+    abstract fun bindPlayBillingDataSource(
+        impl: PlayBillingRemoteSource
+    ): PlayBillingDataSource
 
     companion object {
         // サーバーのリージョン（functions/src/index.ts）とそろえる
