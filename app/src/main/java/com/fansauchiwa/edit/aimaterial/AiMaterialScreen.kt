@@ -68,15 +68,10 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 // 回数券の購入の案内からリンクする。ページはまだない（#348 で `web/public/tokushoho.html` に作り、Firebase Hosting で出す）。
 // 入口を開ける前に出す（functions/README.md の「入口を初めて開ける前に」）
 private const val COMMERCIAL_TRANSACTIONS_URL = "https://fansauchiwa-578d22ff.web.app/tokushoho.html"
-
-// タイムゾーンは表示のたびに端末の設定から取る（旅行などで変わっても、前のタイムゾーンの日付を出さない）
-private val TicketExpiryFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN)
 
 @Composable
 fun AiMaterialScreen(
@@ -262,7 +257,7 @@ private fun AiMaterialInput(
             text = stringResource(
                 R.string.ai_material_tickets_added,
                 addedTickets.ticketsAdded,
-                TicketExpiryFormatter.format(addedTickets.expiresAt.atZone(ZoneId.systemDefault()))
+                formatTicketExpiry(addedTickets.expiresAt, ZoneId.systemDefault())
             ),
             color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.bodyMedium
@@ -730,7 +725,7 @@ private fun AiMaterialScreenTicketsAddedPreview() {
             addedTickets = GrantedTickets(
                 ticketsAdded = 5,
                 ticketsRemaining = 5,
-                expiresAt = Instant.parse("2027-05-12T00:00:00Z"),
+                expiresAt = Instant.parse("2027-05-12T06:00:00Z"),
                 alreadyGranted = false
             )
         )
