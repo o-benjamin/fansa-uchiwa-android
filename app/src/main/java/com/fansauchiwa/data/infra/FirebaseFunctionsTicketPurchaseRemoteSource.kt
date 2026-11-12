@@ -45,6 +45,7 @@ class FirebaseFunctionsTicketPurchaseRemoteSource @Inject constructor(
                 expiresAt = Instant.parse(
                     requireNotNull(body["expiresAt"] as? String) { "応答に expiresAt がない" }
                 ),
+                // サーバーは必ず返す。欠けても回数と残りは上の値で正しいので、断らずに新しく足したとして扱う
                 alreadyGranted = body["alreadyGranted"] as? Boolean ?: false
             )
         }

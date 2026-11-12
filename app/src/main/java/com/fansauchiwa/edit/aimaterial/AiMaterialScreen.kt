@@ -52,6 +52,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.fansauchiwa.R
@@ -70,11 +71,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// 回数券の購入の案内からリンクする。ページは `web/public/tokushoho.html`（Firebase Hosting）で、入口を開ける前に出す
+// 回数券の購入の案内からリンクする。ページはまだない（#348 で `web/public/tokushoho.html` に作り、Firebase Hosting で出す）。
+// 入口を開ける前に出す（functions/README.md の「入口を初めて開ける前に」）
 private const val COMMERCIAL_TRANSACTIONS_URL = "https://fansauchiwa-578d22ff.web.app/tokushoho.html"
 
-private val TicketExpiryFormatter =
-    DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN).withZone(ZoneId.systemDefault())
+// タイムゾーンは表示のたびに端末の設定から取る（旅行などで変わっても、前のタイムゾーンの日付を出さない）
+private val TicketExpiryFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd", Locale.JAPAN)
 
 @Composable
 fun AiMaterialScreen(
@@ -87,7 +89,12 @@ fun AiMaterialScreen(
 
     LaunchedEffect(Unit) {
         viewModel.logScreenView()
-        viewModel.grantUnconsumedPurchasesOnOpen()
+    }
+
+    // コンビニ払いを済ませてアプリに戻ったときにも足せるよう、表に出るたびに送り直す
+    LifecycleResumeEffect(Unit) {
+        viewModel.grantUnconsumedPurchasesOnResume()
+        onPauseOrDispose { }
     }
 
     LaunchedEffect(Unit) {
@@ -255,7 +262,7 @@ private fun AiMaterialInput(
             text = stringResource(
                 R.string.ai_material_tickets_added,
                 addedTickets.ticketsAdded,
-                TicketExpiryFormatter.format(addedTickets.expiresAt)
+                TicketExpiryFormatter.format(addedTickets.expiresAt.atZone(ZoneId.systemDefault()))
             ),
             color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.bodyMedium
@@ -263,13 +270,7 @@ private fun AiMaterialInput(
     }
 
     if (isGenerating) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-            Text(text = stringResource(R.string.ai_material_generating))
-        }
+        AiMaterialProgressRow(textResId = R.string.ai_material_generating)
     }
 
     Button(
@@ -283,11 +284,23 @@ private fun AiMaterialInput(
         Text(text = stringResource(R.string.ai_material_generate))
     }
 
+    // 0 は「まだ分からない」と「なくなった」の両方。なくなったときは購入の案内が出ているので、残りは出さない
     if (uiState.ticketsRemaining > 0) {
         Text(
             text = stringResource(R.string.ai_material_tickets_remaining, uiState.ticketsRemaining),
             style = MaterialTheme.typography.bodySmall
         )
+    }
+}
+
+@Composable
+private fun AiMaterialProgressRow(@StringRes textResId: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+        Text(text = stringResource(textResId))
     }
 }
 
@@ -308,14 +321,9 @@ private fun AiMaterialPurchasePanel(
                 style = MaterialTheme.typography.titleMedium
             )
             when (purchase) {
+                // 呼び出し側で出さない
                 AiMaterialPurchase.Closed -> Unit
-                AiMaterialPurchase.Preparing -> Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    Text(text = stringResource(R.string.ai_material_purchase_preparing))
-                }
+                AiMaterialPurchase.Preparing -> AiMaterialProgressRow(textResId = R.string.ai_material_purchase_preparing)
                 AiMaterialPurchase.Unavailable -> Text(
                     text = stringResource(R.string.ai_material_purchase_unavailable),
                     style = MaterialTheme.typography.bodyMedium
@@ -358,10 +366,10 @@ private fun AiMaterialPurchaseOffer(
         ),
         style = MaterialTheme.typography.bodyLarge
     )
-    // アプリを消すと回数券が使えなくなることは、買う前に知らせる（#392 の (a)）
     listOf(
         stringResource(R.string.ai_material_purchase_note_valid, AI_MATERIAL_TICKET_VALID_MONTHS),
         stringResource(R.string.ai_material_purchase_note_refund),
+        // アプリを消すと回数券が使えなくなることは、買う前に知らせる（#392 の (a)）
         stringResource(R.string.ai_material_purchase_note_reinstall)
     ).forEach { note ->
         Text(text = note, style = MaterialTheme.typography.bodySmall)
@@ -391,6 +399,7 @@ private fun AiMaterialPurchaseProblem.messageResId(): Int = when (this) {
     AiMaterialPurchaseProblem.REJECTED -> R.string.ai_material_purchase_rejected
     AiMaterialPurchaseProblem.PLAY_ERROR -> R.string.ai_material_purchase_play_error
     AiMaterialPurchaseProblem.FAILED -> R.string.ai_material_purchase_failed
+    AiMaterialPurchaseProblem.PREVIOUS_PURCHASE_REMAINING -> R.string.ai_material_purchase_previous_remaining
 }
 
 @Composable

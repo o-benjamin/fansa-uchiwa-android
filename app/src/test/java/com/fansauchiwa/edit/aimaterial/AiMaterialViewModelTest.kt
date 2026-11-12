@@ -3,6 +3,7 @@ package com.fansauchiwa.edit.aimaterial
 import android.app.Activity
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.fansauchiwa.analytics.AiMaterialParams
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
@@ -469,7 +470,10 @@ class AiMaterialViewModelTest {
             analyticsRepository.logEvent(
                 AnalyticsEvent(
                     AnalyticsActions.VIEW_AI_MATERIAL_PAYWALL,
-                    mapOf(AiMaterialParams.PARAM_REASON to "no_credits")
+                    mapOf(
+                        AiMaterialParams.PARAM_REASON to "no_credits",
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS
+                    )
                 )
             )
         }
@@ -495,10 +499,40 @@ class AiMaterialViewModelTest {
         assertEquals(grantedTickets(alreadyGranted = false), state.addedTickets)
         assertEquals(TICKETS_REMAINING, state.ticketsRemaining)
         coVerify(exactly = 0) { ticketPurchaseRepository.getTicketProduct() }
+        verifyPurchaseLogged(mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS))
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.VIEW_AI_MATERIAL_PAYWALL })
+        }
     }
 
     @Test
-    fun `値段が取れなければ今は買えないと出し、例外を記録する`() = runTest(testDispatcher) {
+    fun `作っている間に画面に戻ったときの送り直しで足していたら、回数がないと断られても案内を開かず残りを持つ`() =
+        runTest(testDispatcher) {
+            val generation = CompletableDeferred<Result<AiMaterialImage>>()
+            coEvery { repository.generate(any(), any()) } coAnswers { generation.await() }
+            coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returnsMany listOf(
+                Result.success(listOf(grantedTickets(alreadyGranted = false))),
+                Result.success(emptyList())
+            )
+            val viewModel = createViewModel()
+            viewModel.updatePrompt("ハート")
+            viewModel.generate()
+            runCurrent()
+
+            viewModel.grantUnconsumedPurchasesOnResume()
+            runCurrent()
+            generation.complete(Result.failure(AiMaterialRejectedException(AiMaterialRejectReason.NO_CREDITS)))
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(AiMaterialPurchase.Closed, state.purchase)
+            assertEquals(grantedTickets(alreadyGranted = false), state.addedTickets)
+            assertEquals(TICKETS_REMAINING, state.ticketsRemaining)
+            coVerify(exactly = 0) { ticketPurchaseRepository.getTicketProduct() }
+        }
+
+    @Test
+    fun `値段が取れなければ今は買えないと出し、例外を記録して、値段を出せなかったと計測する`() = runTest(testDispatcher) {
         val error = TicketProductUnavailableException()
         coEvery { ticketPurchaseRepository.getTicketProduct() } returns Result.failure(error)
 
@@ -506,6 +540,17 @@ class AiMaterialViewModelTest {
 
         assertEquals(AiMaterialPurchase.Unavailable, viewModel.uiState.value.purchase)
         verify { crashReportingRepository.recordException(error) }
+        coVerify {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.VIEW_AI_MATERIAL_PAYWALL,
+                    mapOf(
+                        AiMaterialParams.PARAM_REASON to "no_credits",
+                        AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED
+                    )
+                )
+            )
+        }
     }
 
     @Test
@@ -533,6 +578,25 @@ class AiMaterialViewModelTest {
         // 作ると回数を使うので、買えても自動では作り直さない
         coVerify(exactly = 1) { repository.generate(any(), any()) }
         verifyPurchaseLogged(mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS))
+    }
+
+    @Test
+    fun `前の購入が足し済みで残っていて買えなかったら、知らせずに理由を出して失敗と計測する`() = runTest(testDispatcher) {
+        stubPurchase(Result.success(TicketPurchaseOutcome.AlreadyGranted(ticketsRemaining = 0)))
+        val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
+
+        viewModel.purchase(activity)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(
+            AiMaterialPurchase.Ready(PRODUCT, AiMaterialPurchaseProblem.PREVIOUS_PURCHASE_REMAINING),
+            state.purchase
+        )
+        assertNull(state.addedTickets)
+        assertEquals(0, state.ticketsRemaining)
+        verifyPurchaseLogged(mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED))
+        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
     }
 
     @Test
@@ -616,8 +680,38 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `Play のエラーは失敗と計測し、例外は記録しない`() = runTest(testDispatcher) {
-        stubPurchase(Result.failure(PlayBillingException(responseCode = 2, debugMessage = "service unavailable")))
+    fun `サーバーが Play に聞けずに断ったら、開き直すと足されると出す`() = runTest(testDispatcher) {
+        stubPurchase(Result.failure(TicketPurchaseRejectedException(TicketPurchaseRejectReason.VERIFICATION_FAILED)))
+        val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
+
+        viewModel.purchase(activity)
+        advanceUntilIdle()
+
+        assertEquals(
+            AiMaterialPurchase.Ready(PRODUCT, AiMaterialPurchaseProblem.FAILED),
+            viewModel.uiState.value.purchase
+        )
+    }
+
+    @Test
+    fun `設定や実装の誤りで起きる Play のエラーは例外を記録する`() = runTest(testDispatcher) {
+        val error = PlayBillingException(responseCode = BillingResponseCode.DEVELOPER_ERROR, debugMessage = "developer error")
+        stubPurchase(Result.failure(error))
+        val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
+
+        viewModel.purchase(activity)
+        advanceUntilIdle()
+
+        assertEquals(
+            AiMaterialPurchase.Ready(PRODUCT, AiMaterialPurchaseProblem.PLAY_ERROR),
+            viewModel.uiState.value.purchase
+        )
+        verify(exactly = 1) { crashReportingRepository.recordException(error) }
+    }
+
+    @Test
+    fun `端末や通信の都合による Play のエラーは失敗と計測し、例外は記録しない`() = runTest(testDispatcher) {
+        stubPurchase(Result.failure(PlayBillingException(responseCode = BillingResponseCode.SERVICE_UNAVAILABLE, debugMessage = "service unavailable")))
         val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
 
         viewModel.purchase(activity)
@@ -659,19 +753,29 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `画面を開くと足せていない購入を足して知らせ、2回目は問い合わせない`() = runTest(testDispatcher) {
-        coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returns
-            Result.success(listOf(grantedTickets(alreadyGranted = false)))
+    fun `画面に戻るたびに送り直し、新しく足したときだけ知らせて成功を計測する`() = runTest(testDispatcher) {
+        coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returnsMany listOf(
+            Result.success(listOf(grantedTickets(alreadyGranted = false))),
+            Result.success(emptyList())
+        )
         val viewModel = createViewModel()
 
-        viewModel.grantUnconsumedPurchasesOnOpen()
+        viewModel.grantUnconsumedPurchasesOnResume()
         advanceUntilIdle()
-        viewModel.grantUnconsumedPurchasesOnOpen()
+        viewModel.grantUnconsumedPurchasesOnResume()
         advanceUntilIdle()
 
         assertEquals(grantedTickets(alreadyGranted = false), viewModel.uiState.value.addedTickets)
         assertEquals(TICKETS_REMAINING, viewModel.uiState.value.ticketsRemaining)
-        coVerify(exactly = 1) { ticketPurchaseRepository.grantUnconsumedPurchases() }
+        coVerify(exactly = 2) { ticketPurchaseRepository.grantUnconsumedPurchases() }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.PURCHASE_AI_MATERIAL,
+                    mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS)
+                )
+            )
+        }
     }
 
     @Test
@@ -680,20 +784,23 @@ class AiMaterialViewModelTest {
             Result.success(listOf(grantedTickets(alreadyGranted = true)))
         val viewModel = createViewModel()
 
-        viewModel.grantUnconsumedPurchasesOnOpen()
+        viewModel.grantUnconsumedPurchasesOnResume()
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.addedTickets)
         assertEquals(TICKETS_REMAINING, viewModel.uiState.value.ticketsRemaining)
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.PURCHASE_AI_MATERIAL })
+        }
     }
 
     @Test
-    fun `画面を開いたときの送り直しが Play のエラーなら、記録せずに何も出さない`() = runTest(testDispatcher) {
+    fun `画面に戻ったときの送り直しが Play のエラーなら、記録せずに何も出さない`() = runTest(testDispatcher) {
         coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returns
-            Result.failure(PlayBillingException(responseCode = 3, debugMessage = "billing unavailable"))
+            Result.failure(PlayBillingException(responseCode = BillingResponseCode.BILLING_UNAVAILABLE, debugMessage = "billing unavailable"))
         val viewModel = createViewModel()
 
-        viewModel.grantUnconsumedPurchasesOnOpen()
+        viewModel.grantUnconsumedPurchasesOnResume()
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.addedTickets)
@@ -707,7 +814,7 @@ class AiMaterialViewModelTest {
             Result.success(listOf(grantedTickets(alreadyGranted = false)))
         stubGenerate(Result.success(image))
         val viewModel = createViewModel()
-        viewModel.grantUnconsumedPurchasesOnOpen()
+        viewModel.grantUnconsumedPurchasesOnResume()
         advanceUntilIdle()
 
         viewModel.updatePrompt("ハート")

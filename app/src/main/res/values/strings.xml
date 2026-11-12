@@ -251,6 +251,7 @@
     <string name="ai_material_purchase_rejected">購入を確かめられず、回数券を足せませんでした。お手数ですが、特定商取引法に基づく表記の連絡先までご連絡ください</string>
     <string name="ai_material_purchase_play_error">Google Play で購入できませんでした。時間をおいてお試しください</string>
     <string name="ai_material_purchase_failed">回数券を足せませんでした。お支払いが済んでいれば、この画面を開き直すと足されます</string>
+    <string name="ai_material_purchase_previous_remaining">前の購入の手続きが残っていて、買えませんでした。時間をおいてもう一度お試しください</string>
     <string name="ai_material_purchase_legal">特定商取引法に基づく表記</string>
 
     <!-- お詫びダイアログ -->

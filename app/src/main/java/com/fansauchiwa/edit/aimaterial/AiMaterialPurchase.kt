@@ -22,17 +22,3 @@ sealed interface AiMaterialPurchase {
     /** 値段が取れず、今は買えない */
     data object Unavailable : AiMaterialPurchase
 }
-
-enum class AiMaterialPurchaseProblem {
-    /** 支払いがまだ済んでいない（コンビニ払いなど）。済んだあとに画面を開き直すと足す */
-    PENDING,
-
-    /** サーバーが購入を確かめられず、回数を足すのを断った */
-    REJECTED,
-
-    /** Play の課金がエラーを返した（支払いはしていない） */
-    PLAY_ERROR,
-
-    /** 通信できないなど。支払いが済んでいれば、画面を開き直すと足す */
-    FAILED
-}

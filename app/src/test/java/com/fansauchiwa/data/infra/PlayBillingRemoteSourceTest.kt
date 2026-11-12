@@ -26,12 +26,10 @@ class PlayBillingRemoteSourceTest {
     }
 
     @Test
-    fun toPurchaseResult_okWithoutTicketPurchase_throws() {
-        val error = assertThrows(PlayBillingException::class.java) {
+    fun toPurchaseResult_okWithoutTicketPurchase_throwsIllegalState() {
+        assertThrows(IllegalStateException::class.java) {
             toPurchaseResult(BillingResponseCode.OK, "", emptyList())
         }
-
-        assertEquals(BillingResponseCode.OK, error.responseCode)
     }
 
     @Test

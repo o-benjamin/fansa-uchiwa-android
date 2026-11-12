@@ -20,6 +20,7 @@ import com.fansauchiwa.data.TicketProduct
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -34,12 +35,12 @@ class PlayBillingRemoteSource @Inject constructor(
 ) : PlayBillingDataSource {
 
     /** 購入の画面を閉じたときに Play から届く結果。[purchaseTicket] が待っている間だけ受け取る */
-    private val purchaseUpdates = MutableSharedFlow<PurchasesUpdate>(extraBufferCapacity = 1)
+    private val purchaseUpdates = MutableSharedFlow<PlayPurchasesUpdate>(extraBufferCapacity = 1)
 
     private val billingClient by lazy {
         BillingClient.newBuilder(context)
             .setListener { result, purchases ->
-                purchaseUpdates.tryEmit(PurchasesUpdate(result, purchases.orEmpty()))
+                purchaseUpdates.tryEmit(PlayPurchasesUpdate(result, purchases.orEmpty()))
             }
             // コンビニ払いなど、あとで支払う購入を受け付ける（Play Billing Library 8 以降は指定が必須）
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
@@ -61,6 +62,7 @@ class PlayBillingRemoteSource @Inject constructor(
 
     override suspend fun purchaseTicket(activity: Activity): PlayPurchaseResult {
         val details = ticketDetails ?: queryTicketDetails()
+        // 購入の案内は値段が取れてから「買う」を出すので、ふつうは起きない。起きたら Play のエラーとして Crashlytics に残る
         val offer = details?.oneTimePurchaseOfferDetails
             ?: throw PlayBillingException(BillingResponseCode.ITEM_UNAVAILABLE, "回数券のアイテムが見つからない")
         val productParams = BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -123,7 +125,14 @@ class PlayBillingRemoteSource @Inject constructor(
                     if (continuation.isActive) continuation.resume(billingResult)
                 }
 
-                override fun onBillingServiceDisconnected() = Unit
+                // つなぐ途中で切れたとき（Play ストアの更新中など）は、待ち続けずに失敗にする。つないだあとに切れたときは何もしない
+                override fun onBillingServiceDisconnected() {
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(
+                            PlayBillingException(BillingResponseCode.SERVICE_DISCONNECTED, "つなぐ途中で Play の課金サービスが切れた")
+                        )
+                    }
+                }
             })
         }
         result.throwIfNotOk()
@@ -132,8 +141,6 @@ class PlayBillingRemoteSource @Inject constructor(
     private fun BillingResult.throwIfNotOk() {
         if (responseCode != BillingResponseCode.OK) throw PlayBillingException(responseCode, debugMessage)
     }
-
-    private data class PurchasesUpdate(val result: BillingResult, val purchases: List<Purchase>)
 
     companion object {
         /** 回数券のアイテム ID。functions/src/verifyPurchase.ts の `TICKET_PRODUCT_ID` とそろえる */
@@ -152,7 +159,8 @@ class PlayBillingRemoteSource @Inject constructor(
 
         /**
          * 購入の画面を閉じたときの Play の応答を、結果に直す。
-         * 応答が OK でも回数券の購入が含まれないときは、何が起きたか分からないのでエラーにする
+         * 応答が OK でも回数券の購入が含まれないときは、何が起きたか分からない（支払いが済んでいるかもしれない）ので、
+         * Play のエラーとは分けて IllegalStateException にする（Crashlytics に残り、画面は「開き直すと足される」になる）
          */
         internal fun toPurchaseResult(
             responseCode: Int,
@@ -161,7 +169,7 @@ class PlayBillingRemoteSource @Inject constructor(
         ): PlayPurchaseResult = when (responseCode) {
             BillingResponseCode.OK -> {
                 val purchase = ticketPurchases.firstOrNull()
-                    ?: throw PlayBillingException(responseCode, "応答に回数券の購入がない")
+                    ?: throw IllegalStateException("Play が OK を返したが、回数券の購入がない")
                 if (purchase.isPending) {
                     PlayPurchaseResult.Pending
                 } else {

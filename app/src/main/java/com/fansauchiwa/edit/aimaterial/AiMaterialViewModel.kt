@@ -50,9 +50,6 @@ class AiMaterialViewModel @Inject constructor(
     // 二度押しで同じ素材を2回置かない・2回数えない
     private var isConfirmed = false
 
-    // 画面を開いたときの送り直しは1回だけ（画面の回転などで何度も Play に問い合わせない）
-    private var hasGrantedOnOpen = false
-
     fun logScreenView() {
         viewModelScope.launch {
             analyticsRepository.logScreenView(AnalyticsScreens.AI_MATERIAL_SCREEN)
@@ -61,11 +58,10 @@ class AiMaterialViewModel @Inject constructor(
 
     /**
      * 買ったのに回数を足せていない購入（支払いがあとで済んだコンビニ払い、足す前に通信が切れたなど）を足す。
-     * 購入の案内で「画面を開き直すと足す」と出しているので、画面を開いたときに呼ぶ
+     * 購入の案内で「画面を開き直すと足す」と出しているので、画面に来たときと、ほかのアプリ（支払いなど）から戻ったときに呼ぶ。
+     * 足せていない購入がなければ、Play の手元の情報を見るだけでサーバーは呼ばない
      */
-    fun grantUnconsumedPurchasesOnOpen() {
-        if (hasGrantedOnOpen) return
-        hasGrantedOnOpen = true
+    fun grantUnconsumedPurchasesOnResume() {
         viewModelScope.launch { grantUnconsumedPurchases() }
     }
 
@@ -99,7 +95,7 @@ class AiMaterialViewModel @Inject constructor(
                 )
             )
             if (generation is AiMaterialGeneration.Rejected && generation.offersPurchase) {
-                openPurchase(generation.reason)
+                openPurchasePanel(generation.reason)
             }
         }
     }
@@ -112,22 +108,12 @@ class AiMaterialViewModel @Inject constructor(
         val ready = _uiState.value.purchase as? AiMaterialPurchase.Ready ?: return
         _uiState.update { it.copy(purchase = AiMaterialPurchase.Purchasing(ready.product)) }
         viewModelScope.launch {
-            val result = ticketPurchaseRepository.purchase(activity)
-            val granted = (result.getOrNull() as? TicketPurchaseOutcome.Granted)?.tickets
-            val problem = result.fold(
-                onSuccess = { if (it == TicketPurchaseOutcome.Pending) AiMaterialPurchaseProblem.PENDING else null },
-                onFailure = { it.toPurchaseProblem() }
-            )
+            val result = ticketPurchaseRepository.purchase(activity).onFailure(::recordUnlessExpected)
             _uiState.update { state ->
-                if (granted != null) {
-                    state.copy(
-                        purchase = AiMaterialPurchase.Closed,
-                        ticketsRemaining = granted.ticketsRemaining,
-                        addedTickets = granted
-                    )
-                } else {
-                    state.copy(purchase = AiMaterialPurchase.Ready(ready.product, problem))
-                }
+                result.fold(
+                    onSuccess = { outcome -> state.afterPurchase(ready, outcome) },
+                    onFailure = { state.copy(purchase = AiMaterialPurchase.Ready(ready.product, it.toPurchaseProblem())) }
+                )
             }
             analyticsRepository.logEvent(
                 AnalyticsEvent(
@@ -191,18 +177,14 @@ class AiMaterialViewModel @Inject constructor(
         }
     }
 
-    private fun openPurchase(reason: AiMaterialRejectReason) {
+    private fun openPurchasePanel(reason: AiMaterialRejectReason) {
         if (_uiState.value.purchase != AiMaterialPurchase.Closed) return
         _uiState.update { it.copy(purchase = AiMaterialPurchase.Preparing) }
         viewModelScope.launch {
-            analyticsRepository.logEvent(
-                AnalyticsEvent(
-                    name = AnalyticsActions.VIEW_AI_MATERIAL_PAYWALL,
-                    params = mapOf(AiMaterialParams.PARAM_REASON to reason.serverValue)
-                )
-            )
-            // 支払いが済んでいて足せていない購入があれば、もう一度買わせずにそれを足す
-            if (grantUnconsumedPurchases()) {
+            // 支払いが済んでいて足せていない購入があれば、もう一度買わせずにそれを足す。
+            // 画面に来たときの送り直しが作っている間に足していたら（addedTickets は「作る」で消える）、それも買わせない
+            grantUnconsumedPurchases()
+            if (_uiState.value.addedTickets != null) {
                 _uiState.update { it.copy(purchase = AiMaterialPurchase.Closed) }
                 return@launch
             }
@@ -215,27 +197,67 @@ class AiMaterialViewModel @Inject constructor(
                 }
             )
             _uiState.update { it.copy(purchase = purchase) }
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.VIEW_AI_MATERIAL_PAYWALL,
+                    params = mapOf(
+                        AiMaterialParams.PARAM_REASON to reason.serverValue,
+                        AiMaterialParams.PARAM_RESULT to if (purchase is AiMaterialPurchase.Ready) {
+                            AiMaterialParams.RESULT_SUCCESS
+                        } else {
+                            AiMaterialParams.RESULT_FAILED
+                        }
+                    )
+                )
+            )
         }
     }
 
     /**
-     * 足せていない購入をサーバーに送り直す。今回新しく足した分があれば知らせて true を返す。
+     * 足せていない購入をサーバーに送り直す。今回新しく足した分があれば知らせて、購入の成功として計測する
+     * （コンビニ払いは買ったときに保留と計測しているので、成功はここで数える）。
      * 足し済みだった分（前の呼び出しで足したが応答が届かなかったなど）は、残りだけ直して知らせない
      */
-    private suspend fun grantUnconsumedPurchases(): Boolean {
+    private suspend fun grantUnconsumedPurchases() {
         val granted = ticketPurchaseRepository.grantUnconsumedPurchases()
-            .onFailure { recordUnlessExpected(it) }
+            .onFailure(::recordUnlessExpected)
             .getOrNull()
-        val latest = granted?.lastOrNull() ?: return false
+        val latest = granted?.lastOrNull() ?: return
         // 消費型は消費するまで1つしか持てないので、足せていない購入はふつう1件
-        val newlyGranted = granted.lastOrNull { !it.alreadyGranted }
+        val newlyGranted = granted.filterNot { it.alreadyGranted }
         _uiState.update {
             it.copy(
                 ticketsRemaining = latest.ticketsRemaining,
-                addedTickets = newlyGranted ?: it.addedTickets
+                addedTickets = newlyGranted.lastOrNull() ?: it.addedTickets
             )
         }
-        return newlyGranted != null
+        repeat(newlyGranted.size) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.PURCHASE_AI_MATERIAL,
+                    params = mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS)
+                )
+            )
+        }
+    }
+
+    // 買えたら案内を閉じる。前の購入が足し済みで残っていたときは、お金も回数も動いていないので、残りだけ直して案内に理由を出す
+    private fun AiMaterialUiState.afterPurchase(
+        ready: AiMaterialPurchase.Ready,
+        outcome: TicketPurchaseOutcome
+    ): AiMaterialUiState = when (outcome) {
+        is TicketPurchaseOutcome.Granted -> copy(
+            purchase = AiMaterialPurchase.Closed,
+            ticketsRemaining = outcome.tickets.ticketsRemaining,
+            addedTickets = outcome.tickets
+        )
+        is TicketPurchaseOutcome.AlreadyGranted -> copy(
+            purchase = AiMaterialPurchase.Ready(ready.product, AiMaterialPurchaseProblem.PREVIOUS_PURCHASE_REMAINING),
+            ticketsRemaining = outcome.ticketsRemaining
+        )
+        TicketPurchaseOutcome.Pending ->
+            copy(purchase = AiMaterialPurchase.Ready(ready.product, AiMaterialPurchaseProblem.PENDING))
+        TicketPurchaseOutcome.Cancelled -> copy(purchase = AiMaterialPurchase.Ready(ready.product, problem = null))
     }
 
     // 待っている間と結果を見ている間は、入力を変えない。断られたあとに直したら、断りの表示を消す
@@ -274,30 +296,35 @@ class AiMaterialViewModel @Inject constructor(
         return status
     }
 
-    // サーバーの断りと Play のエラーは利用者の状況（未払い・Play に入っていないなど）で起き、不具合ではないので記録しない
+    // サーバーの断りと、端末や通信の都合による Play のエラーは、利用者の状況（未払い・Play に入っていないなど）で起き、
+    // 不具合ではないので記録しない。Play のそのほかのエラー（アイテムが見つからないなど）は設定や実装の誤りなので記録する
     private fun recordUnlessExpected(error: Throwable) {
-        if (error is TicketPurchaseRejectedException || error is PlayBillingException) return
+        if (error is TicketPurchaseRejectedException) return
+        if (error is PlayBillingException && error.isCausedByDeviceOrNetwork) return
         crashReportingRepository.recordException(error)
     }
 
-    private fun Throwable.toPurchaseProblem(): AiMaterialPurchaseProblem {
-        recordUnlessExpected(this)
-        return when (this) {
-            is TicketPurchaseRejectedException ->
-                if (reason == TicketPurchaseRejectReason.PENDING) {
-                    AiMaterialPurchaseProblem.PENDING
-                } else {
-                    AiMaterialPurchaseProblem.REJECTED
-                }
-            is PlayBillingException -> AiMaterialPurchaseProblem.PLAY_ERROR
-            else -> AiMaterialPurchaseProblem.FAILED
+    private fun Throwable.toPurchaseProblem(): AiMaterialPurchaseProblem = when (this) {
+        is TicketPurchaseRejectedException -> when (reason) {
+            TicketPurchaseRejectReason.PENDING -> AiMaterialPurchaseProblem.PENDING
+            // サーバーが Play に聞けなかった・ログインし直せば通るものは、購入が消費されずに残るので、開き直すと足される
+            TicketPurchaseRejectReason.VERIFICATION_FAILED,
+            TicketPurchaseRejectReason.UNAUTHENTICATED -> AiMaterialPurchaseProblem.FAILED
+            // 開き直しても足せないものだけ、連絡先を出す
+            TicketPurchaseRejectReason.OWNED_BY_OTHER,
+            TicketPurchaseRejectReason.NOT_PURCHASED,
+            TicketPurchaseRejectReason.INVALID_PURCHASE -> AiMaterialPurchaseProblem.REJECTED
         }
+        is PlayBillingException -> AiMaterialPurchaseProblem.PLAY_ERROR
+        else -> AiMaterialPurchaseProblem.FAILED
     }
 
-    // 回数がないと断られたら残りは 0。それ以外の断りと失敗では、分かっている残りを変えない
+    // 回数がないと断られたら残りは 0。ただし作っている間に購入を足していたら（addedTickets がある）、断りより新しいのでその残りを持つ。
+    // それ以外の断りと失敗では、分かっている残りを変えない
     private fun AiMaterialGeneration.ticketsRemaining(state: AiMaterialUiState): Int = when {
         this is AiMaterialGeneration.Succeeded -> image.ticketsRemaining
-        this is AiMaterialGeneration.Rejected && reason == AiMaterialRejectReason.NO_CREDITS -> 0
+        this is AiMaterialGeneration.Rejected && reason == AiMaterialRejectReason.NO_CREDITS &&
+            state.addedTickets == null -> 0
         else -> state.ticketsRemaining
     }
 
@@ -310,6 +337,7 @@ class AiMaterialViewModel @Inject constructor(
                 is TicketPurchaseOutcome.Granted -> AiMaterialParams.RESULT_SUCCESS
                 TicketPurchaseOutcome.Pending -> AiMaterialParams.RESULT_PENDING
                 TicketPurchaseOutcome.Cancelled -> AiMaterialParams.RESULT_CANCELLED
+                is TicketPurchaseOutcome.AlreadyGranted -> AiMaterialParams.RESULT_FAILED
             }
         }
         return buildMap {

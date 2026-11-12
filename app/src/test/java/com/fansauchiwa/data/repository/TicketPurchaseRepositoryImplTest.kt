@@ -1,6 +1,7 @@
 package com.fansauchiwa.data.repository
 
 import android.app.Activity
+import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.fansauchiwa.data.GrantedTickets
 import com.fansauchiwa.data.PlayBillingException
 import com.fansauchiwa.data.TicketProduct
@@ -17,6 +18,9 @@ import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import java.time.Instant
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -59,7 +63,7 @@ class TicketPurchaseRepositoryImplTest {
 
     @Test
     fun getTicketProduct_playError_fails() = runTest {
-        val error = PlayBillingException(2, "network")
+        val error = PlayBillingException(BillingResponseCode.SERVICE_UNAVAILABLE, "network")
         coEvery { playBillingDataSource.queryTicketProduct() } throws error
 
         assertEquals(error, repository.getTicketProduct().exceptionOrNull())
@@ -119,6 +123,39 @@ class TicketPurchaseRepositoryImplTest {
     }
 
     @Test
+    fun purchase_alreadyOwnedAndAlreadyGranted_returnsAlreadyGranted() = runTest {
+        coEvery { playBillingDataSource.purchaseTicket(activity) } returns PlayPurchaseResult.AlreadyOwned
+        coEvery { playBillingDataSource.queryUnconsumedTicketPurchases() } returns
+            listOf(PlayTicketPurchase("owned", isPending = false))
+        coEvery { ticketPurchaseDataSource.verifyPurchase("owned") } returns
+            granted.copy(ticketsRemaining = 0, alreadyGranted = true)
+
+        assertEquals(TicketPurchaseOutcome.AlreadyGranted(ticketsRemaining = 0), repository.purchase(activity).getOrThrow())
+    }
+
+    @Test
+    fun grantUnconsumedPurchases_whilePurchasing_waitsForPurchaseToFinish() = runTest {
+        val purchaseClosed = CompletableDeferred<PlayPurchaseResult>()
+        coEvery { playBillingDataSource.purchaseTicket(activity) } coAnswers { purchaseClosed.await() }
+        coEvery { playBillingDataSource.queryUnconsumedTicketPurchases() } returns emptyList()
+
+        val purchase = async { repository.purchase(activity) }
+        runCurrent()
+        val grant = async { repository.grantUnconsumedPurchases() }
+        runCurrent()
+        // 購入の画面を閉じて戻ったときの送り直しが、買ったばかりの購入を先に送らない
+        coVerify(exactly = 0) { playBillingDataSource.queryUnconsumedTicketPurchases() }
+
+        purchaseClosed.complete(PlayPurchaseResult.Purchased("new"))
+        purchase.await()
+        grant.await()
+        coVerifyOrder {
+            ticketPurchaseDataSource.verifyPurchase("new")
+            playBillingDataSource.queryUnconsumedTicketPurchases()
+        }
+    }
+
+    @Test
     fun purchase_alreadyOwnedPending_returnsPendingWithoutCallingServer() = runTest {
         coEvery { playBillingDataSource.purchaseTicket(activity) } returns PlayPurchaseResult.AlreadyOwned
         coEvery { playBillingDataSource.queryUnconsumedTicketPurchases() } returns
@@ -138,7 +175,7 @@ class TicketPurchaseRepositoryImplTest {
 
     @Test
     fun purchase_playError_fails() = runTest {
-        val error = PlayBillingException(3, "billing unavailable")
+        val error = PlayBillingException(BillingResponseCode.BILLING_UNAVAILABLE, "billing unavailable")
         coEvery { playBillingDataSource.purchaseTicket(activity) } throws error
 
         assertEquals(error, repository.purchase(activity).exceptionOrNull())
