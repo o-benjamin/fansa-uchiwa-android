@@ -26,7 +26,7 @@ class TicketExpiryFormatTest {
 
     @Test
     fun formatTicketExpiry_CrossesMidnightInZone_ShowsNextDayIn24Hour() {
-        // UTC ではまだ前の日。24時制なので「12:30」（12時制）や「24:30」（kk）にならない
+        // UTC ではまだ前の日。時は 0〜23 の HH で出すので、「12:30」（hh のとき）や「24:30」（kk のとき）にならない
         val expiresAt = Instant.parse("2027-05-11T15:30:00Z")
 
         assertEquals("2027/05/12 00:30", formatTicketExpiry(expiresAt, tokyo))
