@@ -26,4 +26,4 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
 - **持ち主が変わるとき**:
     - アプリを別の Play Console アカウントへ移すときは、移し先にも 1 のお支払いプロファイルが要ります。手数料の段階の登録はデベロッパー アカウントごとなので、移し先で確かめてください。条件は Play Console のヘルプ「アプリを別のデベロッパー アカウントに移行する」で確かめてください。
     - サーバーが Play に購入を確かめる権限（`functions/README.md` の「本番に出す」の招待）もやり直してください。しないと購入の確認がすべて `verification_failed` になります（気づき方は `functions/README.md` の「困ったとき（回数券。Cloud Logging で探す）」）。
-    - 特定商取引法に基づく表記の販売者の情報はページ（`web/public/tokushoho.html`）にあるので、新しい持ち主のものに書き換えて Hosting に出してください（購入の案内のリンクは `AiMaterialScreen.kt` の `COMMERCIAL_TRANSACTIONS_URL`）。リンク先は Firebase Hosting の既定のドメインで、Firebase プロジェクトを替えると、出回っている古い版のリンクは元のページを開き続けます。プロジェクトごと移してください。
+    - 特定商取引法に基づく表記のページ（`web/public/tokushoho.html`。まだない。#348 で作る）の販売者の情報を、新しい持ち主のものに書き換えて Hosting に出してください（購入の案内のリンクは `AiMaterialScreen.kt` の `COMMERCIAL_TRANSACTIONS_URL`）。リンク先は Firebase Hosting の既定のドメインで、Firebase プロジェクトを替えると、出回っている古い版のリンクは元のページを開き続けます。プロジェクトごと移してください。

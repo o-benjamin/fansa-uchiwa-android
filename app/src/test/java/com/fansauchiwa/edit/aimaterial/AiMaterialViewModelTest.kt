@@ -784,6 +784,10 @@ class AiMaterialViewModelTest {
         val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
         viewModel.purchase(activity)
         advanceUntilIdle()
+        assertEquals(
+            AiMaterialPurchase.Ready(PRODUCT, AiMaterialPurchaseProblem.PENDING),
+            viewModel.uiState.value.purchase
+        )
         coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returns
             Result.success(listOf(grantedTickets(alreadyGranted = false)))
 

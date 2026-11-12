@@ -20,7 +20,7 @@ data class AiMaterialUiState(
     // 残りを取るだけの API はないので、生成と購入の応答で分かった値を持つ。まだ分からないときは 0
     val ticketsRemaining: Int = 0,
     // 回数券を足したことを知らせる。次に「作る」を押すまで出す。
-    // 「作る」を押してから足したかの判定にも使う（AiMaterialViewModel の openPurchasePanel・ticketsRemaining）。消えるきっかけを変えるときはそちらも直す
+    // 「作る」を押してから足したかの判定にも使う（AiMaterialViewModel の openPurchasePanel・AiMaterialGeneration.ticketsRemaining）。消えるきっかけを変えるときはそちらも直す
     val addedTickets: GrantedTickets? = null
 ) {
     // サーバーは前後の空白を除いて数えるので、表示の文字数も同じ数え方にする

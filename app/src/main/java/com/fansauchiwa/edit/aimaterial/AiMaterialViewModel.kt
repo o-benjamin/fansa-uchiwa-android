@@ -227,7 +227,7 @@ class AiMaterialViewModel @Inject constructor(
         val newlyGranted = granted.filterNot { it.alreadyGranted }
         _uiState.update {
             it.copy(
-                purchase = if (newlyGranted.isNotEmpty()) it.purchase.closedIfWaitingForPurchase() else it.purchase,
+                purchase = if (newlyGranted.isNotEmpty()) it.purchase.closedUnlessInProgress() else it.purchase,
                 ticketsRemaining = latest.ticketsRemaining,
                 addedTickets = newlyGranted.lastOrNull() ?: it.addedTickets
             )
@@ -242,9 +242,9 @@ class AiMaterialViewModel @Inject constructor(
         }
     }
 
-    // 支払い待ちのあとに戻ってきて足せたときは、案内（「買う」と支払い待ちの文言）を閉じる。
+    // 新しく足せたら、開いている案内（買える・買えない）を閉じる（支払い待ちのあとに戻ってきたときなど）。
     // 準備中と買っている間は、その処理が終わったあとに閉じるかを決めるので触らない
-    private fun AiMaterialPurchase.closedIfWaitingForPurchase(): AiMaterialPurchase = when (this) {
+    private fun AiMaterialPurchase.closedUnlessInProgress(): AiMaterialPurchase = when (this) {
         is AiMaterialPurchase.Ready, AiMaterialPurchase.Unavailable -> AiMaterialPurchase.Closed
         AiMaterialPurchase.Closed, AiMaterialPurchase.Preparing, is AiMaterialPurchase.Purchasing -> this
     }
