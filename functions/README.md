@@ -16,6 +16,8 @@
 6. 文章と元画像を軽いモデルで審査する（実在の人物・性的・暴力・ヘイト）。4 の一覧をすり抜けた名前や、実在の人物の写真の元画像はここで断る
 7. 画像を作る。6・7 で断った・失敗したときは、5 でおさえた回数を戻す
 
+回数券を使う順番（5）・回数を戻す動き（7）・回数券でも断るとき（3 の入口スイッチ、5 の全体の安全上限）を変えたら、特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）も直す（`.agents/play-billing.md`）。
+
 断ったときは `HttpsError` の `details.reason` に理由が入る。アプリはこの値で文言を選び、GA4 にも送る。
 
 | reason | code | 意味 |
@@ -104,6 +106,7 @@
 - 足すのは購入1件につき1回だけ（同時に届いても）。同じ利用者が送り直したときは、足したときの内容を返す（`alreadyGranted: true`）。アプリは応答が届かなかったとき・起動時に未消費の購入が残っていたときに送り直してよい
 - 足してから消費する。消費に失敗しても回数は残し、送り直しで消費をやり直す。消費しないまま3日たつと Play が自動で返金し、下の取り消しで回数も消える
 - 入口スイッチは見ない（閉じたあとでも、払った人には回数を渡す）
+- 期間・期限の決め方・消費しないまま3日たつと返金される動きを変えたら、特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）も直す（`.agents/play-billing.md`）
 - アイテム ID は `ai_material_ticket_5`（消費型）。Play Console のアプリ内アイテムをこの ID で作る
 - アイテム ID・1購入の回数・期間は、アプリにも同じ値を書いて購入の案内に出している（`PlayBillingRemoteSource.TICKET_PRODUCT_ID`、`AiMaterialUiState.kt` の `AI_MATERIAL_TICKETS_PER_PURCHASE`・`AI_MATERIAL_TICKET_VALID_MONTHS`）。変えるときはアプリも直して出し直す。出回っている古い版は前の値を出し続ける（アプリ側の決まりは `.agents/play-billing.md`）
 
@@ -122,7 +125,7 @@
 
 ## revokeVoidedPurchases（返金された回数券を取り消す。毎日 4:00）
 
-Voided Purchases API で過去30日分の返金・取り消しを読み、その購入の回数券（`users/{uid}.packs.{購入 ID}`）を消す（`src/voidedPurchases.ts`）。使った分は戻さない。`purchases` に `voidedAt`・`voidedReason`・`voidedSource`・`ticketsRevoked`（取り消したときに残っていた回数）を書く。毎日30日分を見直して取り消し済みは飛ばすので、止まっても30日以内なら次に動いたときに拾える（超えた分は取り消せない）。1件が失敗しても、ほかの件は続ける。
+Voided Purchases API で過去30日分の返金・取り消しを読み、その購入の回数券（`users/{uid}.packs.{購入 ID}`）を消す（`src/voidedPurchases.ts`）。使った分は戻さない。`purchases` に `voidedAt`・`voidedReason`・`voidedSource`・`ticketsRevoked`（取り消したときに残っていた回数）を書く。毎日30日分を見直して取り消し済みは飛ばすので、止まっても30日以内なら次に動いたときに拾える（超えた分は取り消せない）。1件が失敗しても、ほかの件は続ける。取り消し方を変えたら、特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）も直す（`.agents/play-billing.md`）。
 
 ### 困ったとき（回数券。Cloud Logging で探す）
 

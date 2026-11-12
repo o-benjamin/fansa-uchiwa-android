@@ -26,7 +26,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | Analytics のイベント・パラメータを追加・変更する、分析用のコードを扱う | `.agents/analytics.md` |
 | Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials` を設定する | `.agents/remote-config.md` |
 | AI 素材のサーバーを呼ぶ、匿名ログイン・App Check・Play Integrity の設定を扱う、アプリの持ち主が変わる | `.agents/firebase-auth-app-check.md` |
-| 回数券の購入（Play Billing）を扱う、Billing Library を更新する、アプリの持ち主が変わる | `.agents/play-billing.md` |
+| 回数券の購入（Play Billing）を扱う、Billing Library を更新する、特定商取引法に基づく表記（`web/public/tokushoho.html`）を直す、アプリの持ち主が変わる | `.agents/play-billing.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
 | サーバー（`functions/` の Cloud Functions）を作成・変更する | `functions/README.md` |
 | Android の API を調べる（`android docs search`）、頼まれたときや不具合の調査でアプリを動かす、既存の journey（`journeys/`）が通る画面の文言や手順を変える | `.agents/android-cli.md` |
