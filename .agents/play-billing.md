@@ -30,17 +30,17 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
         - 回数券の期間と期限の決め方（上の「決まり」、`functions/README.md` の「verifyPurchase」）
         - 回数券を使う順番（期限の近いものから。`functions/src/quota.ts`）
         - うまく作れなかったときに回数を戻す動き（`functions/README.md` の「generateMaterial」）
-        - 回数券でも作れなくなるとき（全体の1日の上限 `totalDailyLimit` は `functions/README.md` の「設定」、入口スイッチは同じく「止める」）
+        - 回数券でも作れなくなるとき（全体の安全上限 `totalDailyLimit` は `functions/README.md` の「設定」、入口スイッチは同じく「止める」）
         - 返金で残りの回数を取り消す動き（`functions/README.md` の「revokeVoidedPurchases」）
         - 足せていない購入を送り直すきっかけ（上の「決まり」）と、消費しないまま3日たつと Play が返金する動き
         - 回数券をひもづける先（匿名ログインの ID。`.agents/firebase-auth-app-check.md`）
         - 問い合わせで添えてもらう注文番号の形（`GPA.…`）
         - `minSdk`（動作環境。`app/build.gradle.kts`）
         - 問い合わせのアドレス
-    - 値段と1回の購入の回数はページに書かず「回数券を買う」に表示するとしているので、変えてもページは直さなくてかまいません。
+    - 値段と1回の購入の回数はページに書かず、購入の案内（見出しは「回数券を買う」）に表示するとしているので、変えてもページは直さなくてかまいません。
     - 末尾の日付：初めて出すときは「制定」の日を出す日に直します。そのあと中身を変えたら、制定の日は残し、「YYYY年M月D日 改定」を足して出す日にします。
     - 出すのは `firebase deploy --only hosting` です（プロジェクトは `.firebaserc` の `default`）。`functions/README.md` の「本番に出す（オーナーの承認が要る）」と同じく、承認を取ってから出してください。ブランチにマージしただけでは出ません。
-        - `web/public` の中がまるごと置き換わります。AdMob が読む `app-ads.txt` もここにあるので、古いブランチから出すと、ほかのページと `app-ads.txt` が前の版に戻ります。出すのは `master` から（入口を開ける前で、まだ `master` に入っていなければ、そのときの最新の base ブランチから）にしてください。
+        - `web/public` の中がまるごと置き換わります。AdMob が読む `app-ads.txt` もここにあるので、古いブランチから出すと、ほかのページと `app-ads.txt` が前の版に戻ります。出すのは `master` からにしてください。`master` に入る前に出すとき（`functions/README.md` の「入口を初めて開ける前に」など）は、このページの入ったブランチのうち、次の `git diff` で `web/public` の差分が出したいファイルだけになるものから出してください。
         - 出す前に `git diff origin/master -- web/public` を見て、差分が出したいファイルだけかを確かめてください。
         - 出したあとに `https://fansauchiwa-578d22ff.web.app/tokushoho.html` を開き、末尾の日付が新しくなっているかを確かめてください。
 
@@ -49,6 +49,10 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
     - サーバーが Play に購入を確かめる権限（`functions/README.md` の「本番に出す」の招待）もやり直してください。しないと購入の確認がすべて `verification_failed` になります（気づき方は `functions/README.md` の「困ったとき（回数券。Cloud Logging で探す）」）。
     - 特定商取引法に基づく表記のページ（この文書の「特定商取引法に基づく表記」）：
         - 開示の請求に答える役を、新しい持ち主に引き継いでください。
-        - 問い合わせの Gmail のアカウントごと引き渡すなら、アドレスは直さなくてかまいません。引き渡さないなら、アドレスを `web/public/tokushoho.html`（連絡先の行と「回数券が追加されない・回数が戻らないとき」の行）・この文書・`docs/privacy-policy.html`（Play Console のストア掲載情報の連絡先も同じアドレスなら、そこも）で直し、末尾に改定の日を足して Hosting に出してください。
+        - 問い合わせの Gmail のアカウントごと引き渡すなら、アドレスは直さなくてかまいません。引き渡さないなら、次の場所でアドレスを直してください。
+            - `web/public/tokushoho.html`：連絡先の行と「回数券が追加されない・回数が減ったとき」の行。上の「末尾の日付」のとおり改定の日を足し、Hosting に出す
+            - この文書の「特定商取引法に基づく表記」
+            - `docs/privacy-policy.html`：「改訂」の日も直す。GitHub Pages（`master` の `docs/`）から出るので、`master` に入れると公開される
+            - Play Console のストア掲載情報の連絡先（同じアドレスにしているとき）
         - 法人が引き継ぐときは、表示することが変わります（代表者または通信販売に関する業務の責任者の氏名などが加わります）。特定商取引法ガイドで確かめて、ページを直してください。
         - リンク先は Firebase Hosting の既定のドメインで、Firebase プロジェクトを替えると、出回っている古い版のリンクは元のページを開き続けます。プロジェクトごと移してください。
