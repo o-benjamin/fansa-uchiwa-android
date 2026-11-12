@@ -12,7 +12,7 @@ import { countUsableTickets, USERS_COLLECTION } from "./quota";
 /**
  * 回数券のアイテム ID（Play Console のアプリ内アイテム。消費型）。値段は Play Console で決め、ここには書かない
  * （公開後に Play の価格実験で値段を変えるため）。
- * この定数と下の2つは、アプリにも同じ値を書いて購入の案内に出している（README の「verifyPurchase」）。変えるときはアプリも直す。
+ * この定数と TICKETS_PER_PURCHASE・TICKET_VALID_MONTHS は、アプリにも同じ値を書いて購入の案内に出している（README の「verifyPurchase」）。変えるときはアプリも直す。
  */
 export const TICKET_PRODUCT_ID = "ai_material_ticket_5";
 /**

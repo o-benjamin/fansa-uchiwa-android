@@ -45,7 +45,8 @@ class TicketPurchaseRepositoryImpl @Inject constructor(
     private val ticketPurchaseDataSource: TicketPurchaseDataSource
 ) : TicketPurchaseRepository {
 
-    private val verifyMutex = Mutex()
+    // 同じ購入を購入と送り直しの2か所から送ると、片方だけが「足し済み」を受け取り、知らせを取り違えるので、同時に走らせない
+    private val purchaseMutex = Mutex()
 
     override suspend fun getTicketProduct(): Result<TicketProduct> = runServerCall {
         playBillingDataSource.queryTicketProduct() ?: throw TicketProductUnavailableException()
@@ -53,7 +54,7 @@ class TicketPurchaseRepositoryImpl @Inject constructor(
 
     // Play の購入の画面を出している間も離さない。閉じて AI 素材の画面に戻ったときの送り直しが、買ったばかりの購入を先に送らないように
     override suspend fun purchase(activity: Activity): Result<TicketPurchaseOutcome> = runServerCall {
-        verifyMutex.withLock {
+        purchaseMutex.withLock {
             when (val result = playBillingDataSource.purchaseTicket(activity)) {
                 is PlayPurchaseResult.Purchased -> TicketPurchaseOutcome.Granted(verify(result.purchaseToken))
                 PlayPurchaseResult.Pending -> TicketPurchaseOutcome.Pending
@@ -64,7 +65,7 @@ class TicketPurchaseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun grantUnconsumedPurchases(): Result<List<GrantedTickets>> = runServerCall {
-        verifyMutex.withLock {
+        purchaseMutex.withLock {
             playBillingDataSource.queryUnconsumedTicketPurchases()
                 .filterNot { it.isPending }
                 .map { verify(it.purchaseToken) }

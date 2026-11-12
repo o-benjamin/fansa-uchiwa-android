@@ -284,7 +284,8 @@ private fun AiMaterialInput(
         Text(text = stringResource(R.string.ai_material_generate))
     }
 
-    // 0 は「まだ分からない」と「なくなった」の両方。なくなったときは購入の案内が出ているので、残りは出さない
+    // 0 は「まだ分からない」「持っていない」「使い切った」のどれか。どれも「残り 0回」と出しても役に立たない
+    // （使い切ったあとに作ろうとすると、購入の案内が出る）ので出さない
     if (uiState.ticketsRemaining > 0) {
         Text(
             text = stringResource(R.string.ai_material_tickets_remaining, uiState.ticketsRemaining),
@@ -321,7 +322,7 @@ private fun AiMaterialPurchasePanel(
                 style = MaterialTheme.typography.titleMedium
             )
             when (purchase) {
-                // 呼び出し側で出さない
+                // Closed のときは呼び出し側がこのカードを出さないので、ここには来ない
                 AiMaterialPurchase.Closed -> Unit
                 AiMaterialPurchase.Preparing -> AiMaterialProgressRow(textResId = R.string.ai_material_purchase_preparing)
                 AiMaterialPurchase.Unavailable -> Text(

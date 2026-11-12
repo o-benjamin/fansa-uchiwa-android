@@ -143,7 +143,7 @@ class TicketPurchaseRepositoryImplTest {
         runCurrent()
         val grant = async { repository.grantUnconsumedPurchases() }
         runCurrent()
-        // 購入の画面を閉じて戻ったときの送り直しが、買ったばかりの購入を先に送らない
+        // Play の購入の画面を閉じて戻ったときの送り直しが、買ったばかりの購入を先に送らない
         coVerify(exactly = 0) { playBillingDataSource.queryUnconsumedTicketPurchases() }
 
         purchaseClosed.complete(PlayPurchaseResult.Purchased("new"))

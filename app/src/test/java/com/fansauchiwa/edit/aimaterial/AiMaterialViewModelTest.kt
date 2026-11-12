@@ -633,7 +633,7 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `購入の画面を閉じたら何も出さずに買えるままにして計測する`() = runTest(testDispatcher) {
+    fun `Play の購入の画面を閉じたら何も出さずに買えるままにして計測する`() = runTest(testDispatcher) {
         stubPurchase(Result.success(TicketPurchaseOutcome.Cancelled))
         val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
 
@@ -776,6 +776,24 @@ class AiMaterialViewModelTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `支払い待ちのあとに戻ってきて足せたら、購入の案内を閉じる`() = runTest(testDispatcher) {
+        stubPurchase(Result.success(TicketPurchaseOutcome.Pending))
+        val viewModel = rejectedViewModel(AiMaterialRejectReason.NO_CREDITS)
+        viewModel.purchase(activity)
+        advanceUntilIdle()
+        coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returns
+            Result.success(listOf(grantedTickets(alreadyGranted = false)))
+
+        viewModel.grantUnconsumedPurchasesOnResume()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(AiMaterialPurchase.Closed, state.purchase)
+        assertEquals(grantedTickets(alreadyGranted = false), state.addedTickets)
+        assertEquals(TICKETS_REMAINING, state.ticketsRemaining)
     }
 
     @Test

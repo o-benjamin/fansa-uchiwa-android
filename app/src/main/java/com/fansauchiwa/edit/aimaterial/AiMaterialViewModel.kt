@@ -182,7 +182,7 @@ class AiMaterialViewModel @Inject constructor(
         _uiState.update { it.copy(purchase = AiMaterialPurchase.Preparing) }
         viewModelScope.launch {
             // 支払いが済んでいて足せていない購入があれば、もう一度買わせずにそれを足す。
-            // 画面に来たときの送り直しが作っている間に足していたら（addedTickets は「作る」で消える）、それも買わせない
+            // 画面に来た・戻ったときの送り直しが作っている間に足していたら（addedTickets は「作る」で消える）、それも買わせない
             grantUnconsumedPurchases()
             if (_uiState.value.addedTickets != null) {
                 _uiState.update { it.copy(purchase = AiMaterialPurchase.Closed) }
@@ -227,6 +227,7 @@ class AiMaterialViewModel @Inject constructor(
         val newlyGranted = granted.filterNot { it.alreadyGranted }
         _uiState.update {
             it.copy(
+                purchase = if (newlyGranted.isNotEmpty()) it.purchase.closedIfWaitingForPurchase() else it.purchase,
                 ticketsRemaining = latest.ticketsRemaining,
                 addedTickets = newlyGranted.lastOrNull() ?: it.addedTickets
             )
@@ -239,6 +240,13 @@ class AiMaterialViewModel @Inject constructor(
                 )
             )
         }
+    }
+
+    // 支払い待ちのあとに戻ってきて足せたときは、案内（「買う」と支払い待ちの文言）を閉じる。
+    // 準備中と買っている間は、その処理が終わったあとに閉じるかを決めるので触らない
+    private fun AiMaterialPurchase.closedIfWaitingForPurchase(): AiMaterialPurchase = when (this) {
+        is AiMaterialPurchase.Ready, AiMaterialPurchase.Unavailable -> AiMaterialPurchase.Closed
+        AiMaterialPurchase.Closed, AiMaterialPurchase.Preparing, is AiMaterialPurchase.Purchasing -> this
     }
 
     // 買えたら案内を閉じる。前の購入が足し済みで残っていたときは、お金も回数も動いていないので、残りだけ直して案内に理由を出す
