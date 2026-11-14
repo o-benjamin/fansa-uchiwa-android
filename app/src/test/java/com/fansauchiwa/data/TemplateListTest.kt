@@ -82,6 +82,13 @@ class TemplateListTest {
     }
 
     @Test
+    fun templateList_ids_areUnique() {
+        val ids = templateList.map { it.id }
+
+        assertEquals(ids.size, ids.toSet().size)
+    }
+
+    @Test
     fun templateList_decorationIds_areUniqueWithinTemplate() {
         templateList.forEach { template ->
             val ids = template.savedUchiwa.decorations.map { it.id }
