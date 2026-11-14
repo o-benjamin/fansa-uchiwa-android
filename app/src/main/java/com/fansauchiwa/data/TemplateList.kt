@@ -935,6 +935,9 @@ val templateList: List<Template> = listOf(
         ),
         isNameInputPlaceholderEnabled = false
     ),
+    // template_12〜30 は、2回目の候補（debug ビルドのホームに出した60個）を実機で調整して保存した19個。
+    // 手順は .agents/template-candidates.md。コメントの candidate_N は取り込んだ回の番号で、次の回は使い回す。
+    // 候補名の半角スペースは飾り（Text）の区切り。保存しなかった候補は取り込まない
     // candidate_1（笑 って） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
     Template(
         id = "template_12",
@@ -1056,6 +1059,7 @@ val templateList: List<Template> = listOf(
         isNameInputPlaceholderEnabled = false
     ),
     // candidate_4（キメ顔 して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    // フォントは MOCHIY_POP_P_ONE（P あり。MOCHIY_POP_ONE とは別）。画面の外では描けないので、実機で見た目を確認する
     Template(
         id = "template_14",
         savedUchiwa = SavedUchiwa(
