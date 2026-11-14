@@ -934,6 +934,1254 @@ val templateList: List<Template> = listOf(
             isOverallBorderPuffyEnabled = false
         ),
         isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_1（笑 って） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_12",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "笑",
+                    id = "3ab1b6b6-703f-48d2-a505-14d428a3a624",
+                    offset = Offset(-54.99414f, -43.26172f),
+                    rotation = -5.8186874f,
+                    scale = 6.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "って",
+                    id = "0c920acb-75f6-40a9-99f2-5bd05d648bec",
+                    offset = Offset(75.61328f, 145.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "flower",
+                    id = "cdedb614-5855-4d4b-895f-598cd7be8037",
+                    offset = Offset(171.88379f, -36.10254f),
+                    rotation = 22.258919f,
+                    scale = 1.1191599f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_2（ドヤ顔 して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_13",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "ドヤ顔",
+                    id = "3b74a874-17eb-4ad1-a6e9-2e30682a2d6e",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = -4.0f,
+                    scale = 3.1f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 550,
+                    font = FontFamilies.DELA_GOTHIC_ONE
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "19ead93a-1180-483a-a056-6498318a2646",
+                    offset = Offset(-70.0f, 100.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.DELA_GOTHIC_ONE
+                ),
+                Decoration.Sticker(
+                    label = "crown",
+                    id = "848349b7-3bbf-4ad5-b5e9-bdd562a7a5b5",
+                    offset = Offset(168.63672f, 109.31836f),
+                    rotation = 22.220303f,
+                    scale = 0.85196435f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "auto_awesome",
+                    id = "d8fa9d3b-e896-4294-9a58-16812f57f486",
+                    offset = Offset(-195.0f, -195.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.ORANGE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_4（キメ顔 して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_14",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "キメ顔",
+                    id = "cfbf51b2-186b-405f-b8d4-ef4915adbb64",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = -4.0f,
+                    scale = 3.1f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_P_ONE
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "fe253de3-7bed-4758-9ea2-be66c89ce896",
+                    offset = Offset(-70.0f, 100.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_P_ONE
+                ),
+                Decoration.Sticker(
+                    label = "diamond",
+                    id = "f37ab55d-eeae-45bb-944f-605ed5fc77ad",
+                    offset = Offset(150.0f, 115.0f),
+                    rotation = 17.601383f,
+                    scale = 0.880291f,
+                    color = DecorationColors.LIGHT_BLUE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "star_rounded",
+                    id = "e4f18ad6-ad58-444e-8c7c-9d3b53fa1849",
+                    offset = Offset(-195.0f, -195.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_5（照 れて） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_15",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "照",
+                    id = "f41d8958-d719-43ae-b99f-0543f058d11f",
+                    offset = Offset(-63.11328f, -93.24805f),
+                    rotation = -7.4432526f,
+                    scale = 6.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "れて",
+                    id = "cec14c3c-814b-4f12-8843-e1e810944be4",
+                    offset = Offset(60.16504f, 156.72461f),
+                    rotation = 0.0f,
+                    scale = 2.4781437f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "b2464395-09c0-4e29-ab8c-a3746b222960",
+                    offset = Offset(209.7002f, -30.72168f),
+                    rotation = 22.74363f,
+                    scale = 0.9741119f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_6（ほっぺ 膨らませて） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_16",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Sticker(
+                    label = "balloon",
+                    id = "bab49e19-a80f-48f0-944a-34193bfee281",
+                    offset = Offset(225.0f, 105.0f),
+                    rotation = 28.460667f,
+                    scale = 0.92654824f,
+                    color = DecorationColors.ORANGE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Text(
+                    text = "ほっぺ",
+                    id = "82a53dbc-de54-4e27-8c87-022159c11b2e",
+                    offset = Offset(0.0f, -92.518555f),
+                    rotation = 0.0f,
+                    scale = 3.1f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.ZEN_MARU_GOTHIC
+                ),
+                Decoration.Text(
+                    text = "膨らませて",
+                    id = "b0947a6a-9bef-4830-a986-e350db506039",
+                    offset = Offset(-44.0f, 81.322266f),
+                    rotation = 0.0f,
+                    scale = 1.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.ZEN_MARU_GOTHIC
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "f097f91c-3208-4079-b1ba-832fb0fefc84",
+                    offset = Offset(-215.5f, -210.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_9（寝たふり して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_17",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "寝たふり",
+                    id = "7b3cbb7d-6826-4ade-8fc1-260be07198c4",
+                    offset = Offset(26.276367f, -89.0f),
+                    rotation = 0.0f,
+                    scale = 2.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.ZEN_MARU_GOTHIC
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "d0194222-f1ca-409f-9921-341ac95b250b",
+                    offset = Offset(-70.0f, 100.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.ZEN_MARU_GOTHIC
+                ),
+                Decoration.Sticker(
+                    label = "brightness_2",
+                    id = "dcde95de-75e2-460c-99e4-565c5e55adc1",
+                    offset = Offset(152.84375f, 131.84375f),
+                    rotation = 19.124165f,
+                    scale = 0.926558f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "star",
+                    id = "606528c6-9c3f-446d-bc39-9907289f312c",
+                    offset = Offset(-207.7334f, -210.84961f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.PURPLE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_11（こっち 見て） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_18",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "こっち",
+                    id = "4b72d7be-0598-42a6-94c9-b238214c867d",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = -4.669489f,
+                    scale = 3.251131f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "見て",
+                    id = "8f89c64c-1d97-4fb9-87a6-c24e43d62465",
+                    offset = Offset(-67.0f, 114.0f),
+                    rotation = 0.0f,
+                    scale = 2.4320772f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "emphasis_marks",
+                    id = "8bf6342f-862e-4800-b55e-9679b512a77f",
+                    offset = Offset(158.30762f, 122.43555f),
+                    rotation = 24.759792f,
+                    scale = 1.0455152f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "ccc25d75-a24f-450f-a464-80e6c57d4cd3",
+                    offset = Offset(-195.0f, -195.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "eb248c7b-1cca-4f21-95c5-5aac37f2e8e0",
+                    offset = Offset(-89.53516f, -207.96484f),
+                    rotation = 22.75113f,
+                    scale = 0.5f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_14（好き って言って） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_19",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Sticker(
+                    label = "heart",
+                    id = "51304aed-0d5f-4aca-bc8a-5314c00e3a21",
+                    offset = Offset(225.0f, 115.0f),
+                    rotation = 19.123425f,
+                    scale = 0.7504852f,
+                    color = DecorationColors.RED.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Text(
+                    text = "好き",
+                    id = "0cde86b1-4017-4ff3-8df1-5e618e570a44",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = 0.0f,
+                    scale = 3.3338163f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "って言って",
+                    id = "f1098d5b-a03d-4268-acda-77f43ed55723",
+                    offset = Offset(-77.61426f, 97.30664f),
+                    rotation = 0.0f,
+                    scale = 1.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "b3cf4649-1a94-4b63-9a4d-8acf3d427264",
+                    offset = Offset(-219.89355f, -200.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_15（かわいい って言って） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_20",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "かわいい",
+                    id = "f602630d-badd-4cf6-9827-f7c7a1948395",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = -4.0f,
+                    scale = 2.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Text(
+                    text = "って言って",
+                    id = "713bf49b-3634-4960-8a11-44af2c84c4ac",
+                    offset = Offset(-68.60156f, 82.021484f),
+                    rotation = 0.0f,
+                    scale = 1.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 550,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Sticker(
+                    label = "ribbon",
+                    id = "c3fd0962-d4f4-4bde-b06c-0bd6c533c87a",
+                    offset = Offset(258.0f, 49.844727f),
+                    rotation = 17.434208f,
+                    scale = 0.96437097f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "flower",
+                    id = "5dcc8cfd-e5cd-43f0-b9e0-37d1ba3699ee",
+                    offset = Offset(-216.0f, -200.59863f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_16（褒 めて） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_21",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "褒",
+                    id = "68526592-9630-4b8f-aff9-9418f54d2e09",
+                    offset = Offset(-71.43359f, -84.43359f),
+                    rotation = -5.2203026f,
+                    scale = 5.980259f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "めて",
+                    id = "051b9502-e618-457a-b548-a154c35fc159",
+                    offset = Offset(8.426758f, 168.13965f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "thumb_up",
+                    id = "2734708d-5a17-4e05-83cb-2b0bd3a8df25",
+                    offset = Offset(193.90723f, -39.185547f),
+                    rotation = 15.0f,
+                    scale = 1.0f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_22（投げ チュー して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_22",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "投げ",
+                    id = "6cb959e7-2085-45b8-b406-aad1579eaaa0",
+                    offset = Offset(-116.76367f, -210.36133f),
+                    rotation = 0.0f,
+                    scale = 1.9f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Text(
+                    text = "チュー",
+                    id = "98fd72fc-3578-4eb1-b1c3-473c9d69c660",
+                    offset = Offset(0.0f, -30.0f),
+                    rotation = -9.531712f,
+                    scale = 3.4700344f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 8.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 8.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "4ae926ac-45bd-4ad1-9a22-ec808b223df6",
+                    offset = Offset(96.34668f, 163.0f),
+                    rotation = 0.0f,
+                    scale = 2.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Sticker(
+                    label = "kiss_lips",
+                    id = "a4947d6f-bdd4-4d9b-b72b-b7b8371abc22",
+                    offset = Offset(144.52051f, -194.32031f),
+                    rotation = 15.364723f,
+                    scale = 1.0171394f,
+                    color = DecorationColors.RED.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "7b2fafa8-8404-4fc3-a839-7ba90eec7630",
+                    offset = Offset(-121.771484f, 166.0f),
+                    rotation = -27.524931f,
+                    scale = 0.6114719f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.WHITE.value,
+                    secondStrokeWidth = 0.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "8221d1d6-79ca-4cec-b2e9-6dd3c73ba8b7",
+                    offset = Offset(184.04883f, 59.179688f),
+                    rotation = 35.511024f,
+                    scale = 0.5f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.WHITE.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_23（指 ハートして） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_23",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "指",
+                    id = "d6ed73b2-8b88-4bd5-9bc1-c7fd2cd2532e",
+                    offset = Offset(-60.0f, -85.0f),
+                    rotation = -8.008293f,
+                    scale = 5.9999995f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "ハートして",
+                    id = "f453e2a5-0b0c-4f0e-b69b-8d72620d3c1b",
+                    offset = Offset(5.0f, 150.0f),
+                    rotation = 0.0f,
+                    scale = 1.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "heart",
+                    id = "1a42026c-58d2-4321-b7c7-48176eb12950",
+                    offset = Offset(201.13672f, -49.4834f),
+                    rotation = 20.198845f,
+                    scale = 1.1352859f,
+                    color = DecorationColors.RED.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_24（手で ハート 作って） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_24",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "手で",
+                    id = "11e8d171-37ce-4f46-8ad0-352ed9590115",
+                    offset = Offset(-103.32617f, -203.27344f),
+                    rotation = 0.0f,
+                    scale = 1.9f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "ハート",
+                    id = "eb09634a-f309-44a9-8245-c76fde857e0f",
+                    offset = Offset(0.0f, -30.0f),
+                    rotation = 0.0f,
+                    scale = 3.1f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 8.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 8.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "作って",
+                    id = "76a24d6f-3e31-4083-aaed-34d15b39c604",
+                    offset = Offset(68.0f, 148.0f),
+                    rotation = 0.0f,
+                    scale = 1.9959991f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "28fc7c14-f8a4-404c-9b0d-08988d27e4d5",
+                    offset = Offset(125.56348f, -207.19922f),
+                    rotation = 19.203812f,
+                    scale = 1.0081466f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "auto_awesome",
+                    id = "01b9320f-abc2-439e-a030-084a49dc0903",
+                    offset = Offset(-187.88574f, 161.6289f),
+                    rotation = -20.0f,
+                    scale = 0.7f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_27（両手 ふって） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_25",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "両手",
+                    id = "38a4bc0b-6b78-4711-87d1-80a5b3a5a8be",
+                    offset = Offset(0.0f, -145.58203f),
+                    rotation = 0.0f,
+                    scale = 3.4f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Text(
+                    text = "ふって",
+                    id = "aef17349-3490-45f6-b72f-7b3cf1ff10a2",
+                    offset = Offset(-41.37793f, 88.37793f),
+                    rotation = 0.0f,
+                    scale = 2.3816416f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.MOCHIY_POP_ONE
+                ),
+                Decoration.Sticker(
+                    label = "waving_hand",
+                    id = "eb023933-a22c-42d3-8daf-a4d0cbe21696",
+                    offset = Offset(225.05566f, 89.680664f),
+                    rotation = -6.6390915f,
+                    scale = 0.7215264f,
+                    color = DecorationColors.LIGHT_BLUE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_34（猫 ポーズして） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_26",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "猫",
+                    id = "a6f9dc8e-0275-4192-b117-4f2e432a92c9",
+                    offset = Offset(-60.0f, -85.0f),
+                    rotation = -6.509903f,
+                    scale = 5.2045755f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "ポーズして",
+                    id = "f38a0316-2264-49a4-8ada-f8ae20eeac18",
+                    offset = Offset(5.0f, 150.0f),
+                    rotation = 0.0f,
+                    scale = 1.6f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "pets",
+                    id = "cfd79236-f098-465a-8301-c6daef0d458c",
+                    offset = Offset(187.0f, -70.0f),
+                    rotation = 20.97107f,
+                    scale = 1.0306901f,
+                    color = DecorationColors.ORANGE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_36（頭 ポンして） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_27",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "頭",
+                    id = "a7c998f3-cc2f-42c1-8d8d-9c9905299d4b",
+                    offset = Offset(-60.0f, -85.0f),
+                    rotation = -8.638615f,
+                    scale = 5.3275113f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 6.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 6.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "ポンして",
+                    id = "46c6d117-e1e0-4f07-a6b4-8bf21a054d6f",
+                    offset = Offset(5.0f, 150.0f),
+                    rotation = 0.0f,
+                    scale = 2.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "8bc1f6fd-9b33-4f87-a131-afdd159267b5",
+                    offset = Offset(178.0f, -57.53418f),
+                    rotation = 15.0f,
+                    scale = 1.0f,
+                    color = DecorationColors.ORANGE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_39（決め ポーズ して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_28",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "決め",
+                    id = "d6076a5f-fb76-464b-b61d-7a8d67173691",
+                    offset = Offset(-85.0f, -215.0f),
+                    rotation = -4.0f,
+                    scale = 1.9f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "ポーズ",
+                    id = "b54599fe-392c-422b-b397-14368f435920",
+                    offset = Offset(0.0f, -30.0f),
+                    rotation = -8.865852f,
+                    scale = 3.345117f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 8.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 8.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "66543070-001d-4820-933c-b4123cf435fa",
+                    offset = Offset(70.0f, 140.0f),
+                    rotation = 0.0f,
+                    scale = 2.0f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "crown",
+                    id = "29e10eb6-a64f-47bc-8e98-646ce42cc80c",
+                    offset = Offset(115.0f, -215.0f),
+                    rotation = 15.0f,
+                    scale = 0.75f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "diamond",
+                    id = "b719264f-4b90-41f9-b0fd-f594bbeff07e",
+                    offset = Offset(-124.0f, 160.0f),
+                    rotation = -20.0f,
+                    scale = 0.7f,
+                    color = DecorationColors.LIGHT_BLUE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_48（結婚 して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_29",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "結婚",
+                    id = "63432786-f28e-4a5c-a828-dced53a0c0ca",
+                    offset = Offset(0.0f, -86.46973f),
+                    rotation = -6.741789f,
+                    scale = 3.9786496f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 5.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "337c44a1-4e75-48d0-af52-986bfcac17a9",
+                    offset = Offset(-73.0f, 111.793945f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "diamond",
+                    id = "92f2af9d-b40f-415d-afe1-1ed2ba766e39",
+                    offset = Offset(150.0f, 115.0f),
+                    rotation = 23.877674f,
+                    scale = 0.93894f,
+                    color = DecorationColors.LIGHT_BLUE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart_cute",
+                    id = "a601d4a9-672d-4109-b51d-ce22cb05f375",
+                    offset = Offset(-195.0f, -195.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
+    ),
+    // candidate_50（ぎゅー して） を debug ビルドで調整（密度 2.625、2026-11-14 に取り込み）
+    Template(
+        id = "template_30",
+        savedUchiwa = SavedUchiwa(
+            decorations = listOf(
+                Decoration.Text(
+                    text = "ぎゅー",
+                    id = "bb812fb3-f9fd-4a1f-b8b3-0afc8f4aa808",
+                    offset = Offset(0.0f, -90.0f),
+                    rotation = -8.894028f,
+                    scale = 3.1953118f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Text(
+                    text = "して",
+                    id = "42a04c34-a821-4e59-8c8e-3cccc7db8fae",
+                    offset = Offset(-54.0f, 108.0f),
+                    rotation = 0.0f,
+                    scale = 2.3f,
+                    color = DecorationColors.PINK.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 10.0f,
+                    secondBorderColor = DecorationColors.BLACK.value,
+                    secondBorderWidth = 10.0f,
+                    width = 900,
+                    font = FontFamilies.M_PLUS_ROUNDED_1C
+                ),
+                Decoration.Sticker(
+                    label = "heart",
+                    id = "a2403f9e-36e6-4eac-bf88-027b67473e5b",
+                    offset = Offset(240.00977f, 25.0f),
+                    rotation = 15.561569f,
+                    scale = 0.82817173f,
+                    color = DecorationColors.ORANGE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                ),
+                Decoration.Sticker(
+                    label = "star",
+                    id = "cb79cb4e-9f81-49e3-82a9-b989db2cf867",
+                    offset = Offset(-209.0f, -207.0f),
+                    rotation = -20.0f,
+                    scale = 0.55f,
+                    color = DecorationColors.YELLOW.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 3.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 0.0f
+                ),
+                Decoration.Sticker(
+                    label = "heart",
+                    id = "bf17412b-f0b5-4a26-b4d3-a746f47c82a2",
+                    offset = Offset(136.72168f, 127.381836f),
+                    rotation = 17.879436f,
+                    scale = 0.515603f,
+                    color = DecorationColors.ORANGE.value,
+                    strokeColor = DecorationColors.WHITE.value,
+                    strokeWidth = 2.0f,
+                    secondStrokeColor = DecorationColors.BLACK.value,
+                    secondStrokeWidth = 2.0f
+                )
+            ),
+            uchiwaColor = Color(0xFF000000),
+            backgroundColor = Color(0x11000000),
+            overallBorderColor = DecorationColors.PINK.value,
+            overallBorderWidth = 5.0f,
+            isOverallBorderPuffyEnabled = false
+        ),
+        isNameInputPlaceholderEnabled = false
     )
 )
 
