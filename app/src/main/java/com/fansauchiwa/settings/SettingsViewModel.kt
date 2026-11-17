@@ -6,6 +6,7 @@ import com.fansauchiwa.data.AppInfo
 import com.fansauchiwa.data.repository.AppInfoRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,9 +59,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun fetchAppInfo() {
-        // 端末の ID が取れないときは Repository が null を流す。行を出さないだけで、画面は Error にしない
         viewModelScope.launch {
-            appInfoRepository.fetchAppInfo()
+            try {
+                appInfoRepository.fetchAppInfo()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // バージョンとインストール ID の行が出ないだけなので、触覚フィードバックの設定まで Error にしない
+            }
         }
     }
 
@@ -68,7 +74,7 @@ class SettingsViewModel @Inject constructor(
         appInfoRepository.getAppInfoStream()
             .onEach { appInfo ->
                 _uiState.update { currentState ->
-                    currentState.copyWithAppInfo(appInfo = appInfo)
+                    currentState.copySharedState(appInfo = appInfo)
                 }
             }
             .launchIn(viewModelScope)
@@ -83,27 +89,26 @@ class SettingsViewModel @Inject constructor(
 
     fun showLicenseDialog() {
         _uiState.update { currentState ->
-            currentState.copyWithLicenseDialog(showLicenseDialog = true)
+            currentState.copySharedState(showLicenseDialog = true)
         }
     }
 
     fun dismissLicenseDialog() {
         _uiState.update { currentState ->
-            currentState.copyWithLicenseDialog(showLicenseDialog = false)
+            currentState.copySharedState(showLicenseDialog = false)
         }
     }
 
-    private fun SettingsUiState.copyWithLicenseDialog(showLicenseDialog: Boolean): SettingsUiState =
+    /**
+     * 3つの状態に共通の項目（ライセンスの表示・バージョンとインストール ID）だけを変える
+     */
+    private fun SettingsUiState.copySharedState(
+        showLicenseDialog: Boolean = this.showLicenseDialog,
+        appInfo: AppInfo? = this.appInfo
+    ): SettingsUiState =
         when (this) {
-            is SettingsUiState.Loading -> copy(showLicenseDialog = showLicenseDialog)
-            is SettingsUiState.Success -> copy(showLicenseDialog = showLicenseDialog)
-            is SettingsUiState.Error -> copy(showLicenseDialog = showLicenseDialog)
-        }
-
-    private fun SettingsUiState.copyWithAppInfo(appInfo: AppInfo): SettingsUiState =
-        when (this) {
-            is SettingsUiState.Loading -> copy(appInfo = appInfo)
-            is SettingsUiState.Success -> copy(appInfo = appInfo)
-            is SettingsUiState.Error -> copy(appInfo = appInfo)
+            is SettingsUiState.Loading -> copy(showLicenseDialog = showLicenseDialog, appInfo = appInfo)
+            is SettingsUiState.Success -> copy(showLicenseDialog = showLicenseDialog, appInfo = appInfo)
+            is SettingsUiState.Error -> copy(showLicenseDialog = showLicenseDialog, appInfo = appInfo)
         }
 }

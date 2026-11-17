@@ -45,4 +45,11 @@ class FirebaseInstallationsRemoteSourceTest {
 
         assertNull(source.getInstallationIdStream().first())
     }
+
+    @Test
+    fun getInstallationIdStream_taskCanceled_emitsNull() = runTest {
+        every { firebaseInstallations.id } returns Tasks.forCanceled()
+
+        assertNull(source.getInstallationIdStream().first())
+    }
 }

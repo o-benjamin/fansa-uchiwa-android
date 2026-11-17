@@ -45,7 +45,6 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import kotlinx.coroutines.launch
 
 private const val APACHE_LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0"
-private const val INSTALLATION_ID_CLIP_LABEL = "Firebase Installation ID"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,29 +156,33 @@ private fun SettingsContent(
 }
 
 /**
- * 端末の ID をクリップボードに写す処理を返す。
- * Android 13 以上は OS がコピーしたことを知らせるので、それより前の版だけスナックバーを出す
+ * インストール ID をクリップボードに写す処理を返す。
+ * Android 13 以上は OS がコピーしたことを知らせるので、Android 12 以下だけスナックバーを出す。
+ * クリップボードへの書き込みとスナックバーは UI の副作用でロジックを持たないので、
+ * 触覚フィードバック（`.agents/ui.md`）と同じく ViewModel を通さない
  */
 @Composable
 private fun rememberCopyInstallationId(snackbarHostState: SnackbarHostState): (String) -> Unit {
     val clipboard = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
+    val clipLabel = stringResource(R.string.settings_installation_id_clip_label)
     val copiedMessage = stringResource(R.string.settings_installation_id_copied)
-    return { installationId ->
-        coroutineScope.launch {
-            clipboard.setClipEntry(
-                ClipEntry(ClipData.newPlainText(INSTALLATION_ID_CLIP_LABEL, installationId))
-            )
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                snackbarHostState.showSnackbar(copiedMessage)
+    return remember(clipboard, coroutineScope, snackbarHostState, clipLabel, copiedMessage) {
+        { installationId: String ->
+            coroutineScope.launch {
+                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, installationId)))
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    // 続けてタップしても、同じ知らせを順番待ちで何度も出さない
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    snackbarHostState.showSnackbar(copiedMessage)
+                }
             }
         }
     }
 }
 
 /**
- * 画面のいちばん下に、アプリの版と端末の ID を小さく出す（#411）。
- * 端末の ID は、クローズドテストで AI 素材の入口をオーナーの端末だけ開ける Remote Config の条件に使う。
+ * 画面のいちばん下に、アプリのバージョンとインストール ID を小さく出す（使い道は [AppInfo]）。
  * ID が取れなかったときは ID の行を出さない
  */
 @Composable

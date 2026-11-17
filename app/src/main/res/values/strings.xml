@@ -149,8 +149,9 @@
     <string name="settings_license_open_in_browser">ブラウザで開く</string>
     <string name="settings_license_close">閉じる</string>
     <string name="settings_app_version">バージョン %1$s</string>
-    <string name="settings_installation_id">端末の ID（タップでコピー）</string>
-    <string name="settings_installation_id_copied">端末の ID をコピーしました</string>
+    <string name="settings_installation_id">インストール ID（タップでコピー）</string>
+    <string name="settings_installation_id_clip_label">インストール ID</string>
+    <string name="settings_installation_id_copied">インストール ID をコピーしました</string>
     <string name="event_timeline">イベント予定</string>
     <string name="event_timeline_open_from_preview">イベント予定に追加</string>
     <string name="event_add">イベントを追加</string>

@@ -3,7 +3,8 @@ package com.fansauchiwa.data.infra
 import android.util.Log
 import com.google.firebase.installations.FirebaseInstallations
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
@@ -22,10 +23,11 @@ class FirebaseInstallationsRemoteSource @Inject constructor(
      */
     private suspend fun getInstallationIdOrNull(): String? = try {
         firebaseInstallations.id.await()
-    } catch (e: CancellationException) {
-        throw e
     } catch (e: Exception) {
-        Log.w(TAG, "端末の ID の取得に失敗", e)
+        // Task が取り消されたときも CancellationException が来るので、ここでまとめて受ける。
+        // 呼び出し側のコルーチンが止められたときだけ投げ直す
+        currentCoroutineContext().ensureActive()
+        Log.w(TAG, "インストール ID の取得に失敗", e)
         null
     }
 

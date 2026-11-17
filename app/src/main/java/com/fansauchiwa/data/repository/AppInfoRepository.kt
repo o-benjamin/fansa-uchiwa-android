@@ -11,13 +11,13 @@ import javax.inject.Inject
 
 interface AppInfoRepository {
     /**
-     * 設定画面に出すアプリの版と端末の ID の Flow を返す
+     * 設定画面に出すアプリのバージョンとインストール ID の Flow を返す
      */
     fun getAppInfoStream(): Flow<AppInfo>
 
     /**
-     * アプリの版と端末の ID を取得して流す。
-     * 端末の ID が取れないときは例外を投げず、`installationId` を null にして流す
+     * アプリのバージョンとインストール ID を取得して流す。
+     * インストール ID が取れないときは例外を投げず、`installationId` を null にして流す
      */
     suspend fun fetchAppInfo()
 }

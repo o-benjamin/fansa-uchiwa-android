@@ -36,7 +36,7 @@ class AppInfoSectionTest {
 
         composeTestRule.onNodeWithText(context.getString(R.string.settings_app_version, "2.13.0"))
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("test-installation-id", substring = true)
+        composeTestRule.onNodeWithText("test-installation-id")
             .assertIsDisplayed()
             .performClick()
 

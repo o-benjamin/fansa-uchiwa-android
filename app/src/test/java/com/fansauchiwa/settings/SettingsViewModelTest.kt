@@ -156,4 +156,22 @@ class SettingsViewModelTest {
 
         assertEquals(appInfo, viewModel.uiState.value.appInfo)
     }
+
+    @Test
+    fun appInfo_fetchThrows_keepsSuccessWithoutAppInfo() = runTest {
+        val throwingRepository = object : AppInfoRepository {
+            override fun getAppInfoStream(): Flow<AppInfo> = MutableSharedFlow()
+
+            override suspend fun fetchAppInfo() {
+                throw IllegalStateException("fetch failed")
+            }
+        }
+        val viewModel = SettingsViewModel(FakeSettingsRepository(), throwingRepository)
+
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is SettingsUiState.Success)
+        assertNull(state.appInfo)
+    }
 }
