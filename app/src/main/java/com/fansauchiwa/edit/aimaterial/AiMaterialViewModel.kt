@@ -2,6 +2,7 @@ package com.fansauchiwa.edit.aimaterial
 
 import android.app.Activity
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.analytics.AiMaterialParams
@@ -9,10 +10,12 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
+import com.fansauchiwa.data.AiMaterialUnconfirmedException
 import com.fansauchiwa.data.PlayBillingException
 import com.fansauchiwa.data.TicketPurchaseOutcome
 import com.fansauchiwa.data.TicketPurchaseRejectReason
@@ -29,6 +32,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,10 +43,11 @@ class AiMaterialViewModel @Inject constructor(
     private val aiMaterialRepository: AiMaterialRepository,
     private val ticketPurchaseRepository: TicketPurchaseRepository,
     private val analyticsRepository: AnalyticsRepository,
-    private val crashReportingRepository: CrashReportingRepository
+    private val crashReportingRepository: CrashReportingRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AiMaterialUiState())
+    private val _uiState = MutableStateFlow(restoreUiState())
     val uiState: StateFlow<AiMaterialUiState> = _uiState.asStateFlow()
 
     private val _confirmEvent = MutableSharedFlow<String>()
@@ -49,6 +55,10 @@ class AiMaterialViewModel @Inject constructor(
 
     // 二度押しで同じ素材を2回置かない・2回数えない
     private var isConfirmed = false
+
+    init {
+        saveUiStateOnChange()
+    }
 
     fun logScreenView() {
         viewModelScope.launch {
@@ -83,7 +93,11 @@ class AiMaterialViewModel @Inject constructor(
                             AiMaterialGeneration.Rejected(error.reason)
                         } else {
                             crashReportingRepository.recordException(error)
-                            AiMaterialGeneration.Failed
+                            if (error is AiMaterialUnconfirmedException) {
+                                AiMaterialGeneration.Unconfirmed
+                            } else {
+                                AiMaterialGeneration.Failed
+                            }
                         }
                     }
                 )
@@ -175,6 +189,37 @@ class AiMaterialViewModel @Inject constructor(
                 if (it.generation === generation) it.copy(reportStatus = status) else it
             }
         }
+    }
+
+    /**
+     * プロセスが止められて作り直されたときに、[saveUiStateOnChange] で残した文章と、作っている途中か・作った素材を戻す（#387）。
+     * 作っている途中で止められたときは、サーバーが作り終えて回数を減らしたかもしれないので [AiMaterialGeneration.Unconfirmed] にする。
+     * 元画像・購入の案内・報告の状態は戻さない（元画像は選び直してもらう。報告はサーバーが1人1日の上限で止める）
+     */
+    private fun restoreUiState(): AiMaterialUiState {
+        val image = savedStateHandle.get<AiMaterialImage>(KEY_RESULT)
+        val generation = when {
+            image != null -> AiMaterialGeneration.Succeeded(image)
+            savedStateHandle.get<Boolean>(KEY_UNCONFIRMED) == true -> AiMaterialGeneration.Unconfirmed
+            else -> AiMaterialGeneration.Idle
+        }
+        return AiMaterialUiState(
+            prompt = savedStateHandle.get<String>(KEY_PROMPT).orEmpty(),
+            generation = generation,
+            ticketsRemaining = image?.ticketsRemaining ?: 0
+        )
+    }
+
+    // 報告は結果を見ている間の入力欄の文章を送るので、結果と一緒に文章も残す。
+    // 結果が裏で届いても、OS が状態を保存したあと（画面が裏に回ったとき）の変更は残らない。そのときは Unconfirmed に戻る
+    private fun saveUiStateOnChange() {
+        uiState.onEach { state ->
+            val generation = state.generation
+            savedStateHandle[KEY_PROMPT] = state.prompt
+            savedStateHandle[KEY_UNCONFIRMED] = generation is AiMaterialGeneration.Generating ||
+                generation is AiMaterialGeneration.Unconfirmed
+            savedStateHandle[KEY_RESULT] = (generation as? AiMaterialGeneration.Succeeded)?.image
+        }.launchIn(viewModelScope)
     }
 
     private fun openPurchasePanel(reason: AiMaterialRejectReason) {
@@ -328,11 +373,13 @@ class AiMaterialViewModel @Inject constructor(
     }
 
     // 回数がないと断られたら残りは 0。ただし作っている間に購入を足していたら（addedTickets がある）、断りより新しいのでその残りを持つ。
+    // 作れたか分からないときは、回数が減ったかも分からないので 0（まだ分からない）にして出さない。
     // それ以外の断りと失敗では、分かっている残りを変えない
     private fun AiMaterialGeneration.ticketsRemaining(state: AiMaterialUiState): Int = when {
         this is AiMaterialGeneration.Succeeded -> image.ticketsRemaining
         this is AiMaterialGeneration.Rejected && reason == AiMaterialRejectReason.NO_CREDITS &&
             state.addedTickets == null -> 0
+        this is AiMaterialGeneration.Unconfirmed -> 0
         else -> state.ticketsRemaining
     }
 
@@ -372,11 +419,20 @@ class AiMaterialViewModel @Inject constructor(
             AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS,
             AiMaterialParams.PARAM_BACKGROUND_REMOVED to image.backgroundRemoved.toString()
         )
+        AiMaterialGeneration.Unconfirmed -> mapOf(
+            AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_UNCONFIRMED
+        )
         // Idle と Generating は generate() の結果にならない
         AiMaterialGeneration.Failed,
         AiMaterialGeneration.Idle,
         AiMaterialGeneration.Generating -> mapOf(
             AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED
         )
+    }
+
+    private companion object {
+        const val KEY_PROMPT = "ai_material_prompt"
+        const val KEY_UNCONFIRMED = "ai_material_unconfirmed"
+        const val KEY_RESULT = "ai_material_result"
     }
 }

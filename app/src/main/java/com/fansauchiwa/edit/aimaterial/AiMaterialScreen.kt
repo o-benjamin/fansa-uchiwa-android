@@ -69,7 +69,7 @@ import com.fansauchiwa.ui.util.rememberFansaHapticManager
 import java.time.Instant
 import java.time.ZoneId
 
-// 回数券の購入の案内からリンクする。ページはまだない（#348 で `web/public/tokushoho.html` に作り、Firebase Hosting で出す）。
+// 回数券の購入の案内と、作れたか確かめられなかったときの文言の下からリンクする。ページはまだない（#348 で `web/public/tokushoho.html` に作り、Firebase Hosting で出す）。
 // 入口を開ける前に出す（functions/README.md の「入口を初めて開ける前に」）
 private const val COMMERCIAL_TRANSACTIONS_URL = "https://fansauchiwa-578d22ff.web.app/tokushoho.html"
 
@@ -240,13 +240,7 @@ private fun AiMaterialInput(
         onRemove = onRemoveSourceImage
     )
 
-    uiState.generation.messageResId()?.let { messageResId ->
-        Text(
-            text = stringResource(messageResId),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodyMedium
-        )
-    }
+    AiMaterialGenerationMessage(generation = uiState.generation)
 
     if (uiState.purchase != AiMaterialPurchase.Closed) {
         AiMaterialPurchasePanel(purchase = uiState.purchase, onPurchase = onPurchase)
@@ -286,6 +280,24 @@ private fun AiMaterialInput(
             text = stringResource(R.string.ai_material_tickets_remaining, uiState.ticketsRemaining),
             style = MaterialTheme.typography.bodySmall
         )
+    }
+}
+
+@Composable
+private fun AiMaterialGenerationMessage(generation: AiMaterialGeneration) {
+    val messageResId = generation.messageResId() ?: return
+    val uriHandler = LocalUriHandler.current
+
+    Text(
+        text = stringResource(messageResId),
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodyMedium
+    )
+    // 回数が減ったかもしれないときは、連絡先の載った表記をすぐ開けるようにする（#387）
+    if (generation is AiMaterialGeneration.Unconfirmed) {
+        TextButton(onClick = { uriHandler.openUri(COMMERCIAL_TRANSACTIONS_URL) }) {
+            Text(text = stringResource(R.string.ai_material_purchase_legal))
+        }
     }
 }
 
@@ -627,6 +639,7 @@ private fun AiMaterialGeneration.messageResId(): Int? = when (this) {
         AiMaterialRejectReason.UNAUTHENTICATED -> R.string.ai_material_error_unavailable
     }
     AiMaterialGeneration.Failed -> R.string.ai_material_error_failed
+    AiMaterialGeneration.Unconfirmed -> R.string.ai_material_error_unconfirmed
     AiMaterialGeneration.Idle,
     AiMaterialGeneration.Generating,
     is AiMaterialGeneration.Succeeded -> null
@@ -654,6 +667,14 @@ private fun AiMaterialScreenRejectedPreview() {
             prompt = "笑顔の星",
             generation = AiMaterialGeneration.Rejected(AiMaterialRejectReason.FREE_DAILY_LIMIT)
         )
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AiMaterialScreenUnconfirmedPreview() {
+    AiMaterialScreenPreview(
+        AiMaterialUiState(prompt = "笑顔の星", generation = AiMaterialGeneration.Unconfirmed)
     )
 }
 

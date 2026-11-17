@@ -3,6 +3,9 @@ package com.fansauchiwa.analytics
 /**
  * AI 素材のイベント（`generate_ai_material`・`save_ai_material`・`report_ai_material`・
  * `view_ai_material_paywall`・`purchase_ai_material`）のパラメータ。
+ * `generate_ai_material` は [PARAM_RESULT] に [RESULT_SUCCESS] / サーバーかアプリが断った [RESULT_REJECTED]（[PARAM_REASON] に理由）/
+ * 送る前に失敗した [RESULT_FAILED] / 送ったあとに失敗して作れたか分からない [RESULT_UNCONFIRMED] を送る。
+ * 作っている途中でプロセスが止められたときは送らない（分析のために保存するものを増やさない）。
  * `report_ai_material` は [PARAM_REASON] に報告の理由、[PARAM_RESULT] に送れたか
  * （[RESULT_SUCCESS] / 1人1日の上限で断られた [RESULT_REJECTED] / [RESULT_FAILED]）を送る。
  * `view_ai_material_paywall` は購入の案内に値段を出したか（[RESULT_SUCCESS]）、値段を取れず「今は買えない」と出したか
@@ -26,4 +29,5 @@ object AiMaterialParams {
     const val RESULT_FAILED = "failed"
     const val RESULT_PENDING = "pending"
     const val RESULT_CANCELLED = "cancelled"
+    const val RESULT_UNCONFIRMED = "unconfirmed"
 }

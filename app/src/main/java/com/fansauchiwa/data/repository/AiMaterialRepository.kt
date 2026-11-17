@@ -6,6 +6,7 @@ import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportReason
+import com.fansauchiwa.data.AiMaterialUnconfirmedException
 import com.fansauchiwa.data.infra.AiMaterialDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageDataSource
 import com.fansauchiwa.data.infra.RemoteConfigDataSource
@@ -20,7 +21,9 @@ interface AiMaterialRepository {
      * サーバーに素材を1枚作ってもらい、背景を切り抜いて端末に置く。
      * 元画像に顔があるとき（確かめられないときも）はサーバーに送らない。
      * 理由つきで断ったときの失敗は `AiMaterialRejectedException`、顔を確かめられなかったときは
-     * `AiMaterialFaceCheckException`
+     * `AiMaterialFaceCheckException`。送ったあとの理由の分からない失敗（通信の切断・時間切れ・応答の読み取りや
+     * 端末への書き込みの失敗）は、回数が減ったか分からないので `AiMaterialUnconfirmedException` で包む。
+     * それ以外の失敗は送る前のもので、回数は減っていない
      */
     suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage>
 
@@ -46,30 +49,41 @@ class AiMaterialRepositoryImpl @Inject constructor(
     private val remoteConfigDataSource: RemoteConfigDataSource
 ) : AiMaterialRepository {
 
-    override suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage> = runServerCall {
-        val sourceImage = sourceImageUri?.let { uri ->
-            val hasFace = imageProcessingRepository.containsFace(uri)
-                .getOrElse { throw AiMaterialFaceCheckException(it) }
-            if (hasFace) {
-                throw AiMaterialRejectedException(AiMaterialRejectReason.FACE_IN_SOURCE)
+    override suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage> {
+        // 送ったあとの失敗は、サーバーが作り終えて回数を減らしたあとかもしれないので、送る前の失敗と分ける
+        var sentToServer = false
+        val result = runServerCall {
+            val sourceImage = sourceImageUri?.let { uri ->
+                val hasFace = imageProcessingRepository.containsFace(uri)
+                    .getOrElse { throw AiMaterialFaceCheckException(it) }
+                if (hasFace) {
+                    throw AiMaterialRejectedException(AiMaterialRejectReason.FACE_IN_SOURCE)
+                }
+                aiMaterialImageDataSource.encodeSourceImage(uri)
             }
-            aiMaterialImageDataSource.encodeSourceImage(uri)
+            authRepository.prepareForServerCall()
+            sentToServer = true
+            val material = aiMaterialDataSource.generateMaterial(prompt, sourceImage)
+            val generatedUri = aiMaterialImageDataSource.writeGeneratedImage(material)
+            // 回数はもう減っているので、切り抜けなくても作った絵を渡す。
+            // 「背景が残る」と言われたときに原因を追えるよう、失敗は非致命として残す
+            val cutOutUri = imageProcessingRepository.removeBackground(generatedUri)
+                .onFailure { crashReportingRepository.recordException(it) }
+                .getOrNull()
+            AiMaterialImage(
+                uri = cutOutUri ?: generatedUri,
+                backgroundRemoved = cutOutUri != null,
+                payment = material.payment,
+                ticketsRemaining = material.ticketsRemaining,
+                model = material.model
+            )
         }
-        authRepository.prepareForServerCall()
-        val material = aiMaterialDataSource.generateMaterial(prompt, sourceImage)
-        val generatedUri = aiMaterialImageDataSource.writeGeneratedImage(material)
-        // 回数はもう減っているので、切り抜けなくても作った絵を渡す。
-        // 「背景が残る」と言われたときに原因を追えるよう、失敗は非致命として残す
-        val cutOutUri = imageProcessingRepository.removeBackground(generatedUri)
-            .onFailure { crashReportingRepository.recordException(it) }
-            .getOrNull()
-        AiMaterialImage(
-            uri = cutOutUri ?: generatedUri,
-            backgroundRemoved = cutOutUri != null,
-            payment = material.payment,
-            ticketsRemaining = material.ticketsRemaining,
-            model = material.model
-        )
+        val error = result.exceptionOrNull()
+        return if (sentToServer && error != null && error !is AiMaterialRejectedException) {
+            Result.failure(AiMaterialUnconfirmedException(error))
+        } else {
+            result
+        }
     }
 
     override suspend fun report(
