@@ -80,6 +80,7 @@ class AiMaterialViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = mockk()
+        coEvery { repository.isOnDevice(any()) } returns true
         ticketPurchaseRepository = mockk()
         coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returns Result.success(emptyList())
         coEvery { ticketPurchaseRepository.getTicketProduct() } returns Result.success(PRODUCT)
@@ -172,7 +173,7 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `理由のない失敗は例外を記録して、失敗を計測する`() = runTest(testDispatcher) {
+    fun `送る前の理由のない失敗は例外を記録して、失敗を計測する`() = runTest(testDispatcher) {
         val error = IllegalStateException("通信できない")
         stubGenerate(Result.failure(error))
         val viewModel = createViewModel()
@@ -194,7 +195,8 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `送ったあとの失敗は作れたか分からないとして、例外を記録して計測し、残りを出さない`() = runTest(testDispatcher) {
+    fun `送ったあとの理由のない失敗は作れたか分からないとして、例外を記録して計測し、残りを出さない`() = runTest(testDispatcher) {
+        // 残りが分かっている状態（4回）から始めて、作れたか分からないと 0 に戻ることを見る
         stubGenerate(Result.success(image))
         val viewModel = createViewModel()
         viewModel.updatePrompt("ハート")
@@ -255,7 +257,25 @@ class AiMaterialViewModelTest {
     }
 
     @Test
-    fun `結果を捨てたあとと文章を直したあとは、プロセスが止められても入力に戻る`() = runTest(testDispatcher) {
+    fun `戻した結果のファイルが消えていたら、作れたか分からないと出して残りはそのまま出す`() = runTest(testDispatcher) {
+        stubGenerate(Result.success(image))
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(savedStateHandle)
+        viewModel.updatePrompt("ハート")
+        viewModel.generate()
+        advanceUntilIdle()
+        viewModel.viewModelScope.cancel()
+        coEvery { repository.isOnDevice(image) } returns false
+
+        val restored = createViewModel(savedStateHandle)
+        advanceUntilIdle()
+
+        assertEquals(AiMaterialGeneration.Unconfirmed, restored.uiState.value.generation)
+        assertEquals(image.ticketsRemaining, restored.uiState.value.ticketsRemaining)
+    }
+
+    @Test
+    fun `結果を捨てたあとにプロセスが止められると、入力に戻り残りは出す`() = runTest(testDispatcher) {
         stubGenerate(Result.success(image))
         val savedStateHandle = SavedStateHandle()
         val viewModel = createViewModel(savedStateHandle)
@@ -265,15 +285,26 @@ class AiMaterialViewModelTest {
         viewModel.discardResult()
         advanceUntilIdle()
 
-        assertEquals(AiMaterialGeneration.Idle, restoreUiState(savedStateHandle).generation)
+        val restored = restoreUiState(savedStateHandle)
 
+        assertEquals(AiMaterialGeneration.Idle, restored.generation)
+        assertEquals("ハート", restored.prompt)
+        assertEquals(image.ticketsRemaining, restored.ticketsRemaining)
+    }
+
+    @Test
+    fun `作れたか分からないあとに文章を直してからプロセスが止められると、入力に戻る`() = runTest(testDispatcher) {
         stubGenerate(Result.failure(AiMaterialUnconfirmedException(IOException("切れた"))))
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(savedStateHandle)
+        viewModel.updatePrompt("ハート")
         viewModel.generate()
         advanceUntilIdle()
         viewModel.updatePrompt("星")
         advanceUntilIdle()
 
         val restored = restoreUiState(savedStateHandle)
+
         assertEquals(AiMaterialGeneration.Idle, restored.generation)
         assertEquals("星", restored.prompt)
     }

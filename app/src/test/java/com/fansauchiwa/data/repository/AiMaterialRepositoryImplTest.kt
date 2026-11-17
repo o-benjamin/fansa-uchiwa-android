@@ -211,6 +211,14 @@ class AiMaterialRepositoryImplTest {
     }
 
     @Test
+    fun isOnDevice_returnsWhetherImageFileExists() = runTest {
+        val image = AiMaterialImage(cutOutUri, true, AiMaterialPayment.TICKET, 4, MODEL)
+        coEvery { imageDataSource.exists(cutOutUri) } returns false
+
+        assertEquals(false, repository.isOnDevice(image))
+    }
+
+    @Test
     fun report_success_preparesAuthThenSendsReport() = runTest {
         coEvery { dataSource.reportMaterial(any(), any(), any()) } returns Unit
 

@@ -286,7 +286,6 @@ private fun AiMaterialInput(
 @Composable
 private fun AiMaterialGenerationMessage(generation: AiMaterialGeneration) {
     val messageResId = generation.messageResId() ?: return
-    val uriHandler = LocalUriHandler.current
 
     Text(
         text = stringResource(messageResId),
@@ -295,9 +294,16 @@ private fun AiMaterialGenerationMessage(generation: AiMaterialGeneration) {
     )
     // 回数が減ったかもしれないときは、連絡先の載った表記をすぐ開けるようにする（#387）
     if (generation is AiMaterialGeneration.Unconfirmed) {
-        TextButton(onClick = { uriHandler.openUri(COMMERCIAL_TRANSACTIONS_URL) }) {
-            Text(text = stringResource(R.string.ai_material_purchase_legal))
-        }
+        AiMaterialCommercialTransactionsLink()
+    }
+}
+
+// 連絡先の載った特定商取引法に基づく表記を開く。購入の案内と、作れたか確かめられなかったときの文言の下に出す
+@Composable
+private fun AiMaterialCommercialTransactionsLink() {
+    val uriHandler = LocalUriHandler.current
+    TextButton(onClick = { uriHandler.openUri(COMMERCIAL_TRANSACTIONS_URL) }) {
+        Text(text = stringResource(R.string.ai_material_purchase_legal))
     }
 }
 
@@ -317,8 +323,6 @@ private fun AiMaterialPurchasePanel(
     purchase: AiMaterialPurchase,
     onPurchase: () -> Unit
 ) {
-    val uriHandler = LocalUriHandler.current
-
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -350,9 +354,7 @@ private fun AiMaterialPurchasePanel(
                     onPurchase = onPurchase
                 )
             }
-            TextButton(onClick = { uriHandler.openUri(COMMERCIAL_TRANSACTIONS_URL) }) {
-                Text(text = stringResource(R.string.ai_material_purchase_legal))
-            }
+            AiMaterialCommercialTransactionsLink()
         }
     }
 }

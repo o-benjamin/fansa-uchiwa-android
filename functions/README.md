@@ -181,6 +181,7 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 - Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 4 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
 - `config/aiMaterial.blockedNames` を書いてある
 - 上の「本番に出す」の予算アラートと、ログベースのアラートを置いてある
-- 特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）が公開されていて、アプリの購入の案内のリンクから開ける
+- 特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）が公開されていて、アプリの購入の案内と「作れたか確かめられませんでした」の文言の下のリンクから開ける
+- 「作れたか確かめられませんでした」と出た人から連絡を受けたときに、回数を戻す利用者を探せる（#387 の③：作れたときのログに利用者 ID、アプリの設定画面に利用者 ID）。これがないと、連絡を受けても `users/{uid}` を特定できない
 
 持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。アプリを別の Play Console アカウントへ移したら、「本番に出す」の 7 の招待と権限をやり直す（しないと購入の確認が全件 `verification_failed` になり、返金の取り消しも止まる）。Firebase プロジェクトを替えると匿名ログインの ID が変わり、買われた回数券は引き継がれない。プロジェクトごと移すか、最後の購入から6か月たってから替える。

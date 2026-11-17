@@ -38,6 +38,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// プロセスが止められても戻れるよう SavedStateHandle に残すもの（#387）
+private const val PROMPT_KEY = "ai_material_prompt"
+private const val UNCONFIRMED_KEY = "ai_material_unconfirmed"
+private const val RESULT_KEY = "ai_material_result"
+private const val TICKETS_REMAINING_KEY = "ai_material_tickets_remaining"
+
 @HiltViewModel
 class AiMaterialViewModel @Inject constructor(
     private val aiMaterialRepository: AiMaterialRepository,
@@ -58,6 +64,7 @@ class AiMaterialViewModel @Inject constructor(
 
     init {
         saveUiStateOnChange()
+        checkRestoredResultOnDevice()
     }
 
     fun logScreenView() {
@@ -89,15 +96,12 @@ class AiMaterialViewModel @Inject constructor(
                 .fold(
                     onSuccess = { AiMaterialGeneration.Succeeded(it) },
                     onFailure = { error ->
-                        if (error is AiMaterialRejectedException) {
-                            AiMaterialGeneration.Rejected(error.reason)
-                        } else {
-                            crashReportingRepository.recordException(error)
-                            if (error is AiMaterialUnconfirmedException) {
-                                AiMaterialGeneration.Unconfirmed
-                            } else {
-                                AiMaterialGeneration.Failed
-                            }
+                        // 理由つきの断りは不具合ではないので記録しない
+                        if (error !is AiMaterialRejectedException) crashReportingRepository.recordException(error)
+                        when (error) {
+                            is AiMaterialRejectedException -> AiMaterialGeneration.Rejected(error.reason)
+                            is AiMaterialUnconfirmedException -> AiMaterialGeneration.Unconfirmed
+                            else -> AiMaterialGeneration.Failed
                         }
                     }
                 )
@@ -192,21 +196,23 @@ class AiMaterialViewModel @Inject constructor(
     }
 
     /**
-     * プロセスが止められて作り直されたときに、[saveUiStateOnChange] で残した文章と、作っている途中か・作った素材を戻す（#387）。
+     * プロセスが止められて作り直されたときに、[saveUiStateOnChange] で残した文章・残りの回数と、作っている途中か・作った素材を戻す（#387）。
      * 作っている途中で止められたときは、サーバーが作り終えて回数を減らしたかもしれないので [AiMaterialGeneration.Unconfirmed] にする。
-     * 元画像・購入の案内・報告の状態は戻さない（元画像は選び直してもらう。報告はサーバーが1人1日の上限で止める）
+     * 元画像は戻さない（写真の選択画面で選んだ画像を読む許可は、プロセスが止められると切れることがあるため）。
+     * 購入の案内と報告の状態も戻さない（案内は次に断られたときに開き直す。報告はサーバーが1人1日の上限で止める）。
+     * UiState をまるごと残さないのは、購入の案内の途中など、作り直したあとに続けられない状態を持っているため
      */
     private fun restoreUiState(): AiMaterialUiState {
-        val image = savedStateHandle.get<AiMaterialImage>(KEY_RESULT)
+        val image = savedStateHandle.get<AiMaterialImage>(RESULT_KEY)
         val generation = when {
             image != null -> AiMaterialGeneration.Succeeded(image)
-            savedStateHandle.get<Boolean>(KEY_UNCONFIRMED) == true -> AiMaterialGeneration.Unconfirmed
+            savedStateHandle.get<Boolean>(UNCONFIRMED_KEY) == true -> AiMaterialGeneration.Unconfirmed
             else -> AiMaterialGeneration.Idle
         }
         return AiMaterialUiState(
-            prompt = savedStateHandle.get<String>(KEY_PROMPT).orEmpty(),
+            prompt = savedStateHandle.get<String>(PROMPT_KEY).orEmpty(),
             generation = generation,
-            ticketsRemaining = image?.ticketsRemaining ?: 0
+            ticketsRemaining = savedStateHandle.get<Int>(TICKETS_REMAINING_KEY) ?: 0
         )
     }
 
@@ -215,11 +221,24 @@ class AiMaterialViewModel @Inject constructor(
     private fun saveUiStateOnChange() {
         uiState.onEach { state ->
             val generation = state.generation
-            savedStateHandle[KEY_PROMPT] = state.prompt
-            savedStateHandle[KEY_UNCONFIRMED] = generation is AiMaterialGeneration.Generating ||
+            savedStateHandle[PROMPT_KEY] = state.prompt
+            savedStateHandle[TICKETS_REMAINING_KEY] = state.ticketsRemaining
+            savedStateHandle[UNCONFIRMED_KEY] = generation is AiMaterialGeneration.Generating ||
                 generation is AiMaterialGeneration.Unconfirmed
-            savedStateHandle[KEY_RESULT] = (generation as? AiMaterialGeneration.Succeeded)?.image
+            savedStateHandle[RESULT_KEY] = (generation as? AiMaterialGeneration.Succeeded)?.image
         }.launchIn(viewModelScope)
+    }
+
+    // 戻した素材のファイルは、プロセスが止められている間に OS がキャッシュから消すことがある。消えていると置けないので、
+    // 作れたか確かめられなかったときと同じく問い合わせの案内を出す（回数はこの素材で減っているので、残りはそのまま出す）
+    private fun checkRestoredResultOnDevice() {
+        val restored = _uiState.value.generation as? AiMaterialGeneration.Succeeded ?: return
+        viewModelScope.launch {
+            if (aiMaterialRepository.isOnDevice(restored.image)) return@launch
+            _uiState.update {
+                if (it.generation === restored) it.copy(generation = AiMaterialGeneration.Unconfirmed) else it
+            }
+        }
     }
 
     private fun openPurchasePanel(reason: AiMaterialRejectReason) {
@@ -428,11 +447,5 @@ class AiMaterialViewModel @Inject constructor(
         AiMaterialGeneration.Generating -> mapOf(
             AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_FAILED
         )
-    }
-
-    private companion object {
-        const val KEY_PROMPT = "ai_material_prompt"
-        const val KEY_UNCONFIRMED = "ai_material_unconfirmed"
-        const val KEY_RESULT = "ai_material_result"
     }
 }
