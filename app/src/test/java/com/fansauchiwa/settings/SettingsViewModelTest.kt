@@ -1,5 +1,7 @@
 package com.fansauchiwa.settings
 
+import com.fansauchiwa.data.AppInfo
+import com.fansauchiwa.data.repository.AppInfoRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,7 +13,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -44,6 +48,21 @@ class SettingsViewModelTest {
         fun isHapticEnabled(): Boolean = hapticEnabled
     }
 
+    class FakeAppInfoRepository(private val appInfo: AppInfo) : AppInfoRepository {
+        private val appInfoState = MutableSharedFlow<AppInfo>(replay = 1)
+
+        override fun getAppInfoStream(): Flow<AppInfo> = appInfoState
+
+        override suspend fun fetchAppInfo() {
+            appInfoState.emit(appInfo)
+        }
+    }
+
+    private fun createViewModel(
+        settingsRepository: SettingsRepository = FakeSettingsRepository(),
+        appInfo: AppInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id")
+    ): SettingsViewModel = SettingsViewModel(settingsRepository, FakeAppInfoRepository(appInfo))
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -57,7 +76,7 @@ class SettingsViewModelTest {
     @Test
     fun toggleHapticFeedback_updatesRepository() = runTest {
         val fakeRepository = FakeSettingsRepository()
-        val viewModel = SettingsViewModel(fakeRepository)
+        val viewModel = createViewModel(settingsRepository = fakeRepository)
 
         advanceUntilIdle()
 
@@ -76,7 +95,7 @@ class SettingsViewModelTest {
 
     @Test
     fun showAndDismissLicenseDialog_updatesUiState() = runTest {
-        val viewModel = SettingsViewModel(FakeSettingsRepository())
+        val viewModel = createViewModel()
 
         advanceUntilIdle()
 
@@ -93,5 +112,48 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.showLicenseDialog)
+    }
+
+    @Test
+    fun appInfo_installationIdAvailable_isSetInUiStateAndKeptAfterToggle() = runTest {
+        val appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id")
+        val viewModel = createViewModel(appInfo = appInfo)
+
+        advanceUntilIdle()
+
+        val stateAfterLoad = viewModel.uiState.value
+        assertTrue(stateAfterLoad is SettingsUiState.Success)
+        assertEquals(appInfo, stateAfterLoad.appInfo)
+
+        // 触覚フィードバックの値が流れ直しても、版と ID は消えない
+        viewModel.toggleHapticFeedback(false)
+        advanceUntilIdle()
+
+        assertEquals(appInfo, viewModel.uiState.value.appInfo)
+    }
+
+    @Test
+    fun appInfo_installationIdUnavailable_keepsSuccessWithNullInstallationId() = runTest {
+        val viewModel = createViewModel(appInfo = AppInfo(versionName = "2.13.0", installationId = null))
+
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is SettingsUiState.Success)
+        assertEquals("2.13.0", state.appInfo?.versionName)
+        assertNull(state.appInfo?.installationId)
+    }
+
+    @Test
+    fun appInfo_showAndDismissLicenseDialog_keepsAppInfo() = runTest {
+        val appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id")
+        val viewModel = createViewModel(appInfo = appInfo)
+
+        advanceUntilIdle()
+        viewModel.showLicenseDialog()
+        viewModel.dismissLicenseDialog()
+        advanceUntilIdle()
+
+        assertEquals(appInfo, viewModel.uiState.value.appInfo)
     }
 }

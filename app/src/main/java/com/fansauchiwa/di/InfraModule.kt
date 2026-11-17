@@ -14,12 +14,14 @@ import com.fansauchiwa.data.infra.EventLocalSource
 import com.fansauchiwa.data.infra.FirebaseAppCheckRemoteSource
 import com.fansauchiwa.data.infra.FirebaseAuthRemoteSource
 import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
+import com.fansauchiwa.data.infra.FirebaseInstallationsRemoteSource
 import com.fansauchiwa.data.infra.FirebaseRemoteConfigRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
 import com.fansauchiwa.data.infra.InAppReviewDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryLocalSource
+import com.fansauchiwa.data.infra.InstallationIdDataSource
 import com.fansauchiwa.data.infra.PlayInAppReviewRemoteSource
 import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
@@ -29,6 +31,7 @@ import com.fansauchiwa.data.repository.ImageProcessingRepositoryImpl
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import dagger.Binds
 import dagger.Module
@@ -105,6 +108,25 @@ abstract class AuthModule {
         @Singleton
         fun provideFirebaseAppCheck(): FirebaseAppCheck {
             return FirebaseAppCheck.getInstance()
+        }
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class InstallationIdModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindInstallationIdDataSource(
+        impl: FirebaseInstallationsRemoteSource
+    ): InstallationIdDataSource
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideFirebaseInstallations(): FirebaseInstallations {
+            return FirebaseInstallations.getInstance()
         }
     }
 }

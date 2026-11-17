@@ -1,5 +1,7 @@
 package com.fansauchiwa.settings
 
+import android.content.ClipData
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,14 +19,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,9 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fansauchiwa.R
+import com.fansauchiwa.data.AppInfo
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
+import kotlinx.coroutines.launch
 
 private const val APACHE_LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0"
+private const val INSTALLATION_ID_CLIP_LABEL = "Firebase Installation ID"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +76,8 @@ private fun SettingsContent(
     val uriHandler = LocalUriHandler.current
     val isHapticFeedbackEnabled = (uiState as? SettingsUiState.Success)?.isHapticFeedbackEnabled ?: false
     val isLoading = uiState is SettingsUiState.Loading
+    val snackbarHostState = remember { SnackbarHostState() }
+    val copyInstallationId = rememberCopyInstallationId(snackbarHostState)
 
     if (uiState.showLicenseDialog) {
         AlertDialog(
@@ -116,7 +129,8 @@ private fun SettingsContent(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             HapticFeedbackSettingRow(
@@ -132,6 +146,73 @@ private fun SettingsContent(
                     .fillMaxWidth()
                     .clickable(onClick = onShowLicenseDialog)
             )
+            uiState.appInfo?.let { appInfo ->
+                AppInfoSection(
+                    appInfo = appInfo,
+                    onCopyInstallationId = copyInstallationId
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 端末の ID をクリップボードに写す処理を返す。
+ * Android 13 以上は OS がコピーしたことを知らせるので、それより前の版だけスナックバーを出す
+ */
+@Composable
+private fun rememberCopyInstallationId(snackbarHostState: SnackbarHostState): (String) -> Unit {
+    val clipboard = LocalClipboard.current
+    val coroutineScope = rememberCoroutineScope()
+    val copiedMessage = stringResource(R.string.settings_installation_id_copied)
+    return { installationId ->
+        coroutineScope.launch {
+            clipboard.setClipEntry(
+                ClipEntry(ClipData.newPlainText(INSTALLATION_ID_CLIP_LABEL, installationId))
+            )
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                snackbarHostState.showSnackbar(copiedMessage)
+            }
+        }
+    }
+}
+
+/**
+ * 画面のいちばん下に、アプリの版と端末の ID を小さく出す（#411）。
+ * 端末の ID は、クローズドテストで AI 素材の入口をオーナーの端末だけ開ける Remote Config の条件に使う。
+ * ID が取れなかったときは ID の行を出さない
+ */
+@Composable
+internal fun AppInfoSection(
+    appInfo: AppInfo,
+    onCopyInstallationId: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.settings_app_version, appInfo.versionName),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        appInfo.installationId?.let { installationId ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onCopyInstallationId(installationId) }
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_installation_id),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = installationId,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -213,6 +294,40 @@ private fun SettingsScreenPreview_LicenseDialog() {
     FansaUchiwaTheme {
         SettingsContent(
             uiState = SettingsUiState.Success(isHapticFeedbackEnabled = true, showLicenseDialog = true),
+            onBack = {},
+            onToggleHapticFeedback = {},
+            onShowLicenseDialog = {},
+            onDismissLicenseDialog = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview_AppInfo() {
+    FansaUchiwaTheme {
+        SettingsContent(
+            uiState = SettingsUiState.Success(
+                isHapticFeedbackEnabled = true,
+                appInfo = AppInfo(versionName = "2.13.0", installationId = "cXyZ0123456789abcdefgh")
+            ),
+            onBack = {},
+            onToggleHapticFeedback = {},
+            onShowLicenseDialog = {},
+            onDismissLicenseDialog = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview_AppInfoWithoutInstallationId() {
+    FansaUchiwaTheme {
+        SettingsContent(
+            uiState = SettingsUiState.Success(
+                isHapticFeedbackEnabled = true,
+                appInfo = AppInfo(versionName = "2.13.0", installationId = null)
+            ),
             onBack = {},
             onToggleHapticFeedback = {},
             onShowLicenseDialog = {},

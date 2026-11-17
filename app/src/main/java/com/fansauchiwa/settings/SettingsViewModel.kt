@@ -2,6 +2,8 @@ package com.fansauchiwa.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.data.AppInfo
+import com.fansauchiwa.data.repository.AppInfoRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val appInfoRepository: AppInfoRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading())
@@ -23,7 +26,9 @@ class SettingsViewModel @Inject constructor(
 
     init {
         observeSettings()
+        observeAppInfo()
         fetchSettings()
+        fetchAppInfo()
     }
 
     private fun fetchSettings() {
@@ -33,7 +38,8 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = SettingsUiState.Error(
                     message = e.message ?: "Unknown error",
-                    showLicenseDialog = _uiState.value.showLicenseDialog
+                    showLicenseDialog = _uiState.value.showLicenseDialog,
+                    appInfo = _uiState.value.appInfo
                 )
             }
         }
@@ -44,8 +50,26 @@ class SettingsViewModel @Inject constructor(
             .onEach { enabled ->
                 _uiState.value = SettingsUiState.Success(
                     isHapticFeedbackEnabled = enabled,
-                    showLicenseDialog = _uiState.value.showLicenseDialog
+                    showLicenseDialog = _uiState.value.showLicenseDialog,
+                    appInfo = _uiState.value.appInfo
                 )
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun fetchAppInfo() {
+        // 端末の ID が取れないときは Repository が null を流す。行を出さないだけで、画面は Error にしない
+        viewModelScope.launch {
+            appInfoRepository.fetchAppInfo()
+        }
+    }
+
+    private fun observeAppInfo() {
+        appInfoRepository.getAppInfoStream()
+            .onEach { appInfo ->
+                _uiState.update { currentState ->
+                    currentState.copyWithAppInfo(appInfo = appInfo)
+                }
             }
             .launchIn(viewModelScope)
     }
@@ -74,5 +98,12 @@ class SettingsViewModel @Inject constructor(
             is SettingsUiState.Loading -> copy(showLicenseDialog = showLicenseDialog)
             is SettingsUiState.Success -> copy(showLicenseDialog = showLicenseDialog)
             is SettingsUiState.Error -> copy(showLicenseDialog = showLicenseDialog)
+        }
+
+    private fun SettingsUiState.copyWithAppInfo(appInfo: AppInfo): SettingsUiState =
+        when (this) {
+            is SettingsUiState.Loading -> copy(appInfo = appInfo)
+            is SettingsUiState.Success -> copy(appInfo = appInfo)
+            is SettingsUiState.Error -> copy(appInfo = appInfo)
         }
 }
