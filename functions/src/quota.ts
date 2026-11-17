@@ -128,16 +128,17 @@ export async function reserveCredit(
 /**
  * おさえた1回分を戻す（生成に失敗した・審査で断った・安全フィルターで止まったとき）。
  * 回数券は、購入の取り消しなどで消えていれば戻さない。全体の回数は、おさえた日の分を戻す。
+ * 利用者の回数を戻したら true、回数券が消えていて戻さなかったら false を返す。
  */
-export async function refundCredit(db: Firestore, uid: string, reservation: Reservation): Promise<void> {
+export async function refundCredit(db: Firestore, uid: string, reservation: Reservation): Promise<boolean> {
   const userRef = db.collection(USERS_COLLECTION).doc(uid);
   const usageRef = db.collection(DAILY_USAGE_COLLECTION).doc(reservation.dateKey);
 
-  await db.runTransaction(async (transaction) => {
+  return db.runTransaction(async (transaction) => {
     if (reservation.kind === "free") {
       transaction.set(userRef, { freeUsed: false }, { merge: true });
       transaction.set(usageRef, { free: FieldValue.increment(-1) }, { merge: true });
-      return;
+      return true;
     }
     const userSnapshot = await transaction.get(userRef);
     const packExists = userSnapshot.get(new FieldPath("packs", reservation.packId)) !== undefined;
@@ -145,5 +146,6 @@ export async function refundCredit(db: Firestore, uid: string, reservation: Rese
       transaction.update(userRef, new FieldPath("packs", reservation.packId, "remaining"), FieldValue.increment(1));
     }
     transaction.set(usageRef, { ticket: FieldValue.increment(-1) }, { merge: true });
+    return packExists;
   });
 }
