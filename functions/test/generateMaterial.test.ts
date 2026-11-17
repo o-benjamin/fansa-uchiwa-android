@@ -331,8 +331,9 @@ test("戻す前に回数券が取り消されていたら、戻さなかった�
   const reservation = { kind: "ticket", dateKey: jstDateKey(day), packId: "p" };
   const entries = logs();
   const callId = entries[0][1].callId;
-  assert.deepEqual(entries.slice(0, 2), [
+  assert.deepEqual(entries, [
     ["回数をおさえた", { uid, callId, reservation }],
     ["回数券が消えていて戻さなかった", { uid, callId, reservation }],
+    ["generateMaterial", { result: "moderation", category: "real_person" }],
   ]);
 });
