@@ -119,6 +119,9 @@ export async function handleGenerateMaterial(
     if (outcome.firstTotalLimitHit) await notifyTotalLimitHit(deps, settings.totalDailyLimit);
     refuse(outcome.reason);
   }
+  // 「作れたか確かめられませんでした」と出た人から連絡が来たとき、その uid の回数が減ったままかを
+  // ログで確かめられるよう、おさえた・戻した・作れたの3つに uid と reservation を書く（README の「困ったとき」）
+  logger.info("回数をおさえた", { uid, reservation: outcome.reservation });
 
   const startedAt = Date.now();
   const sticker = await createSticker(deps.gemini, settings, request);
@@ -129,6 +132,8 @@ export async function handleGenerateMaterial(
 
   logger.info("generateMaterial", {
     result: "ok",
+    uid,
+    reservation: outcome.reservation,
     paidWith: outcome.reservation.kind,
     model: settings.imageModel,
     elapsedMs: Date.now() - startedAt,
@@ -211,12 +216,13 @@ async function createSticker(
 }
 
 /**
- * 戻せなかったときはログに残す（利用者には断った理由のまま返す）。
+ * 戻せたか・戻せなかったかをログに残す（利用者には断った理由のまま返す）。
  * 手で戻す手順は README の「困ったとき」。uid と reservation はそのために書く。
  */
 async function refund(db: Firestore, uid: string, reservation: Reservation): Promise<void> {
   try {
     await refundCredit(db, uid, reservation);
+    logger.info("回数を戻した", { uid, reservation });
   } catch (error) {
     logger.error("回数を戻せなかった", { uid, reservation, error: String(error) });
   }

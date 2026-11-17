@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { TestContext } from "node:test";
+import { logger } from "firebase-functions";
 import { HttpsError } from "firebase-functions/v2/https";
 import type { GeminiClient, ImageResult, JudgeResult, SourceImage } from "../src/gemini";
 import { handleGenerateMaterial, MAX_PROMPT_LENGTH, MAX_SOURCE_IMAGE_BYTES } from "../src/generateMaterial";
@@ -48,6 +50,12 @@ function fakeDeps(day: Date, options: FakeOptions = {}) {
 
 async function freeUsed(uid: string) {
   return (await db.collection("users").doc(uid).get()).get("freeUsed");
+}
+
+/** `logger.info` に書いた [メッセージ, 中身] を集める（テストが終わると元に戻る） */
+function captureInfoLogs(t: TestContext) {
+  const info = t.mock.method(logger, "info", () => {});
+  return () => info.mock.calls.map((call) => call.arguments as [string, Record<string, unknown>]);
 }
 
 test("無料の1回で画像を返す", async () => {
@@ -250,5 +258,39 @@ test("知らせに失敗しても、断る理由は変わらない", async () =>
   await assert.rejects(
     handleGenerateMaterial(uniqueUid(), { prompt: "うさぎ" }, deps),
     rejectsWith("total_daily_limit", "resource-exhausted"),
+  );
+});
+
+test("作れたら、おさえたときと作れたときのログに uid と reservation を書く（問い合わせから回数を戻すため）", async (t) => {
+  const uid = uniqueUid();
+  const day = uniqueDay();
+  const logs = captureInfoLogs(t);
+  const { deps } = fakeDeps(day);
+  await handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps);
+
+  const reservation = { kind: "free", dateKey: jstDateKey(day) };
+  const entries = logs();
+  assert.deepEqual(entries[0], ["回数をおさえた", { uid, reservation }]);
+  assert.equal(entries[1][0], "generateMaterial");
+  assert.equal(entries[1][1].result, "ok");
+  assert.equal(entries[1][1].uid, uid);
+  assert.deepEqual(entries[1][1].reservation, reservation);
+});
+
+test("おさえたあとに断って回数を戻したら、戻したことを uid と reservation つきでログに書く", async (t) => {
+  const uid = uniqueUid();
+  const day = uniqueDay();
+  await db.collection("users").doc(uid).set({ freeUsed: true, packs: { p: { remaining: 5, expiresAt: daysLater(day, 180) } } });
+  const logs = captureInfoLogs(t);
+  const { deps } = fakeDeps(day, { judge: async () => "real_person" });
+  await assert.rejects(handleGenerateMaterial(uid, { prompt: "だれか" }, deps), rejectsWith("moderation", "permission-denied"));
+
+  const reservation = { kind: "ticket", dateKey: jstDateKey(day), packId: "p" };
+  assert.deepEqual(
+    logs().filter(([message]) => message !== "generateMaterial"),
+    [
+      ["回数をおさえた", { uid, reservation }],
+      ["回数を戻した", { uid, reservation }],
+    ],
   );
 });
