@@ -261,7 +261,7 @@ test("知らせに失敗しても、断る理由は変わらない", async () =>
   );
 });
 
-test("作れたら、おさえたときと作れたときのログに uid と reservation を書く（問い合わせから回数を戻すため）", async (t) => {
+test("作れたら、おさえたときと作れたときのログに uid・callId・reservation を書く（問い合わせから回数を戻すため）", async (t) => {
   const uid = uniqueUid();
   const day = uniqueDay();
   const logs = captureInfoLogs(t);
@@ -269,15 +269,34 @@ test("作れたら、おさえたときと作れたときのログに uid と re
   await handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps);
 
   const reservation = { kind: "free", dateKey: jstDateKey(day) };
-  const entries = logs();
-  assert.deepEqual(entries[0], ["回数をおさえた", { uid, reservation }]);
-  assert.equal(entries[1][0], "generateMaterial");
-  assert.equal(entries[1][1].result, "ok");
-  assert.equal(entries[1][1].uid, uid);
-  assert.deepEqual(entries[1][1].reservation, reservation);
+  const [reserved, generated] = logs();
+  const callId = reserved[1].callId;
+  assert.equal(typeof callId, "string");
+  assert.deepEqual(reserved, ["回数をおさえた", { uid, callId, reservation }]);
+  const [message, payload] = generated;
+  assert.equal(message, "generateMaterial");
+  assert.equal(payload.result, "ok");
+  assert.equal(payload.uid, uid);
+  assert.equal(payload.callId, callId);
+  assert.deepEqual(payload.reservation, reservation);
 });
 
-test("おさえたあとに断って回数を戻したら、戻したことを uid と reservation つきでログに書く", async (t) => {
+test("呼び出しごとに callId が変わる（同じ日に同じ回数券で作っても、ログを1回ずつ組にできる）", async (t) => {
+  const uid = uniqueUid();
+  const day = uniqueDay();
+  await db.collection("users").doc(uid).set({ freeUsed: true, packs: { p: { remaining: 5, expiresAt: daysLater(day, 180) } } });
+  const logs = captureInfoLogs(t);
+  const { deps } = fakeDeps(day);
+  await handleGenerateMaterial(uid, { prompt: "うさぎ" }, deps);
+  await handleGenerateMaterial(uid, { prompt: "ねこ" }, deps);
+
+  const reserved = logs().filter(([message]) => message === "回数をおさえた");
+  assert.equal(reserved.length, 2);
+  assert.deepEqual(reserved[0][1].reservation, reserved[1][1].reservation);
+  assert.notEqual(reserved[0][1].callId, reserved[1][1].callId);
+});
+
+test("おさえたあとに断って回数を戻したら、戻したことを uid・callId・reservation つきでログに書く", async (t) => {
   const uid = uniqueUid();
   const day = uniqueDay();
   await db.collection("users").doc(uid).set({ freeUsed: true, packs: { p: { remaining: 5, expiresAt: daysLater(day, 180) } } });
@@ -286,11 +305,34 @@ test("おさえたあとに断って回数を戻したら、戻したことを u
   await assert.rejects(handleGenerateMaterial(uid, { prompt: "だれか" }, deps), rejectsWith("moderation", "permission-denied"));
 
   const reservation = { kind: "ticket", dateKey: jstDateKey(day), packId: "p" };
-  assert.deepEqual(
-    logs().filter(([message]) => message !== "generateMaterial"),
-    [
-      ["回数をおさえた", { uid, reservation }],
-      ["回数を戻した", { uid, reservation }],
-    ],
-  );
+  const entries = logs();
+  const callId = entries[0][1].callId;
+  assert.deepEqual(entries, [
+    ["回数をおさえた", { uid, callId, reservation }],
+    ["回数を戻した", { uid, callId, reservation }],
+    ["generateMaterial", { result: "moderation", category: "real_person" }],
+  ]);
+});
+
+test("戻す前に回数券が取り消されていたら、戻さなかったことをログに書く", async (t) => {
+  const uid = uniqueUid();
+  const day = uniqueDay();
+  await db.collection("users").doc(uid).set({ freeUsed: true, packs: { p: { remaining: 5, expiresAt: daysLater(day, 180) } } });
+  const logs = captureInfoLogs(t);
+  const { deps } = fakeDeps(day, {
+    judge: async () => {
+      // 審査のあいだに返金で回数券が取り消された
+      await db.collection("users").doc(uid).set({ freeUsed: true, packs: {} });
+      return "real_person";
+    },
+  });
+  await assert.rejects(handleGenerateMaterial(uid, { prompt: "だれか" }, deps), rejectsWith("moderation", "permission-denied"));
+
+  const reservation = { kind: "ticket", dateKey: jstDateKey(day), packId: "p" };
+  const entries = logs();
+  const callId = entries[0][1].callId;
+  assert.deepEqual(entries.slice(0, 2), [
+    ["回数をおさえた", { uid, callId, reservation }],
+    ["回数券が消えていて戻さなかった", { uid, callId, reservation }],
+  ]);
 });
