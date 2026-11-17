@@ -1,8 +1,12 @@
 package com.fansauchiwa.settings
 
+import android.util.Log
 import com.fansauchiwa.data.AppInfo
 import com.fansauchiwa.data.repository.AppInfoRepository
 import com.fansauchiwa.data.repository.SettingsRepository
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -66,11 +70,15 @@ class SettingsViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        // 取得の失敗はログに残すだけなので、JVM のテストでは Log を空にしておく
+        mockkStatic(Log::class)
+        every { Log.w(any(), any<String>(), any()) } returns 0
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        unmockkStatic(Log::class)
     }
 
     @Test

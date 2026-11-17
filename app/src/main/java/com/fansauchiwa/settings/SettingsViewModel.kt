@@ -1,5 +1,6 @@
 package com.fansauchiwa.settings
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.data.AppInfo
@@ -65,7 +66,9 @@ class SettingsViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                // Repository は ID が取れなくても null を流す約束なので、ここに来るのは想定外の不具合だけ。
                 // バージョンとインストール ID の行が出ないだけなので、触覚フィードバックの設定まで Error にしない
+                Log.w(TAG, "アプリのバージョンとインストール ID の取得に失敗", e)
             }
         }
     }
@@ -111,4 +114,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsUiState.Success -> copy(showLicenseDialog = showLicenseDialog, appInfo = appInfo)
             is SettingsUiState.Error -> copy(showLicenseDialog = showLicenseDialog, appInfo = appInfo)
         }
+
+    private companion object {
+        const val TAG = "SettingsViewModel"
+    }
 }
