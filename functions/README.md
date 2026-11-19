@@ -13,7 +13,7 @@
 3. 入口スイッチ（Remote Config の `ai_material_enabled`）が閉じていれば断る
 4. 断る名前の一覧（実在の人物・グループ名）に当たれば断る。全角・半角、大文字・小文字、空白と記号、カタカナ・ひらがなの違いは無視して当てる（`src/moderation.ts`）
 5. 1回分おさえる（`src/quota.ts`）。無料の1回 → なければ回数券。無料の非常ブレーキと全体の安全上限もここで見る
-6. 文章と元画像を軽いモデルで審査する（実在の人物・既存の作品やブランドのキャラクターやロゴ・性的・暴力・ヘイト）。4 の一覧をすり抜けた名前や、実在の人物の写真の元画像はここで断る。既存の作品やブランドのキャラクター・ロゴの絵を作って渡すと他人の権利に触れるので、Gemini の画像のモデルが自分で断るかには頼らず、頼む文章と元画像の段階でここで断る。作った絵は審査しない（#423）
+6. 文章と元画像を軽いモデルで審査する（実在の人物・既存の作品やブランドのキャラクターやロゴ・性的・暴力・ヘイト）。4 の一覧をすり抜けた名前や、実在の人物の写真の元画像はここで断る。既存の作品やブランドのキャラクター・ロゴの絵を作って渡すと他人の権利に触れるので、Gemini の画像のモデルが自分で断るかには頼らず、頼む文章と元画像の段階で断る。作った絵はまだ審査していない（作った絵の守りは #423）
 7. 画像を作る。6・7 で断った・失敗したときは、5 でおさえた回数を戻す
 
 断ったときは `HttpsError` の `details.reason` に理由が入る。アプリはこの値で文言を選び、GA4 にも送る。
@@ -69,7 +69,7 @@
 - **`審査のモデルを呼べなかった` / `画像のモデルを呼べなかった` が続く**：ログの `error`（Gemini の `error.status` と `error.message`）を見る。`NOT_FOUND` はモデルの廃止か名前の打ち間違いなので `config/aiMaterial` の `judgeModel` / `imageModel` を差し替える。`PERMISSION_DENIED` / `UNAUTHENTICATED` は API キーの失効なので Secret を入れ直す。`RESOURCE_EXHAUSTED` は割り当ての超過
 - **`画像が返らなかった` が続く**：ログの `finishReason` を見る。前置き（`src/gemini.ts` の `STICKER_PREFIX`）かモデルが合っていない
 - **`設定を読めなかった` / `回数をおさえられなかった`**：Firestore の障害。続くなら入口スイッチで止める
-- **審査で断られたという問い合わせが続く**：`generateMaterial` のログ（`result: "moderation"`）を `category` ごとに見る。分類は Cloud Logging にしか出ない（アプリと GA4 に届くのは `moderation` まで）
+- **審査で断られたという問い合わせが続く**：`generateMaterial` のログ（`result: "moderation"`）を `category` ごとに見る。分類は Cloud Logging でしか見られない（アプリは `details.category` を読まず、GA4 に送るのは `moderation` まで）
 - 全件が失敗しても Discord には知らせない（知らせるのは全体の上限に当たったときだけ）。入口を開けたら、Cloud Logging の `severity>=ERROR` にログベースのアラートを置いておく
 
 ## 開発
@@ -112,7 +112,11 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 - プライバシーポリシーと Play Console のデータセーフティに、文章と画像を Google の Gemini API に送ること（サーバーには残さないこと）を書いてある
 - 生成した画像を報告するボタンがアプリに入っている（#339）
 - `config/aiMaterial.blockedNames` を書いてある
-- 審査のモデルが、作品のキャラクター名・作品名・名前を出さずに特徴だけを並べた頼みには `existing_work`、一般的なキャラクター（「うさぎのキャラ」「王子様」など）には `none` を返すことを、オーナーの端末だけ入口を開けて確かめてある（どの分類で断ったかは `generateMaterial` のログの `category`。アプリの文言は分類で変わらない）。`none` で通るものがあれば入口を広げず、`src/moderation.ts` の `JUDGE_INSTRUCTION` か `judgeModel` を見直す
+- 審査のモデルが次の答えを返すことを、オーナーの端末だけ入口を開けて確かめてある（開け方は #411 の、設定画面のインストール ID で Remote Config の条件を作るやり方）。どの分類で断ったかは `generateMaterial` のログの `category` で見る（アプリの文言は分類で変わらない）。審査は回数をおさえたあとに走るので、使える回数（無料の1回か回数券）が要る。断られれば回数は戻るが、作れれば1回分減る。回数がなければ `users/{uid}.freeUsed` を `false` に戻す
+  - 実在の人物名 → `real_person`
+  - 作品のキャラクター名・作品名・名前を出さずに特徴だけを並べた頼み → `existing_work`
+  - 一般的なキャラクター（「うさぎのキャラ」「王子様」など）・ふつうの素材（ハート・推しの色など） → `none`
+  - 作品のキャラクターや作品名の頼みが `none` で通ったら、入口を広げず `src/moderation.ts` の `JUDGE_INSTRUCTION` か `judgeModel` を見直す。一般的なキャラクターが `existing_work` で断られたら、`JUDGE_INSTRUCTION` の none の例を足す
 - 上の「本番に出す」の予算アラートと、ログベースのアラートを置いてある
 
 持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。
