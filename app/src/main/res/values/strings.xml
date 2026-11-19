@@ -152,6 +152,9 @@
     <string name="settings_installation_id">インストール ID（タップでコピー）</string>
     <string name="settings_installation_id_clip_label">インストール ID</string>
     <string name="settings_installation_id_copied">インストール ID をコピーしました</string>
+    <string name="settings_user_id">利用者 ID（AI素材のお問い合わせ用・タップでコピー）</string>
+    <string name="settings_user_id_clip_label">利用者 ID</string>
+    <string name="settings_user_id_copied">利用者 ID をコピーしました</string>
     <string name="event_timeline">イベント予定</string>
     <string name="event_timeline_open_from_preview">イベント予定に追加</string>
     <string name="event_add">イベントを追加</string>

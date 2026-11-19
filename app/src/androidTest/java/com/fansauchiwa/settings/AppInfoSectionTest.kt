@@ -23,33 +23,19 @@ class AppInfoSectionTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun appInfoSection_withInstallationId_showsVersionAndIdAndCopiesIdOnTap() {
-        val copiedIds = mutableListOf<String>()
+    fun appInfoSection_withInstallationIdAndUserId_showsBothAndCopiesEachIdOnTap() {
+        val copiedInstallationIds = mutableListOf<String>()
+        val copiedUserIds = mutableListOf<String>()
         composeTestRule.setContent {
             FansaUchiwaTheme {
                 AppInfoSection(
-                    appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id"),
-                    onCopyInstallationId = { copiedIds.add(it) }
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithText(context.getString(R.string.settings_app_version, "2.13.0"))
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText("test-installation-id")
-            .assertIsDisplayed()
-            .performClick()
-
-        assertEquals(listOf("test-installation-id"), copiedIds)
-    }
-
-    @Test
-    fun appInfoSection_withoutInstallationId_showsOnlyVersion() {
-        composeTestRule.setContent {
-            FansaUchiwaTheme {
-                AppInfoSection(
-                    appInfo = AppInfo(versionName = "2.13.0", installationId = null),
-                    onCopyInstallationId = {}
+                    appInfo = AppInfo(
+                        versionName = "2.13.0",
+                        installationId = "test-installation-id",
+                        userId = "test-user-id"
+                    ),
+                    onCopyInstallationId = { copiedInstallationIds.add(it) },
+                    onCopyUserId = { copiedUserIds.add(it) }
                 )
             }
         }
@@ -57,6 +43,55 @@ class AppInfoSectionTest {
         composeTestRule.onNodeWithText(context.getString(R.string.settings_app_version, "2.13.0"))
             .assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.settings_installation_id))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_user_id))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("test-installation-id")
+            .assertIsDisplayed()
+            .performClick()
+        composeTestRule.onNodeWithText("test-user-id")
+            .assertIsDisplayed()
+            .performClick()
+
+        assertEquals(listOf("test-installation-id"), copiedInstallationIds)
+        assertEquals(listOf("test-user-id"), copiedUserIds)
+    }
+
+    @Test
+    fun appInfoSection_withoutUserId_hidesUserIdRow() {
+        composeTestRule.setContent {
+            FansaUchiwaTheme {
+                AppInfoSection(
+                    appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id", userId = null),
+                    onCopyInstallationId = {},
+                    onCopyUserId = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("test-installation-id")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_user_id))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun appInfoSection_withoutIds_showsOnlyVersion() {
+        composeTestRule.setContent {
+            FansaUchiwaTheme {
+                AppInfoSection(
+                    appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = null),
+                    onCopyInstallationId = {},
+                    onCopyUserId = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_app_version, "2.13.0"))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_installation_id))
+            .assertDoesNotExist()
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_user_id))
             .assertDoesNotExist()
     }
 }
