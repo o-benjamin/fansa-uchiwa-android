@@ -2,6 +2,7 @@ package com.fansauchiwa.settings
 
 import android.content.ClipData
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -76,7 +77,16 @@ private fun SettingsContent(
     val isHapticFeedbackEnabled = (uiState as? SettingsUiState.Success)?.isHapticFeedbackEnabled ?: false
     val isLoading = uiState is SettingsUiState.Loading
     val snackbarHostState = remember { SnackbarHostState() }
-    val copyInstallationId = rememberCopyInstallationId(snackbarHostState)
+    val copyInstallationId = rememberCopyToClipboard(
+        snackbarHostState = snackbarHostState,
+        clipLabelResId = R.string.settings_installation_id_clip_label,
+        copiedMessageResId = R.string.settings_installation_id_copied
+    )
+    val copyUserId = rememberCopyToClipboard(
+        snackbarHostState = snackbarHostState,
+        clipLabelResId = R.string.settings_user_id_clip_label,
+        copiedMessageResId = R.string.settings_user_id_copied
+    )
 
     if (uiState.showLicenseDialog) {
         AlertDialog(
@@ -131,7 +141,12 @@ private fun SettingsContent(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
+        // いちばん下の利用者 ID の行は問い合わせに要るので、小さい画面や大きい文字でも届くようにスクロールさせる
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+        ) {
             HapticFeedbackSettingRow(
                 isEnabled = isHapticFeedbackEnabled,
                 isLoading = isLoading,
@@ -148,7 +163,8 @@ private fun SettingsContent(
             uiState.appInfo?.let { appInfo ->
                 AppInfoSection(
                     appInfo = appInfo,
-                    onCopyInstallationId = copyInstallationId
+                    onCopyInstallationId = copyInstallationId,
+                    onCopyUserId = copyUserId
                 )
             }
         }
@@ -156,23 +172,27 @@ private fun SettingsContent(
 }
 
 /**
- * インストール ID をクリップボードに写す処理を返す。
+ * ID をクリップボードに写す処理を返す。
  * Android 13 以上は OS がコピーしたことを知らせるので、Android 12 以下だけスナックバーを出す。
  * クリップボードへの書き込みとスナックバーは UI の副作用でロジックを持たないので、
  * 触覚フィードバック（`.agents/ui.md`）と同じく ViewModel を通さない
  */
 @Composable
-private fun rememberCopyInstallationId(snackbarHostState: SnackbarHostState): (String) -> Unit {
+private fun rememberCopyToClipboard(
+    snackbarHostState: SnackbarHostState,
+    @StringRes clipLabelResId: Int,
+    @StringRes copiedMessageResId: Int
+): (String) -> Unit {
     val clipboard = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
-    val clipLabel = stringResource(R.string.settings_installation_id_clip_label)
-    val copiedMessage = stringResource(R.string.settings_installation_id_copied)
+    val clipLabel = stringResource(clipLabelResId)
+    val copiedMessage = stringResource(copiedMessageResId)
     return remember(clipboard, coroutineScope, snackbarHostState, clipLabel, copiedMessage) {
-        { installationId: String ->
+        { id: String ->
             coroutineScope.launch {
-                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, installationId)))
+                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, id)))
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                    // 続けてタップしても、同じ知らせを順番待ちで何度も出さない
+                    // 続けてタップしても知らせを順番待ちで重ねず、最後にコピーした ID の知らせだけを出す
                     snackbarHostState.currentSnackbarData?.dismiss()
                     snackbarHostState.showSnackbar(copiedMessage)
                 }
@@ -182,13 +202,15 @@ private fun rememberCopyInstallationId(snackbarHostState: SnackbarHostState): (S
 }
 
 /**
- * 画面のいちばん下に、アプリのバージョンとインストール ID を小さく出す（使い道は [AppInfo]）。
- * ID が取れなかったときは ID の行を出さない
+ * 画面のいちばん下に、アプリのバージョンとインストール ID・利用者 ID を小さく出す（使い道は [AppInfo]）。
+ * ID が取れなかったとき・まだないときは、その ID の行を出さない。
+ * 2つの ID は使い道が違う（インストール ID は Remote Config の条件、利用者 ID は問い合わせ）ので、見出しで見分けられるようにする
  */
 @Composable
 internal fun AppInfoSection(
     appInfo: AppInfo,
     onCopyInstallationId: (String) -> Unit,
+    onCopyUserId: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -199,24 +221,44 @@ internal fun AppInfoSection(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
         appInfo.installationId?.let { installationId ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onCopyInstallationId(installationId) }
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.settings_installation_id),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = installationId,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            CopyableIdRow(
+                label = stringResource(R.string.settings_installation_id),
+                id = installationId,
+                onClick = { onCopyInstallationId(installationId) }
+            )
         }
+        appInfo.userId?.let { userId ->
+            CopyableIdRow(
+                label = stringResource(R.string.settings_user_id),
+                id = userId,
+                onClick = { onCopyUserId(userId) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CopyableIdRow(
+    label: String,
+    id: String,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = id,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -312,7 +354,11 @@ private fun SettingsScreenPreview_AppInfo() {
         SettingsContent(
             uiState = SettingsUiState.Success(
                 isHapticFeedbackEnabled = true,
-                appInfo = AppInfo(versionName = "2.13.0", installationId = "cXyZ0123456789abcdefgh")
+                appInfo = AppInfo(
+                    versionName = "2.13.0",
+                    installationId = "cXyZ0123456789abcdefgh",
+                    userId = "aBcD0123456789efghijklmnopqr"
+                )
             ),
             onBack = {},
             onToggleHapticFeedback = {},
@@ -324,12 +370,29 @@ private fun SettingsScreenPreview_AppInfo() {
 
 @Preview(showBackground = true)
 @Composable
-private fun SettingsScreenPreview_AppInfoWithoutInstallationId() {
+private fun SettingsScreenPreview_AppInfoWithoutUserId() {
     FansaUchiwaTheme {
         SettingsContent(
             uiState = SettingsUiState.Success(
                 isHapticFeedbackEnabled = true,
-                appInfo = AppInfo(versionName = "2.13.0", installationId = null)
+                appInfo = AppInfo(versionName = "2.13.0", installationId = "cXyZ0123456789abcdefgh", userId = null)
+            ),
+            onBack = {},
+            onToggleHapticFeedback = {},
+            onShowLicenseDialog = {},
+            onDismissLicenseDialog = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview_AppInfoWithoutIds() {
+    FansaUchiwaTheme {
+        SettingsContent(
+            uiState = SettingsUiState.Success(
+                isHapticFeedbackEnabled = true,
+                appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = null)
             ),
             onBack = {},
             onToggleHapticFeedback = {},
