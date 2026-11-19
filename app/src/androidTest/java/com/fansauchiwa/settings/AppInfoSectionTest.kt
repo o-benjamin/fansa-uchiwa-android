@@ -76,6 +76,28 @@ class AppInfoSectionTest {
     }
 
     @Test
+    fun appInfoSection_withoutInstallationId_stillShowsUserId() {
+        val copiedUserIds = mutableListOf<String>()
+        composeTestRule.setContent {
+            FansaUchiwaTheme {
+                AppInfoSection(
+                    appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = "test-user-id"),
+                    onCopyInstallationId = {},
+                    onCopyUserId = { copiedUserIds.add(it) }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_installation_id))
+            .assertDoesNotExist()
+        composeTestRule.onNodeWithText("test-user-id")
+            .assertIsDisplayed()
+            .performClick()
+
+        assertEquals(listOf("test-user-id"), copiedUserIds)
+    }
+
+    @Test
     fun appInfoSection_withoutIds_showsOnlyVersion() {
         composeTestRule.setContent {
             FansaUchiwaTheme {

@@ -141,7 +141,12 @@ private fun SettingsContent(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
+        // いちばん下の利用者 ID の行は問い合わせに要るので、小さい画面や大きい文字でも届くようにスクロールさせる
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+        ) {
             HapticFeedbackSettingRow(
                 isEnabled = isHapticFeedbackEnabled,
                 isLoading = isLoading,
@@ -183,11 +188,11 @@ private fun rememberCopyToClipboard(
     val clipLabel = stringResource(clipLabelResId)
     val copiedMessage = stringResource(copiedMessageResId)
     return remember(clipboard, coroutineScope, snackbarHostState, clipLabel, copiedMessage) {
-        { text: String ->
+        { id: String ->
             coroutineScope.launch {
-                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, text)))
+                clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(clipLabel, id)))
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                    // 続けてタップしても、同じ知らせを順番待ちで何度も出さない
+                    // 続けてタップしても知らせを順番待ちで重ねず、最後にコピーした ID の知らせだけを出す
                     snackbarHostState.currentSnackbarData?.dismiss()
                     snackbarHostState.showSnackbar(copiedMessage)
                 }
@@ -354,6 +359,23 @@ private fun SettingsScreenPreview_AppInfo() {
                     installationId = "cXyZ0123456789abcdefgh",
                     userId = "aBcD0123456789efghijklmnopqr"
                 )
+            ),
+            onBack = {},
+            onToggleHapticFeedback = {},
+            onShowLicenseDialog = {},
+            onDismissLicenseDialog = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsScreenPreview_AppInfoWithoutUserId() {
+    FansaUchiwaTheme {
+        SettingsContent(
+            uiState = SettingsUiState.Success(
+                isHapticFeedbackEnabled = true,
+                appInfo = AppInfo(versionName = "2.13.0", installationId = "cXyZ0123456789abcdefgh", userId = null)
             ),
             onBack = {},
             onToggleHapticFeedback = {},
