@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { findBlockedName, parseJudgeAnswer } from "../src/moderation";
+import { JUDGE_CATEGORIES, JUDGE_INSTRUCTION, findBlockedName, parseJudgeAnswer } from "../src/moderation";
 
 const NAMES = ["山田太郎", "ABC", "Star Light", "ミルキー・ウェイ"];
 
@@ -40,7 +40,14 @@ test("一覧になければ通す", () => {
 test("審査のモデルの答えを読む", () => {
   assert.equal(parseJudgeAnswer('{"category":"none"}'), "none");
   assert.equal(parseJudgeAnswer('{"category":"real_person"}'), "real_person");
+  assert.equal(parseJudgeAnswer('{"category":"existing_work"}'), "existing_work");
   assert.equal(parseJudgeAnswer('{"category":"other"}'), undefined);
   assert.equal(parseJudgeAnswer("読めない"), undefined);
   assert.equal(parseJudgeAnswer(""), undefined);
+});
+
+test("審査の指示に、すべての分類の説明がある", () => {
+  for (const category of JUDGE_CATEGORIES) {
+    assert.ok(JUDGE_INSTRUCTION.includes(`- ${category}：`), `JUDGE_INSTRUCTION に「- ${category}：」の行がない`);
+  }
 });
