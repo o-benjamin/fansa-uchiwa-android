@@ -1,6 +1,8 @@
 package com.fansauchiwa.home
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +17,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,13 +40,17 @@ import com.fansauchiwa.ui.theme.FansaUchiwaTheme
  * ホームのいちばん上に出す「今日のお題」のカード（#360）
  *
  * 「このお題で作る」で、白紙のうちわにお題の文字だけを置いた編集画面を開く。×で閉じると、その日はもう出ない。
- * カードのすぐ横・上下には広告を置かない（#358）。AI素材の入口（#340）は、あとでこのカードの副ボタンとして置く。
+ * カードのすぐ横・上下には広告を置かない（#358）。
+ *
+ * @param onCreateWithAiMaterial 副ボタン「AIで素材を作る」（AI素材の入口、#340）。null なら副ボタンを出さない
+ *   （Remote Config の `ai_material_enabled` が false のとき）
  */
 @Composable
 internal fun DailyPromptCard(
     prompt: DailyPrompt,
     onShown: () -> Unit,
     onCreate: () -> Unit,
+    onCreateWithAiMaterial: (() -> Unit)?,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -89,11 +96,20 @@ internal fun DailyPromptCard(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(end = 12.dp)
             )
-            Button(
-                onClick = onCreate,
-                modifier = Modifier.padding(top = 12.dp)
+            // 文字を大きくした端末では2つのボタンが1行に入らないので、入らなければ副ボタンを次の行に送る
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 12.dp, end = 12.dp)
             ) {
-                Text(text = stringResource(R.string.daily_prompt_create_button))
+                Button(onClick = onCreate) {
+                    Text(text = stringResource(R.string.daily_prompt_create_button))
+                }
+                if (onCreateWithAiMaterial != null) {
+                    OutlinedButton(onClick = onCreateWithAiMaterial) {
+                        Text(text = stringResource(R.string.daily_prompt_ai_material_button))
+                    }
+                }
             }
         }
     }
@@ -121,6 +137,22 @@ private fun DailyPromptCardPreview() {
             prompt = DailyPrompt(id = "default_peace", text = "ピースして"),
             onShown = {},
             onCreate = {},
+            onCreateWithAiMaterial = null,
+            onDismiss = {},
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "今日のお題のカード（AI素材の入口あり）")
+@Composable
+private fun DailyPromptCardWithAiMaterialPreview() {
+    FansaUchiwaTheme {
+        DailyPromptCard(
+            prompt = DailyPrompt(id = "default_peace", text = "ピースして"),
+            onShown = {},
+            onCreate = {},
+            onCreateWithAiMaterial = {},
             onDismiss = {},
             modifier = Modifier.padding(16.dp)
         )
@@ -135,6 +167,7 @@ private fun DailyPromptCardLongTextPreview() {
             prompt = DailyPrompt(id = "preview_long", text = "ハロウィンの仮装を見せてください"),
             onShown = {},
             onCreate = {},
+            onCreateWithAiMaterial = null,
             onDismiss = {},
             modifier = Modifier.padding(16.dp)
         )

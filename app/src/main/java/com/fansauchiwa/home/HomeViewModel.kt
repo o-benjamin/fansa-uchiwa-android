@@ -16,6 +16,7 @@ import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
@@ -43,6 +44,7 @@ class HomeViewModel @Inject constructor(
     private val dailyPromptRepository: DailyPromptRepository,
     private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
     private val dailyPromptViewTracker: DailyPromptViewTracker,
+    private val aiMaterialRepository: AiMaterialRepository,
     private val todayProvider: TodayProvider,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
@@ -53,6 +55,7 @@ class HomeViewModel @Inject constructor(
     init {
         observeDailyPrompt()
         fetchDailyPromptDismissedDate()
+        observeAiMaterialEntryEnabled()
     }
 
     fun logScreenView() {
@@ -204,6 +207,29 @@ class HomeViewModel @Inject constructor(
         val uchiwaId = uuidProvider.generate()
         dailyPromptUchiwaRepository.markStartedFromPrompt(uchiwaId)
         return EditScreenInputArg(uchiwaId = uchiwaId, dailyPromptText = prompt.text)
+    }
+
+    /**
+     * お題のカードの「AIで素材を作る」（#340）を押したときに呼ぶ。「このお題で作る」と同じうちわを開く引数を返し、
+     * 呼び出し側はその編集画面の上に AI素材の画面を開く（AI素材の画面は、作った素材を下の編集画面に置くため）。
+     * 同じうちわを開くので tap_daily_prompt も送る（お題の判定の分母を、保存の `source=daily_prompt` とそろえるため）
+     */
+    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt): EditScreenInputArg {
+        logEvent(
+            AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
+            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
+        )
+        return onDailyPromptCreate(prompt)
+    }
+
+    /**
+     * 入口を出すかは、ホームを作ったときに1回だけ読む。Remote Config で開け閉めしても、端末に届くのは
+     * 次にホームを作り直したとき（アプリの起動など）。閉じたあとに残った入口から開いても、サーバーが断る
+     */
+    private fun observeAiMaterialEntryEnabled() {
+        aiMaterialRepository.getEntryEnabledStream()
+            .onEach { enabled -> _uiState.update { it.copy(isAiMaterialEntryEnabled = enabled) } }
+            .launchIn(viewModelScope)
     }
 
     /** お題のカードの×。今日はもう出さない */

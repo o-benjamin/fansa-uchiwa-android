@@ -40,6 +40,9 @@ object AnalyticsActions {
     const val VIEW_DAILY_PROMPT = "view_daily_prompt"
     const val TAP_DAILY_PROMPT = "tap_daily_prompt"
 
+    // お題のカードの副ボタン「AIで素材を作る」（AI素材の入口、#340）。パラメータは DailyPromptAnalyticsParams の prompt_id
+    const val TAP_AI_MATERIAL_ENTRY = "tap_ai_material_entry"
+
     const val TAP_EDIT_BACK = "tap_edit_back"
     const val TAP_EDIT_BACK_DIALOG = "tap_edit_back_dialog"
     const val TAP_EDIT_COMPLETE = "tap_edit_complete"

@@ -4,6 +4,8 @@ package com.fansauchiwa.analytics
  * 今日のお題（#360）の計測のパラメータ
  *
  * - [AnalyticsActions.VIEW_DAILY_PROMPT]・[AnalyticsActions.TAP_DAILY_PROMPT] には [PARAM_PROMPT_ID] を付ける
+ * - お題のカードの副ボタンから AI素材の入口を開いたときの [AnalyticsActions.TAP_AI_MATERIAL_ENTRY]（#340）にも
+ *   [PARAM_PROMPT_ID] を付ける。どのお題の日に AI素材が使われたかを見るため
  * - お題から作ったうちわの [AnalyticsActions.TAP_PREVIEW_EXPORT]・[AnalyticsActions.TAP_PREVIEW_SHARE] には、
  *   [sourceParams] で `source=daily_prompt` を付ける。ほかのうちわには何も付けない（今までの集計は変わらない）
  *
@@ -16,6 +18,7 @@ package com.fansauchiwa.analytics
  * 計測をやめるときに消すもの：
  * - このファイル、[DailyPromptViewTracker]、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT
  * - HomeViewModel の onDailyPromptShown、onDailyPromptCreate の logEvent
+ *   （tap_ai_material_entry は AI素材の計測なので残す。prompt_id だけ外す）
  * - DailyPromptCard の onShown と LaunchedEffect、HomeScreen.kt の onDailyPromptShown の受け渡し
  *   （HomeTabContent・HomeTabHomeContent・プレビュー）、HomeScreenTest の引数
  * - UchiwaPreviewViewModel の logExportEvent と showRewardedAdAndShare、ShareAnalyticsParams の selectShareTargetParams

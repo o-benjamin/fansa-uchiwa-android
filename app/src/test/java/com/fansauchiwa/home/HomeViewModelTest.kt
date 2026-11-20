@@ -14,6 +14,7 @@ import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
@@ -56,6 +57,8 @@ class HomeViewModelTest {
     private val dailyPromptStream = MutableSharedFlow<DailyPrompt?>(replay = 1)
     private val dailyPromptDismissedDateStream = MutableStateFlow<LocalDate?>(null)
     private lateinit var dailyPromptUchiwaRepository: DailyPromptUchiwaRepositoryImpl
+    private lateinit var aiMaterialRepository: AiMaterialRepository
+    private val aiMaterialEntryEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
     private val today = LocalDate.of(2026, 11, 4)
     private val todayProvider = object : TodayProvider {
         override fun today(): LocalDate = today
@@ -74,6 +77,8 @@ class HomeViewModelTest {
         every { dailyPromptRepository.getDailyPromptStream() } returns dailyPromptStream
         every { settingsRepository.getDailyPromptDismissedDateStream() } returns dailyPromptDismissedDateStream
         dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl()
+        aiMaterialRepository = mockk(relaxed = true)
+        every { aiMaterialRepository.getEntryEnabledStream() } returns aiMaterialEntryEnabledStream
         uuidProvider = mockk(relaxed = true)
     }
 
@@ -92,6 +97,7 @@ class HomeViewModelTest {
             dailyPromptRepository = dailyPromptRepository,
             dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
             dailyPromptViewTracker = DailyPromptViewTracker(),
+            aiMaterialRepository = aiMaterialRepository,
             todayProvider = todayProvider,
             uuidProvider = uuidProvider
         )
@@ -234,6 +240,67 @@ class HomeViewModelTest {
             )
         }
         // 白紙からの新規作成とは別に数える
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_HOME_NEW_CREATE })
+        }
+    }
+
+    @Test
+    fun init_aiMaterialEntryNotEmittedYet_hidesAiMaterialEntry() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // Remote Config の取得を待つ間は、入口スイッチの既定（閉じている）のまま
+        assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun init_aiMaterialEntryEnabled_showsAiMaterialEntry() = runTest {
+        val viewModel = createViewModel()
+
+        aiMaterialEntryEnabledStream.emit(true)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun init_aiMaterialEntryDisabled_hidesAiMaterialEntry() = runTest {
+        val viewModel = createViewModel()
+
+        aiMaterialEntryEnabledStream.emit(false)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun onDailyPromptCreateWithAiMaterial_returnsPromptArgAndLogsEntryAndPromptTaps() = runTest {
+        every { uuidProvider.generate() } returns "new-uchiwa-id"
+        val viewModel = createViewModel()
+
+        val inputArg = viewModel.onDailyPromptCreateWithAiMaterial(DailyPrompt("20261104", "ピースして"))
+        advanceUntilIdle()
+
+        // 「このお題で作る」と同じうちわを開く
+        assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        assertTrue(dailyPromptUchiwaRepository.isStartedFromPrompt("new-uchiwa-id"))
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to "20261104")
+                )
+            )
+        }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.TAP_DAILY_PROMPT,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to "20261104")
+                )
+            )
+        }
         coVerify(exactly = 0) {
             analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_HOME_NEW_CREATE })
         }

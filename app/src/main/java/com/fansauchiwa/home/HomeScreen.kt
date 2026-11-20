@@ -335,6 +335,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onImageClick: (EditScreenInputArg) -> Unit = {},
     onAddClick: () -> Unit = {},
+    onAiMaterialEntryClick: (EditScreenInputArg) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {}
 ) {
@@ -541,6 +542,11 @@ fun HomeScreen(
             onDailyPromptCreate = { prompt ->
                 onImageClick(viewModel.onDailyPromptCreate(prompt))
             },
+            onDailyPromptCreateWithAiMaterial = if (uiState.isAiMaterialEntryEnabled) {
+                { prompt -> onAiMaterialEntryClick(viewModel.onDailyPromptCreateWithAiMaterial(prompt)) }
+            } else {
+                null
+            },
             onDailyPromptDismiss = viewModel::dismissDailyPrompt,
             statusBarPadding = innerPadding.calculateTopPadding(),
             bottomPadding = innerPadding.calculateBottomPadding()
@@ -564,6 +570,8 @@ internal fun HomeTabContent(
     dailyPrompt: DailyPrompt?,
     onDailyPromptShown: (DailyPrompt) -> Unit,
     onDailyPromptCreate: (DailyPrompt) -> Unit,
+    // null ならお題のカードに AI素材の入口を出さない（入口スイッチが閉じているとき）
+    onDailyPromptCreateWithAiMaterial: ((DailyPrompt) -> Unit)?,
     onDailyPromptDismiss: () -> Unit,
     statusBarPadding: Dp,
     bottomPadding: Dp,
@@ -580,6 +588,7 @@ internal fun HomeTabContent(
             dailyPrompt = dailyPrompt,
             onDailyPromptShown = onDailyPromptShown,
             onDailyPromptCreate = onDailyPromptCreate,
+            onDailyPromptCreateWithAiMaterial = onDailyPromptCreateWithAiMaterial,
             onDailyPromptDismiss = onDailyPromptDismiss,
             statusBarPadding = statusBarPadding,
             bottomPadding = bottomPadding,
@@ -611,6 +620,7 @@ private fun HomeTabHomeContent(
     dailyPrompt: DailyPrompt?,
     onDailyPromptShown: (DailyPrompt) -> Unit,
     onDailyPromptCreate: (DailyPrompt) -> Unit,
+    onDailyPromptCreateWithAiMaterial: ((DailyPrompt) -> Unit)?,
     onDailyPromptDismiss: () -> Unit,
     statusBarPadding: Dp,
     bottomPadding: Dp,
@@ -648,6 +658,9 @@ private fun HomeTabHomeContent(
                     prompt = dailyPrompt,
                     onShown = { onDailyPromptShown(dailyPrompt) },
                     onCreate = { onDailyPromptCreate(dailyPrompt) },
+                    onCreateWithAiMaterial = onDailyPromptCreateWithAiMaterial?.let { onCreateWithAiMaterial ->
+                        { onCreateWithAiMaterial(dailyPrompt) }
+                    },
                     onDismiss = onDailyPromptDismiss,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -1202,6 +1215,7 @@ private fun HomeTabHomeContentPreview() {
         dailyPrompt = null,
         onDailyPromptShown = {},
         onDailyPromptCreate = {},
+        onDailyPromptCreateWithAiMaterial = null,
         onDailyPromptDismiss = {},
         statusBarPadding = 0.dp,
         bottomPadding = 0.dp,
@@ -1221,6 +1235,7 @@ private fun HomeTabHomeContentWithDailyPromptPreview() {
         dailyPrompt = DailyPrompt(id = "default_peace", text = "ピースして"),
         onDailyPromptShown = {},
         onDailyPromptCreate = {},
+        onDailyPromptCreateWithAiMaterial = null,
         onDailyPromptDismiss = {},
         statusBarPadding = 0.dp,
         bottomPadding = 0.dp,

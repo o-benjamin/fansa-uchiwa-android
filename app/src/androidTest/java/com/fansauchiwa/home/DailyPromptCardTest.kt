@@ -28,6 +28,7 @@ class DailyPromptCardTest {
     private fun setCard(
         onShown: () -> Unit = {},
         onCreate: () -> Unit = {},
+        onCreateWithAiMaterial: (() -> Unit)? = null,
         onDismiss: () -> Unit = {}
     ) {
         composeTestRule.setContent {
@@ -36,6 +37,7 @@ class DailyPromptCardTest {
                     prompt = prompt,
                     onShown = onShown,
                     onCreate = onCreate,
+                    onCreateWithAiMaterial = onCreateWithAiMaterial,
                     onDismiss = onDismiss
                 )
             }
@@ -87,6 +89,28 @@ class DailyPromptCardTest {
 
         composeTestRule.runOnIdle {
             assertEquals(1, createCount)
+        }
+    }
+
+    @Test
+    fun dailyPromptCard_aiMaterialEntryClosed_hidesAiMaterialButton() {
+        setCard(onCreateWithAiMaterial = null)
+
+        composeTestRule.onNodeWithText(context.getString(R.string.daily_prompt_create_button)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.daily_prompt_ai_material_button)).assertDoesNotExist()
+    }
+
+    @Test
+    fun dailyPromptCard_aiMaterialTapped_callsOnlyOnCreateWithAiMaterialOnce() {
+        var createCount = 0
+        var aiMaterialCount = 0
+        setCard(onCreate = { createCount++ }, onCreateWithAiMaterial = { aiMaterialCount++ })
+
+        composeTestRule.onNodeWithText(context.getString(R.string.daily_prompt_ai_material_button)).performClick()
+
+        composeTestRule.runOnIdle {
+            assertEquals(1, aiMaterialCount)
+            assertEquals(0, createCount)
         }
     }
 }
