@@ -34,7 +34,7 @@ export function daysLater(base: Date, days: number): Timestamp {
 
 export const LIMITS = { freeDailyLimit: 30, totalDailyLimit: 300 };
 
-/** `assert.rejects` に渡す。`HttpsError` の code と `details.reason` を確かめる。 */
+/** `assert.rejects` に渡す。`HttpsError` の `code` と `details.reason` を確かめる。 */
 export function rejectsWith(reason: string, code: string) {
   return (error: unknown) => {
     assert.ok(error instanceof HttpsError);
