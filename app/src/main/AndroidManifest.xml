@@ -48,6 +48,11 @@
                 android:resource="@xml/provider_paths" />
         </provider>
 
+        <!-- 共有の画面で選ばれたアプリを受け取る（#362）。システムがアプリの PendingIntent で呼ぶだけなので、外には公開しない -->
+        <receiver
+            android:name=".analytics.ShareTargetReceiver"
+            android:exported="false" />
+
         <!-- WorkManager を HiltWorkerFactory で初期化するため、既定の初期化だけを外す（他の Initializer は残す） -->
         <provider
             android:name="androidx.startup.InitializationProvider"

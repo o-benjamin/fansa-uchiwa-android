@@ -1,6 +1,9 @@
 package com.fansauchiwa.di
 
 import android.content.Context
+import com.fansauchiwa.data.TemplateCandidates
+import com.fansauchiwa.data.TodayProvider
+import com.fansauchiwa.data.TodayProviderImpl
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.UuidProviderImpl
 import com.fansauchiwa.data.infra.GalleryImageDataSource
@@ -21,6 +24,10 @@ import com.fansauchiwa.data.repository.AuthRepository
 import com.fansauchiwa.data.repository.AuthRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.CrashReportingRepositoryImpl
+import com.fansauchiwa.data.repository.DailyPromptRepository
+import com.fansauchiwa.data.repository.DailyPromptRepositoryImpl
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.DefaultTemplateRepository
 import com.fansauchiwa.data.repository.EditDecorationRepository
 import com.fansauchiwa.data.repository.EditDecorationRepositoryImpl
@@ -42,6 +49,7 @@ import com.fansauchiwa.data.repository.TicketPurchaseRepositoryImpl
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
+import dagger.BindsOptionalOf
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -88,6 +96,10 @@ abstract class RepositoryModule {
     abstract fun bindTemplateRepository(
         impl: DefaultTemplateRepository
     ): TemplateRepository
+
+    // 候補を渡すのは debug の TemplateCandidateModule だけ。release と beta では空になる
+    @BindsOptionalOf
+    abstract fun bindOptionalTemplateCandidates(): TemplateCandidates
 
     @Binds
     @Singleton
@@ -142,6 +154,25 @@ abstract class RepositoryModule {
     abstract fun bindTicketPurchaseRepository(
         impl: TicketPurchaseRepositoryImpl
     ): TicketPurchaseRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDailyPromptRepository(
+        impl: DailyPromptRepositoryImpl
+    ): DailyPromptRepository
+
+    // お題から作り始めたうちわの ID をメモリに持つので、アプリで1つにする
+    @Binds
+    @Singleton
+    abstract fun bindDailyPromptUchiwaRepository(
+        impl: DailyPromptUchiwaRepositoryImpl
+    ): DailyPromptUchiwaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTodayProvider(
+        impl: TodayProviderImpl
+    ): TodayProvider
 }
 
 @Module

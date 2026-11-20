@@ -7,6 +7,7 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
 import com.fansauchiwa.analytics.ExportedFontAnalytics
 import com.fansauchiwa.analytics.FontFamilyParams
 import com.fansauchiwa.analytics.FontSessionAnalyticsParams
@@ -15,6 +16,7 @@ import com.fansauchiwa.analytics.PuffyStateAnalytics
 import com.fansauchiwa.analytics.PuffyStateParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AffiliateRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.edit.FontFamilies
@@ -49,6 +51,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var inAppReviewRepository: InAppReviewRepository
     private lateinit var affiliateRepository: AffiliateRepository
+    private lateinit var dailyPromptUchiwaRepository: DailyPromptUchiwaRepositoryImpl
     private lateinit var fontSessionTracker: FontSessionTracker
     private lateinit var puffyStateAnalytics: PuffyStateAnalytics
     private lateinit var exportedFontAnalytics: ExportedFontAnalytics
@@ -61,6 +64,7 @@ class UchiwaPreviewSaveTest {
         analyticsRepository = mockk(relaxed = true)
         inAppReviewRepository = mockk(relaxed = true)
         affiliateRepository = mockk(relaxed = true)
+        dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl()
         fontSessionTracker = mockk(relaxed = true)
         puffyStateAnalytics = mockk(relaxed = true)
         exportedFontAnalytics = mockk(relaxed = true)
@@ -93,6 +97,7 @@ class UchiwaPreviewSaveTest {
             puffyStateAnalytics = puffyStateAnalytics,
             exportedFontAnalytics = exportedFontAnalytics,
             affiliateRepository = affiliateRepository,
+            dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -212,6 +217,25 @@ class UchiwaPreviewSaveTest {
         coVerify(exactly = 1) {
             analyticsRepository.logEvent(
                 AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, fontParams + puffyParams)
+            )
+        }
+    }
+
+    @Test
+    fun showRewardedAdAndSave_startedFromDailyPrompt_logsExportEventWithDailyPromptSource() = runTest {
+        dailyPromptUchiwaRepository.markStartedFromPrompt("uchiwa-1")
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece/uchiwa-1.png")
+        val activity = mockk<Activity>()
+
+        viewModel.showRewardedAdAndSave(activity)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.TAP_PREVIEW_EXPORT,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_SOURCE to DailyPromptAnalyticsParams.SOURCE_DAILY_PROMPT)
+                )
             )
         }
     }

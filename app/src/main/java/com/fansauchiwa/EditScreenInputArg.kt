@@ -19,7 +19,9 @@ data class EditScreenInputArg(
     val lastName: String = "",
     val firstName1: String = "",
     val firstName2: String = "",
-    val honorific: String = ""
+    val honorific: String = "",
+    // 今日のお題から作るとき（#360）、白紙のうちわの真ん中に置く文字。テンプレートとは一緒に使わない
+    val dailyPromptText: String? = null
 ) {
     fun toRouteArgument(): String =
         editScreenInputArgJson.encodeToString(serializer(), this)

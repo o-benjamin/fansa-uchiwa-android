@@ -345,3 +345,29 @@ val akazukinPopFontFamily = FontFamily(
 val lightNovelPopFontFamily = FontFamily(
     Font(R.font.lightnovelpopv2)
 )
+
+// 韓国語フォント（#367）。書ける字の範囲は FontFamilies.isKorean を参照
+val BlackHanSansFont = GoogleFont(name = "Black Han Sans")
+val blackHanSansFontFamily = FontFamily(
+    Font(googleFont = BlackHanSansFont, fontProvider = provider),
+)
+
+val JuaFont = GoogleFont(name = "Jua")
+val juaFontFamily = FontFamily(
+    Font(googleFont = JuaFont, fontProvider = provider),
+)
+
+val DoHyeonFont = GoogleFont(name = "Do Hyeon")
+val doHyeonFontFamily = FontFamily(
+    Font(googleFont = DoHyeonFont, fontProvider = provider),
+)
+
+val BagelFatOneFont = GoogleFont(name = "Bagel Fat One")
+val bagelFatOneFontFamily = FontFamily(
+    Font(googleFont = BagelFatOneFont, fontProvider = provider),
+)
+
+val SingleDayFont = GoogleFont(name = "Single Day")
+val singleDayFontFamily = FontFamily(
+    Font(googleFont = SingleDayFont, fontProvider = provider),
+)
