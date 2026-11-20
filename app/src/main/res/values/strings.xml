@@ -237,6 +237,22 @@
     <string name="ai_material_report_sent">報告を送りました。ありがとうございます</string>
     <string name="ai_material_report_limit_reached">今日はこれ以上報告できません。明日また送ってください</string>
     <string name="ai_material_report_failed">報告を送れませんでした。通信状況を確認して、もう一度お試しください</string>
+    <string name="ai_material_tickets_remaining">回数券の残り %1$d回</string>
+    <string name="ai_material_tickets_added">回数券を%1$d回分足しました（%2$sまで使えます）</string>
+    <string name="ai_material_purchase_title">回数券を買う</string>
+    <string name="ai_material_purchase_preparing">回数券の値段を確かめています</string>
+    <string name="ai_material_purchase_unavailable">今は回数券を買えません。時間をおいてお試しください</string>
+    <string name="ai_material_purchase_product">%1$d回分　%2$s</string>
+    <string name="ai_material_purchase_note_valid">購入から%1$dか月使えます</string>
+    <string name="ai_material_purchase_note_refund">AI がうまく作れなかったときは、回数を使いません</string>
+    <string name="ai_material_purchase_note_reinstall">アプリを消したり端末を替えたりすると、残りの回数券は使えなくなることがあります</string>
+    <string name="ai_material_purchase_buy">%1$s で買う</string>
+    <string name="ai_material_purchase_pending">お支払いが済むと回数券が足されます。済んだら、この画面を開き直してください</string>
+    <string name="ai_material_purchase_rejected">購入を確かめられず、回数券を足せませんでした。お手数ですが、特定商取引法に基づく表記の連絡先までご連絡ください</string>
+    <string name="ai_material_purchase_play_error">Google Play で購入できませんでした。時間をおいてお試しください</string>
+    <string name="ai_material_purchase_failed">回数券を足せませんでした。お支払いが済んでいれば、この画面を開き直すと足されます</string>
+    <string name="ai_material_purchase_previous_remaining">前の購入の手続きが残っていて、買えませんでした。時間をおいてもう一度お試しください</string>
+    <string name="ai_material_purchase_legal">特定商取引法に基づく表記</string>
 
     <!-- お詫びダイアログ -->
     <string name="apology_dialog_title">お詫びとお知らせ</string>

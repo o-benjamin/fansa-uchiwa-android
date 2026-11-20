@@ -37,6 +37,8 @@ import com.fansauchiwa.data.repository.MasterpieceRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.fansauchiwa.data.repository.TicketPurchaseRepository
+import com.fansauchiwa.data.repository.TicketPurchaseRepositoryImpl
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
@@ -134,6 +136,12 @@ abstract class RepositoryModule {
     abstract fun bindAiMaterialRepository(
         impl: AiMaterialRepositoryImpl
     ): AiMaterialRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTicketPurchaseRepository(
+        impl: TicketPurchaseRepositoryImpl
+    ): TicketPurchaseRepository
 }
 
 @Module
