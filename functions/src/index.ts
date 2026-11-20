@@ -7,6 +7,7 @@ import { postToDiscord } from "./discord";
 import { createEntrySwitch } from "./entrySwitch";
 import { createGeminiClient } from "./gemini";
 import { handleGenerateMaterial } from "./generateMaterial";
+import { handleReportMaterial } from "./reportMaterial";
 import { createSettingsLoader } from "./settings";
 
 initializeApp();
@@ -39,6 +40,24 @@ export const generateMaterial = onCall(
       isEntryOpen,
       loadSettings,
       gemini: createGeminiClient(geminiApiKey.value()),
+      notifyOwner: (message) => postToDiscord(discordWebhookUrl.value(), message),
+      now: () => new Date(),
+    }),
+);
+
+/** 作った素材を利用者が報告する（#339）。中身は reportMaterial.ts、運用は functions/README.md。 */
+export const reportMaterial = onCall(
+  {
+    region: "asia-northeast1",
+    enforceAppCheck: true,
+    secrets: [discordWebhookUrl],
+    // generateMaterial と同じく、インスタンスが増え続けないように抑える（同時実行の上限ではない）。
+    // Firestore に1件書くだけで1回が短いので2で足り、メモリも既定（256MiB）のまま。報告の数は1人1日の上限（MAX_REPORTS_PER_DAY）で抑える
+    maxInstances: 2,
+  },
+  (request) =>
+    handleReportMaterial(request.auth?.uid, request.data, {
+      db,
       notifyOwner: (message) => postToDiscord(discordWebhookUrl.value(), message),
       now: () => new Date(),
     }),

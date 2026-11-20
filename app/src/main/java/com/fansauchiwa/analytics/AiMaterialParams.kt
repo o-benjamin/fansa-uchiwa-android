@@ -1,7 +1,9 @@
 package com.fansauchiwa.analytics
 
 /**
- * AI 素材のイベント（`generate_ai_material`・`save_ai_material`）のパラメータ
+ * AI 素材のイベント（`generate_ai_material`・`save_ai_material`・`report_ai_material`）のパラメータ。
+ * `report_ai_material` は [PARAM_REASON] に報告の理由、[PARAM_RESULT] に送れたか
+ * （[RESULT_SUCCESS] / 1人1日の上限で断られた [RESULT_REJECTED] / [RESULT_FAILED]）を送る
  */
 object AiMaterialParams {
     const val PARAM_RESULT = "result"

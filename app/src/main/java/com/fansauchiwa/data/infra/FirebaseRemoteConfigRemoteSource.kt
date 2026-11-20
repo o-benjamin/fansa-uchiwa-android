@@ -28,6 +28,11 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         emit(remoteConfig.getString(KEY_AFFILIATE_MATERIALS))
     }
 
+    override fun getAiMaterialEnabledStream(): Flow<Boolean> = flow {
+        fetchAndActivate()
+        emit(remoteConfig.getBoolean(KEY_AI_MATERIAL_ENABLED))
+    }
+
     /**
      * オフライン・取得回数の制限などで失敗するのは想定内なので、ログだけ残して前回の値を使う
      */
@@ -45,6 +50,7 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
     private companion object {
         const val TAG = "RemoteConfig"
         const val KEY_AFFILIATE_MATERIALS = "affiliate_materials"
+        const val KEY_AI_MATERIAL_ENABLED = "ai_material_enabled"
         const val MINIMUM_FETCH_INTERVAL_SECONDS = 60L * 60
         const val FETCH_TIMEOUT_SECONDS = 10L
     }

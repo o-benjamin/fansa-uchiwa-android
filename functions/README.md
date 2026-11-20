@@ -1,6 +1,6 @@
 # サーバー（Cloud Functions）
 
-アプリから呼ばれるサーバーの処理。今は AI 素材の生成（`generateMaterial`、#315）だけ。TypeScript・Node.js 22・東京リージョン（`asia-northeast1`）。
+アプリから呼ばれるサーバーの処理。今は AI 素材の生成（`generateMaterial`、#315）と、作った素材の報告（`reportMaterial`、#339）。TypeScript・Node.js 22・東京リージョン（`asia-northeast1`）。
 
 ## generateMaterial（AI 素材を1枚作る）
 
@@ -30,7 +30,7 @@
 | `total_daily_limit` | resource-exhausted | 全体の安全上限に当たった（今日は止める） |
 | `generation_failed` | unavailable | 作れなかった（Gemini の失敗・審査の答えを読めなかった・Firestore の一時的な障害）。回数は戻してあるので、やり直せる |
 
-成功したときは `{ image（base64）, mimeType, paidWith: "free" | "ticket", ticketsRemaining }` を返す。
+成功したときは `{ image（base64）, mimeType, paidWith: "free" | "ticket", ticketsRemaining, model }` を返す。`model` は画像を作ったモデルで、利用者が報告するときにアプリが `reportMaterial` へ返す。`model` がないとアプリは報告のモデル名を `unknown` として送るので、応答から外さない・名前を変えない。
 
 画像・元画像・文章はサーバーに残さず、ログにも書かない。ログには結果の種類・モデル名・かかった時間・失敗の理由（Gemini のエラーや終わり方）を書く。回数を戻せなかったときだけ、手で戻すために uid と注文番号も書く。
 
@@ -41,6 +41,7 @@
 | `users/{uid}` | `freeUsed`（無料の1回を使ったか）、`packs.{注文番号}.remaining` / `.expiresAt`（回数券の残りと期限。購入の確認 #348 が足す） |
 | `dailyUsage/{日本時間の日付}` | `free` / `ticket`（その日に無料・回数券で作った回数。断った・失敗して戻した分は数えない）、`totalLimitAlerted`（全体の上限を知らせたか） |
 | `config/aiMaterial` | 設定（下の表） |
+| `reports/{ID}`・`reportUsage/{uid}` | 利用者からの報告（下の「reportMaterial」） |
 
 無料は匿名ログインの ID ごとに1回だが、アプリを入れ直すと ID が変わってもう1回使える。そのため、無料の総数は全体の1日の上限（無料の非常ブレーキ）で抑える。
 
@@ -71,6 +72,29 @@
 - **`設定を読めなかった` / `回数をおさえられなかった`**：Firestore の障害。続くなら入口スイッチで止める
 - 全件が失敗しても Discord には知らせない（知らせるのは全体の上限に当たったときだけ）。入口を開けたら、Cloud Logging の `severity>=ERROR` にログベースのアラートを置いておく
 
+## reportMaterial（作った素材の報告を受ける）
+
+アプリの生成結果の画面の「この素材を報告する」から呼ばれる。Google Play の AI 生成コンテンツのポリシーで、不快な生成物をアプリの中から開発者に報告できることが要るため。アプリは送る前に「頼んだ文章と選んだ理由を、匿名の利用者 ID とあわせて開発者に送ります。絵は送りません」と見せる（`strings.xml` の `ai_material_report_message`）。
+
+- 受け取るもの：`{ prompt（1〜200文字）, reason, model }`。`reason` は `inappropriate`（不快・不適切）/ `real_person`（実在の人に似ている）/ `rights`（ほかの作品やキャラクターに似ている）/ `other`。`model` は `generateMaterial` が返した値
+- App Check と匿名ログインを確かめる。入口スイッチが閉じていても受け付ける（閉じる前に作った素材も報告できるように）
+- `reports/{自動の ID}` に `uid`・`prompt`・`reason`・`model`・`createdAt`・`expireAt`（180日後）を書き、Discord に理由とモデル名と ID だけを知らせる（文章は書かない）
+- 1人1日10件まで（`reportUsage/{uid}` で数える。最後の報告の2日後に消える）。超えたら `details.reason` が `too_many_reports`（resource-exhausted。アプリは「今日はこれ以上報告できません」と出す）。形が違えば `invalid_report`（invalid-argument）、Firestore に書けなければ `report_failed`（unavailable。アプリは押し直せる）
+- `reports` と `reportUsage` の `expireAt` での削除（TTL）は `firestore.indexes.json` の `fieldOverrides` に書いてあり、`firebase deploy --only firestore` で入る
+- 画像は受け取らない。利用者は報告した絵をもう持っていないこともあり、絵を送らせると個人の写真が混ざるおそれがあるため
+
+### 報告が届いたら
+
+1. Firebase コンソールの Firestore で `reports/{ID}` を開き、文章と理由を読む
+2. 実在の人物・グループ名なら `config/aiMaterial.blockedNames` に足す（`tools/write-settings.mjs`）。名前ではなく審査をすり抜けた内容なら、`src/gemini.ts` の審査の前置きを直す Issue を立てる
+3. 同じ `uid` から同じ内容が続くときは、いたずらとして扱ってよい
+4. 報告が急に増えたら、入口スイッチで止めてから調べる
+
+### 困ったとき（Cloud Logging で探す）
+
+- **`Discord に知らせられなかった`**（`reportMaterial` のログ）：報告は Firestore に残っているが、だれも気づいていない。Secret `DISCORD_WEBHOOK_URL` の Webhook が生きているかを確かめ、Firestore の `reports` を `createdAt` の新しい順に見て、知らせられなかった分を読む
+- **`報告を残せなかった` が続く**：Firestore の障害。アプリには「報告を送れませんでした」と出て、利用者は押し直せる
+
 ## 開発
 
 ```sh
@@ -100,7 +124,7 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 1. Blaze（従量課金）・Firestore（東京）・匿名ログインが有効になっている。App Check は Play Integrity で有効にし、Play Console の「アプリの完全性」で Play Integrity API を同じ Cloud プロジェクトにつなぎ、Firebase のアプリ設定にアプリ署名鍵の SHA-256 を登録する（どちらかが漏れると、全件が App Check で断られる）
 2. Cloud Billing に予算アラートを置く（Gemini の請求が想定を超えたら知らせる）。Google Cloud コンソールの「割り当て」で Generative Language API の1日のリクエスト数を絞っておくと、なおよい
 3. Secret を登録する：`firebase functions:secrets:set GEMINI_API_KEY`（Google AI Studio の有料枠のキー）、`firebase functions:secrets:set DISCORD_WEBHOOK_URL`
-4. `firebase deploy --only functions,firestore:rules`（`--only` なしの `firebase deploy` は Hosting・関数・ルールをすべて出す。Hosting だけなら `--only hosting`）
+4. `firebase deploy --only functions,firestore`（`firestore` はルールと `firestore.indexes.json` の TTL。`--only` なしの `firebase deploy` は Hosting・関数・Firestore をすべて出す。Hosting だけなら `--only hosting`）
 5. `config/aiMaterial` に `blockedNames` を書く（`tools/write-settings.mjs`）
 6. サーバーの関数は Remote Config のテンプレートを読む。実行のサービス アカウント（既定は Compute Engine の既定のサービス アカウント）に Remote Config を読む権限（`Firebase Remote Config 閲覧者`）がなければ足す。読めないと入口は閉じたままになる
 
@@ -108,8 +132,9 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 
 `ai_material_enabled` を開けると、利用者の文章と画像が Gemini API に送られる。開ける前に次がそろっていること。
 
-- プライバシーポリシーと Play Console のデータセーフティに、文章と画像を Google の Gemini API に送ること（サーバーには残さないこと）を書いてある
-- 生成した画像を報告するボタンがアプリに入っている（#339）
+- プライバシーポリシーと Play Console のデータセーフティに、文章と画像を Google の Gemini API に送ること（作るときの文章と画像はサーバーに残さないこと）を書いてある
+- 生成した画像を報告するボタンがアプリに入っている（#339）。報告では頼んだ文章をサーバーに180日残すので、そのこともプライバシーポリシーに書いてある
+- Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 4 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
 - `config/aiMaterial.blockedNames` を書いてある
 - 上の「本番に出す」の予算アラートと、ログベースのアラートを置いてある
 
