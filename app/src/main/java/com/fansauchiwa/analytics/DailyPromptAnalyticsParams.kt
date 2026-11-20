@@ -17,13 +17,14 @@ package com.fansauchiwa.analytics
  *
  * 計測をやめるときに消すもの：
  * - このファイル、[DailyPromptViewTracker]、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT
- * - HomeViewModel の onDailyPromptShown、onDailyPromptCreate の logEvent
- *   （tap_ai_material_entry は AI素材の計測なので残す。prompt_id だけ外す）
+ * - HomeViewModel の onDailyPromptShown、onDailyPromptCreate の logEvent。onDailyPromptCreateWithAiMaterial は
+ *   AnalyticsActions の TAP_AI_MATERIAL_ENTRY（AI素材の計測）を残して prompt_id だけ外し、KDoc の tap_daily_prompt の説明を消す
  * - DailyPromptCard の onShown と LaunchedEffect、HomeScreen.kt の onDailyPromptShown の受け渡し
  *   （HomeTabContent・HomeTabHomeContent・プレビュー）、HomeScreenTest の引数
  * - UchiwaPreviewViewModel の logExportEvent と showRewardedAdAndShare、ShareAnalyticsParams の selectShareTargetParams
  *   で sourceParams を足しているところ（select_share_target の source。#362）
- * - テスト：DailyPromptViewTrackerTest、HomeViewModelTest のお題の計測、UchiwaPreviewSaveTest と
+ * - テスト：DailyPromptViewTrackerTest、HomeViewModelTest のお題の計測（onDailyPromptCreateWithAiMaterial_… の
+ *   prompt_id と tap_daily_prompt の確認を含む）、UchiwaPreviewSaveTest と
  *   UchiwaPreviewShareTest の source のテスト、ShareAnalyticsParamsTest の
  *   selectShareTargetParams_StartedFromDailyPrompt_AddsSourceDailyPrompt、ShareTargetReceiverTest の
  *   paramsFrom_ChosenFromDailyPromptUchiwa_ReturnsTargetEntryPointAndSource（期待から source を外す）、

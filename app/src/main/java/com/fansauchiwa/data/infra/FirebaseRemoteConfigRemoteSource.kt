@@ -37,6 +37,10 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
     }
 
     override fun getAiMaterialEnabledStream(): Flow<Boolean> = flow {
+        // 入口はお題のカードの副ボタンで、カードは端末に残っている値ですぐ出る。取得を待ってから流すと、
+        // 遅い回線では副ボタンだけ後から出てカードの中身がずれるので、お題と同じく端末に残っている値を先に流す
+        awaitInitialized()
+        emit(remoteConfig.getBoolean(KEY_AI_MATERIAL_ENABLED))
         fetchAndActivate()
         emit(remoteConfig.getBoolean(KEY_AI_MATERIAL_ENABLED))
     }

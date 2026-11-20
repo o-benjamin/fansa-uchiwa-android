@@ -98,6 +98,7 @@ import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -348,6 +349,7 @@ fun HomeScreen(
         derivedStateOf { lazyGridState.firstVisibleItemIndex == 0 }
     }
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val duplicateMasterpieceSnackbar = stringResource(R.string.duplicate_masterpiece_snackbar)
     val deleteMasterpieceSnackbar = stringResource(R.string.delete_masterpiece_snackbar)
     var nameTemplateDialogState by rememberSaveable(stateSaver = NameTemplateDialogState.Saver) {
@@ -367,9 +369,10 @@ fun HomeScreen(
         viewModel.fetchApologyDialogState()
     }
 
-    // ホームを開いたまま裏に回して翌日戻ったときも、その日のお題に変える
+    // ホームを開いたまま裏に回して翌日戻ったときも、その日のお題に変える。AI素材の入口の開け閉めも読み直す
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         viewModel.fetchDailyPrompt()
+        viewModel.fetchAiMaterialEntryEnabled()
     }
 
     if (uiState.showApologyDialog) {
@@ -543,7 +546,12 @@ fun HomeScreen(
                 onImageClick(viewModel.onDailyPromptCreate(prompt))
             },
             onDailyPromptCreateWithAiMaterial = if (uiState.isAiMaterialEntryEnabled) {
-                { prompt -> onAiMaterialEntryClick(viewModel.onDailyPromptCreateWithAiMaterial(prompt)) }
+                { prompt ->
+                    // 続けて2回押されても、編集画面と AI素材の画面を2組積まない（1回目の遷移でホームは RESUMED でなくなる）
+                    if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        onAiMaterialEntryClick(viewModel.onDailyPromptCreateWithAiMaterial(prompt))
+                    }
+                }
             } else {
                 null
             },
@@ -658,9 +666,7 @@ private fun HomeTabHomeContent(
                     prompt = dailyPrompt,
                     onShown = { onDailyPromptShown(dailyPrompt) },
                     onCreate = { onDailyPromptCreate(dailyPrompt) },
-                    onCreateWithAiMaterial = onDailyPromptCreateWithAiMaterial?.let { onCreateWithAiMaterial ->
-                        { onCreateWithAiMaterial(dailyPrompt) }
-                    },
+                    onCreateWithAiMaterial = onDailyPromptCreateWithAiMaterial?.let { onClick -> { onClick(dailyPrompt) } },
                     onDismiss = onDailyPromptDismiss,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )

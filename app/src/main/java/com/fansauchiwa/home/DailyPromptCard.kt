@@ -68,7 +68,7 @@ internal fun DailyPromptCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
     ) {
-        // ×の IconButton（タッチ領域 48dp）を右端に寄せるため end は 4dp にし、お題の文字は 12dp 足して見た目の余白を 16dp にする
+        // ×の IconButton（タッチ領域 48dp）を右端に寄せるため end は 4dp にし、お題の文字とボタンの行は 12dp 足して見た目の余白を 16dp にする
         Column(modifier = Modifier.padding(start = 16.dp, end = 4.dp, bottom = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

@@ -55,7 +55,6 @@ class HomeViewModel @Inject constructor(
     init {
         observeDailyPrompt()
         fetchDailyPromptDismissedDate()
-        observeAiMaterialEntryEnabled()
     }
 
     fun logScreenView() {
@@ -197,6 +196,7 @@ class HomeViewModel @Inject constructor(
 
     /**
      * 「このお題で作る」を押したときに呼び、白紙のうちわにお題の文字を置いて編集画面を開くための引数を返す。
+     * 「AIで素材を作る」（[onDailyPromptCreateWithAiMaterial]）からも呼ばれる。
      * 白紙からの新規作成と保存の率を比べるため、tap_home_new_create は送らない
      */
     fun onDailyPromptCreate(prompt: DailyPrompt): EditScreenInputArg {
@@ -212,7 +212,8 @@ class HomeViewModel @Inject constructor(
     /**
      * お題のカードの「AIで素材を作る」（#340）を押したときに呼ぶ。「このお題で作る」と同じうちわを開く引数を返し、
      * 呼び出し側はその編集画面の上に AI素材の画面を開く（AI素材の画面は、作った素材を下の編集画面に置くため）。
-     * 同じうちわを開くので tap_daily_prompt も送る（お題の判定の分母を、保存の `source=daily_prompt` とそろえるため）
+     * 同じうちわを開くので tap_daily_prompt も送る。お題から開いたうちわの数（tap_daily_prompt）と、
+     * そのうちわを保存した数（`source=daily_prompt` の付いた tap_preview_export）が、同じうちわを数えるようにするため
      */
     fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt): EditScreenInputArg {
         logEvent(
@@ -223,10 +224,12 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * 入口を出すかは、ホームを作ったときに1回だけ読む。Remote Config で開け閉めしても、端末に届くのは
-     * 次にホームを作り直したとき（アプリの起動など）。閉じたあとに残った入口から開いても、サーバーが断る
+     * ホームが前に出るたび（ON_START）に呼び、入口を出すかを読み直す。ホームの ViewModel はアプリが裏に回っても残るので、
+     * 作ったときの1回だけだと、Remote Config で入口を閉じても何日も残ることがある。
+     * 取得は最小間隔（1時間）で間引かれるので、閉じたのが入口に届くのは、公開から最大約1時間たったあとにホームが前に出たとき。
+     * それまでに残った入口から開いても、サーバーが断る
      */
-    private fun observeAiMaterialEntryEnabled() {
+    fun fetchAiMaterialEntryEnabled() {
         aiMaterialRepository.getEntryEnabledStream()
             .onEach { enabled -> _uiState.update { it.copy(isAiMaterialEntryEnabled = enabled) } }
             .launchIn(viewModelScope)

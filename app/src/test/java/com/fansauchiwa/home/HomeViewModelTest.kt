@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -58,7 +59,6 @@ class HomeViewModelTest {
     private val dailyPromptDismissedDateStream = MutableStateFlow<LocalDate?>(null)
     private lateinit var dailyPromptUchiwaRepository: DailyPromptUchiwaRepositoryImpl
     private lateinit var aiMaterialRepository: AiMaterialRepository
-    private val aiMaterialEntryEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
     private val today = LocalDate.of(2026, 11, 4)
     private val todayProvider = object : TodayProvider {
         override fun today(): LocalDate = today
@@ -78,7 +78,7 @@ class HomeViewModelTest {
         every { settingsRepository.getDailyPromptDismissedDateStream() } returns dailyPromptDismissedDateStream
         dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl()
         aiMaterialRepository = mockk(relaxed = true)
-        every { aiMaterialRepository.getEntryEnabledStream() } returns aiMaterialEntryEnabledStream
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(false)
         uuidProvider = mockk(relaxed = true)
     }
 
@@ -246,31 +246,49 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun init_aiMaterialEntryNotEmittedYet_hidesAiMaterialEntry() = runTest {
+    fun init_aiMaterialEntryNotFetchedYet_hidesAiMaterialEntry() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()
 
-        // Remote Config の取得を待つ間は、入口スイッチの既定（閉じている）のまま
+        // ホームが前に出て読むまでは、入口スイッチの既定（閉じている）のまま
         assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
     }
 
     @Test
-    fun init_aiMaterialEntryEnabled_showsAiMaterialEntry() = runTest {
+    fun fetchAiMaterialEntryEnabled_openedByFetch_showsAiMaterialEntry() = runTest {
+        // 端末に残っていた値は閉じていて、取得で開いた
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(false, true)
         val viewModel = createViewModel()
 
-        aiMaterialEntryEnabledStream.emit(true)
+        viewModel.fetchAiMaterialEntryEnabled()
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isAiMaterialEntryEnabled)
     }
 
     @Test
-    fun init_aiMaterialEntryDisabled_hidesAiMaterialEntry() = runTest {
+    fun fetchAiMaterialEntryEnabled_closedByFetch_hidesAiMaterialEntry() = runTest {
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(true, false)
         val viewModel = createViewModel()
 
-        aiMaterialEntryEnabledStream.emit(false)
+        viewModel.fetchAiMaterialEntryEnabled()
         advanceUntilIdle()
 
+        assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun fetchAiMaterialEntryEnabled_closedWhileHomeKept_hidesEntryOnNextFetch() = runTest {
+        // 1回目（起動）は開いていて、ホームを残したまま閉じられ、次にホームが前に出たときの取得で閉じた
+        every { aiMaterialRepository.getEntryEnabledStream() } returnsMany listOf(flowOf(true), flowOf(true, false))
+        val viewModel = createViewModel()
+
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isAiMaterialEntryEnabled)
+
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
     }
 

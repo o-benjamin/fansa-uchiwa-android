@@ -11,7 +11,8 @@ package com.fansauchiwa.analytics
  * `purchase_ai_material` は [PARAM_RESULT] に [RESULT_SUCCESS] / [RESULT_PENDING] / [RESULT_CANCELLED] /
  * サーバーが断った [RESULT_REJECTED]（[PARAM_REASON] に理由）/ [RESULT_FAILED] を送る。
  * 前の購入が足し済みのまま残っていて買えなかったときも [RESULT_FAILED]。
- * あとで足した購入（コンビニ払いが済んだ・足す前に通信が切れた）は、足したときに [RESULT_SUCCESS] だけを送る
+ * あとで足した購入（コンビニ払いが済んだ・足す前に通信が切れた）は、足したときに [RESULT_SUCCESS] だけを送る。
+ * 入口のイベント `tap_ai_material_entry`（お題のカードの副ボタン、#340）のパラメータは [DailyPromptAnalyticsParams]
  */
 object AiMaterialParams {
     const val PARAM_RESULT = "result"
