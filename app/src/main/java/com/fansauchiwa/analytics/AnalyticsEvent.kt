@@ -36,9 +36,13 @@ object AnalyticsActions {
     const val TAP_HOME_ITEM_DUPLICATE = "tap_home_item_duplicate"
     const val TAP_HOME_TEMPLATE = "tap_home_template"
 
-    // ホームの「今日のお題」のカード（#360）。カードが出た・「このお題で作る」を押した。パラメータは DailyPromptAnalyticsParams
+    // ホームの「今日のお題」のカード（#360）。カードが出た・「このお題で作る」か「AIで素材を作る」を押した（どちらも同じうちわを開く。
+    // 「AIで素材を作る」だけの数は TAP_AI_MATERIAL_ENTRY）。パラメータは DailyPromptAnalyticsParams
     const val VIEW_DAILY_PROMPT = "view_daily_prompt"
     const val TAP_DAILY_PROMPT = "tap_daily_prompt"
+
+    // お題のカードの副ボタン「AIで素材を作る」（AI素材の入口、#340）。パラメータは DailyPromptAnalyticsParams の prompt_id
+    const val TAP_AI_MATERIAL_ENTRY = "tap_ai_material_entry"
 
     const val TAP_EDIT_BACK = "tap_edit_back"
     const val TAP_EDIT_BACK_DIALOG = "tap_edit_back_dialog"

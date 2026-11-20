@@ -31,7 +31,7 @@ interface AiMaterialRepository {
     suspend fun report(prompt: String, reason: AiMaterialReportReason, model: String): Result<Unit>
 
     /**
-     * 入口を出してよいか（Remote Config の `ai_material_enabled`。既定は false）。取得を試みてから流す。
+     * 入口を出してよいか（Remote Config の `ai_material_enabled`。既定は false）。端末に残っている値を先に流し、取得を試みてからもう一度流す。
      * 止めたあとも端末には最大約1時間前の値が残るので、ここが true でもサーバーが断ることがある（`.agents/remote-config.md`）
      */
     fun getEntryEnabledStream(): Flow<Boolean>

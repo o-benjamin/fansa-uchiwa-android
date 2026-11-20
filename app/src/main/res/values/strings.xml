@@ -268,6 +268,7 @@
     <!-- 今日のお題のカード（#360） -->
     <string name="daily_prompt_card_title">今日のお題</string>
     <string name="daily_prompt_create_button">このお題で作る</string>
+    <string name="daily_prompt_ai_material_button">AIで素材を作る</string>
     <string name="daily_prompt_help_description">うちわの持ち込みについて</string>
     <string name="daily_prompt_close_description">今日のお題を閉じる</string>
     <string name="daily_prompt_help_message">手作りうちわが禁止の公演もあるよ。持ち込みの決まりは公演ごとに確かめてね</string>

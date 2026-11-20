@@ -14,6 +14,7 @@ import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
+import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
@@ -29,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -56,6 +58,7 @@ class HomeViewModelTest {
     private val dailyPromptStream = MutableSharedFlow<DailyPrompt?>(replay = 1)
     private val dailyPromptDismissedDateStream = MutableStateFlow<LocalDate?>(null)
     private lateinit var dailyPromptUchiwaRepository: DailyPromptUchiwaRepositoryImpl
+    private lateinit var aiMaterialRepository: AiMaterialRepository
     private val today = LocalDate.of(2026, 11, 4)
     private val todayProvider = object : TodayProvider {
         override fun today(): LocalDate = today
@@ -74,6 +77,8 @@ class HomeViewModelTest {
         every { dailyPromptRepository.getDailyPromptStream() } returns dailyPromptStream
         every { settingsRepository.getDailyPromptDismissedDateStream() } returns dailyPromptDismissedDateStream
         dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl()
+        aiMaterialRepository = mockk(relaxed = true)
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(false)
         uuidProvider = mockk(relaxed = true)
     }
 
@@ -92,6 +97,7 @@ class HomeViewModelTest {
             dailyPromptRepository = dailyPromptRepository,
             dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
             dailyPromptViewTracker = DailyPromptViewTracker(),
+            aiMaterialRepository = aiMaterialRepository,
             todayProvider = todayProvider,
             uuidProvider = uuidProvider
         )
@@ -234,6 +240,85 @@ class HomeViewModelTest {
             )
         }
         // 白紙からの新規作成とは別に数える
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_HOME_NEW_CREATE })
+        }
+    }
+
+    @Test
+    fun init_aiMaterialEntryNotFetchedYet_hidesAiMaterialEntry() = runTest {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // ホームが前に出て読むまでは、入口スイッチの既定（閉じている）のまま
+        assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun fetchAiMaterialEntryEnabled_openedByFetch_showsAiMaterialEntry() = runTest {
+        // 端末に残っていた値は閉じていて、取得で開いた
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(false, true)
+        val viewModel = createViewModel()
+
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun fetchAiMaterialEntryEnabled_closedByFetch_hidesAiMaterialEntry() = runTest {
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(true, false)
+        val viewModel = createViewModel()
+
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun fetchAiMaterialEntryEnabled_closedWhileHomeKept_hidesEntryOnNextFetch() = runTest {
+        // 1回目（起動）は開いていて、ホームを残したまま閉じられ、次にホームが前に出たときの取得で閉じた
+        every { aiMaterialRepository.getEntryEnabledStream() } returnsMany listOf(flowOf(true), flowOf(true, false))
+        val viewModel = createViewModel()
+
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isAiMaterialEntryEnabled)
+
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isAiMaterialEntryEnabled)
+    }
+
+    @Test
+    fun onDailyPromptCreateWithAiMaterial_returnsPromptArgAndLogsEntryAndPromptTaps() = runTest {
+        every { uuidProvider.generate() } returns "new-uchiwa-id"
+        val viewModel = createViewModel()
+
+        val inputArg = viewModel.onDailyPromptCreateWithAiMaterial(DailyPrompt("20261104", "ピースして"))
+        advanceUntilIdle()
+
+        // 「このお題で作る」と同じうちわを開く
+        assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        assertTrue(dailyPromptUchiwaRepository.isStartedFromPrompt("new-uchiwa-id"))
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to "20261104")
+                )
+            )
+        }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    AnalyticsActions.TAP_DAILY_PROMPT,
+                    mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to "20261104")
+                )
+            )
+        }
         coVerify(exactly = 0) {
             analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_HOME_NEW_CREATE })
         }

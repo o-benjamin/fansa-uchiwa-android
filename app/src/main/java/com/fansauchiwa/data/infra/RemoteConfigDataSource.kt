@@ -20,7 +20,8 @@ interface RemoteConfigDataSource {
 
     /**
      * AI 素材の入口を出すか（`ai_material_enabled`。#339）。
-     * 取得を試みてから、有効になっている値を流す。取得に失敗したときは前回取得した値、未設定なら false
+     * 端末に残っている値を先に流し、取得を試みてから有効になっている値をもう一度流す。
+     * 取得に失敗したときは前回取得した値、未設定なら false
      */
     fun getAiMaterialEnabledStream(): Flow<Boolean>
 }
