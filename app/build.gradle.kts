@@ -36,6 +36,7 @@ android {
 
     defaultConfig {
         applicationId = "com.fansauchiwa"
+        // 変えたら特定商取引法に基づく表記のページ（web/public/tokushoho.html）の動作環境も直す（.agents/play-billing.md）
         minSdk = 29
         targetSdk = 36
         versionCode = 31

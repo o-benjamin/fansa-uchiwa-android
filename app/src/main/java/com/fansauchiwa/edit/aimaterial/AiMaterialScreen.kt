@@ -71,7 +71,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// 回数券の購入の案内からリンクする。ページはまだない（#348 で `web/public/tokushoho.html` に作り、Firebase Hosting で出す）。
+// 回数券の購入の案内からリンクする特定商取引法に基づく表記（`web/public/tokushoho.html` を Firebase Hosting で出す。`.agents/play-billing.md`）。
 // 入口を開ける前に出す（functions/README.md の「入口を初めて開ける前に」）
 private const val COMMERCIAL_TRANSACTIONS_URL = "https://fansauchiwa-578d22ff.web.app/tokushoho.html"
 
