@@ -19,7 +19,7 @@ initializeApp();
 
 /** Google AI Studio の Gemini API キー（有料枠。学習に使われない） */
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
-/** 全体の安全上限に当たったときに知らせる Discord の Webhook の URL */
+/** 全体の安全上限に当たったときと、利用者から素材の報告が届いたときに知らせる Discord の Webhook の URL */
 const discordWebhookUrl = defineSecret("DISCORD_WEBHOOK_URL");
 
 /** アプリのパッケージ名（app/build.gradle.kts の applicationId）。Play Developer API で購入を確かめるときに使う */
