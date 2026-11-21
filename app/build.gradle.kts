@@ -36,9 +36,10 @@ android {
 
     defaultConfig {
         applicationId = "com.fansauchiwa"
+        // 変えたら特定商取引法に基づく表記のページ（web/public/tokushoho.html）の動作環境も直す（.agents/play-billing.md）
         minSdk = 29
         targetSdk = 36
-        versionCode = 35
+        versionCode = 36
         versionName = "2.13.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -109,6 +110,11 @@ android {
         compose = true
         buildConfig = true
     }
+    sourceSets {
+        // debug と beta は同じデバッグ用の App Check provider を使う（#337）
+        getByName("debug").java.srcDir("src/appCheckDebug/java")
+        getByName("beta").java.srcDir("src/appCheckDebug/java")
+    }
 }
 
 kotlin {
@@ -176,6 +182,8 @@ dependencies {
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
+    // AI素材の元画像に顔があれば送らない
+    implementation(libs.play.services.mlkit.face.detection)
     // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
     implementation(libs.play.services.base)
 
@@ -202,5 +210,17 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+    // 匿名ログインと App Check（#337）。AI 素材のサーバーを、本物のアプリの利用者からだけ呼べるようにする
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.appcheck)
+    implementation(libs.firebase.functions)
+    // AI 素材の回数券の購入（#348）。購入の確認と回数の付与はサーバーの verifyPurchase が行う
+    implementation(libs.billing.ktx)
+    // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。
+    // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う。
+    // Play Integrity は beta の R8 確認に入らないので、更新したら :app:minifyReleaseWithR8 も通す（.agents/r8.md）
+    releaseImplementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
+    "betaImplementation"(libs.firebase.appcheck.debug)
 
 }

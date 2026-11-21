@@ -22,6 +22,7 @@ import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.edit.FontFamilies
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -89,6 +90,7 @@ class HomeScreenTest {
                     dailyPrompt = null,
                     onDailyPromptShown = {},
                     onDailyPromptCreate = {},
+                    onDailyPromptCreateWithAiMaterial = null,
                     onDailyPromptDismiss = {},
                     statusBarPadding = 0.dp,
                     bottomPadding = 0.dp,
@@ -138,6 +140,7 @@ class HomeScreenTest {
                 dailyPrompt = prompt,
                 onDailyPromptShown = {},
                 onDailyPromptCreate = {},
+                onDailyPromptCreateWithAiMaterial = null,
                 onDailyPromptDismiss = {},
                 statusBarPadding = 0.dp,
                 bottomPadding = 0.dp,
@@ -150,6 +153,40 @@ class HomeScreenTest {
         composeTestRule.onNodeWithText(context.getString(R.string.daily_prompt_create_button)).assertIsDisplayed()
         // カードを足しても、テンプレートの一覧はそのまま出る
         composeTestRule.onNodeWithText(context.getString(R.string.template_section_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun homeTabContent_aiMaterialEntryTapped_passesShownPrompt() {
+        val prompt = DailyPrompt(id = "default_peace", text = "ピースして")
+        val tappedPrompts = mutableListOf<DailyPrompt>()
+        composeTestRule.setContent {
+            HomeTabContent(
+                selectedTab = HomeTab.HOME,
+                masterpiecePathList = emptyList(),
+                templates = previewTemplates(),
+                selectedMainColor = DecorationColors.PINK,
+                onMainColorSelected = {},
+                isSelectionMode = false,
+                selectedPaths = emptyList(),
+                onImageClick = {},
+                onTemplateClick = {},
+                onImageLongPress = {},
+                dailyPrompt = prompt,
+                onDailyPromptShown = {},
+                onDailyPromptCreate = {},
+                onDailyPromptCreateWithAiMaterial = { tappedPrompts += it },
+                onDailyPromptDismiss = {},
+                statusBarPadding = 0.dp,
+                bottomPadding = 0.dp,
+                isPreview = true
+            )
+        }
+
+        composeTestRule.onNodeWithText(getContext().getString(R.string.daily_prompt_ai_material_button)).performClick()
+
+        composeTestRule.runOnIdle {
+            assertEquals(listOf(prompt), tappedPrompts)
+        }
     }
 
     @Test
@@ -178,6 +215,7 @@ class HomeScreenTest {
                 dailyPrompt = null,
                 onDailyPromptShown = {},
                 onDailyPromptCreate = {},
+                onDailyPromptCreateWithAiMaterial = null,
                 onDailyPromptDismiss = {},
                 statusBarPadding = 0.dp,
                 bottomPadding = 0.dp,

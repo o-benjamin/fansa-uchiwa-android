@@ -18,6 +18,10 @@ import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AdMobRepositoryImpl
 import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.AffiliateRepositoryImpl
+import com.fansauchiwa.data.repository.AiMaterialRepository
+import com.fansauchiwa.data.repository.AiMaterialRepositoryImpl
+import com.fansauchiwa.data.repository.AuthRepository
+import com.fansauchiwa.data.repository.AuthRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.CrashReportingRepositoryImpl
 import com.fansauchiwa.data.repository.DailyPromptRepository
@@ -40,6 +44,8 @@ import com.fansauchiwa.data.repository.MasterpieceRepositoryImpl
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
 import com.fansauchiwa.data.repository.TemplateRepository
+import com.fansauchiwa.data.repository.TicketPurchaseRepository
+import com.fansauchiwa.data.repository.TicketPurchaseRepositoryImpl
 import com.fansauchiwa.data.source.FansaUchiwaDao
 import com.fansauchiwa.data.source.FansaUchiwaDatabase
 import dagger.Binds
@@ -130,6 +136,24 @@ abstract class RepositoryModule {
     abstract fun bindAffiliateRepository(
         impl: AffiliateRepositoryImpl
     ): AffiliateRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAuthRepository(
+        impl: AuthRepositoryImpl
+    ): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAiMaterialRepository(
+        impl: AiMaterialRepositoryImpl
+    ): AiMaterialRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTicketPurchaseRepository(
+        impl: TicketPurchaseRepositoryImpl
+    ): TicketPurchaseRepository
 
     @Binds
     @Singleton

@@ -16,6 +16,7 @@ import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.DailyPromptRepository
 import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
@@ -43,6 +44,7 @@ class HomeViewModel @Inject constructor(
     private val dailyPromptRepository: DailyPromptRepository,
     private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
     private val dailyPromptViewTracker: DailyPromptViewTracker,
+    private val aiMaterialRepository: AiMaterialRepository,
     private val todayProvider: TodayProvider,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
@@ -194,6 +196,7 @@ class HomeViewModel @Inject constructor(
 
     /**
      * 「このお題で作る」を押したときに呼び、白紙のうちわにお題の文字を置いて編集画面を開くための引数を返す。
+     * 「AIで素材を作る」（[onDailyPromptCreateWithAiMaterial]）からも呼ばれる。
      * 白紙からの新規作成と保存の率を比べるため、tap_home_new_create は送らない
      */
     fun onDailyPromptCreate(prompt: DailyPrompt): EditScreenInputArg {
@@ -204,6 +207,32 @@ class HomeViewModel @Inject constructor(
         val uchiwaId = uuidProvider.generate()
         dailyPromptUchiwaRepository.markStartedFromPrompt(uchiwaId)
         return EditScreenInputArg(uchiwaId = uchiwaId, dailyPromptText = prompt.text)
+    }
+
+    /**
+     * お題のカードの「AIで素材を作る」（#340）を押したときに呼ぶ。「このお題で作る」と同じうちわを開く引数を返し、
+     * 呼び出し側はその編集画面の上に AI素材の画面を開く（AI素材の画面は、作った素材を下の編集画面に置くため）。
+     * 同じうちわを開くので tap_daily_prompt も送る。お題から開いたうちわの数（tap_daily_prompt）と、
+     * そのうちわを保存した数（`source=daily_prompt` の付いた tap_preview_export）が、同じうちわを数えるようにするため
+     */
+    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt): EditScreenInputArg {
+        logEvent(
+            AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
+            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
+        )
+        return onDailyPromptCreate(prompt)
+    }
+
+    /**
+     * ホームが前に出るたび（ON_START）に呼び、入口を出すかを読み直す。ホームの ViewModel はアプリが裏に回っても残るので、
+     * 作ったときの1回だけだと、Remote Config で入口を閉じても何日も残ることがある。
+     * 取得は最小間隔（1時間）で間引かれるので、閉じたのが入口に届くのは、公開から最大約1時間たったあとにホームが前に出たとき。
+     * それまでに残った入口から開いても、サーバーが断る
+     */
+    fun fetchAiMaterialEntryEnabled() {
+        aiMaterialRepository.getEntryEnabledStream()
+            .onEach { enabled -> _uiState.update { it.copy(isAiMaterialEntryEnabled = enabled) } }
+            .launchIn(viewModelScope)
     }
 
     /** お題のカードの×。今日はもう出さない */

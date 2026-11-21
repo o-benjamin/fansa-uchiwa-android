@@ -13,6 +13,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.fansauchiwa.edit.EditScreen
 import com.fansauchiwa.edit.EditViewModel
+import com.fansauchiwa.edit.aimaterial.AiMaterialScreen
+import com.fansauchiwa.edit.aimaterial.AiMaterialViewModel
 import com.fansauchiwa.edit.imagepreview.ImagePreviewScreen
 import com.fansauchiwa.edit.imagepreview.ImagePreviewViewModel
 import com.fansauchiwa.home.HomeScreen
@@ -39,6 +41,12 @@ fun FansaUchiwaNavGraph(
                 },
                 onAddClick = {
                     navController.navigate(EditRoute())
+                },
+                onAiMaterialEntryClick = { inputArg ->
+                    // AI素材の画面は作った素材を下の編集画面に置くので、先に編集画面を積んでからその上に開く。
+                    // 素材を置かずに戻ると、その編集画面に戻る
+                    navController.navigate(EditRoute(inputArg = inputArg.toRouteArgument()))
+                    navController.navigate(AiMaterialDestination.route)
                 },
                 onNavigateToSettings = {
                     navController.navigate(SettingsDestination.route)
@@ -108,6 +116,22 @@ fun FansaUchiwaNavGraph(
             ImagePreviewScreen(
                 onConfirm = { resultUri ->
                     // EditViewModelのメソッドを直接呼び出す
+                    editViewModel.handleImageResult(resultUri)
+                    navController.popBackStack()
+                },
+                onBack = { navController.navigateUp() },
+                viewModel = viewModel
+            )
+        }
+        composable(AiMaterialDestination.route) { backStackEntry ->
+            val viewModel: AiMaterialViewModel = hiltViewModel()
+            val editBackStackEntry = remember(backStackEntry) {
+                navController.getBackStackEntry(EditDestination.route)
+            }
+            val editViewModel: EditViewModel = hiltViewModel(editBackStackEntry)
+
+            AiMaterialScreen(
+                onConfirm = { resultUri ->
                     editViewModel.handleImageResult(resultUri)
                     navController.popBackStack()
                 },

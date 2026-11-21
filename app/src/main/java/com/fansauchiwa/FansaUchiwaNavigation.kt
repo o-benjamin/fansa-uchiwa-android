@@ -15,6 +15,7 @@ object FansaUchiwaScreens {
     const val IMAGE_PREVIEW_SCREEN = "image_preview"
     const val SETTINGS_SCREEN = "settings"
     const val TIMELINE_SCREEN = "timeline"
+    const val AI_MATERIAL_SCREEN = "ai_material"
 }
 
 const val UCHIWA_ID_ARG = "uchiwaId"
@@ -75,6 +76,11 @@ data object EventTimelineDestination : FansaUchiwaNavigationDestination {
             screen = screen,
             arguments = arrayOf(UCHIWA_ID_ARG to uchiwaId)
         )
+}
+
+data object AiMaterialDestination : FansaUchiwaNavigationDestination {
+    override val screen: String = FansaUchiwaScreens.AI_MATERIAL_SCREEN
+    override val route: String = screen
 }
 
 private fun buildPathRoute(screen: String, argument: String): String = "$screen/$argument"

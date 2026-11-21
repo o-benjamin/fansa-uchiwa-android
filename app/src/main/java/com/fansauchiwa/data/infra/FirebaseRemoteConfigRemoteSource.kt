@@ -36,6 +36,15 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         emit(remoteConfig.getString(KEY_AFFILIATE_MATERIALS))
     }
 
+    override fun getAiMaterialEnabledStream(): Flow<Boolean> = flow {
+        // 入口はお題のカードの副ボタンで、カードは端末に残っている値ですぐ出る。取得を待ってから流すと、
+        // 遅い回線では副ボタンだけ後から出てカードの中身がずれるので、お題と同じく端末に残っている値を先に流す
+        awaitInitialized()
+        emit(remoteConfig.getBoolean(KEY_AI_MATERIAL_ENABLED))
+        fetchAndActivate()
+        emit(remoteConfig.getBoolean(KEY_AI_MATERIAL_ENABLED))
+    }
+
     /**
      * 前回までに有効にした値を端末から読み込む。読み込む前の getString は初期値（空文字）を返すため
      */
@@ -67,6 +76,7 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         const val TAG = "RemoteConfig"
         const val KEY_DAILY_PROMPTS = "daily_prompts"
         const val KEY_AFFILIATE_MATERIALS = "affiliate_materials"
+        const val KEY_AI_MATERIAL_ENABLED = "ai_material_enabled"
         const val MINIMUM_FETCH_INTERVAL_SECONDS = 60L * 60
         const val FETCH_TIMEOUT_SECONDS = 10L
     }
