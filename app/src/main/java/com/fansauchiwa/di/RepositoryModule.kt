@@ -20,6 +20,8 @@ import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.AffiliateRepositoryImpl
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.AiMaterialRepositoryImpl
+import com.fansauchiwa.data.repository.AppInfoRepository
+import com.fansauchiwa.data.repository.AppInfoRepositoryImpl
 import com.fansauchiwa.data.repository.AuthRepository
 import com.fansauchiwa.data.repository.AuthRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
@@ -112,6 +114,12 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         impl: SettingsRepositoryImpl
     ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAppInfoRepository(
+        impl: AppInfoRepositoryImpl
+    ): AppInfoRepository
 
     @Binds
     @Singleton

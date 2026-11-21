@@ -210,6 +210,8 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+    // 設定画面にインストール ID を出す（#411）。ほかの Firebase 経由でも入るが、直接 import するので明示する（版は BOM）
+    implementation(libs.firebase.installations)
     // 匿名ログインと App Check（#337）。AI 素材のサーバーを、本物のアプリの利用者からだけ呼べるようにする
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck)
