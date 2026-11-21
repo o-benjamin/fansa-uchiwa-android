@@ -39,7 +39,7 @@ android {
         // 変えたら特定商取引法に基づく表記のページ（web/public/tokushoho.html）の動作環境も直す（.agents/play-billing.md）
         minSdk = 29
         targetSdk = 36
-        versionCode = 35
+        versionCode = 36
         versionName = "2.13.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
