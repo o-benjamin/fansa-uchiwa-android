@@ -16,5 +16,6 @@
     - テストの種類に応じて、以下の適切なディレクトリ配下にScreen・機能ごとのパッケージで作成してください。対応するパッケージが存在しない場合は新規作成してください。
         - **ユニットテスト**: `app/src/test/java/com/fansauchiwa/...`
         - **UI動作テスト**: `app/src/androidTest/java/com/fansauchiwa/...`
+        - **debug ビルドにしかないコードのユニットテスト**: `app/src/testDebug/java/com/fansauchiwa/...`（`src/test` に置くと release のユニットテストがコンパイルできない）
 - **ロジックの正当性の証明**:
     - 実装が複雑になる場合（特に `Decoration` の座標計算など）は、ロジックの正当性を証明するための単体テストコードも併せて作成してください。

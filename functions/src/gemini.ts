@@ -80,7 +80,6 @@ interface GenerateContentResponse {
   }[];
 }
 
-/** 画像の生成の答えから、画像か、安全フィルターで止まったかを取り出す。 */
 /** 頼んだ内容か答えが安全フィルターで止められていれば、その理由を返す。 */
 function safetyStopReason(response: GenerateContentResponse): string | undefined {
   return (
@@ -89,6 +88,7 @@ function safetyStopReason(response: GenerateContentResponse): string | undefined
   );
 }
 
+/** 画像の生成の答えから、画像か、安全フィルターで止まったかを取り出す。 */
 export function parseImageResponse(response: GenerateContentResponse): ImageResult {
   for (const candidate of response.candidates ?? []) {
     const image = candidate.content?.parts?.find((part) => part.inlineData?.data)?.inlineData;

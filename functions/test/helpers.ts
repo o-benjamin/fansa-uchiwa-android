@@ -1,7 +1,9 @@
+import assert from "node:assert/strict";
 import { randomInt, randomUUID } from "node:crypto";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import type { Firestore } from "firebase-admin/firestore";
+import { HttpsError } from "firebase-functions/v2/https";
 
 /**
  * Firestore エミュレーターにつないだ Firestore。`npm test`（firebase emulators:exec）の中で動かす。
@@ -31,3 +33,13 @@ export function daysLater(base: Date, days: number): Timestamp {
 }
 
 export const LIMITS = { freeDailyLimit: 30, totalDailyLimit: 300 };
+
+/** `assert.rejects` に渡す。`HttpsError` の `code` と `details.reason` を確かめる。 */
+export function rejectsWith(reason: string, code: string) {
+  return (error: unknown) => {
+    assert.ok(error instanceof HttpsError);
+    assert.equal(error.code, code);
+    assert.equal((error.details as { reason: string }).reason, reason);
+    return true;
+  };
+}

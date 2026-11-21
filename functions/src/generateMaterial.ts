@@ -57,6 +57,8 @@ export interface GenerateMaterialResponse {
   paidWith: "free" | "ticket";
   /** 今回の分を引いたあとの、使える回数券の残り */
   ticketsRemaining: number;
+  /** 画像を作ったモデル。利用者が報告するとき、アプリがこの値を reportMaterial に返す */
+  model: string;
 }
 
 export interface GenerateMaterialDeps {
@@ -136,6 +138,7 @@ export async function handleGenerateMaterial(
     mimeType: sticker.mimeType,
     paidWith: outcome.reservation.kind,
     ticketsRemaining: outcome.ticketsRemaining,
+    model: settings.imageModel,
   };
 }
 

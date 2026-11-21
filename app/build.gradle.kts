@@ -36,10 +36,11 @@ android {
 
     defaultConfig {
         applicationId = "com.fansauchiwa"
+        // 変えたら特定商取引法に基づく表記のページ（web/public/tokushoho.html）の動作環境も直す（.agents/play-billing.md）
         minSdk = 29
         targetSdk = 36
-        versionCode = 31
-        versionName = "2.11.0"
+        versionCode = 36
+        versionName = "2.13.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -181,6 +182,8 @@ dependencies {
 
     // ML Kit Subject Segmentation
     implementation(libs.play.services.mlkit.subject.segmentation)
+    // AI素材の元画像に顔があれば送らない
+    implementation(libs.play.services.mlkit.face.detection)
     // 背景透過の ML Kit モジュールのダウンロード（ModuleInstallClient）に使う
     implementation(libs.play.services.base)
 
@@ -212,6 +215,9 @@ dependencies {
     // 匿名ログインと App Check（#337）。AI 素材のサーバーを、本物のアプリの利用者からだけ呼べるようにする
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck)
+    implementation(libs.firebase.functions)
+    // AI 素材の回数券の購入（#348）。購入の確認と回数の付与はサーバーの verifyPurchase が行う
+    implementation(libs.billing.ktx)
     // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。
     // ストアを通らない debug と beta は Play Integrity を通らないため、デバッグ用の provider を使う。
     // Play Integrity は beta の R8 確認に入らないので、更新したら :app:minifyReleaseWithR8 も通す（.agents/r8.md）
