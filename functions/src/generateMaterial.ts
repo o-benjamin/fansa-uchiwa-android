@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { logger } from "firebase-functions";
 import { HttpsError } from "firebase-functions/v2/https";
 import type { FunctionsErrorCode } from "firebase-functions/v2/https";
@@ -114,22 +115,29 @@ export async function handleGenerateMaterial(
   const settings = await refuseIfThrows(deps.loadSettings(), "設定を読めなかった");
   if (findBlockedName(request.prompt, settings.blockedNames)) refuse("blocked_name");
 
-  const outcome = await refuseIfThrows(reserveCredit(deps.db, uid, settings, deps.now()), "回数をおさえられなかった");
+  const ids: CallIds = { uid, callId: randomUUID() };
+  const outcome = await refuseIfThrows(
+    reserveCredit(deps.db, uid, settings, deps.now()),
+    "回数をおさえられなかった",
+    ids,
+  );
   if (!outcome.ok) {
     if (outcome.firstTotalLimitHit) await notifyTotalLimitHit(deps, settings.totalDailyLimit);
     refuse(outcome.reason);
   }
+  logger.info("回数をおさえた", { ...ids, reservation: outcome.reservation });
 
   const startedAt = Date.now();
   const sticker = await createSticker(deps.gemini, settings, request);
   if (!sticker.ok) {
-    await refund(deps.db, uid, outcome.reservation);
+    await refund(deps.db, ids, outcome.reservation);
     refuse(sticker.reason, sticker.details);
   }
 
   logger.info("generateMaterial", {
     result: "ok",
-    paidWith: outcome.reservation.kind,
+    ...ids,
+    reservation: outcome.reservation,
     model: settings.imageModel,
     elapsedMs: Date.now() - startedAt,
   });
@@ -143,14 +151,26 @@ export async function handleGenerateMaterial(
 }
 
 /**
- * Firestore を読み書きできなかった（一時的な障害など）ときも、アプリが文言を選べるよう `generation_failed` で断る。
- * 回数をおさえる前に使うので、戻すものはない。
+ * 回数を動かすログ（おさえた・おさえられなかった・戻した・戻さなかった・戻せなかった・作れた）に書く ID。
+ * 「作れたか確かめられませんでした」と出た人から連絡が来たとき、その uid の回数が減ったままかをログで確かめるため。
+ * `reservation` は1回ごとに違う値ではない（同じ日に同じ回数券で作ると同じ）ので、1回の呼び出しのログは `callId` で組にする
+ * （README の generateMaterial の「困ったとき（Cloud Logging で探す）」）。
  */
-async function refuseIfThrows<T>(work: Promise<T>, message: string): Promise<T> {
+interface CallIds {
+  uid: string;
+  callId: string;
+}
+
+/**
+ * Firestore を読み書きできなかった（一時的な障害など）ときも、アプリが文言を選べるよう `generation_failed` で断る。
+ * 回数をおさえる前と、おさえるときに使う。おさえるときに投げても書き込めていることがまれにあるので、
+ * そのときは `logFields` に uid と callId を渡してログに残す。
+ */
+async function refuseIfThrows<T>(work: Promise<T>, message: string, logFields: Partial<CallIds> = {}): Promise<T> {
   try {
     return await work;
   } catch (error) {
-    logger.error(message, { error: String(error) });
+    logger.error(message, { ...logFields, error: String(error) });
     refuse("generation_failed");
   }
 }
@@ -211,13 +231,15 @@ async function createSticker(
 }
 
 /**
- * 戻せなかったときはログに残す（利用者には断った理由のまま返す）。
- * 手で戻す手順は README の「困ったとき」。uid と reservation はそのために書く。
+ * 戻したか・戻さなかったか・戻せなかったかをログに残す（利用者には断った理由のまま返す）。
+ * uid・callId・reservation は、問い合わせのときに戻したかを確かめ、戻せなかった分を手で戻すために書く
+ * （README の generateMaterial の「困ったとき（Cloud Logging で探す）」）。
  */
-async function refund(db: Firestore, uid: string, reservation: Reservation): Promise<void> {
+async function refund(db: Firestore, ids: CallIds, reservation: Reservation): Promise<void> {
   try {
-    await refundCredit(db, uid, reservation);
+    const restored = await refundCredit(db, ids.uid, reservation);
+    logger.info(restored ? "回数を戻した" : "回数券が消えていて戻さなかった", { ...ids, reservation });
   } catch (error) {
-    logger.error("回数を戻せなかった", { uid, reservation, error: String(error) });
+    logger.error("回数を戻せなかった", { ...ids, reservation, error: String(error) });
   }
 }

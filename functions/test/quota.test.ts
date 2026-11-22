@@ -106,7 +106,7 @@ test("無料の1回を戻すと、もう一度無料で作れる", async () => {
   const outcome = await reserveCredit(db, uid, LIMITS, day);
   assert.ok(outcome.ok);
 
-  await refundCredit(db, uid, outcome.reservation);
+  assert.equal(await refundCredit(db, uid, outcome.reservation), true);
   assert.equal((await db.collection("users").doc(uid).get()).get("freeUsed"), false);
   assert.equal((await usageOf(day)).free, 0);
   assert.equal((await reserveCredit(db, uid, LIMITS, day)).ok, true);
@@ -122,7 +122,7 @@ test("回数券の1回を戻すと、同じ回数券の残りに戻る（注文�
   const outcome = await reserveCredit(db, uid, LIMITS, day);
   assert.ok(outcome.ok);
 
-  await refundCredit(db, uid, outcome.reservation);
+  assert.equal(await refundCredit(db, uid, outcome.reservation), true);
   const user = (await db.collection("users").doc(uid).get()).data();
   assert.equal(user?.packs["GPA.3333-4444-5555"].remaining, 1);
   assert.equal((await usageOf(day)).ticket, 0);
@@ -136,7 +136,7 @@ test("戻す前に回数券が消えていたら（返金の取り消しなど�
   assert.ok(outcome.ok);
   await db.collection("users").doc(uid).set({ freeUsed: true, packs: {} });
 
-  await refundCredit(db, uid, outcome.reservation);
+  assert.equal(await refundCredit(db, uid, outcome.reservation), false);
   assert.deepEqual((await db.collection("users").doc(uid).get()).get("packs"), {});
   assert.equal((await usageOf(day)).ticket, 0);
 });
