@@ -71,7 +71,11 @@ class SettingsViewModelTest {
 
     private fun createViewModel(
         settingsRepository: SettingsRepository = FakeSettingsRepository(),
-        appInfo: AppInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id")
+        appInfo: AppInfo = AppInfo(
+            versionName = "2.13.0",
+            installationId = "test-installation-id",
+            userId = "test-user-id"
+        )
     ): SettingsViewModel = SettingsViewModel(settingsRepository, FakeAppInfoRepository(appInfo))
 
     @Before
@@ -131,7 +135,7 @@ class SettingsViewModelTest {
 
     @Test
     fun appInfo_installationIdAvailable_isSetInUiStateAndKeptAfterToggle() = runTest {
-        val appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id")
+        val appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id", userId = "test-user-id")
         val viewModel = createViewModel(appInfo = appInfo)
 
         advanceUntilIdle()
@@ -149,7 +153,7 @@ class SettingsViewModelTest {
 
     @Test
     fun appInfo_installationIdUnavailable_keepsSuccessWithNullInstallationId() = runTest {
-        val viewModel = createViewModel(appInfo = AppInfo(versionName = "2.13.0", installationId = null))
+        val viewModel = createViewModel(appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = null))
 
         advanceUntilIdle()
 
@@ -161,7 +165,7 @@ class SettingsViewModelTest {
 
     @Test
     fun appInfo_showAndDismissLicenseDialog_keepsAppInfo() = runTest {
-        val appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id")
+        val appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id", userId = "test-user-id")
         val viewModel = createViewModel(appInfo = appInfo)
 
         advanceUntilIdle()

@@ -67,8 +67,8 @@ class SettingsViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 // Repository は ID が取れなくても null を流す約束なので、ここに来るのは想定外の不具合だけ。
-                // バージョンとインストール ID の行が出ないだけなので、触覚フィードバックの設定まで Error にしない
-                Log.w(TAG, "アプリのバージョンとインストール ID の取得に失敗", e)
+                // バージョンと ID の行が出ないだけなので、触覚フィードバックの設定まで Error にしない
+                Log.w(TAG, "アプリのバージョンと ID の取得に失敗", e)
             }
         }
     }
@@ -103,7 +103,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * 3つの状態に共通の項目（ライセンスの表示・バージョンとインストール ID）だけを変える
+     * 3つの状態に共通の項目（ライセンスの表示・バージョンと ID）だけを変える
      */
     private fun SettingsUiState.copySharedState(
         showLicenseDialog: Boolean = this.showLicenseDialog,

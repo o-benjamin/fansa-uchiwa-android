@@ -6,7 +6,7 @@ sealed interface SettingsUiState {
     val showLicenseDialog: Boolean
 
     /**
-     * 画面のいちばん下に出すアプリのバージョンとインストール ID（#411）。取得が終わるまでは null
+     * 画面のいちばん下に出すアプリのバージョンと ID（#411・#387）。取得が終わるまでは null
      */
     val appInfo: AppInfo?
 
