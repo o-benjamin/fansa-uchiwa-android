@@ -10,6 +10,7 @@ AI 素材のサーバー（Cloud Functions）を、本物のアプリの利用�
     - 設定画面のいちばん下に「利用者 ID」として出します（#387）。回数が減ったのに受け取れなかった人から連絡をもらったとき、サーバーのログからその人を探して回数を戻すためです。探し方は `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」。
     - ログイン済みのときだけ出し、出すためにログインはしません（`AppInfoRepository`）。AI 素材をまだ使っていない人には行が出ません。
     - 同じ画面の「インストール ID」（Remote Config の条件用。`.agents/remote-config.md`）とは別の ID です。
+    - 見出しの「利用者 ID」と「いちばん下」という位置は、特定商取引法に基づく表記（`web/public/tokushoho.html`）・プライバシーポリシー（`docs/privacy-policy.html`）・AI 素材のエラー文（`strings.xml` の `ai_material_error_unconfirmed`）・`functions/README.md` の問い合わせの手順が案内しています。行を外す・見出しや位置を変えるときは、そちらも直してください（`.agents/play-billing.md` の「特定商取引法に基づく表記」と `.agents/privacy-policy.md`）。
 
 - **provider はビルドタイプで分ける**:
     - `release`：Play Integrity（`app/src/release/.../di/AppCheckProviderModule.kt`）。ストアから入れたアプリでしか通りません。
