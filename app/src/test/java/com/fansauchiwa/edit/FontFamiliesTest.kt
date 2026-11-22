@@ -29,4 +29,14 @@ class FontFamiliesTest {
             assertNull(fontRankIndexMap[font])
         }
     }
+
+    @Test
+    fun koreanFonts_areKoreanSampleFonts() {
+        val korean = FontFamilies.entries.filter { it.isKorean }.map { it.name }
+
+        assertEquals(
+            listOf("BLACK_HAN_SANS", "JUA", "DO_HYEON", "BAGEL_FAT_ONE", "SINGLE_DAY"),
+            korean,
+        )
+    }
 }

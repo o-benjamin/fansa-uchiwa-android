@@ -2,6 +2,7 @@ package com.fansauchiwa.data.repository
 
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -36,6 +37,18 @@ interface SettingsRepository {
     suspend fun fetchHasSeenApologyDialog()
 
     suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
+
+    /**
+     * ホームの「今日のお題」のカード（#360）を閉じた日付。閉じたことがなければ null
+     */
+    fun getDailyPromptDismissedDateStream(): Flow<LocalDate?>
+
+    suspend fun fetchDailyPromptDismissedDate()
+
+    /**
+     * カードを閉じた日付を保存し、続けて流す（カードをすぐ消すため）
+     */
+    suspend fun setDailyPromptDismissedDate(date: LocalDate)
 }
 
 class SettingsRepositoryImpl @Inject constructor(
@@ -45,6 +58,7 @@ class SettingsRepositoryImpl @Inject constructor(
 
     private val _hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
     private val _hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
+    private val _dailyPromptDismissedDateStream = MutableSharedFlow<LocalDate?>(replay = 1)
 
     override fun getHapticFeedbackEnabledStream(): Flow<Boolean> =
         _hapticFeedbackEnabledStream.asSharedFlow()
@@ -77,5 +91,19 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
         settingsDataSource.setHasSeenApologyDialog(hasSeen)
+    }
+
+    override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> =
+        _dailyPromptDismissedDateStream.asSharedFlow()
+
+    override suspend fun fetchDailyPromptDismissedDate() {
+        _dailyPromptDismissedDateStream.emit(
+            settingsDataSource.getDailyPromptDismissedDateStream().first()
+        )
+    }
+
+    override suspend fun setDailyPromptDismissedDate(date: LocalDate) {
+        settingsDataSource.setDailyPromptDismissedDate(date)
+        _dailyPromptDismissedDateStream.emit(date)
     }
 }

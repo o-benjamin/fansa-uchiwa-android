@@ -12,6 +12,7 @@ enum class AiMaterialRejectReason(val serverValue: String) {
     DISABLED("disabled"),
     BLOCKED_NAME("blocked_name"),
     MODERATION("moderation"),
+    /** 無料の1回も、使える回数券も残っていない（購入の案内を開く） */
     NO_CREDITS("no_credits"),
     FREE_DAILY_LIMIT("free_daily_limit"),
     TOTAL_DAILY_LIMIT("total_daily_limit"),
