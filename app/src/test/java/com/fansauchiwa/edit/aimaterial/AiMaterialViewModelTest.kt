@@ -17,6 +17,7 @@ import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialUnconfirmedException
+import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.GrantedTickets
 import com.fansauchiwa.data.PlayBillingException
 import com.fansauchiwa.data.TicketProduct
@@ -29,6 +30,7 @@ import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.TicketPurchaseRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -64,6 +66,7 @@ class AiMaterialViewModelTest {
     private lateinit var ticketPurchaseRepository: TicketPurchaseRepository
     private lateinit var analyticsRepository: AnalyticsRepository
     private lateinit var crashReportingRepository: CrashReportingRepository
+    private lateinit var uuidProvider: UuidProvider
 
     private val resultUri: Uri = mockk()
     private val image by lazy {
@@ -86,6 +89,8 @@ class AiMaterialViewModelTest {
         coEvery { ticketPurchaseRepository.getTicketProduct() } returns Result.success(PRODUCT)
         analyticsRepository = mockk(relaxed = true)
         crashReportingRepository = mockk(relaxed = true)
+        uuidProvider = mockk()
+        every { uuidProvider.generate() } returnsMany List(10) { "request-${it + 1}" }
         every { resultUri.toString() } returns RESULT_URI
     }
 
@@ -100,6 +105,7 @@ class AiMaterialViewModelTest {
             ticketPurchaseRepository,
             analyticsRepository,
             crashReportingRepository,
+            uuidProvider,
             savedStateHandle
         )
 
@@ -108,7 +114,7 @@ class AiMaterialViewModelTest {
         createViewModel(savedStateHandle).also { it.viewModelScope.cancel() }.uiState.value
 
     private fun stubGenerate(result: Result<AiMaterialImage>) {
-        coEvery { repository.generate(any(), any()) } returns result
+        coEvery { repository.generate(any(), any(), any()) } returns result
     }
 
     @Test
@@ -131,7 +137,7 @@ class AiMaterialViewModelTest {
         advanceUntilIdle()
 
         assertEquals(AiMaterialGeneration.Succeeded(image), viewModel.uiState.value.generation)
-        coVerify { repository.generate("ピンクのハート", null) }
+        coVerify { repository.generate("ピンクのハート", null, "request-1") }
         coVerify {
             analyticsRepository.logEvent(
                 AnalyticsEvent(
@@ -224,8 +230,100 @@ class AiMaterialViewModelTest {
     }
 
     @Test
+    fun `作れたか分からないあとにもう一度作ると、同じ頼みの番号で頼む`() = runTest(testDispatcher) {
+        stubGenerate(Result.failure(AiMaterialUnconfirmedException(IOException("切れた"))))
+        val viewModel = createViewModel()
+        viewModel.updatePrompt("ハート")
+        viewModel.generate()
+        advanceUntilIdle()
+        stubGenerate(Result.failure(AiMaterialRejectedException(AiMaterialRejectReason.IN_PROGRESS)))
+        viewModel.generate()
+        advanceUntilIdle()
+        stubGenerate(Result.success(image))
+
+        viewModel.generate()
+        advanceUntilIdle()
+
+        assertEquals(AiMaterialGeneration.Succeeded(image), viewModel.uiState.value.generation)
+        coVerify(exactly = 3) { repository.generate("ハート", null, "request-1") }
+    }
+
+    @Test
+    fun `前の頼みをまだ作っていると断られたら、その文言を出し、購入の案内は開かない`() = runTest(testDispatcher) {
+        stubGenerate(Result.failure(AiMaterialRejectedException(AiMaterialRejectReason.IN_PROGRESS)))
+        val viewModel = createViewModel()
+        viewModel.updatePrompt("ハート")
+
+        viewModel.generate()
+        advanceUntilIdle()
+
+        assertEquals(
+            AiMaterialGeneration.Rejected(AiMaterialRejectReason.IN_PROGRESS),
+            viewModel.uiState.value.generation
+        )
+        assertEquals(AiMaterialPurchase.Closed, viewModel.uiState.value.purchase)
+        assertTrue(viewModel.uiState.value.canGenerate)
+    }
+
+    @Test
+    fun `作った素材を捨ててからもう一度作ると、新しい頼みの番号で頼む`() = runTest(testDispatcher) {
+        stubGenerate(Result.success(image))
+        val viewModel = createViewModel()
+        viewModel.updatePrompt("ハート")
+        viewModel.generate()
+        advanceUntilIdle()
+        viewModel.discardResult()
+
+        viewModel.generate()
+        advanceUntilIdle()
+
+        coVerifyOrder {
+            repository.generate("ハート", null, "request-1")
+            repository.generate("ハート", null, "request-2")
+        }
+    }
+
+    @Test
+    fun `作っている途中でプロセスが止められたあとにもう一度作ると、止められる前と同じ頼みの番号で頼む`() = runTest(testDispatcher) {
+        coEvery { repository.generate(any(), any(), any()) } coAnswers { CompletableDeferred<Result<AiMaterialImage>>().await() }
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(savedStateHandle)
+        viewModel.updatePrompt("ハート")
+        viewModel.generate()
+        advanceUntilIdle()
+        viewModel.viewModelScope.cancel()
+        stubGenerate(Result.success(image))
+
+        val restored = createViewModel(savedStateHandle)
+        restored.generate()
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { repository.generate("ハート", null, "request-1") }
+        assertEquals(AiMaterialGeneration.Succeeded(image), restored.uiState.value.generation)
+    }
+
+    @Test
+    fun `戻した結果のファイルが消えていたあとにもう一度作ると、作ったときと同じ頼みの番号で頼む`() = runTest(testDispatcher) {
+        stubGenerate(Result.success(image))
+        val savedStateHandle = SavedStateHandle()
+        val viewModel = createViewModel(savedStateHandle)
+        viewModel.updatePrompt("ハート")
+        viewModel.generate()
+        advanceUntilIdle()
+        viewModel.viewModelScope.cancel()
+        coEvery { repository.isOnDevice(image) } returns false
+
+        val restored = createViewModel(savedStateHandle)
+        advanceUntilIdle()
+        restored.generate()
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) { repository.generate("ハート", null, "request-1") }
+    }
+
+    @Test
     fun `作っている途中でプロセスが止められると、文章を戻して作れたか分からないと出す`() = runTest(testDispatcher) {
-        coEvery { repository.generate(any(), any()) } coAnswers { CompletableDeferred<Result<AiMaterialImage>>().await() }
+        coEvery { repository.generate(any(), any(), any()) } coAnswers { CompletableDeferred<Result<AiMaterialImage>>().await() }
         val savedStateHandle = SavedStateHandle()
         val viewModel = createViewModel(savedStateHandle)
         viewModel.updatePrompt("ハート")
@@ -325,7 +423,7 @@ class AiMaterialViewModelTest {
         viewModel.generate()
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { repository.generate(any(), any()) }
+        coVerify(exactly = 0) { repository.generate(any(), any(), any()) }
     }
 
     @Test
@@ -348,7 +446,7 @@ class AiMaterialViewModelTest {
     @Test
     fun `待っている間は二度押しで送らず、入力も変わらない`() = runTest(testDispatcher) {
         val pending = CompletableDeferred<Result<AiMaterialImage>>()
-        coEvery { repository.generate(any(), any()) } coAnswers { pending.await() }
+        coEvery { repository.generate(any(), any(), any()) } coAnswers { pending.await() }
         val viewModel = createViewModel()
 
         viewModel.updatePrompt("ハート")
@@ -359,7 +457,7 @@ class AiMaterialViewModelTest {
 
         assertEquals(AiMaterialGeneration.Generating, viewModel.uiState.value.generation)
         assertEquals("ハート", viewModel.uiState.value.prompt)
-        coVerify(exactly = 1) { repository.generate(any(), any()) }
+        coVerify(exactly = 1) { repository.generate(any(), any(), any()) }
 
         pending.complete(Result.success(image))
         advanceUntilIdle()
@@ -375,12 +473,12 @@ class AiMaterialViewModelTest {
         advanceUntilIdle()
         viewModel.generate()
         advanceUntilIdle()
-        coVerify(exactly = 1) { repository.generate(any(), any()) }
+        coVerify(exactly = 1) { repository.generate(any(), any(), any()) }
 
         viewModel.discardResult()
         viewModel.generate()
         advanceUntilIdle()
-        coVerify(exactly = 2) { repository.generate(any(), any()) }
+        coVerify(exactly = 2) { repository.generate(any(), any(), any()) }
     }
 
     @Test
@@ -642,7 +740,7 @@ class AiMaterialViewModelTest {
     fun `作っている間に画面に戻ったときの送り直しで足していたら、回数がないと断られても案内を開かず残りを持つ`() =
         runTest(testDispatcher) {
             val generation = CompletableDeferred<Result<AiMaterialImage>>()
-            coEvery { repository.generate(any(), any()) } coAnswers { generation.await() }
+            coEvery { repository.generate(any(), any(), any()) } coAnswers { generation.await() }
             coEvery { ticketPurchaseRepository.grantUnconsumedPurchases() } returnsMany listOf(
                 Result.success(listOf(grantedTickets(alreadyGranted = false))),
                 Result.success(emptyList())
@@ -709,7 +807,7 @@ class AiMaterialViewModelTest {
         assertEquals(grantedTickets(alreadyGranted = false), state.addedTickets)
         assertEquals(TICKETS_REMAINING, state.ticketsRemaining)
         // 作ると回数を使うので、買えても自動では作り直さない
-        coVerify(exactly = 1) { repository.generate(any(), any()) }
+        coVerify(exactly = 1) { repository.generate(any(), any(), any()) }
         verifyPurchaseLogged(mapOf(AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS))
     }
 

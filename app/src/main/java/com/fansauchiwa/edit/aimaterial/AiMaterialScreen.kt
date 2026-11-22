@@ -637,6 +637,7 @@ private fun AiMaterialGeneration.messageResId(): Int? = when (this) {
         AiMaterialRejectReason.FREE_DAILY_LIMIT -> R.string.ai_material_error_free_daily_limit
         AiMaterialRejectReason.TOTAL_DAILY_LIMIT -> R.string.ai_material_error_total_daily_limit
         AiMaterialRejectReason.GENERATION_FAILED -> R.string.ai_material_error_generation_failed
+        AiMaterialRejectReason.IN_PROGRESS -> R.string.ai_material_error_in_progress
         AiMaterialRejectReason.DISABLED,
         AiMaterialRejectReason.UNAUTHENTICATED -> R.string.ai_material_error_unavailable
     }

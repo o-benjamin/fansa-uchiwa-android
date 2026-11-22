@@ -27,13 +27,13 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
     )
 
     @Test
-    fun toGenerateRequest_withoutSourceImage_sendsOnlyPrompt() {
-        assertEquals(mapOf("prompt" to "星"), toGenerateRequest("星", null))
+    fun toGenerateRequest_withoutSourceImage_sendsPromptAndRequestId() {
+        assertEquals(mapOf("prompt" to "星", "requestId" to "r1"), toGenerateRequest("星", null, "r1"))
     }
 
     @Test
     fun toGenerateRequest_withSourceImage_sendsMimeTypeAndData() {
-        val request = toGenerateRequest("星", AiMaterialSourceImage("image/jpeg", "aW1n"))
+        val request = toGenerateRequest("星", AiMaterialSourceImage("image/jpeg", "aW1n"), "r1")
 
         assertEquals(mapOf("mimeType" to "image/jpeg", "data" to "aW1n"), request["sourceImage"])
     }
@@ -44,6 +44,11 @@ class FirebaseFunctionsAiMaterialRemoteSourceTest {
             AiMaterialRejectReason.BLOCKED_NAME,
             rejectReasonFrom(mapOf("reason" to "blocked_name"))
         )
+    }
+
+    @Test
+    fun rejectReasonFrom_inProgress_returnsInProgress() {
+        assertEquals(AiMaterialRejectReason.IN_PROGRESS, rejectReasonFrom(mapOf("reason" to "in_progress")))
     }
 
     @Test

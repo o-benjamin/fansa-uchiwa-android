@@ -18,6 +18,8 @@ enum class AiMaterialRejectReason(val serverValue: String) {
     TOTAL_DAILY_LIMIT("total_daily_limit"),
     SAFETY_BLOCKED("safety_blocked"),
     GENERATION_FAILED("generation_failed"),
+    /** 同じ頼みの番号の前の頼みを、サーバーがまだ作っている（#387）。回数は使っていない */
+    IN_PROGRESS("in_progress"),
     FACE_IN_SOURCE("face_in_source");
 
     companion object {

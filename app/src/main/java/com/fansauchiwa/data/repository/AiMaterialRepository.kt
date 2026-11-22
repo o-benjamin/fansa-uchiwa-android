@@ -24,9 +24,10 @@ interface AiMaterialRepository {
      * 理由つきで断ったときの失敗は `AiMaterialRejectedException`、顔を確かめられなかったときは
      * `AiMaterialFaceCheckException`。送ったあとの理由のない失敗（通信の切断・時間切れ・応答の読み取りや
      * 端末への書き込みの失敗）は、回数が減ったか分からないので `AiMaterialUnconfirmedException` で包む。
-     * それ以外の失敗は送る前のもので、回数は減っていない
+     * それ以外の失敗は送る前のもので、回数は減っていない。
+     * [requestId] は頼みの番号。素材を受け取るまで同じ番号で頼むと、前の頼みで回数を使っていればサーバーは回数を使わずに作り直す（#387）
      */
-    suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage>
+    suspend fun generate(prompt: String, sourceImageUri: Uri?, requestId: String): Result<AiMaterialImage>
 
     /**
      * 作った素材のファイルが端末に残っているか。キャッシュに置くので、端末の空きが少ないと OS に消されることがある
@@ -55,12 +56,16 @@ class AiMaterialRepositoryImpl @Inject constructor(
     private val remoteConfigDataSource: RemoteConfigDataSource
 ) : AiMaterialRepository {
 
-    override suspend fun generate(prompt: String, sourceImageUri: Uri?): Result<AiMaterialImage> {
+    override suspend fun generate(
+        prompt: String,
+        sourceImageUri: Uri?,
+        requestId: String
+    ): Result<AiMaterialImage> {
         val sourceImage = runServerCall { prepareRequest(sourceImageUri) }
             .getOrElse { return Result.failure(it) }
         // ここから先の失敗は、サーバーに届いて回数が減ったあとかもしれない（届いたかはアプリには分からない）。
         // runServerCall の外で包むのは、呼び出し元が取り消されたときの CancellationException を投げ直してもらうため
-        val result = runServerCall { requestMaterial(prompt, sourceImage) }
+        val result = runServerCall { requestMaterial(prompt, sourceImage, requestId) }
         val error = result.exceptionOrNull()
         return if (error != null && error !is AiMaterialRejectedException) {
             Result.failure(AiMaterialUnconfirmedException(error))
@@ -86,8 +91,12 @@ class AiMaterialRepositoryImpl @Inject constructor(
         return sourceImage
     }
 
-    private suspend fun requestMaterial(prompt: String, sourceImage: AiMaterialSourceImage?): AiMaterialImage {
-        val material = aiMaterialDataSource.generateMaterial(prompt, sourceImage)
+    private suspend fun requestMaterial(
+        prompt: String,
+        sourceImage: AiMaterialSourceImage?,
+        requestId: String
+    ): AiMaterialImage {
+        val material = aiMaterialDataSource.generateMaterial(prompt, sourceImage, requestId)
         val generatedUri = aiMaterialImageDataSource.writeGeneratedImage(material)
         // 回数はもう減っているので、切り抜けなくても作った絵を渡す。
         // 「背景が残る」と言われたときに原因を追えるよう、失敗は非致命として残す

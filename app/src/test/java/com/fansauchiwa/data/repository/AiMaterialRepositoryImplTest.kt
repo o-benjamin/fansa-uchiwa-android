@@ -79,15 +79,15 @@ class AiMaterialRepositoryImplTest {
 
     @Test
     fun generate_success_preparesAuthThenReturnsCutOutImage() = runTest {
-        coEvery { dataSource.generateMaterial("星", null) } returns material
+        coEvery { dataSource.generateMaterial("星", null, REQUEST_ID) } returns material
 
         assertEquals(
             AiMaterialImage(cutOutUri, true, AiMaterialPayment.TICKET, 4, MODEL),
-            repository.generate("星", null).getOrThrow()
+            repository.generate("星", null, REQUEST_ID).getOrThrow()
         )
         coVerifyOrder {
             authRepository.prepareForServerCall()
-            dataSource.generateMaterial("星", null)
+            dataSource.generateMaterial("星", null, REQUEST_ID)
         }
         coVerify(exactly = 0) { imageProcessingRepository.containsFace(any()) }
     }
@@ -95,23 +95,23 @@ class AiMaterialRepositoryImplTest {
     @Test
     fun generate_sourceWithoutFace_sendsEncodedImage() = runTest {
         coEvery { imageProcessingRepository.containsFace(sourceUri) } returns Result.success(false)
-        coEvery { dataSource.generateMaterial("星", encodedSource) } returns material
+        coEvery { dataSource.generateMaterial("星", encodedSource, REQUEST_ID) } returns material
 
-        assertTrue(repository.generate("星", sourceUri).isSuccess)
-        coVerify(exactly = 1) { dataSource.generateMaterial("星", encodedSource) }
+        assertTrue(repository.generate("星", sourceUri, REQUEST_ID).isSuccess)
+        coVerify(exactly = 1) { dataSource.generateMaterial("星", encodedSource, REQUEST_ID) }
     }
 
     @Test
     fun generate_sourceWithFace_rejectsWithoutCallingServer() = runTest {
         coEvery { imageProcessingRepository.containsFace(sourceUri) } returns Result.success(true)
 
-        val error = repository.generate("星", sourceUri).exceptionOrNull()
+        val error = repository.generate("星", sourceUri, REQUEST_ID).exceptionOrNull()
 
         assertEquals(
             AiMaterialRejectReason.FACE_IN_SOURCE,
             (error as AiMaterialRejectedException).reason
         )
-        coVerify(exactly = 0) { dataSource.generateMaterial(any(), any()) }
+        coVerify(exactly = 0) { dataSource.generateMaterial(any(), any(), any()) }
     }
 
     @Test
@@ -119,33 +119,33 @@ class AiMaterialRepositoryImplTest {
         val cause = IOException("module")
         coEvery { imageProcessingRepository.containsFace(sourceUri) } returns Result.failure(cause)
 
-        val error = repository.generate("星", sourceUri).exceptionOrNull()
+        val error = repository.generate("星", sourceUri, REQUEST_ID).exceptionOrNull()
 
         assertTrue(error is AiMaterialFaceCheckException)
         assertEquals(cause, error?.cause)
-        coVerify(exactly = 0) { dataSource.generateMaterial(any(), any()) }
+        coVerify(exactly = 0) { dataSource.generateMaterial(any(), any(), any()) }
     }
 
     @Test
     fun generate_backgroundRemovalFails_returnsGeneratedImageAndRecordsCause() = runTest {
         val cause = BackgroundRemovalException(BackgroundRemovalFailureReason.NO_SUBJECT)
-        coEvery { dataSource.generateMaterial("星", null) } returns material
+        coEvery { dataSource.generateMaterial("星", null, REQUEST_ID) } returns material
         coEvery { imageProcessingRepository.removeBackground(generatedUri) } returns
             Result.failure(cause)
 
         assertEquals(
             AiMaterialImage(generatedUri, false, AiMaterialPayment.TICKET, 4, MODEL),
-            repository.generate("星", null).getOrThrow()
+            repository.generate("星", null, REQUEST_ID).getOrThrow()
         )
         verify(exactly = 1) { crashReportingRepository.recordException(cause) }
     }
 
     @Test
     fun generate_rejected_returnsFailureWithReason() = runTest {
-        coEvery { dataSource.generateMaterial(any(), any()) } throws
+        coEvery { dataSource.generateMaterial(any(), any(), any()) } throws
             AiMaterialRejectedException(AiMaterialRejectReason.FREE_DAILY_LIMIT)
 
-        val error = repository.generate("星", null).exceptionOrNull()
+        val error = repository.generate("星", null, REQUEST_ID).exceptionOrNull()
 
         assertEquals(
             AiMaterialRejectReason.FREE_DAILY_LIMIT,
@@ -157,17 +157,17 @@ class AiMaterialRepositoryImplTest {
     fun generate_authFails_returnsFailureWithoutCallingServer() = runTest {
         coEvery { authRepository.prepareForServerCall() } throws IOException("offline")
 
-        assertTrue(repository.generate("星", null).exceptionOrNull() is IOException)
-        coVerify(exactly = 0) { dataSource.generateMaterial(any(), any()) }
+        assertTrue(repository.generate("星", null, REQUEST_ID).exceptionOrNull() is IOException)
+        coVerify(exactly = 0) { dataSource.generateMaterial(any(), any(), any()) }
     }
 
     @Test
     fun generate_serverCallFails_returnsUnconfirmedWithCause() = runTest {
         // サーバーが作り終えて回数を減らしたあとに通信が切れたのかもしれない
         val cause = IOException("offline")
-        coEvery { dataSource.generateMaterial(any(), any()) } throws cause
+        coEvery { dataSource.generateMaterial(any(), any(), any()) } throws cause
 
-        val error = repository.generate("星", null).exceptionOrNull()
+        val error = repository.generate("星", null, REQUEST_ID).exceptionOrNull()
 
         assertTrue(error is AiMaterialUnconfirmedException)
         assertEquals(cause, error?.cause)
@@ -176,10 +176,10 @@ class AiMaterialRepositoryImplTest {
     @Test
     fun generate_writeFails_returnsUnconfirmedWithoutCuttingOut() = runTest {
         val cause = IOException("disk full")
-        coEvery { dataSource.generateMaterial("星", null) } returns material
+        coEvery { dataSource.generateMaterial("星", null, REQUEST_ID) } returns material
         coEvery { imageDataSource.writeGeneratedImage(material) } throws cause
 
-        val error = repository.generate("星", null).exceptionOrNull()
+        val error = repository.generate("星", null, REQUEST_ID).exceptionOrNull()
 
         assertTrue(error is AiMaterialUnconfirmedException)
         assertEquals(cause, error?.cause)
@@ -189,9 +189,9 @@ class AiMaterialRepositoryImplTest {
     @Test
     fun generate_taskCancelledWhileCallerActive_returnsUnconfirmed() = runTest {
         // Play 開発者サービスや Firebase の Task が取り消されたとき。画面を「作っています」のまま止めない
-        coEvery { dataSource.generateMaterial(any(), any()) } throws CancellationException("task")
+        coEvery { dataSource.generateMaterial(any(), any(), any()) } throws CancellationException("task")
 
-        val error = repository.generate("星", null).exceptionOrNull()
+        val error = repository.generate("星", null, REQUEST_ID).exceptionOrNull()
 
         assertTrue(error is AiMaterialUnconfirmedException)
         assertTrue(error?.cause is CancellationException)
@@ -199,10 +199,10 @@ class AiMaterialRepositoryImplTest {
 
     @Test
     fun generate_callerCancelled_rethrows() = runTest {
-        coEvery { dataSource.generateMaterial(any(), any()) } coAnswers { awaitCancellation() }
+        coEvery { dataSource.generateMaterial(any(), any(), any()) } coAnswers { awaitCancellation() }
         var result: Result<AiMaterialImage>? = null
 
-        val job = launch { result = repository.generate("星", null) }
+        val job = launch { result = repository.generate("星", null, REQUEST_ID) }
         runCurrent()
         job.cancelAndJoin()
 
@@ -255,5 +255,6 @@ class AiMaterialRepositoryImplTest {
 
     private companion object {
         const val MODEL = "gemini-3.1-flash-lite-image"
+        const val REQUEST_ID = "request-1"
     }
 }
