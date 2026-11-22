@@ -35,7 +35,7 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
         - 足せていない購入を送り直すきっかけ（上の「決まり」）と、消費しないまま3日たつと Play が返金する動き
         - 回数券をひもづける先（匿名ログインの ID。`.agents/firebase-auth-app-check.md`）
         - 問い合わせで添えてもらう注文番号の形（`GPA.…`）
-        - 問い合わせで添えてもらう利用者 ID の見出しと場所（`strings.xml` の `settings_user_id` と、見分けるために名前を出している `settings_installation_id`。場所は `settings/SettingsScreen.kt` の `AppInfoSection` で、設定画面のいちばん下。プライバシーポリシー `docs/privacy-policy.html` の「データの保存期間と削除」も同じ見出しと場所を案内しているので、`.agents/privacy-policy.md` も見る）
+        - 問い合わせで添えてもらう利用者 ID の見出しと場所（`strings.xml` の `settings_user_id` と、見分けるために名前を出している `settings_installation_id`。場所は `settings/SettingsScreen.kt` の `AppInfoSection` で、設定画面のいちばん下。プライバシーポリシー `docs/privacy-policy.html` の「データの保存期間と削除」も同じ見出しと場所を案内しているので、`.agents/privacy-policy.md` も見る。ほかに案内している先（AI 素材のエラー文・`functions/README.md`）は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」）
         - AI 素材が作れたか確かめられなかったときの文言（`strings.xml` の `ai_material_error_unconfirmed`。ページは書き出しの「作れたか確かめられませんでした」を引いている）
         - `minSdk`（動作環境。`app/build.gradle.kts`）
         - 問い合わせのアドレス

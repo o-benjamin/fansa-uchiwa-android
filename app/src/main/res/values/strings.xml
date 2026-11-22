@@ -159,6 +159,7 @@
     <string name="settings_installation_id">インストール ID（タップでコピー）</string>
     <string name="settings_installation_id_clip_label">インストール ID</string>
     <string name="settings_installation_id_copied">インストール ID をコピーしました</string>
+    <!-- 「利用者 ID」の見出しと、設定画面のいちばん下という場所は、エラー文 ai_material_error_unconfirmed・特定商取引法に基づく表記・プライバシーポリシー・functions/README.md が案内している。変えるときは .agents/firebase-auth-app-check.md の「利用者の ID を画面に出す」を見る -->
     <string name="settings_user_id">利用者 ID（AI素材のお問い合わせ用・タップでコピー）</string>
     <string name="settings_user_id_clip_label">利用者 ID</string>
     <string name="settings_user_id_copied">利用者 ID をコピーしました</string>
