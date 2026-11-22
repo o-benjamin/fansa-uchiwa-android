@@ -101,12 +101,14 @@ interface AdMobRepository {
      * @param adFormat 広告フォーマット（[AdFormat]）
      * @param placement 広告の表示場所（[AnalyticsScreens] の値）
      * @param responseInfo 広告の読み込み結果。配信したネットワーク名を取り出す（不明なら null）
+     * @param isCollapsible 折りたたみ式で表示されたか。バナーだけが渡す
      */
     fun logAdPaidEvent(
         adValue: AdValue,
         adFormat: String,
         placement: String,
-        responseInfo: ResponseInfo?
+        responseInfo: ResponseInfo?,
+        isCollapsible: Boolean? = null
     )
 }
 
@@ -429,7 +431,8 @@ class AdMobRepositoryImpl @Inject constructor(
         adValue: AdValue,
         adFormat: String,
         placement: String,
-        responseInfo: ResponseInfo?
+        responseInfo: ResponseInfo?,
+        isCollapsible: Boolean?
     ) {
         analyticsScope.launch {
             analyticsDataSource.logEvent(
@@ -439,7 +442,8 @@ class AdMobRepositoryImpl @Inject constructor(
                     precisionType = adValue.precisionType,
                     adFormat = adFormat,
                     placement = placement,
-                    adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName
+                    adSource = responseInfo?.loadedAdapterResponseInfo?.adSourceName,
+                    isCollapsible = isCollapsible
                 )
             )
         }

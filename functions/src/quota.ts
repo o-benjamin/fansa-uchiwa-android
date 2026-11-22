@@ -19,6 +19,12 @@ import { jstDateKey } from "./jstDate";
  *   ticket: number              その日に回数券で作った回数（全体）
  *                               どちらも、断った・失敗して戻した分は数えない（refundCredit が引く）
  *   totalLimitAlerted: boolean  全体の安全上限に当たったことを Discord に知らせたか（1日1回だけ知らせる）
+ *
+ * 呼び方
+ *   credit   生成1回分。無料の1回か、回数券の1回（reserveCredit / refundCredit、断りの理由 no_credits）
+ *   pack     1回の購入で足した回数券のまとまり。packId は購入 ID で、verifyPurchase.ts・voidedPurchases.ts の purchaseId と同じ値
+ *   ticket   回数券の1回分。ticketsRemaining は使える pack の remaining の合計
+ *   Reservation.kind  今回使ったもの（free / ticket）。応答では paidWith、アプリでは AiMaterialPayment
  */
 
 export const USERS_COLLECTION = "users";

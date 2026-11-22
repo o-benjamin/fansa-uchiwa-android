@@ -1,5 +1,6 @@
 package com.fansauchiwa.data.infra
 
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsDataSource {
@@ -25,4 +26,14 @@ interface SettingsDataSource {
      * バージョンアップ後初回起動のお詫びダイアログを見たかどうかを設定する
      */
     suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
+
+    /**
+     * ホームの「今日のお題」のカード（#360）を閉じた日付のFlowを返す。閉じたことがなければ null
+     */
+    fun getDailyPromptDismissedDateStream(): Flow<LocalDate?>
+
+    /**
+     * ホームの「今日のお題」のカードを閉じた日付を設定する。その日はカードを出さない
+     */
+    suspend fun setDailyPromptDismissedDate(date: LocalDate)
 }
