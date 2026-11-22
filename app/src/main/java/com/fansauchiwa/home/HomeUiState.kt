@@ -2,6 +2,7 @@ package com.fansauchiwa.home
 
 import android.os.Parcelable
 import androidx.compose.ui.graphics.Color
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
 import kotlinx.parcelize.Parcelize
@@ -22,5 +23,9 @@ data class HomeUiState(
     val isSelectionMode: Boolean = false,
     val selectedPaths: List<String> = emptyList(),
     val templates: @RawValue List<Template> = emptyList(),
-    val showApologyDialog: Boolean = false
+    val showApologyDialog: Boolean = false,
+    // ホームのカードに出す今日のお題。null なら出さない（Remote Config で止めている、または今日はカードを閉じた）
+    val dailyPrompt: DailyPrompt? = null,
+    // お題のカードに AI素材の入口（#340）を出すか。Remote Config の `ai_material_enabled`
+    val isAiMaterialEntryEnabled: Boolean = false
 ) : Parcelable

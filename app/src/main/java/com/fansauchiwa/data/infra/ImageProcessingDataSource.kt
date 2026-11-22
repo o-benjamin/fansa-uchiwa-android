@@ -14,6 +14,14 @@ interface ImageProcessingDataSource {
     suspend fun removeBackground(sourceUri: Uri): Uri
 
     /**
+     * 画像に人の顔が写っているかを確かめる
+     * @param sourceUri 確かめる画像のURI
+     * @return 顔があれば true
+     * @throws Exception 確かめられなかったとき（モジュールの取得失敗・読み込み失敗など）
+     */
+    suspend fun containsFace(sourceUri: Uri): Boolean
+
+    /**
      * 手動修正（消しゴム）のパスを画像に適用する
      * @param imageUri 元画像のURI
      * @param paths 適用するパスのリスト
