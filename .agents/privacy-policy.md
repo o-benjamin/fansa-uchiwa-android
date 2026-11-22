@@ -18,7 +18,7 @@
 - Analytics のイベント・パラメータで、新しい種類の情報を送る（「情報の収集と利用」の例。例：#362 の共有先のアプリ）
 - AI素材のサーバー（`functions/`）で、保存する項目・保存期間（TTL）・ログに書くもの・知らせる先（Discord）を変える。Gemini 以外のモデルに替える、API キーを替える（「AI素材の機能で送信・保存する情報」「データの保存期間と削除」）
 - バックアップの決まり（`app/src/main/res/xml/backup_rules.xml`・`data_extraction_rules.xml`）を変える（「端末のバックアップ」「オプトアウト権」）
-- 削除の依頼で添えてもらう利用者 ID の見出し・場所を変える・外す（`strings.xml` の `settings_user_id`・`settings_installation_id`、`settings/SettingsScreen.kt` の `AppInfoSection`）。直すのは「データの保存期間と削除」の頼み方と「オプトアウト権」の最後の1文。特定商取引法に基づく表記も同じ見出しで案内しているので、`.agents/play-billing.md` の「次を変えたら、ページも直してください」も見る
+- 削除の依頼で添えてもらう利用者 ID の見出し・場所を変える・外す（`strings.xml` の `settings_user_id`・`settings_installation_id`、`settings/SettingsScreen.kt` の `AppInfoSection`）。直すのは「データの保存期間と削除」の頼み方と「オプトアウト権」の最後の1文。特定商取引法に基づく表記も同じ見出しで案内しているので、`.agents/play-billing.md` の「次を変えたら、ページも直してください」も見る。ほかに案内している先（AI 素材のエラー文・`functions/README.md`）は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」
 - 問い合わせのメールの使い道・保存のしかた・受け取る受信箱を変える（「お問い合わせ」の2段落目）
 - Remote Config で配る値の種類を足す（「本アプリが利用する第三者サービス」の Firebase Remote Config の行。`.agents/remote-config.md` の「初めて公開する前に」も同じ確認）
 - まだ提供していない機能を提供し始める（AI素材なら Remote Config のキー `ai_material_enabled` で入口を開ける。キーの定義と開ける前の確認は、`.agents/remote-config.md` と `functions/README.md` の「入口を初めて開ける前に」）。その前に「今後のアップデートで提供する予定」の文（`git grep 今後のアップデート` で出る）を消し、消した版が `master` から公開されてから開けます。`release/vX.Y.Z` で消しても `master` に入るのは公開の24時間後なので、それより先に開けるときは上の `master` 向けの PR で消します。機能を出さないと決めたときは、その機能の記述をページからすべて消します。AI素材なら `git grep -n -e AI素材 -e '利用者 ID' -e 回数券 docs/privacy-policy.html` で洗い出し（端末のバックアップの項は `allowBackup` のために要るので、AI素材の利用者 ID の部分だけ消す）、「第三者への提供」のリンクのうち AI素材の分（Gemini・Play 請求サービス・Firebase の Authentication 以降・Discord。grep には出ない）と、このファイルの AI素材の箇条と「節ごとの根拠」も消します

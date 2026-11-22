@@ -10,6 +10,12 @@ AI 素材のサーバー（Cloud Functions）を、本物のアプリの利用�
     - 設定画面のいちばん下に「利用者 ID」として出します（#387）。回数が減ったのに受け取れなかった人から連絡をもらったとき、サーバーのログからその人を探して回数を戻すためです。探し方は `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」。
     - ログイン済みのときだけ出し、出すためにログインはしません（`AppInfoRepository`）。AI 素材をまだ使っていない人には行が出ません。
     - 同じ画面の「インストール ID」（Remote Config の条件用。`.agents/remote-config.md`）とは別の ID です。
+    - 見出しの「利用者 ID」（`strings.xml` の `settings_user_id`）と、画面のいちばん下という場所（`settings/SettingsScreen.kt` の `AppInfoSection`）は、次が案内しています。行を外す・見出しや場所を変えるときは、こちらも直してください。漏れは `git grep -n -e '利用者 ID' -e 'いちばん下'` で洗えます。
+        - 特定商取引法に基づく表記（`web/public/tokushoho.html`。直すときの決まりは `.agents/play-billing.md` の「特定商取引法に基づく表記」）
+        - プライバシーポリシー（`docs/privacy-policy.html`。直すときの決まりは `.agents/privacy-policy.md` の「直すきっかけ」）
+        - AI 素材のエラー文（`strings.xml` の `ai_material_error_unconfirmed`。見出しだけを引いていて、場所は書いていない）
+        - `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」の「「作れたか確かめられませんでした」と出た人から連絡が来た」と、「入口を初めて開ける前に」の利用者 ID の項目
+        - `.agents/remote-config.md` の「特定のインストールだけに機能を出す」の手順 1（インストール ID の下に利用者 ID が出る、と書いている）
 
 - **provider はビルドタイプで分ける**:
     - `release`：Play Integrity（`app/src/release/.../di/AppCheckProviderModule.kt`）。ストアから入れたアプリでしか通りません。

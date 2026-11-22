@@ -9,8 +9,9 @@ package com.fansauchiwa.data
  * @property userId AI 素材のサーバーが回数を数える利用者の ID（匿名ログインの uid）。
  * 「作れたか確かめられませんでした」のあとに連絡をもらったとき、サーバーのログからその人を探して回数を戻せるように出す
  * （探し方は `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」）。記録の削除の依頼でも添えてもらう。
- * 特定商取引法に基づく表記（`web/public/tokushoho.html`）とプライバシーポリシー（`docs/privacy-policy.html`）が見出しと場所を案内しているので、
- * 行を外す・見出しを変えるときは2つのページも直す（`.agents/play-billing.md`・`.agents/privacy-policy.md`）。まだ AI 素材を使っておらずログインしていなければ null
+ * 特定商取引法に基づく表記・プライバシーポリシー・AI 素材のエラー文（`ai_material_error_unconfirmed`）などが見出しと場所を案内しているので、
+ * 行を外す・見出しや場所を変えるときはそちらも直す
+ * （案内している先は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」）。まだ AI 素材を使っておらずログインしていなければ null
  */
 data class AppInfo(
     val versionName: String,
