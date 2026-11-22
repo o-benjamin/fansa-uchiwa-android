@@ -18,25 +18,29 @@
 - Analytics のイベント・パラメータで、新しい種類の情報を送る（「情報の収集と利用」の例。例：#362 の共有先のアプリ）
 - AI素材のサーバー（`functions/`）で、保存する項目・保存期間（TTL）・ログに書くもの・知らせる先（Discord）を変える。Gemini 以外のモデルに替える、API キーを替える（「AI素材の機能で送信・保存する情報」「データの保存期間と削除」）
 - バックアップの決まり（`app/src/main/res/xml/backup_rules.xml`・`data_extraction_rules.xml`）を変える（「端末のバックアップ」「オプトアウト権」）
+- 削除の依頼で添えてもらう利用者 ID の見出し・場所を変える・外す（`strings.xml` の `settings_user_id`・`settings_installation_id`、`settings/SettingsScreen.kt` の `AppInfoSection`）。直すのは「データの保存期間と削除」の頼み方と「オプトアウト権」の最後の1文。特定商取引法に基づく表記も同じ見出しで案内しているので、`.agents/play-billing.md` の「次を変えたら、ページも直してください」も見る
+- 問い合わせのメールの使い道・保存のしかた・受け取る受信箱を変える（「お問い合わせ」の2段落目）
 - Remote Config で配る値の種類を足す（「本アプリが利用する第三者サービス」の Firebase Remote Config の行。`.agents/remote-config.md` の「初めて公開する前に」も同じ確認）
-- まだ提供していない機能を提供し始める（AI素材なら Remote Config のキー `ai_material_enabled` で入口を開ける。キーの定義と開ける前の確認は、`.agents/remote-config.md` と `functions/README.md` の「入口を初めて開ける前に」）。その前に「今後のアップデートで提供する予定」の文（`git grep 今後のアップデート` で出る）を消し、消した版が `master` から公開されてから開けます。`release/vX.Y.Z` で消しても `master` に入るのは公開の24時間後なので、それより先に開けるときは上の `master` 向けの PR で消します。機能を出さないと決めたときは、その機能の記述をページからすべて消します。AI素材なら `git grep -n -e AI素材 -e 利用者ID -e 回数券 docs/privacy-policy.html` で洗い出し（端末のバックアップの項は `allowBackup` のために要るので、AI素材の利用者IDの部分だけ消す）、「第三者への提供」のリンクのうち AI素材の分（Gemini・Play 請求サービス・Firebase の Authentication 以降・Discord。grep には出ない）と、このファイルの AI素材の箇条と「節ごとの根拠」も消します
+- まだ提供していない機能を提供し始める（AI素材なら Remote Config のキー `ai_material_enabled` で入口を開ける。キーの定義と開ける前の確認は、`.agents/remote-config.md` と `functions/README.md` の「入口を初めて開ける前に」）。その前に「今後のアップデートで提供する予定」の文（`git grep 今後のアップデート` で出る）を消し、消した版が `master` から公開されてから開けます。`release/vX.Y.Z` で消しても `master` に入るのは公開の24時間後なので、それより先に開けるときは上の `master` 向けの PR で消します。機能を出さないと決めたときは、その機能の記述をページからすべて消します。AI素材なら `git grep -n -e AI素材 -e '利用者 ID' -e 回数券 docs/privacy-policy.html` で洗い出し（端末のバックアップの項は `allowBackup` のために要るので、AI素材の利用者 ID の部分だけ消す）、「第三者への提供」のリンクのうち AI素材の分（Gemini・Play 請求サービス・Firebase の Authentication 以降・Discord。grep には出ない）と、このファイルの AI素材の箇条と「節ごとの根拠」も消します
 
 あわせて Play Console のデータセーフティの申告も見直します。申告は Play Console の権限がある人がします。
 
 ## 節ごとの根拠（2026-11 時点）
 
-この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
+この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
 
 | ページの記述 | 根拠 |
 |---|---|
 | AI素材で送った文章と画像をサーバーに残さない、ログに書かない | `functions/src/generateMaterial.ts` のログ、`functions/README.md` |
-| ログに利用者IDや注文番号が残ることがある、ログは30日で消える | `generateMaterial.ts`・`verifyPurchase.ts`・`voidedPurchases.ts` のログ。30日は Cloud Logging の `_Default` バケットの既定の保存期間（変えたらページも直す） |
+| ログに利用者 ID や注文番号が残ることがある、ログは30日で消える | `generateMaterial.ts`・`verifyPurchase.ts`・`voidedPurchases.ts` のログ。30日は Cloud Logging の `_Default` バケットの既定の保存期間（変えたらページも直す） |
 | 購入の記録（注文番号・商品・日時・期限、トークンは残さない。注文番号はない場合がある） | `functions/src/verifyPurchase.ts` の「購入の記録」 |
 | 返金で回数券を取り消す | `functions/src/voidedPurchases.ts` |
 | 報告の内容は180日、1日ごとの報告の数は2日で消える。Discord には理由とモデル名だけ | `functions/src/reportMaterial.ts`（`REPORT_RETENTION_DAYS`・`REPORT_USAGE_RETENTION_DAYS`、TTL、`notifyOwner`） |
 | 回数（無料の1回、回数券の残りと期限） | `functions/src/quota.ts` |
 | App Check は素材を作る・回数券を買う・報告するとき | `functions/src/index.ts` の `enforceAppCheck: true` |
-| 利用者IDは AI素材の機能を初めて使うときに作る。作るとき IP アドレスが Firebase に記録される | `app/src/main/java/com/fansauchiwa/data/repository/AuthRepository.kt`（使うときに `signInAnonymously`）、[Firebase のデータの開示](https://firebase.google.com/docs/android/play-data-disclosure)（2026-10-16 に確認） |
+| 利用者 ID は AI素材の機能を初めて使うときに作る。作るとき IP アドレスが Firebase に記録される | `app/src/main/java/com/fansauchiwa/data/repository/AuthRepository.kt`（使うときに `signInAnonymously`）、[Firebase のデータの開示](https://firebase.google.com/docs/android/play-data-disclosure)（2026-10-16 に確認） |
 | Gemini は有料の契約で、送った内容は学習に使われない | `functions/src/index.ts` の `GEMINI_API_KEY` のコメント、[Gemini API 追加利用規約](https://ai.google.dev/gemini-api/terms)の有料サービスの項。無料枠のキーにすると、この記述と食い違う |
 | 顔の確認と背景の切り抜きは端末内 | 切り抜きは `app/src/main/java/com/fansauchiwa/data/infra/ImageProcessingLocalSource.kt`、顔の確認も同じファイル（#338 で追加）。どちらも `gradle/libs.versions.toml` の ML Kit（Play 開発者サービスの端末内モデル） |
-| うちわのデータ・挿入した画像・利用者IDがバックアップに入る | `app/src/main/AndroidManifest.xml` の `allowBackup="true"`、`backup_rules.xml`・`data_extraction_rules.xml` に除外がない |
+| うちわのデータ・挿入した画像・利用者 ID がバックアップに入る | `app/src/main/AndroidManifest.xml` の `allowBackup="true"`、`backup_rules.xml`・`data_extraction_rules.xml` に除外がない |
+| 設定画面の「利用者 ID」を添えれば削除を頼める。画面に出ていなければ、その端末のアプリにはいま利用者 ID がない（まだ使っていなければ記録もない。入れ直した・データを消したなら前の ID の記録が残る）。報告の日と文章で頼めるのは180日以内 | `app/src/main/java/com/fansauchiwa/settings/SettingsScreen.kt` の `AppInfoSection`（`userId` が null なら行を出さない）、`app/src/main/java/com/fansauchiwa/data/repository/AppInfoRepository.kt`（`getCurrentUserId()`。サーバーを呼ぶ前の `AuthRepository.prepareForServerCall()` まで作らない）、`functions/src/reportMaterial.ts` の `REPORT_RETENTION_DAYS`。利用者 ID で記録を探して消す手順は #399 で `functions/README.md` に書く |
+| 問い合わせのメールの利用者 ID・メールアドレスは、回答・回数の確認と戻し・返金・削除にだけ使う。期限を決めずに保存し、頼まれたら消す。記録の削除を頼まれたら、終えたと知らせたあとにそのやりとりも消す | 運用（`fansauchiwa.app@gmail.com` の受信箱。自動で消す・転送する設定は置かない）。`functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」は、手での戻しを同じ利用者 ID への過去30日の返信で数えるので、返信を含むやりとりは、頼まれたとき以外は30日より早く消さない（頼まれて消すと数えられなくなるが、1回の戻しは1枚分なので受け入れる）。保存の期限を決めたら、ページとこの行を直す（#399） |
