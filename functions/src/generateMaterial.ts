@@ -6,13 +6,15 @@ import type { Firestore } from "firebase-admin/firestore";
 import type { GeminiClient, ImageResult, JudgeResult, SourceImage } from "./gemini";
 import type { JudgeCategory } from "./moderation";
 import { findBlockedName } from "./moderation";
-import type { Reservation } from "./quota";
-import { refundCredit, reserveCredit } from "./quota";
+import type { RequestOutcome, RequestState, Reservation } from "./quota";
+import { refundCredit, reserveCredit, reserveCreditForRequest, updateRequestState } from "./quota";
 import type { AiMaterialSettings } from "./settings";
 
 export const MAX_PROMPT_LENGTH = 200;
 export const MAX_SOURCE_IMAGE_BYTES = 4 * 1024 * 1024;
 const SOURCE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+// アプリは UUID を送る。形が違う番号は使わない（作り直しなしで、ふつうに回数を使う）
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9-]{1,64}$/;
 
 /**
  * 断ったときに `HttpsError` の `details.reason` に入れる理由。アプリはこの値で出す文言を選び、
@@ -29,7 +31,8 @@ export type RejectReason =
   | "free_daily_limit"
   | "total_daily_limit"
   | "safety_blocked"
-  | "generation_failed";
+  | "generation_failed"
+  | "in_progress";
 
 const ERROR_CODES: Record<RejectReason, FunctionsErrorCode> = {
   unauthenticated: "unauthenticated",
@@ -43,11 +46,17 @@ const ERROR_CODES: Record<RejectReason, FunctionsErrorCode> = {
   total_daily_limit: "resource-exhausted",
   safety_blocked: "permission-denied",
   generation_failed: "unavailable",
+  in_progress: "aborted",
 };
 
 export interface GenerateMaterialRequest {
   prompt: string;
   sourceImage?: SourceImage;
+  /**
+   * 頼みの番号（#387）。アプリが「作る」で作り、素材を受け取るまで同じ番号で送り直す。
+   * 同じ番号の前の頼みで回数を使っていれば、回数を使わずに作り直す（quota.ts の reserveCreditForRequest）。古いアプリは送らない
+   */
+  requestId?: string;
 }
 
 export interface GenerateMaterialResponse {
@@ -81,11 +90,13 @@ function refuse(reason: RejectReason, details: { category?: JudgeCategory } = {}
 
 /** アプリから届いた中身を確かめる。文章は前後の空白を除いて1〜200文字、元画像は任意で4MBまで。 */
 export function parseRequest(data: unknown): GenerateMaterialRequest {
-  const body = (data ?? {}) as { prompt?: unknown; sourceImage?: unknown };
+  const body = (data ?? {}) as { prompt?: unknown; sourceImage?: unknown; requestId?: unknown };
   const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
   // 文字数は見た目の文字で数える（絵文字などのサロゲートペアも1文字）
   if (prompt.length === 0 || [...prompt].length > MAX_PROMPT_LENGTH) refuse("invalid_prompt");
-  if (body.sourceImage === undefined || body.sourceImage === null) return { prompt };
+  const requestId = parseRequestId(body.requestId);
+  const withRequestId = requestId === undefined ? {} : { requestId };
+  if (body.sourceImage === undefined || body.sourceImage === null) return { prompt, ...withRequestId };
 
   const image = body.sourceImage as { mimeType?: unknown; data?: unknown };
   const isValid =
@@ -95,12 +106,24 @@ export function parseRequest(data: unknown): GenerateMaterialRequest {
     image.data.length > 0 &&
     Buffer.byteLength(image.data, "base64") <= MAX_SOURCE_IMAGE_BYTES;
   if (!isValid) refuse("invalid_image");
-  return { prompt, sourceImage: { mimeType: image.mimeType as string, data: image.data as string } };
+  return {
+    prompt,
+    sourceImage: { mimeType: image.mimeType as string, data: image.data as string },
+    ...withRequestId,
+  };
+}
+
+function parseRequestId(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string" && REQUEST_ID_PATTERN.test(value)) return value;
+  logger.warn("頼みの番号の形が違うので、作り直しには使わない");
+  return undefined;
 }
 
 /**
  * AI 素材を1枚作る。順番：ログインの確認 → 中身の確認 → 入口スイッチ → 名前の一覧 → 1回分おさえる →
  * 審査 → 画像の生成。おさえたあとに断った・失敗したときは、回数を戻してから断る。
+ * 頼みの番号つきで、同じ番号の前の頼みで回数を使って作れていたら、回数を使わずに作り直す（#387）。
  * App Check の確認は `onCall` の `enforceAppCheck` が先に行う（index.ts）。
  */
 export async function handleGenerateMaterial(
@@ -115,9 +138,15 @@ export async function handleGenerateMaterial(
   const settings = await refuseIfThrows(deps.loadSettings(), "設定を読めなかった");
   if (findBlockedName(request.prompt, settings.blockedNames)) refuse("blocked_name");
 
-  const ids: CallIds = { uid, callId: randomUUID() };
-  const outcome = await refuseIfThrows(
-    reserveCredit(deps.db, uid, settings, deps.now()),
+  const ids: CallIds = {
+    uid,
+    callId: randomUUID(),
+    ...(request.requestId === undefined ? {} : { requestId: request.requestId }),
+  };
+  const outcome: RequestOutcome = await refuseIfThrows(
+    request.requestId === undefined
+      ? reserveCredit(deps.db, uid, settings, deps.now())
+      : reserveCreditForRequest(deps.db, uid, settings, deps.now(), request.requestId),
     "回数をおさえられなかった",
     ids,
   );
@@ -125,6 +154,7 @@ export async function handleGenerateMaterial(
     if (outcome.firstTotalLimitHit) await notifyTotalLimitHit(deps, settings.totalDailyLimit);
     refuse(outcome.reason);
   }
+  if ("redo" in outcome) return redo(deps, settings, request, ids, outcome);
   logger.info("回数をおさえた", { ...ids, reservation: outcome.reservation });
 
   const startedAt = Date.now();
@@ -133,6 +163,7 @@ export async function handleGenerateMaterial(
     await refund(deps.db, ids, outcome.reservation);
     refuse(sticker.reason, sticker.details);
   }
+  await moveRequest(deps, ids, "generating", "done");
 
   logger.info("generateMaterial", {
     result: "ok",
@@ -151,6 +182,43 @@ export async function handleGenerateMaterial(
 }
 
 /**
+ * 回数を使わずに作り直す（#387）。失敗したら、時間内ならもう一度作り直せるよう done に戻す（回数は動かしていないので戻さない）。
+ */
+async function redo(
+  deps: GenerateMaterialDeps,
+  settings: AiMaterialSettings,
+  request: GenerateMaterialRequest,
+  ids: CallIds,
+  outcome: Extract<RequestOutcome, { redo: true }>,
+): Promise<GenerateMaterialResponse> {
+  logger.info("回数を使わずに作り直す", { ...ids, paidWith: outcome.paidWith });
+
+  const startedAt = Date.now();
+  const sticker = await createSticker(deps.gemini, settings, request);
+  if (!sticker.ok) {
+    await moveRequest(deps, ids, "redoing", "done");
+    refuse(sticker.reason, sticker.details);
+  }
+  await moveRequest(deps, ids, "redoing", "redone");
+
+  logger.info("generateMaterial", {
+    result: "ok",
+    ...ids,
+    redo: true,
+    paidWith: outcome.paidWith,
+    model: settings.imageModel,
+    elapsedMs: Date.now() - startedAt,
+  });
+  return {
+    image: sticker.image,
+    mimeType: sticker.mimeType,
+    paidWith: outcome.paidWith,
+    ticketsRemaining: outcome.ticketsRemaining,
+    model: settings.imageModel,
+  };
+}
+
+/**
  * 回数を動かすログ（おさえた・おさえられなかった・戻した・戻さなかった・戻せなかった・作れた）に書く ID。
  * 「作れたか確かめられませんでした」と出た人から連絡が来たとき、その uid の回数が減ったままかをログで確かめるため。
  * `reservation` は1回ごとに違う値ではない（同じ日に同じ回数券で作ると同じ）ので、1回の呼び出しのログは `callId` で組にする
@@ -159,6 +227,8 @@ export async function handleGenerateMaterial(
 interface CallIds {
   uid: string;
   callId: string;
+  /** 頼みの番号（アプリが送ったときだけ）。作り直した呼び出しを、前の呼び出しと組にするため */
+  requestId?: string;
 }
 
 /**
@@ -237,9 +307,22 @@ async function createSticker(
  */
 async function refund(db: Firestore, ids: CallIds, reservation: Reservation): Promise<void> {
   try {
-    const restored = await refundCredit(db, ids.uid, reservation);
+    const restored = await refundCredit(db, ids.uid, reservation, ids.requestId);
     logger.info(restored ? "回数を戻した" : "回数券が消えていて戻さなかった", { ...ids, reservation });
   } catch (error) {
     logger.error("回数を戻せなかった", { ...ids, reservation, error: String(error) });
+  }
+}
+
+/**
+ * 頼みの状態を進める。書けなくても利用者への応答は変えない（generating・redoing のまま残っても、
+ * STALE_CALL_MS たてば止まった呼び出しとして扱われ、時間内なら作り直せる）。
+ */
+async function moveRequest(deps: GenerateMaterialDeps, ids: CallIds, from: RequestState, to: RequestState): Promise<void> {
+  if (ids.requestId === undefined) return;
+  try {
+    await updateRequestState(deps.db, ids.uid, ids.requestId, from, to, deps.now());
+  } catch (error) {
+    logger.error("頼みの状態を書けなかった", { ...ids, from, to, error: String(error) });
   }
 }

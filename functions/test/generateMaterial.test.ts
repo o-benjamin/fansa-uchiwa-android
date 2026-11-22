@@ -337,3 +337,127 @@ test("戻す前に回数券が取り消されていたら、戻さなかった�
     ["generateMaterial", { result: "moderation", category: "real_person" }],
   ]);
 });
+
+async function lastRequestOf(uid: string) {
+  return (await db.collection("users").doc(uid).get()).get("lastRequest");
+}
+
+async function ticketsOf(uid: string) {
+  return (await db.collection("users").doc(uid).get()).get("packs").p.remaining;
+}
+
+async function ticketHolder(day: Date): Promise<string> {
+  const uid = uniqueUid();
+  await db.collection("users").doc(uid).set({ freeUsed: true, packs: { p: { remaining: 5, expiresAt: daysLater(day, 180) } } });
+  return uid;
+}
+
+function secondsLater(base: Date, seconds: number): Date {
+  return new Date(base.getTime() + seconds * 1000);
+}
+
+test("頼みの番号つきで作れたら done で覚え、同じ番号でもう一度来たら回数を使わずに作り直す", async (t) => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  const logs = captureInfoLogs(t);
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(day).deps);
+  assert.equal((await lastRequestOf(uid)).state, "done");
+
+  const { deps, calls } = fakeDeps(secondsLater(day, 60));
+  const response = await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, deps);
+  assert.deepEqual(response, {
+    image: "AAAA",
+    mimeType: "image/png",
+    paidWith: "ticket",
+    ticketsRemaining: 4,
+    model: DEFAULT_SETTINGS.imageModel,
+  });
+  assert.equal(calls.judge, 1);
+  assert.equal(await ticketsOf(uid), 4);
+  assert.equal((await lastRequestOf(uid)).state, "redone");
+
+  const entries = logs();
+  const redoLog = entries.find(([message]) => message === "回数を使わずに作り直す");
+  assert.ok(redoLog);
+  assert.equal(redoLog[1].requestId, "r1");
+  assert.equal(redoLog[1].paidWith, "ticket");
+  const okLogs = entries.filter(([message, payload]) => message === "generateMaterial" && payload.result === "ok");
+  assert.equal(okLogs.length, 2);
+  assert.equal(okLogs[0][1].requestId, "r1");
+  assert.equal(okLogs[1][1].redo, true);
+  assert.notEqual(okLogs[0][1].callId, okLogs[1][1].callId);
+});
+
+test("作り直しも1回まで。作り直したあとに同じ番号で来たら、ふつうに回数を使う", async () => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(day).deps);
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(secondsLater(day, 60)).deps);
+
+  const response = await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(secondsLater(day, 120)).deps);
+  assert.equal(response.ticketsRemaining, 3);
+  assert.equal(await ticketsOf(uid), 3);
+});
+
+test("頼みの番号つきで断って回数を戻したら頼みを消し、同じ番号でもう一度来たらふつうに回数を使う", async () => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  await assert.rejects(
+    handleGenerateMaterial(uid, { prompt: "だれか", requestId: "r1" }, fakeDeps(day, { judge: async () => "real_person" }).deps),
+    rejectsWith("moderation", "permission-denied"),
+  );
+  assert.equal(await lastRequestOf(uid), undefined);
+  assert.equal(await ticketsOf(uid), 5);
+
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(secondsLater(day, 60)).deps);
+  assert.equal(await ticketsOf(uid), 4);
+});
+
+test("作り直しに失敗したら回数は動かさずに断り、15分以内ならもう一度作り直せる", async () => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(day).deps);
+
+  const failing = fakeDeps(secondsLater(day, 60), { image: async () => ({ kind: "no_image", finishReason: "STOP" }) });
+  await assert.rejects(
+    handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, failing.deps),
+    rejectsWith("generation_failed", "unavailable"),
+  );
+  assert.equal(await ticketsOf(uid), 4);
+  assert.equal((await lastRequestOf(uid)).state, "done");
+
+  const response = await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(secondsLater(day, 120)).deps);
+  assert.equal(response.ticketsRemaining, 4);
+  assert.equal(await ticketsOf(uid), 4);
+});
+
+test("同じ番号の前の頼みを作っている途中なら、審査も画像も呼ばずに in_progress で断る", async () => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  const retry = fakeDeps(secondsLater(day, 10));
+  const first = fakeDeps(day, {
+    // 1回目が審査しているあいだに、通信が切れたアプリが同じ番号で押し直した
+    judge: async () => {
+      await assert.rejects(
+        handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, retry.deps),
+        rejectsWith("in_progress", "aborted"),
+      );
+      return "none";
+    },
+  });
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, first.deps);
+  assert.equal(first.calls.judge, 1);
+  assert.equal(retry.calls.judge, 0);
+  assert.equal(await ticketsOf(uid), 4);
+});
+
+test("頼みの番号の形が違うときは、作り直しには使わずにふつうに作る", async () => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  const response = await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "../etc" }, fakeDeps(day).deps);
+  assert.equal(response.ticketsRemaining, 4);
+  assert.equal(await lastRequestOf(uid), undefined);
+
+  await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: 123 }, fakeDeps(day).deps);
+  assert.equal(await ticketsOf(uid), 3);
+});
