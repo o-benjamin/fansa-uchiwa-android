@@ -8,6 +8,7 @@ import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialSourceImage
+import com.fansauchiwa.data.AiMaterialUnconfirmedException
 import com.fansauchiwa.data.BackgroundRemovalException
 import com.fansauchiwa.data.BackgroundRemovalFailureReason
 import com.fansauchiwa.data.GeneratedAiMaterial
@@ -161,11 +162,39 @@ class AiMaterialRepositoryImplTest {
     }
 
     @Test
-    fun generate_taskCancelledWhileCallerActive_returnsFailure() = runTest {
+    fun generate_serverCallFails_returnsUnconfirmedWithCause() = runTest {
+        // サーバーが作り終えて回数を減らしたあとに通信が切れたのかもしれない
+        val cause = IOException("offline")
+        coEvery { dataSource.generateMaterial(any(), any()) } throws cause
+
+        val error = repository.generate("星", null).exceptionOrNull()
+
+        assertTrue(error is AiMaterialUnconfirmedException)
+        assertEquals(cause, error?.cause)
+    }
+
+    @Test
+    fun generate_writeFails_returnsUnconfirmedWithoutCuttingOut() = runTest {
+        val cause = IOException("disk full")
+        coEvery { dataSource.generateMaterial("星", null) } returns material
+        coEvery { imageDataSource.writeGeneratedImage(material) } throws cause
+
+        val error = repository.generate("星", null).exceptionOrNull()
+
+        assertTrue(error is AiMaterialUnconfirmedException)
+        assertEquals(cause, error?.cause)
+        coVerify(exactly = 0) { imageProcessingRepository.removeBackground(any()) }
+    }
+
+    @Test
+    fun generate_taskCancelledWhileCallerActive_returnsUnconfirmed() = runTest {
         // Play 開発者サービスや Firebase の Task が取り消されたとき。画面を「作っています」のまま止めない
         coEvery { dataSource.generateMaterial(any(), any()) } throws CancellationException("task")
 
-        assertTrue(repository.generate("星", null).exceptionOrNull() is CancellationException)
+        val error = repository.generate("星", null).exceptionOrNull()
+
+        assertTrue(error is AiMaterialUnconfirmedException)
+        assertTrue(error?.cause is CancellationException)
     }
 
     @Test
@@ -179,6 +208,14 @@ class AiMaterialRepositoryImplTest {
 
         assertTrue(job.isCancelled)
         assertNull(result)
+    }
+
+    @Test
+    fun isOnDevice_returnsWhetherImageFileExists() = runTest {
+        val image = AiMaterialImage(cutOutUri, true, AiMaterialPayment.TICKET, 4, MODEL)
+        coEvery { imageDataSource.exists(cutOutUri) } returns false
+
+        assertEquals(false, repository.isOnDevice(image))
     }
 
     @Test

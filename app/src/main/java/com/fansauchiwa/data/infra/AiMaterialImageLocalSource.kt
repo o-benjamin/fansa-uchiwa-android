@@ -62,6 +62,11 @@ class AiMaterialImageLocalSource @Inject constructor(
             Uri.fromFile(file)
         }
 
+    // 作った素材も切り抜いた素材も `Uri.fromFile` でキャッシュに置いている
+    override suspend fun exists(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        uri.scheme == "file" && uri.path?.let { File(it).exists() } == true
+    }
+
     // JPEG は透明を持てず、透明なところが黒になる。透過 PNG のイラストなどは白の上に描いてから送る
     private fun Bitmap.flattenedOnWhite(): Bitmap {
         if (!hasAlpha()) return this
