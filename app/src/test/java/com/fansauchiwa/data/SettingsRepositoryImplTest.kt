@@ -6,12 +6,15 @@ import androidx.datastore.preferences.core.Preferences
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.SettingsLocalSource
 import com.fansauchiwa.data.repository.SettingsRepositoryImpl
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -93,6 +96,25 @@ class SettingsRepositoryImplTest {
         assertTrue(repository.getHasSeenApologyDialogStream().first())
     }
 
+    @Test
+    fun fetchDailyPromptDismissedDate_neverDismissed_emitsNull() = runTest {
+        repository.fetchDailyPromptDismissedDate()
+
+        assertNull(repository.getDailyPromptDismissedDateStream().first())
+    }
+
+    @Test
+    fun setDailyPromptDismissedDate_emitsAndKeepsDate() = runTest {
+        val date = LocalDate.of(2026, 11, 4)
+
+        repository.setDailyPromptDismissedDate(date)
+        assertEquals(date, repository.getDailyPromptDismissedDateStream().first())
+
+        // 作り直した Repository（アプリを開き直したとき）でも読める
+        val reopened = SettingsRepositoryImpl(localSource, FakeAppInstallDataSource())
+        reopened.fetchDailyPromptDismissedDate()
+        assertEquals(date, reopened.getDailyPromptDismissedDateStream().first())
+    }
 
     private inner class FakeAppInstallDataSource : AppInstallDataSource {
         override fun getIsFreshInstallStream(): Flow<Boolean> = flowOf(fakeIsFreshInstall)

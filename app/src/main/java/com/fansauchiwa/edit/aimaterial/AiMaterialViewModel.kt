@@ -2,6 +2,7 @@ package com.fansauchiwa.edit.aimaterial
 
 import android.app.Activity
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fansauchiwa.analytics.AiMaterialParams
@@ -9,10 +10,12 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.data.AiMaterialImage
 import com.fansauchiwa.data.AiMaterialRejectReason
 import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
+import com.fansauchiwa.data.AiMaterialUnconfirmedException
 import com.fansauchiwa.data.PlayBillingException
 import com.fansauchiwa.data.TicketPurchaseOutcome
 import com.fansauchiwa.data.TicketPurchaseRejectReason
@@ -29,19 +32,28 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+// プロセスが止められても戻れるよう SavedStateHandle に残すもの（#387）
+private const val PROMPT_KEY = "ai_material_prompt"
+private const val UNCONFIRMED_KEY = "ai_material_unconfirmed"
+private const val RESULT_KEY = "ai_material_result"
+private const val TICKETS_REMAINING_KEY = "ai_material_tickets_remaining"
 
 @HiltViewModel
 class AiMaterialViewModel @Inject constructor(
     private val aiMaterialRepository: AiMaterialRepository,
     private val ticketPurchaseRepository: TicketPurchaseRepository,
     private val analyticsRepository: AnalyticsRepository,
-    private val crashReportingRepository: CrashReportingRepository
+    private val crashReportingRepository: CrashReportingRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AiMaterialUiState())
+    private val _uiState = MutableStateFlow(restoreUiState())
     val uiState: StateFlow<AiMaterialUiState> = _uiState.asStateFlow()
 
     private val _confirmEvent = MutableSharedFlow<String>()
@@ -49,6 +61,11 @@ class AiMaterialViewModel @Inject constructor(
 
     // 二度押しで同じ素材を2回置かない・2回数えない
     private var isConfirmed = false
+
+    init {
+        saveUiStateOnChange()
+        checkRestoredResultOnDevice()
+    }
 
     fun logScreenView() {
         viewModelScope.launch {
@@ -79,11 +96,12 @@ class AiMaterialViewModel @Inject constructor(
                 .fold(
                     onSuccess = { AiMaterialGeneration.Succeeded(it) },
                     onFailure = { error ->
-                        if (error is AiMaterialRejectedException) {
-                            AiMaterialGeneration.Rejected(error.reason)
-                        } else {
-                            crashReportingRepository.recordException(error)
-                            AiMaterialGeneration.Failed
+                        // 理由つきの断りは不具合ではないので記録しない
+                        if (error !is AiMaterialRejectedException) crashReportingRepository.recordException(error)
+                        when (error) {
+                            is AiMaterialRejectedException -> AiMaterialGeneration.Rejected(error.reason)
+                            is AiMaterialUnconfirmedException -> AiMaterialGeneration.Unconfirmed
+                            else -> AiMaterialGeneration.Failed
                         }
                     }
                 )
@@ -173,6 +191,52 @@ class AiMaterialViewModel @Inject constructor(
             // Succeeded は data class で、中身が同じ結果は == では見分けられないので、参照で比べる
             _uiState.update {
                 if (it.generation === generation) it.copy(reportStatus = status) else it
+            }
+        }
+    }
+
+    /**
+     * プロセスが止められて作り直されたときに、[saveUiStateOnChange] で残した文章・残りの回数と、作っている途中か・作った素材を戻す（#387）。
+     * 作っている途中で止められたときは、サーバーが作り終えて回数を減らしたかもしれないので [AiMaterialGeneration.Unconfirmed] にする。
+     * 元画像は戻さない（写真の選択画面で選んだ画像を読む許可は、プロセスが止められると切れることがあるため）。
+     * 購入の案内と報告の状態も戻さない（案内は次に断られたときに開き直す。報告はサーバーが1人1日の上限で止める）。
+     * UiState をまるごと残さないのは、購入の案内の途中など、作り直したあとに続けられない状態を持っているため
+     */
+    private fun restoreUiState(): AiMaterialUiState {
+        val image = savedStateHandle.get<AiMaterialImage>(RESULT_KEY)
+        val generation = when {
+            image != null -> AiMaterialGeneration.Succeeded(image)
+            savedStateHandle.get<Boolean>(UNCONFIRMED_KEY) == true -> AiMaterialGeneration.Unconfirmed
+            else -> AiMaterialGeneration.Idle
+        }
+        return AiMaterialUiState(
+            prompt = savedStateHandle.get<String>(PROMPT_KEY).orEmpty(),
+            generation = generation,
+            ticketsRemaining = savedStateHandle.get<Int>(TICKETS_REMAINING_KEY) ?: 0
+        )
+    }
+
+    // 報告は結果を見ている間の入力欄の文章を送るので、結果と一緒に文章も残す。
+    // 結果が裏で届いても、OS が状態を保存したあと（画面が裏に回ったとき）の変更は残らない。そのときは Unconfirmed に戻る
+    private fun saveUiStateOnChange() {
+        uiState.onEach { state ->
+            val generation = state.generation
+            savedStateHandle[PROMPT_KEY] = state.prompt
+            savedStateHandle[TICKETS_REMAINING_KEY] = state.ticketsRemaining
+            savedStateHandle[UNCONFIRMED_KEY] = generation is AiMaterialGeneration.Generating ||
+                generation is AiMaterialGeneration.Unconfirmed
+            savedStateHandle[RESULT_KEY] = (generation as? AiMaterialGeneration.Succeeded)?.image
+        }.launchIn(viewModelScope)
+    }
+
+    // 戻した素材のファイルは、プロセスが止められている間に OS がキャッシュから消すことがある。消えていると置けないので、
+    // 作れたか確かめられなかったときと同じく問い合わせの案内を出す（回数はこの素材で減っているので、残りはそのまま出す）
+    private fun checkRestoredResultOnDevice() {
+        val restored = _uiState.value.generation as? AiMaterialGeneration.Succeeded ?: return
+        viewModelScope.launch {
+            if (aiMaterialRepository.isOnDevice(restored.image)) return@launch
+            _uiState.update {
+                if (it.generation === restored) it.copy(generation = AiMaterialGeneration.Unconfirmed) else it
             }
         }
     }
@@ -328,11 +392,13 @@ class AiMaterialViewModel @Inject constructor(
     }
 
     // 回数がないと断られたら残りは 0。ただし作っている間に購入を足していたら（addedTickets がある）、断りより新しいのでその残りを持つ。
+    // 作れたか分からないときは、回数が減ったかも分からないので 0（まだ分からない）にして出さない。
     // それ以外の断りと失敗では、分かっている残りを変えない
     private fun AiMaterialGeneration.ticketsRemaining(state: AiMaterialUiState): Int = when {
         this is AiMaterialGeneration.Succeeded -> image.ticketsRemaining
         this is AiMaterialGeneration.Rejected && reason == AiMaterialRejectReason.NO_CREDITS &&
             state.addedTickets == null -> 0
+        this is AiMaterialGeneration.Unconfirmed -> 0
         else -> state.ticketsRemaining
     }
 
@@ -371,6 +437,9 @@ class AiMaterialViewModel @Inject constructor(
         is AiMaterialGeneration.Succeeded -> mapOf(
             AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_SUCCESS,
             AiMaterialParams.PARAM_BACKGROUND_REMOVED to image.backgroundRemoved.toString()
+        )
+        AiMaterialGeneration.Unconfirmed -> mapOf(
+            AiMaterialParams.PARAM_RESULT to AiMaterialParams.RESULT_UNCONFIRMED
         )
         // Idle と Generating は generate() の結果にならない
         AiMaterialGeneration.Failed,

@@ -20,4 +20,9 @@ interface AiMaterialImageDataSource {
      * @throws Exception 書き込めなかったとき
      */
     suspend fun writeGeneratedImage(material: GeneratedAiMaterial): Uri
+
+    /**
+     * [writeGeneratedImage] や背景の切り抜きで端末に置いたファイルが、まだあるか
+     */
+    suspend fun exists(uri: Uri): Boolean
 }

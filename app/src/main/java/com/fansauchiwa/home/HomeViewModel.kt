@@ -2,15 +2,23 @@ package com.fansauchiwa.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fansauchiwa.EditScreenInputArg
 import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
+import com.fansauchiwa.analytics.DailyPromptViewTracker
+import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.DecorationColors
 import com.fansauchiwa.data.Template
+import com.fansauchiwa.data.TodayProvider
 import com.fansauchiwa.data.Uchiwa
 import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
+import com.fansauchiwa.data.repository.AiMaterialRepository
+import com.fansauchiwa.data.repository.DailyPromptRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import com.fansauchiwa.data.repository.SettingsRepository
@@ -20,6 +28,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -30,11 +41,21 @@ class HomeViewModel @Inject constructor(
     private val analyticsRepository: AnalyticsRepository,
     private val templateRepository: TemplateRepository,
     private val settingsRepository: SettingsRepository,
+    private val dailyPromptRepository: DailyPromptRepository,
+    private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
+    private val dailyPromptViewTracker: DailyPromptViewTracker,
+    private val aiMaterialRepository: AiMaterialRepository,
+    private val todayProvider: TodayProvider,
     private val uuidProvider: UuidProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    init {
+        observeDailyPrompt()
+        fetchDailyPromptDismissedDate()
+    }
 
     fun logScreenView() {
         viewModelScope.launch {
@@ -129,6 +150,95 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setHasSeenApologyDialog(true)
             _uiState.update { it.copy(showApologyDialog = false) }
+        }
+    }
+
+    private fun observeDailyPrompt() {
+        combine(
+            dailyPromptRepository.getDailyPromptStream(),
+            settingsRepository.getDailyPromptDismissedDateStream()
+        ) { prompt, dismissedDate ->
+            // カードを閉じた日はもう出さず、翌日また出す
+            prompt?.takeUnless { dismissedDate == todayProvider.today() }
+        }
+            .onEach { prompt -> _uiState.update { it.copy(dailyPrompt = prompt) } }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * 閉じた日付は × でしか変わらず、変えたときは Repository が流し直すので、ホームを作ったときに1回だけ読む。
+     * ON_START のたびに読み直すと、読み終わる前に × を押されたとき古い値（閉じていない）が後から流れて、カードがまた出る
+     */
+    private fun fetchDailyPromptDismissedDate() {
+        viewModelScope.launch {
+            settingsRepository.fetchDailyPromptDismissedDate()
+        }
+    }
+
+    /**
+     * ホームが前に出るたび（ON_START）に呼ぶ。日付が変わっていればお題も変わり、前の日に閉じたカードもまた出る
+     * （お題が流れるたびに、閉じた日付と今日の日付を比べ直すため）。Remote Config の取得は最小間隔（1時間）で間引かれる
+     */
+    fun fetchDailyPrompt() {
+        viewModelScope.launch {
+            dailyPromptRepository.fetchDailyPrompt()
+        }
+    }
+
+    /** お題のカードが画面に出たときに呼ぶ */
+    fun onDailyPromptShown(prompt: DailyPrompt) {
+        dailyPromptViewTracker.viewEventIfFirstShown(prompt.id)?.let { event ->
+            viewModelScope.launch {
+                analyticsRepository.logEvent(event)
+            }
+        }
+    }
+
+    /**
+     * 「このお題で作る」を押したときに呼び、白紙のうちわにお題の文字を置いて編集画面を開くための引数を返す。
+     * 「AIで素材を作る」（[onDailyPromptCreateWithAiMaterial]）からも呼ばれる。
+     * 白紙からの新規作成と保存の率を比べるため、tap_home_new_create は送らない
+     */
+    fun onDailyPromptCreate(prompt: DailyPrompt): EditScreenInputArg {
+        logEvent(
+            AnalyticsActions.TAP_DAILY_PROMPT,
+            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
+        )
+        val uchiwaId = uuidProvider.generate()
+        dailyPromptUchiwaRepository.markStartedFromPrompt(uchiwaId)
+        return EditScreenInputArg(uchiwaId = uchiwaId, dailyPromptText = prompt.text)
+    }
+
+    /**
+     * お題のカードの「AIで素材を作る」（#340）を押したときに呼ぶ。「このお題で作る」と同じうちわを開く引数を返し、
+     * 呼び出し側はその編集画面の上に AI素材の画面を開く（AI素材の画面は、作った素材を下の編集画面に置くため）。
+     * 同じうちわを開くので tap_daily_prompt も送る。お題から開いたうちわの数（tap_daily_prompt）と、
+     * そのうちわを保存した数（`source=daily_prompt` の付いた tap_preview_export）が、同じうちわを数えるようにするため
+     */
+    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt): EditScreenInputArg {
+        logEvent(
+            AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
+            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
+        )
+        return onDailyPromptCreate(prompt)
+    }
+
+    /**
+     * ホームが前に出るたび（ON_START）に呼び、入口を出すかを読み直す。ホームの ViewModel はアプリが裏に回っても残るので、
+     * 作ったときの1回だけだと、Remote Config で入口を閉じても何日も残ることがある。
+     * 取得は最小間隔（1時間）で間引かれるので、閉じたのが入口に届くのは、公開から最大約1時間たったあとにホームが前に出たとき。
+     * それまでに残った入口から開いても、サーバーが断る
+     */
+    fun fetchAiMaterialEntryEnabled() {
+        aiMaterialRepository.getEntryEnabledStream()
+            .onEach { enabled -> _uiState.update { it.copy(isAiMaterialEntryEnabled = enabled) } }
+            .launchIn(viewModelScope)
+    }
+
+    /** お題のカードの×。今日はもう出さない */
+    fun dismissDailyPrompt() {
+        viewModelScope.launch {
+            settingsRepository.setDailyPromptDismissedDate(todayProvider.today())
         }
     }
 

@@ -13,7 +13,7 @@
 3. 入口スイッチ（Remote Config の `ai_material_enabled`）が閉じていれば断る
 4. 断る名前の一覧（実在の人物・グループ名）に当たれば断る。全角・半角、大文字・小文字、空白と記号、カタカナ・ひらがなの違いは無視して当てる（`src/moderation.ts`）
 5. 1回分おさえる（`src/quota.ts`）。無料の1回 → なければ回数券。無料の非常ブレーキと全体の安全上限もここで見る
-6. 文章と元画像を軽いモデルで審査する（実在の人物・性的・暴力・ヘイト）。4 の一覧をすり抜けた名前や、実在の人物の写真の元画像はここで断る
+6. 文章と元画像を軽いモデルで審査する（実在の人物・既存の作品やブランドのキャラクターやロゴ・性的・暴力・ヘイト）。4 の一覧をすり抜けた名前や、実在の人物の写真の元画像はここで断る。既存の作品やブランドのキャラクター・ロゴの絵を作って渡すと他人の権利に触れるので、Gemini の画像のモデルが自分で断るかには頼らず、頼む文章と元画像の段階で断る。作った絵はまだ審査していない（作った絵の守りは #423）
 7. 画像を作る。6・7 で断った・失敗したときは、5 でおさえた回数を戻す
 
 回数券を使う順番（5）・回数を戻す動き（7）・回数券でも断るとき（3 の入口スイッチ、5 の全体の安全上限）を変えたら、特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）も直す（`.agents/play-billing.md`）。
@@ -25,7 +25,7 @@
 | `unauthenticated` | unauthenticated | ログインしていない。`details.reason` のない unauthenticated は、App Check で断ったもの（`onCall` が先に断る） |
 | `invalid_prompt` / `invalid_image` | invalid-argument | 文章・元画像の形が違う |
 | `disabled` | failed-precondition | 入口スイッチが閉じている |
-| `blocked_name` / `moderation` | permission-denied | 名前の一覧・審査で断った（`moderation` は `details.category` に分類：`real_person` / `sexual` / `violence` / `hate`） |
+| `blocked_name` / `moderation` | permission-denied | 名前の一覧・審査で断った（`moderation` は `details.category` に分類：`real_person` / `existing_work`（既存の作品やブランドのキャラクターやロゴ） / `sexual` / `violence` / `hate`） |
 | `safety_blocked` | permission-denied | Gemini の安全フィルターで止まった（審査に送った内容が止められたときも） |
 | `no_credits` | resource-exhausted | 無料を使い終え、回数券もない（購入画面へ） |
 | `free_daily_limit` | resource-exhausted | 無料の非常ブレーキに当たった（無料は明日また試せる。回数券は使える） |
@@ -34,7 +34,7 @@
 
 成功したときは `{ image（base64）, mimeType, paidWith: "free" | "ticket", ticketsRemaining, model }` を返す。`model` は画像を作ったモデルで、利用者が報告するときにアプリが `reportMaterial` へ返す。`model` がないとアプリは報告のモデル名を `unknown` として送るので、応答から外さない・名前を変えない。
 
-画像・元画像・文章はサーバーに残さず、ログにも書かない。ログには結果の種類・モデル名・かかった時間・失敗の理由（Gemini のエラーや終わり方）を書く。回数を戻せなかったときだけ、手で戻すために uid と購入 ID も書く。
+画像・元画像・文章はサーバーに残さず、ログにも書かない。ログには結果の種類・モデル名・かかった時間・失敗の理由（Gemini のエラーや終わり方）を書く。回数を動かすとき（`回数をおさえた`・`回数をおさえられなかった`・`回数を戻した`・`回数券が消えていて戻さなかった`・`回数を戻せなかった`・作れたときの `generateMaterial`）は、問い合わせから回数を手で戻せるよう、uid・`callId`（1回の呼び出しごとの ID）・`reservation`（`kind` が `free` か `ticket`、回数券なら購入 ID の `packId`、おさえた日の `dateKey`）も書く（`回数をおさえられなかった` は、おさえる途中で失敗したので uid と `callId` だけで、`reservation` はない）。ログの保存は Cloud Logging の既定の30日で、それより前の問い合わせはログで確かめられない。保存期間を変えたら、プライバシーポリシー（`docs/privacy-policy.html`）の「データの保存期間と削除」も直す。
 
 ### Firestore（書けるのはサーバーだけ。`firestore.rules` でアプリからは読み書きできない）
 
@@ -55,8 +55,8 @@
 | `freeDailyLimit` | 30 | 無料の非常ブレーキ：全体で無料で作れる1日の回数 |
 | `totalDailyLimit` | 300 | 全体の安全上限：無料と回数券を合わせた1日の回数。当たったら止めて Discord に知らせる。断った・失敗した試行は数えないので、Gemini の請求の歯止めは別に置く（下の「本番に出す」の予算アラート） |
 | `imageModel` | `gemini-3.1-flash-lite-image` | 画像のモデル。文字の質が足りなければ `gemini-3.1-flash-image`（約2倍の値段） |
-| `judgeModel` | `gemini-3.1-flash-lite` | 審査のモデル |
-| `blockedNames` | なし | 断る実在の人物・グループ名。リポジトリが公開なので、一覧はここに置かず Firestore にだけ置く |
+| `judgeModel` | `gemini-3.1-flash-lite` | 審査のモデル。変えたら「入口を初めて開ける前に」の審査の確認をやり直す |
+| `blockedNames` | なし | 断る実在の人物・グループ名。リポジトリが公開なので、一覧はここに置かず Firestore にだけ置く。既存の作品のキャラクター名・作品名は入れない（文のどこかに入っていれば当てるので、ふつうの言葉と同じ名前だと誤って断る。キャラクターは審査のモデルが見る） |
 
 ドキュメントがない・型が違う項目は初期値を使う。設定を一度も読めていないときは、名前の一覧なしで動かさないよう `generation_failed` で断る。
 
@@ -64,15 +64,29 @@
 
 ### 止める
 
-- **すぐ止める**：Remote Config の `ai_material_enabled` を、初期値も条件の値もすべて `false` にして公開する。サーバーは1分以内に断り始める（アプリの入口が消えるのは最大約1時間後）。だれに入口を出すか（条件）はアプリが決める。サーバーは端末の条件を評価できないので、どれか1つでも `true` なら開いているとみなす
+- **すぐ止める**：Remote Config の `ai_material_enabled` を、初期値も条件の値もすべて `false` にして公開する。サーバーは1分以内に断り始める（アプリの入口が消えるのは、公開から最大約1時間たったあとにホームが前に出たとき）。だれに入口を出すか（条件）はアプリが決める。サーバーは端末の条件を評価できないので、どれか1つでも `true` なら開いているとみなす
 - **無料だけ止める**：`config/aiMaterial.freeDailyLimit` を 0 にする
 
 ### 困ったとき（Cloud Logging で探す）
 
 - **`回数を戻せなかった`**：断った・失敗したのに回数が減ったままになっている。ログの `uid` と `reservation` を見て、`kind` が `free` なら `users/{uid}.freeUsed` を `false` に、`ticket` なら `users/{uid}.packs.{購入 ID}.remaining` を1増やす。回数券はお金で買った回数なので、見つけたらすぐ戻す
+  - 回数券は、先に `packs.{購入 ID}` があるか確かめる。ないときは返金で取り消し済みで、お金が戻っているので戻さない（`refundCredit` と同じ）。ないのに `remaining` を足すと `expiresAt` のない回数券ができ、数えられないので何も起きない
+  - `expiresAt` を過ぎているときは、足しても使えない。同じ利用者の期限内のほかの回数券があればそちらに1足し、なければ期限切れで戻せないと伝える（期限切れの回数券の残りは、どのみち使えなくなっている）
+- **「作れたか確かめられませんでした」と出た人から連絡が来た**
+  1. 連絡の利用者 ID で、Cloud Logging を `jsonPayload.uid="<利用者 ID>"` で、利用者が書いた日時（連絡が来た時刻ではない）の前後を探す。利用者 ID はアプリの設定画面の「利用者 ID」（匿名ログインの ID）で、同じ画面の「インストール ID」（#411）とは別物。インストール ID で探してもログは出ない
+  2. 戻すかを決める前提：ログで減ったままと分かる組（`回数を戻せなかった`・`回数をおさえた` だけ）と、おさえたかどうか分からない組（`回数をおさえられなかった` だけ）は、何度目でも戻す。`result: "ok"` の組は、受け取れたかをサーバーでは確かめられないので、連絡を信じて戻す。ただし同じ利用者 ID への手での戻しが30日に3回目になるときは、`result: "ok"` の組は戻さずに断ってよい（受け取ったあとに連絡すれば何度でも戻ってしまうため。reportMaterial の「同じ `uid` から同じ内容が続くときは、いたずらとして扱ってよい」と同じ考え）。手での戻しはログにも Firestore にも残らないので、戻したら返信に利用者 ID・戻した日時・`callId` を書いておき、同じ利用者 ID への過去30日の返信で数える
+  3. ログを `callId` で組にする（`reservation` は同じ日に同じ回数券で作ると同じ値になるので、組にならない）。組ごとに、`回数をおさえた` のあとに何が出たかで見分ける
+     - `回数を戻した`：断った・失敗した分で、回数は戻してある（減っていない）
+     - `回数券が消えていて戻さなかった`：返金で取り消し済みの回数券。お金が戻っているので戻さない
+     - `回数を戻せなかった`：減ったまま。この「困ったとき」の「`回数を戻せなかった`」の手順で戻す
+     - `generateMaterial` の `result: "ok"`：作れて回数が減った。ふつうに受け取れたときも同じ並びで、受け取れなかったか（通信が切れた・応答の読み取りや保存に失敗した・待っている間にアプリが止められた）はサーバーでは分からない。利用者が書いた日時に合う組だけを、連絡のあった回数まで、この「困ったとき」の「`回数を戻せなかった`」の手順で戻す
+     - `回数をおさえた` だけ：作っている途中で関数が止まった（`src/index.ts` の `timeoutSeconds`、いまは120秒の時間切れなど）。時間切れで応答を返したあとも処理が続き、あとから `回数を戻した`・`回数を戻せなかった`・`result: "ok"` などが出ることがあるので、その日の終わりまで見てから決める。それでも出なければ減ったままなので、この「困ったとき」の「`回数を戻せなかった`」の手順で戻す
+  4. `回数をおさえられなかった`（ERROR）だけの `callId` があるとき：Firestore の障害で、おさえたかどうか分からない（まれに、書き込めたのに失敗として返る）。見分けられないので1回戻す。ログに `reservation` はないので、戻す先は `users/{uid}` を見て決める：期限内の回数券（`remaining` が0のものも含む）があれば期限のいちばん近いものの `remaining` を1増やし、なければ `freeUsed` を `false` にする（どちらを使ったかは分からないので、利用者に損のない回数券の側に足す。回数券がなければ、おさえたのは無料の1回）
+  5. 何も出ないときは、結論の前に、インストール ID と取り違えていないか・アプリを入れ直していないか（ID が変わる。回数券なら、この文書の「困ったとき（回数券。Cloud Logging で探す）」の注文番号で探す手順へ）・日時の幅が足りているかを確かめる。それでも出なければ、サーバーに届いていないので回数は減っていない。30日より前の連絡は、ログが消えていて見分けられない
 - **`審査のモデルを呼べなかった` / `画像のモデルを呼べなかった` が続く**：ログの `error`（Gemini の `error.status` と `error.message`）を見る。`NOT_FOUND` はモデルの廃止か名前の打ち間違いなので `config/aiMaterial` の `judgeModel` / `imageModel` を差し替える。`PERMISSION_DENIED` / `UNAUTHENTICATED` は API キーの失効なので Secret を入れ直す。`RESOURCE_EXHAUSTED` は割り当ての超過
 - **`画像が返らなかった` が続く**：ログの `finishReason` を見る。前置き（`src/gemini.ts` の `STICKER_PREFIX`）かモデルが合っていない
 - **`設定を読めなかった` / `回数をおさえられなかった`**：Firestore の障害。続くなら入口スイッチで止める
+- **審査で断られたという問い合わせが続く**：`generateMaterial` のログ（`result: "moderation"`）を `category` ごとに見る。分類は Cloud Logging でしか見られない（アプリは `details.category` を読まず、GA4 に送るのは `moderation` まで）
 - 全件が失敗しても Discord には知らせない（知らせるのは全体の上限に当たったときだけ）。入口を開けたら、Cloud Logging の `severity>=ERROR` にログベースのアラートを置いておく
 
 ## reportMaterial（作った素材の報告を受ける）
@@ -133,10 +147,11 @@ Voided Purchases API で過去30日分の返金・取り消しを読み、その
   - 見つからない：サーバーで回数を足しておらず、消費もしていない。3日で Play が自動で返金するので、Play Console の「注文管理」で状態を見る。ログを `orderId` で探すと、断った理由（`pending` など）が分かる
   - `voidedAt` がある：返金済み
   - 別の `uid` に付いている（入れ直して匿名ログインの ID が変わった。ログの `owned_by_other` に両方の `uid` がある）：Play Console で返金する。翌日の `revokeVoidedPurchases` が前の ID の残りを消す
-- **`Play で購入を確かめられなかった` が続く**：ログの `error` の状態を見る。403（`PERMISSION_DENIED`）は、関数のサービス アカウントが Play Console の「ユーザーと権限」にいないか権限が足りない（下の「本番に出す」の 7）。401 はスコープかアカウントの設定。Play の障害なら待つ（利用者には `verification_failed` で返り、回数は足していない）
-- **`消費できなかった`**：回数は足してあり、アプリが送り直せば消費をやり直す。3日続くと Play が自動で返金し、回数券も取り消される。続くなら上と同じく権限を見る
-- **`revokeVoidedPurchases` が失敗している**（毎日の件数のログ `revokeVoidedPurchases` が出ない・この関数の ERROR がある）：止まっている間、返金された回数券は使えるまま。403 なら「本番に出す」の 7 の権限。直したら Google Cloud コンソールの Cloud Scheduler でジョブを強制実行し、件数のログが出るのを確かめる。30日を超えて止まった分は取り消せない
-- **`返金された回数券を取り消せなかった`**：その1件だけ取り消せなかった（翌日やり直す）。続くなら、ログの `orderId` で `purchases` の記録の中身を見る
+- **`Play で購入を確かめられなかった` が続く**：ログの `error`（`Play Developer API が <状態>…`）を見る。403（`PERMISSION_DENIED`）は、購入専用のサービス アカウント（`purchase-functions@…`）が Play Console の「ユーザーと権限」にいないか権限が足りない（下の「本番に出す」の 8）。401 はスコープかアカウントの設定。Play の障害なら待つ（利用者には `verification_failed` で返り、回数は足していない）
+- **`購入の記録を読めなかった`・`回数を足せなかった`・`回数を読めなかった`**：Firestore を読み書きできなかった（利用者には `verification_failed`）。ログの `error` が `7 PERMISSION_DENIED` なら、購入専用のサービス アカウントに `Cloud Datastore ユーザー` のロールがない（「本番に出す」の 4）
+- **`消費できなかった`**：回数は足してあり、アプリが送り直せば消費をやり直す。3日続くと Play が自動で返金し、回数券も取り消される。Play の消費と Firestore の書き込みのどちらの失敗もこのログになるので、続くならログの `error` を見る。`Play Developer API が 403` なら「本番に出す」の 8 の権限、`7 PERMISSION_DENIED` なら 4 のロール
+- **`revokeVoidedPurchases` が失敗している**（毎日の件数のログ `revokeVoidedPurchases` が出ない・この関数の ERROR がある）：止まっている間、返金された回数券は使えるまま。返金の一覧を Play から読めないと関数ごと失敗する。その ERROR のメッセージが `Play Developer API が 403…` なら「本番に出す」の 8 の権限。直したら Google Cloud コンソールの Cloud Scheduler でジョブを強制実行し、件数のログが出るのを確かめる。30日を超えて止まった分は取り消せない
+- **`返金された回数券を取り消せなかった`**：その1件だけ取り消せなかった（翌日やり直す。ほかの件と件数のログは続く）。件数のログ（`revokeVoidedPurchases`）の `failed` が毎日 `voided` と同じで、`error` が `7 PERMISSION_DENIED` なら、購入専用のサービス アカウントに `Cloud Datastore ユーザー` のロールがない（「本番に出す」の 4。30日を超えた返金は取り消せなくなるので急ぐ）。そうでなければ、ログの `orderId` で `purchases` の記録の中身を見る
 - **`返金の一覧をたどりきれなかった`**：1回で20ページ（2万件）を超えた。返金が急に増えていないかを Play Console で見る
 
 ## 開発
@@ -168,11 +183,16 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 1. Blaze（従量課金）・Firestore（東京）・匿名ログインが有効になっている。App Check は Play Integrity で有効にし、Play Console の「アプリの完全性」で Play Integrity API を同じ Cloud プロジェクトにつなぎ、Firebase のアプリ設定にアプリ署名鍵の SHA-256 を登録する（どちらかが漏れると、全件が App Check で断られる）
 2. Cloud Billing に予算アラートを置く（Gemini の請求が想定を超えたら知らせる）。Google Cloud コンソールの「割り当て」で Generative Language API の1日のリクエスト数を絞っておくと、なおよい
 3. Secret を登録する：`firebase functions:secrets:set GEMINI_API_KEY`（Google AI Studio の有料枠のキー）、`firebase functions:secrets:set DISCORD_WEBHOOK_URL`
-4. `firebase deploy --only functions,firestore`（`firestore` はルールと `firestore.indexes.json` の TTL。`--only` なしの `firebase deploy` は Hosting・関数・Firestore をすべて出す。Hosting だけなら `--only hosting`）
-5. `config/aiMaterial` に `blockedNames` を書く（`tools/write-settings.mjs`）
-6. サーバーの関数は Remote Config のテンプレートを読む。実行のサービス アカウント（既定は Compute Engine の既定のサービス アカウント）に Remote Config を読む権限（`Firebase Remote Config 閲覧者`）がなければ足す。読めないと入口は閉じたままになる
-7. 回数券（`verifyPurchase`・`revokeVoidedPurchases`）：Google Cloud コンソールで「Google Play Android Developer API」を有効にし、Play Console の「ユーザーと権限」に 6 のサービス アカウントのメールアドレスを招待する。アプリの権限は「財務データの表示」と「注文と定期購入の管理」。権限が届くまで最大1日かかることがある。今は全関数が同じサービス アカウントで動くので、購入と関係のない関数もこの権限を持つ（購入専用のアカウントに分けるのは #393）。`revokeVoidedPurchases` は Cloud Scheduler のジョブとして出る（`firebase deploy` が API を有効にする）
-8. Play Console でアプリ内アイテム（消費型）を ID `ai_material_ticket_5` で作る。値段はここで決める（コードには書かない）。数量の選択（複数個の購入）は有効にしない（数量の一部だけの返金を、返金の取り消しで拾わないため）
+4. 回数券の関数（`verifyPurchase`・`revokeVoidedPurchases`）を動かす購入専用のサービス アカウントを作る（#393）。Play Console で返金ができる権限（8）は、このアカウントだけに付ける。このアカウントがないと、5 の deploy でこの2つの関数を作れない。ほかの関数は既定のサービス アカウントのまま
+   - Google Cloud コンソールの「IAM と管理」→「サービス アカウント」で、ID `purchase-functions` で作る（`src/index.ts` の `purchaseServiceAccount` の `@` の前と同じ。変えるときは両方を直す）。説明欄には「verifyPurchase・revokeVoidedPurchases 用。Play Console で返金の権限を持つ」と書く。鍵（JSON キー）は作らない（関数は鍵なしでこのアカウントとして動く）
+   - 「IAM」で、このアカウントにロール `Cloud Datastore ユーザー`（`roles/datastore.user`。Firestore）と `ログ書き込み`（`roles/logging.logWriter`）を付ける
+   - デプロイする人がプロジェクトのオーナーでなければ、その人に、このアカウントに対する `サービス アカウント ユーザー`（`roles/iam.serviceAccountUser`）を付ける
+5. `firebase deploy --only functions,firestore`（`firestore` はルールと `firestore.indexes.json` の TTL。`--only` なしの `firebase deploy` は Hosting・関数・Firestore をすべて出す。Hosting だけなら `--only hosting`）
+   - 出したあと、Google Cloud コンソールの Cloud Run で `verifypurchase` と `revokevoidedpurchases` のサービス アカウントが `purchase-functions@…` になっていて、ほかの関数は Compute Engine の既定のサービス アカウントのままかを確かめる（Cloud Run のサービス名は関数名の小文字）。Cloud Scheduler の `revokeVoidedPurchases` のジョブも、サービス アカウントが `purchase-functions@…` になっているかを見る
+6. `config/aiMaterial` に `blockedNames` を書く（`tools/write-settings.mjs`）
+7. `generateMaterial` は Remote Config のテンプレートを読む。動かすサービス アカウント（Compute Engine の既定のサービス アカウント。購入専用のアカウントには要らない）に Remote Config を読む権限（`Firebase Remote Config 閲覧者`、`roles/firebaseremoteconfig.viewer`）がなければ足す。読めないと入口は閉じたままになる
+8. 回数券（`verifyPurchase`・`revokeVoidedPurchases`）：Google Cloud コンソールで「Google Play Android Developer API」を有効にし、Play Console の「ユーザーと権限」に 4 の購入専用のサービス アカウント（`purchase-functions@<プロジェクト ID>.iam.gserviceaccount.com`）を招待する。アプリの権限は「財務データの表示」と「注文と定期購入の管理」。権限が届くまで最大1日かかることがある。Compute Engine の既定のサービス アカウント（`<プロジェクト番号>-compute@developer.gserviceaccount.com`）は招待しない（招待すると、購入と関係のない関数も返金ができるようになる）。アカウントを分ける前（#393 より前）の手順で既定のサービス アカウントを招待していたら、「ユーザーと権限」から外す。`revokeVoidedPurchases` は Cloud Scheduler のジョブとして出る（`firebase deploy` が API を有効にする）
+9. Play Console でアプリ内アイテム（消費型）を ID `ai_material_ticket_5` で作る。値段はここで決める（コードには書かない）。数量の選択（複数個の購入）は有効にしない（数量の一部だけの返金を、返金の取り消しで拾わないため）
 
 ### 入口を初めて開ける前に
 
@@ -180,10 +200,17 @@ npm test     # ビルドして、Firestore エミュレーターの中でテス�
 
 - プライバシーポリシーと Play Console のデータセーフティに、文章と画像を Google の Gemini API に送ること（作るときの文章と画像はサーバーに残さないこと）を書いてある
 - 同じく、回数券を買った人の購入の記録（匿名ログインの ID・注文番号・購入時刻）をサーバーに残すことと、その期間（上の「verifyPurchase」）を書いてある（データセーフティの「購入履歴」に当たるかは Play のヘルプで確かめる）
+- プライバシーポリシーの「データの保存期間と削除」に、ログに利用者 ID や注文番号が残り、30日で消えることが書いてある（回数を動かすログに uid・`callId`・購入 ID を書くため。release/v2.12.0 で入れた文で、#398 の公開ページの確認で見る）
 - 生成した画像を報告するボタンがアプリに入っている（#339）。報告では頼んだ文章をサーバーに180日残すので、そのこともプライバシーポリシーに書いてある
-- Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 4 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
+- Firestore の TTL が `reports.expireAt` と `reportUsage.expireAt` で有効になっている（上の 5 の deploy で入る。Firebase コンソールの Firestore →「TTL」で確かめる。入っていないと報告が消えずに残る）
 - `config/aiMaterial.blockedNames` を書いてある
+- 審査のモデルが次の答えを返すことを、オーナーの端末だけ入口を開けて確かめてある（開け方は #411 の、設定画面のインストール ID で Remote Config の条件を作るやり方）。どの分類で断ったかは `generateMaterial` のログの `category` で見る（アプリの文言は分類で変わらない）。審査は回数をおさえたあとに走るので、使える回数（無料の1回か回数券）が要る。断られれば回数は戻るが、作れれば1回分減る。回数がなければ `users/{uid}.freeUsed` を `false` に戻す
+  - 実在の人物名 → `real_person`
+  - 作品のキャラクター名・作品名・名前を出さずに特徴だけを並べた頼み → `existing_work`
+  - 一般的なキャラクター（「うさぎのキャラ」「王子様」など）・ふつうの素材（ハート・推しの色など） → `none`
+  - 作品のキャラクターや作品名の頼みが `none` で通ったら、入口を広げず `src/moderation.ts` の `JUDGE_INSTRUCTION` か `judgeModel` を見直す。一般的なキャラクターが `existing_work` で断られたら、`JUDGE_INSTRUCTION` の none の例を足す
 - 上の「本番に出す」の予算アラートと、ログベースのアラートを置いてある
-- 特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）が公開されていて、アプリの購入の案内のリンクから開ける
+- 特定商取引法に基づく表記のページ（`web/public/tokushoho.html`）が公開されていて、アプリの購入の案内と「作れたか確かめられませんでした」の文言の下のリンクから開ける
+- 「作れたか確かめられませんでした」と出た人から連絡を受けたときに、回数を戻す利用者を探せる（#387 の③：アプリの設定画面に「利用者 ID」が、インストール ID と区別できる見出しで出ていて、特定商取引法に基づく表記の連絡先に「利用者 ID を添えて」と書いてある。ログの探し方は、この文書の generateMaterial の「困ったとき（Cloud Logging で探す）」）。これがないと、連絡を受けても `users/{uid}` を特定できない
 
-持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。アプリを別の Play Console アカウントへ移したら、「本番に出す」の 7 の招待と権限をやり直す（しないと購入の確認が全件 `verification_failed` になり、返金の取り消しも止まる）。Firebase プロジェクトを替えると匿名ログインの ID が変わり、買われた回数券は引き継がれない。プロジェクトごと移すか、最後の購入から6か月たってから替える。
+持ち主が変わるときは、Firebase プロジェクトを移せば Firestore・Secret・関数はそのまま渡る。Gemini の API キーと Discord の Webhook は新しい持ち主のものに入れ替える。アプリを別の Play Console アカウントへ移したら、「本番に出す」の 8 の招待と権限をやり直す（しないと購入の確認が全件 `verification_failed` になり、返金の取り消しも止まる）。Firebase プロジェクトを替えると匿名ログインの ID が変わり、買われた回数券は引き継がれない。プロジェクトごと移すか、最後の購入から6か月たってから替える。替えたら、新しいプロジェクトで「本番に出す」の 4 と 8 をやり直す（アドレスはプロジェクト ID から決まるので、コードは直さない）。

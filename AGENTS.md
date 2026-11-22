@@ -22,13 +22,15 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | コンポーザブル・Preview・Haptic・Semantics を作成・変更する | `.agents/ui.md` |
 | テストを作成・変更する、ロジックを追加する | `.agents/testing.md` |
 | ステッカー・フォントを追加・削除する、並び順や NEW ラベルを変える、素材のライセンス台帳を直す | `.agents/sticker-font-order.md` |
+| テンプレートを足す、debug ビルドの候補を変える | `.agents/template-candidates.md` |
 | リリースビルド設定・ProGuard ルール・`@Keep` を扱う、依存ライブラリを追加・更新する | `.agents/r8.md` |
 | Analytics のイベント・パラメータを追加・変更する、分析用のコードを扱う | `.agents/analytics.md` |
-| Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials` を設定する | `.agents/remote-config.md` |
+| Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials`・`daily_prompts`（今日のお題）を設定する・止める、`ai_material_enabled`（AI素材の入口）を開ける・止める | `.agents/remote-config.md` |
+| 外部サービス・SDK を足す・替える・外す、外へ送るデータ（Analytics のパラメータを含む）・サーバーに保存するもの・保存期間を変える、バックアップの決まり（`backup_rules.xml`・`data_extraction_rules.xml`）を変える、`docs/privacy-policy.html` を直す | `.agents/privacy-policy.md` |
 | AI 素材のサーバーを呼ぶ、匿名ログイン・App Check・Play Integrity の設定を扱う、アプリの持ち主が変わる | `.agents/firebase-auth-app-check.md` |
 | 回数券の購入（Play Billing）を扱う、Billing Library を更新する、特定商取引法に基づく表記（`web/public/tokushoho.html`）を直す、アプリの持ち主が変わる | `.agents/play-billing.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
-| サーバー（`functions/` の Cloud Functions）を作成・変更する | `functions/README.md` |
+| サーバー（`functions/` の Cloud Functions）を作成・変更する、出す・止める、Secret を入れ替える | `functions/README.md` |
 | Android の API を調べる（`android docs search`）、頼まれたときや不具合の調査でアプリを動かす、既存の journey（`journeys/`）が通る画面の文言や手順を変える | `.agents/android-cli.md` |
 
 ## ルールの追加方法

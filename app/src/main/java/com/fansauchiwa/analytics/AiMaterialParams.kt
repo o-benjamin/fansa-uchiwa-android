@@ -3,6 +3,9 @@ package com.fansauchiwa.analytics
 /**
  * AI 素材のイベント（`generate_ai_material`・`save_ai_material`・`report_ai_material`・
  * `view_ai_material_paywall`・`purchase_ai_material`）のパラメータ。
+ * `generate_ai_material` は [PARAM_RESULT] に [RESULT_SUCCESS] / サーバーかアプリが断った [RESULT_REJECTED]（[PARAM_REASON] に理由）/
+ * 送る前に失敗した [RESULT_FAILED] / 送ったあとに失敗して作れたか分からない [RESULT_UNCONFIRMED] を送る。
+ * 作っている途中でプロセスが止められたときは送らない（分析のために保存するものを増やさない）。
  * `report_ai_material` は [PARAM_REASON] に報告の理由、[PARAM_RESULT] に送れたか
  * （[RESULT_SUCCESS] / 1人1日の上限で断られた [RESULT_REJECTED] / [RESULT_FAILED]）を送る。
  * `view_ai_material_paywall` は購入の案内に値段を出したか（[RESULT_SUCCESS]）、値段を取れず「今は買えない」と出したか
@@ -11,7 +14,8 @@ package com.fansauchiwa.analytics
  * `purchase_ai_material` は [PARAM_RESULT] に [RESULT_SUCCESS] / [RESULT_PENDING] / [RESULT_CANCELLED] /
  * サーバーが断った [RESULT_REJECTED]（[PARAM_REASON] に理由）/ [RESULT_FAILED] を送る。
  * 前の購入が足し済みのまま残っていて買えなかったときも [RESULT_FAILED]。
- * あとで足した購入（コンビニ払いが済んだ・足す前に通信が切れた）は、足したときに [RESULT_SUCCESS] だけを送る
+ * あとで足した購入（コンビニ払いが済んだ・足す前に通信が切れた）は、足したときに [RESULT_SUCCESS] だけを送る。
+ * 入口のイベント `tap_ai_material_entry`（お題のカードの副ボタン、#340）のパラメータは [DailyPromptAnalyticsParams]
  */
 object AiMaterialParams {
     const val PARAM_RESULT = "result"
@@ -26,4 +30,5 @@ object AiMaterialParams {
     const val RESULT_FAILED = "failed"
     const val RESULT_PENDING = "pending"
     const val RESULT_CANCELLED = "cancelled"
+    const val RESULT_UNCONFIRMED = "unconfirmed"
 }

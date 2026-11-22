@@ -10,6 +10,7 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.AnalyticsScreens
+import com.fansauchiwa.analytics.DailyPromptAnalyticsParams
 import com.fansauchiwa.analytics.ExportedFontAnalytics
 import com.fansauchiwa.analytics.FontSessionTracker
 import com.fansauchiwa.analytics.PuffyStateAnalytics
@@ -18,6 +19,7 @@ import com.fansauchiwa.data.AffiliateLink
 import com.fansauchiwa.data.extractUchiwaIdFromImagePath
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AffiliateRepository
+import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,6 +42,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val puffyStateAnalytics: PuffyStateAnalytics,
     private val exportedFontAnalytics: ExportedFontAnalytics,
     private val affiliateRepository: AffiliateRepository,
+    private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -65,8 +68,13 @@ class UchiwaPreviewViewModel @Inject constructor(
         val encodedImagePath = savedStateHandle.get<String>(IMAGE_PATH_ARG)
         if (encodedImagePath != null) {
             val decodedImagePath = URLDecoder.decode(encodedImagePath, "UTF-8")
+            val uchiwaId = extractUchiwaIdFromImagePath(decodedImagePath)
             val currentState = uiState.value
-            savedStateHandle[UI_STATE_KEY] = currentState.copy(imagePath = decodedImagePath)
+            savedStateHandle[UI_STATE_KEY] = currentState.copy(
+                imagePath = decodedImagePath,
+                // プロセスが作り直されたあとは false に戻る（DailyPromptUchiwaRepository はメモリにだけ持つため）
+                isStartedFromDailyPrompt = dailyPromptUchiwaRepository.isStartedFromPrompt(uchiwaId)
+            )
         }
         observeAffiliateLinks()
         fetchAffiliateLinks()
@@ -169,13 +177,14 @@ class UchiwaPreviewViewModel @Inject constructor(
 
     /**
      * tap_preview_export を、フォントが「迷い」か「楽しみ」かを見分けるためのパラメータ（#242）と
-     * ぷくぷくの状態（#268）付きで送る。
+     * ぷくぷくの状態（#268）、お題から作ったうちわなら source（#360）付きで送る。
      * 呼び出し元（[showRewardedAdAndSave]）のコルーチンの中から直接呼ぶsuspend関数。
      */
     private suspend fun logExportEvent() {
         val uchiwaId = getCurrentUchiwaId()
         val params = fontSessionTracker.exportParams(currentUchiwaId = uchiwaId) +
-            puffyStateAnalytics.exportParams(uchiwaId)
+            puffyStateAnalytics.exportParams(uchiwaId) +
+            DailyPromptAnalyticsParams.sourceParams(uiState.value.isStartedFromDailyPrompt)
         analyticsRepository.logEvent(AnalyticsEvent(AnalyticsActions.TAP_PREVIEW_EXPORT, params))
     }
 
@@ -257,7 +266,8 @@ class UchiwaPreviewViewModel @Inject constructor(
     fun showRewardedAdAndShare(activity: Activity, entryPoint: String) {
         logEvent(
             AnalyticsActions.TAP_PREVIEW_SHARE,
-            mapOf(ShareAnalyticsParams.PARAM_ENTRY_POINT to entryPoint)
+            mapOf(ShareAnalyticsParams.PARAM_ENTRY_POINT to entryPoint) +
+                DailyPromptAnalyticsParams.sourceParams(uiState.value.isStartedFromDailyPrompt)
         )
 
         if (hasEarnedRewardInSession) {
