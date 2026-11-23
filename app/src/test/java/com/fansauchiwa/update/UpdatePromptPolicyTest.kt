@@ -1,6 +1,6 @@
 package com.fansauchiwa.update
 
-import com.fansauchiwa.data.PlayAppUpdateStatus
+import com.fansauchiwa.data.AvailableAppUpdate
 import com.fansauchiwa.data.UpdateVersionCodes
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -8,7 +8,9 @@ import org.junit.Test
 class UpdatePromptPolicyTest {
 
     private val current = 36L
-    private val staleUpdate = PlayAppUpdateStatus(
+    private val staleUpdate = AvailableAppUpdate(
+        availableVersionCode = (current + 1).toInt(),
+        isImmediateAllowed = true,
         isFlexibleAllowed = true,
         stalenessDays = UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS
     )
@@ -16,11 +18,11 @@ class UpdatePromptPolicyTest {
     private fun decide(
         minVersionCode: Long = 0,
         forceVersionCode: Long = 0,
-        playUpdate: PlayAppUpdateStatus? = null
+        availableUpdate: AvailableAppUpdate? = null
     ): UpdatePromptType = UpdatePromptPolicy.decide(
         currentVersionCode = current,
         versionCodes = UpdateVersionCodes(minVersionCode, forceVersionCode),
-        playUpdate = playUpdate
+        availableUpdate = availableUpdate
     )
 
     @Test
@@ -32,13 +34,35 @@ class UpdatePromptPolicyTest {
     fun decide_belowForceAndUpdateAvailable_returnsForce() {
         assertEquals(
             UpdatePromptType.FORCE,
-            decide(minVersionCode = current + 1, forceVersionCode = current + 1, playUpdate = staleUpdate)
+            decide(minVersionCode = current + 1, forceVersionCode = current + 1, availableUpdate = staleUpdate)
         )
     }
 
     @Test
-    fun decide_belowForceButPlayHasNoUpdate_returnsMin() {
-        assertEquals(UpdatePromptType.MIN, decide(forceVersionCode = current + 1, playUpdate = null))
+    fun decide_belowForceButPlayHasNoUpdate_returnsForceFallback() {
+        assertEquals(
+            UpdatePromptType.FORCE_FALLBACK,
+            decide(forceVersionCode = current + 1, availableUpdate = null)
+        )
+    }
+
+    @Test
+    fun decide_belowForceButImmediateNotAllowed_returnsForceFallback() {
+        assertEquals(
+            UpdatePromptType.FORCE_FALLBACK,
+            decide(forceVersionCode = current + 1, availableUpdate = staleUpdate.copy(isImmediateAllowed = false))
+        )
+    }
+
+    @Test
+    fun decide_belowForceButAvailableVersionOlderThanForce_returnsForceFallback() {
+        assertEquals(
+            UpdatePromptType.FORCE_FALLBACK,
+            decide(
+                forceVersionCode = current + 2,
+                availableUpdate = staleUpdate.copy(availableVersionCode = (current + 1).toInt())
+            )
+        )
     }
 
     @Test
@@ -47,28 +71,28 @@ class UpdatePromptPolicyTest {
             UpdatePromptType.FORCE,
             decide(
                 forceVersionCode = current + 1,
-                playUpdate = PlayAppUpdateStatus(isFlexibleAllowed = false, stalenessDays = null)
+                availableUpdate = staleUpdate.copy(isFlexibleAllowed = false, stalenessDays = null)
             )
         )
     }
 
     @Test
-    fun decide_forceEqualsCurrent_isNotForced() {
+    fun decide_forceEqualsCurrent_returnsNone() {
         assertEquals(UpdatePromptType.NONE, decide(forceVersionCode = current))
     }
 
     @Test
-    fun decide_belowMin_returnsMinEvenWithoutPlayUpdate() {
-        assertEquals(UpdatePromptType.MIN, decide(minVersionCode = current + 1, playUpdate = null))
+    fun decide_belowMin_returnsMinEvenWithoutAvailableUpdate() {
+        assertEquals(UpdatePromptType.MIN, decide(minVersionCode = current + 1, availableUpdate = null))
     }
 
     @Test
     fun decide_belowMinAndStaleUpdate_returnsMinRatherThanFlexible() {
-        assertEquals(UpdatePromptType.MIN, decide(minVersionCode = current + 1, playUpdate = staleUpdate))
+        assertEquals(UpdatePromptType.MIN, decide(minVersionCode = current + 1, availableUpdate = staleUpdate))
     }
 
     @Test
-    fun decide_minEqualsCurrent_isNotPrompted() {
+    fun decide_minEqualsCurrent_returnsNone() {
         assertEquals(UpdatePromptType.NONE, decide(minVersionCode = current))
     }
 
@@ -76,16 +100,16 @@ class UpdatePromptPolicyTest {
     fun decide_aboveThresholdsAndStaleUpdate_returnsFlexible() {
         assertEquals(
             UpdatePromptType.FLEXIBLE,
-            decide(minVersionCode = current - 1, forceVersionCode = current - 1, playUpdate = staleUpdate)
+            decide(minVersionCode = current - 1, forceVersionCode = current - 1, availableUpdate = staleUpdate)
         )
     }
 
     @Test
-    fun decide_updateNewerThanStalenessThreshold_returnsNone() {
+    fun decide_stalenessBelowThreshold_returnsNone() {
         assertEquals(
             UpdatePromptType.NONE,
             decide(
-                playUpdate = staleUpdate.copy(
+                availableUpdate = staleUpdate.copy(
                     stalenessDays = UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS - 1
                 )
             )
@@ -94,11 +118,11 @@ class UpdatePromptPolicyTest {
 
     @Test
     fun decide_stalenessUnknown_returnsNone() {
-        assertEquals(UpdatePromptType.NONE, decide(playUpdate = staleUpdate.copy(stalenessDays = null)))
+        assertEquals(UpdatePromptType.NONE, decide(availableUpdate = staleUpdate.copy(stalenessDays = null)))
     }
 
     @Test
     fun decide_staleButFlexibleNotAllowed_returnsNone() {
-        assertEquals(UpdatePromptType.NONE, decide(playUpdate = staleUpdate.copy(isFlexibleAllowed = false)))
+        assertEquals(UpdatePromptType.NONE, decide(availableUpdate = staleUpdate.copy(isFlexibleAllowed = false)))
     }
 }

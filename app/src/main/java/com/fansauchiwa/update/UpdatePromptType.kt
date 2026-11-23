@@ -13,6 +13,10 @@ enum class UpdatePromptType {
     // Remote Config の `min_version_code` より古い。閉じられる更新のダイアログ
     MIN,
 
-    // Remote Config の `force_version_code` より古い。閉じられない更新のダイアログ。致命的な不具合のときだけ
+    // `force_version_code` より古いが、直った版に即時更新できると Play で確かめられなかった。
+    // 閉じられないダイアログと同じ文言の、閉じられるダイアログ（UpdatePromptPolicy で下げる）
+    FORCE_FALLBACK,
+
+    // `force_version_code` より古く、直った版に即時更新できる。閉じられない更新のダイアログ。致命的な不具合のときだけ
     FORCE
 }

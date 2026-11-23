@@ -3,6 +3,7 @@ package com.fansauchiwa.data.repository
 import android.app.Activity
 import android.content.Context
 import com.fansauchiwa.analytics.AnalyticsDataSource
+import com.fansauchiwa.analytics.AnalyticsScreens
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,7 @@ import org.junit.Before
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AdMobRepositoryImplSkipInterstitialTest {
+class AdMobRepositoryImplTest {
 
     private val analyticsDataSource = mockk<AnalyticsDataSource>()
     private val activity = mockk<Activity>()
@@ -37,7 +38,7 @@ class AdMobRepositoryImplSkipInterstitialTest {
         var closedCount = 0
 
         repository.skipNextInterstitialAd()
-        repository.showInterstitialAd(activity, placement = "image_preview_screen") { closedCount++ }
+        repository.showInterstitialAd(activity, placement = AnalyticsScreens.IMAGE_PREVIEW_SCREEN) { closedCount++ }
 
         assertEquals(1, closedCount)
         confirmVerified(analyticsDataSource, activity)

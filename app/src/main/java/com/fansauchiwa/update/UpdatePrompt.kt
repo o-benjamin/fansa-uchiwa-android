@@ -32,16 +32,27 @@ fun UpdatePrompt(
     viewModel: UpdatePromptViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val launcher = rememberLauncherForActivityResult(
+    val flexibleUpdateLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        viewModel.onUpdateFlowResult(result.resultCode)
+        viewModel.onFlexibleUpdateResult(result.resultCode)
     }
+    // 即時更新を選んだことはダイアログの「更新する」で送っているので、結果は使わない
+    val immediateUpdateLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) {}
     val downloadedMessage = stringResource(R.string.update_downloaded_message)
     val restartLabel = stringResource(R.string.update_downloaded_restart)
 
     LaunchedEffect(Unit) {
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
+    }
+
+    // 決まるまでに編集画面へ移っていたら、Play の画面はホームに戻ってから出す
+    LaunchedEffect(uiState.isFlexibleUpdatePending) {
+        if (uiState.isFlexibleUpdatePending) {
+            viewModel.startFlexibleUpdate(flexibleUpdateLauncher)
+        }
     }
 
     // アプリが裏にいる間や編集画面にいる間にダウンロードが終わった分も、ホームに戻ったときに拾う
@@ -55,7 +66,7 @@ fun UpdatePrompt(
             message = downloadedMessage,
             actionLabel = restartLabel,
             withDismissAction = true,
-            duration = SnackbarDuration.Indefinite
+            duration = SnackbarDuration.Long
         )
         if (result == SnackbarResult.ActionPerformed) {
             viewModel.completeUpdate()
@@ -64,22 +75,29 @@ fun UpdatePrompt(
 
     uiState.dialog?.let { type ->
         UpdateDialog(
-            isForced = type == UpdatePromptType.FORCE,
-            onUpdate = { viewModel.onUpdateTap(launcher) },
+            type = type,
+            onUpdate = { viewModel.onUpdateTap(immediateUpdateLauncher) },
             onDismiss = viewModel::dismissDialog
         )
     }
 }
 
 /**
- * 更新のダイアログ。[isForced] なら「あとで」を出さず、外のタップと戻る操作でも閉じない
+ * 更新のダイアログ。[UpdatePromptType.FORCE] なら「あとで」を出さず、外のタップと戻る操作でも閉じない。
+ * [UpdatePromptType.FORCE_FALLBACK] は閉じられるが、文言は [UpdatePromptType.FORCE] と同じ
  */
 @Composable
 fun UpdateDialog(
-    isForced: Boolean,
+    type: UpdatePromptType,
     onUpdate: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val isForced = type == UpdatePromptType.FORCE
+    val messageRes = if (type == UpdatePromptType.MIN) {
+        R.string.update_dialog_message
+    } else {
+        R.string.update_dialog_message_critical
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -90,11 +108,7 @@ fun UpdateDialog(
             Text(text = stringResource(R.string.update_dialog_title))
         },
         text = {
-            Text(
-                text = stringResource(
-                    if (isForced) R.string.update_dialog_message_force else R.string.update_dialog_message
-                )
-            )
+            Text(text = stringResource(messageRes))
         },
         confirmButton = {
             TextButton(onClick = onUpdate) {
@@ -117,7 +131,15 @@ fun UpdateDialog(
 @Composable
 private fun UpdateDialogPreview() {
     FansaUchiwaTheme {
-        UpdateDialog(isForced = false, onUpdate = {}, onDismiss = {})
+        UpdateDialog(type = UpdatePromptType.MIN, onUpdate = {}, onDismiss = {})
+    }
+}
+
+@Preview
+@Composable
+private fun UpdateDialogForceFallbackPreview() {
+    FansaUchiwaTheme {
+        UpdateDialog(type = UpdatePromptType.FORCE_FALLBACK, onUpdate = {}, onDismiss = {})
     }
 }
 
@@ -125,6 +147,6 @@ private fun UpdateDialogPreview() {
 @Composable
 private fun UpdateDialogForcedPreview() {
     FansaUchiwaTheme {
-        UpdateDialog(isForced = true, onUpdate = {}, onDismiss = {})
+        UpdateDialog(type = UpdatePromptType.FORCE, onUpdate = {}, onDismiss = {})
     }
 }

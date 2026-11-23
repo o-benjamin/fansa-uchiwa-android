@@ -79,94 +79,144 @@ class AppUpdateRepositoryImplTest {
     private fun availableUpdate(
         stalenessDays: Int? = UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS,
         isFlexibleAllowed: Boolean = true,
-        isImmediateAllowed: Boolean = true
+        isImmediateAllowed: Boolean = true,
+        installStatus: Int = InstallStatus.UNKNOWN,
+        updateAvailability: Int = UpdateAvailability.UPDATE_AVAILABLE
     ): AppUpdateInfo = mockk {
-        every { updateAvailability() } returns UpdateAvailability.UPDATE_AVAILABLE
+        every { updateAvailability() } returns updateAvailability
+        every { availableVersionCode() } returns (current + 1).toInt()
         every { isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) } returns isFlexibleAllowed
         every { isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) } returns isImmediateAllowed
         every { clientVersionStalenessDays() } returns stalenessDays
-        every { installStatus() } returns InstallStatus.UNKNOWN
+        every { installStatus() } returns installStatus
     }
 
+    // アプリから始めた更新が途中にある。続きを出すときに isUpdateTypeAllowed に頼らないことを確かめるため、どちらも false にする
+    private fun updateInProgress(): AppUpdateInfo = availableUpdate(
+        isFlexibleAllowed = false,
+        isImmediateAllowed = false,
+        updateAvailability = UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
+    )
+
     @Test
-    fun getUpdatePromptOnLaunch_staleFlexibleUpdate_returnsFlexibleOnlyOnce() = runTest {
+    fun takeUpdatePromptForLaunch_staleFlexibleUpdate_returnsFlexibleOnlyOnce() = runTest {
         givenAppUpdateInfo(availableUpdate())
 
-        assertEquals(UpdatePromptType.FLEXIBLE, repository.getUpdatePromptOnLaunch())
-        assertEquals(UpdatePromptType.NONE, repository.getUpdatePromptOnLaunch())
+        assertEquals(UpdatePromptType.FLEXIBLE, repository.takeUpdatePromptForLaunch())
+        assertEquals(UpdatePromptType.NONE, repository.takeUpdatePromptForLaunch())
     }
 
     @Test
-    fun getUpdatePromptOnLaunch_belowMin_returnsMinOnlyOnce() = runTest {
+    fun takeUpdatePromptForLaunch_belowMin_returnsMinOnlyOnce() = runTest {
         givenVersionCodes(UpdateVersionCodes(minVersionCode = current + 1))
 
-        assertEquals(UpdatePromptType.MIN, repository.getUpdatePromptOnLaunch())
-        assertEquals(UpdatePromptType.NONE, repository.getUpdatePromptOnLaunch())
+        assertEquals(UpdatePromptType.MIN, repository.takeUpdatePromptForLaunch())
+        assertEquals(UpdatePromptType.NONE, repository.takeUpdatePromptForLaunch())
     }
 
     @Test
-    fun getUpdatePromptOnLaunch_belowForce_returnsForceEveryTimeWithoutAskingAgain() = runTest {
+    fun takeUpdatePromptForLaunch_belowForce_returnsForceEveryTimeWithoutAskingAgain() = runTest {
         givenVersionCodes(UpdateVersionCodes(forceVersionCode = current + 1))
         givenAppUpdateInfo(availableUpdate())
 
-        assertEquals(UpdatePromptType.FORCE, repository.getUpdatePromptOnLaunch())
-        assertEquals(UpdatePromptType.FORCE, repository.getUpdatePromptOnLaunch())
+        assertEquals(UpdatePromptType.FORCE, repository.takeUpdatePromptForLaunch())
+        assertEquals(UpdatePromptType.FORCE, repository.takeUpdatePromptForLaunch())
         coVerify(exactly = 1) { appUpdateDataSource.requestAppUpdateInfo() }
     }
 
     @Test
-    fun getUpdatePromptOnLaunch_belowForceButPlayFails_returnsMin() = runTest {
+    fun takeUpdatePromptForLaunch_belowForceButPlayFails_returnsForceFallback() = runTest {
         givenVersionCodes(UpdateVersionCodes(forceVersionCode = current + 1))
         coEvery { appUpdateDataSource.requestAppUpdateInfo() } throws IOException("Play がない")
 
-        assertEquals(UpdatePromptType.MIN, repository.getUpdatePromptOnLaunch())
+        assertEquals(UpdatePromptType.FORCE_FALLBACK, repository.takeUpdatePromptForLaunch())
     }
 
     @Test
-    fun getUpdatePromptOnLaunch_belowForceButNoUpdateOnPlay_returnsMin() = runTest {
+    fun takeUpdatePromptForLaunch_belowForceButNoUpdateOnPlay_returnsForceFallback() = runTest {
         givenVersionCodes(UpdateVersionCodes(forceVersionCode = current + 1))
         givenAppUpdateInfo(noUpdate())
 
-        assertEquals(UpdatePromptType.MIN, repository.getUpdatePromptOnLaunch())
+        assertEquals(UpdatePromptType.FORCE_FALLBACK, repository.takeUpdatePromptForLaunch())
     }
 
     @Test
-    fun getUpdatePromptOnLaunch_noUpdate_returnsNone() = runTest {
-        assertEquals(UpdatePromptType.NONE, repository.getUpdatePromptOnLaunch())
+    fun takeUpdatePromptForLaunch_belowForceAndUpdateInProgress_returnsForce() = runTest {
+        givenVersionCodes(UpdateVersionCodes(forceVersionCode = current + 1))
+        givenAppUpdateInfo(updateInProgress())
+
+        assertEquals(UpdatePromptType.FORCE, repository.takeUpdatePromptForLaunch())
     }
 
     @Test
-    fun startUpdateFlow_updateAllowed_startsFlowWithFreshInfo() = runTest {
+    fun takeUpdatePromptForLaunch_staleUpdateAlreadyDownloading_returnsNone() = runTest {
+        givenAppUpdateInfo(availableUpdate(installStatus = InstallStatus.DOWNLOADING))
+
+        assertEquals(UpdatePromptType.NONE, repository.takeUpdatePromptForLaunch())
+    }
+
+    @Test
+    fun takeUpdatePromptForLaunch_noUpdate_returnsNone() = runTest {
+        assertEquals(UpdatePromptType.NONE, repository.takeUpdatePromptForLaunch())
+    }
+
+    @Test
+    fun startImmediateUpdate_updateAllowed_startsFlowWithFreshInfo() = runTest {
         val info = availableUpdate()
         givenAppUpdateInfo(info)
         every { appUpdateDataSource.startUpdateFlow(info, launcher, AppUpdateType.IMMEDIATE) } returns true
 
-        assertTrue(repository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE))
+        assertTrue(repository.startImmediateUpdate(launcher))
         coVerify(exactly = 1) { appUpdateDataSource.requestAppUpdateInfo() }
     }
 
     @Test
-    fun startUpdateFlow_typeNotAllowed_returnsFalseWithoutStarting() = runTest {
+    fun startImmediateUpdate_typeNotAllowed_returnsFalseWithoutStarting() = runTest {
         givenAppUpdateInfo(availableUpdate(isImmediateAllowed = false))
 
-        assertFalse(repository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE))
+        assertFalse(repository.startImmediateUpdate(launcher))
         verify(exactly = 0) { appUpdateDataSource.startUpdateFlow(any(), any(), any()) }
     }
 
     @Test
-    fun startUpdateFlow_noUpdate_returnsFalse() = runTest {
-        assertFalse(repository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE))
+    fun startImmediateUpdate_updateInProgress_resumesImmediateUpdate() = runTest {
+        val info = updateInProgress()
+        givenAppUpdateInfo(info)
+        every { appUpdateDataSource.startUpdateFlow(info, launcher, AppUpdateType.IMMEDIATE) } returns true
+
+        assertTrue(repository.startImmediateUpdate(launcher))
+    }
+
+    @Test
+    fun startFlexibleUpdate_updateInProgress_returnsFalse() = runTest {
+        givenAppUpdateInfo(updateInProgress())
+
+        assertFalse(repository.startFlexibleUpdate(launcher))
         verify(exactly = 0) { appUpdateDataSource.startUpdateFlow(any(), any(), any()) }
     }
 
     @Test
-    fun startUpdateFlow_launcherThrows_returnsFalse() = runTest {
+    fun startFlexibleUpdate_alreadyDownloaded_returnsFalse() = runTest {
+        givenAppUpdateInfo(availableUpdate(installStatus = InstallStatus.DOWNLOADED))
+
+        assertFalse(repository.startFlexibleUpdate(launcher))
+        verify(exactly = 0) { appUpdateDataSource.startUpdateFlow(any(), any(), any()) }
+    }
+
+    @Test
+    fun startFlexibleUpdate_noUpdate_returnsFalse() = runTest {
+        assertFalse(repository.startFlexibleUpdate(launcher))
+        verify(exactly = 0) { appUpdateDataSource.startUpdateFlow(any(), any(), any()) }
+    }
+
+    @Test
+    fun startFlexibleUpdate_launcherThrows_returnsFalse() = runTest {
         val info = availableUpdate()
         givenAppUpdateInfo(info)
         every { appUpdateDataSource.startUpdateFlow(info, launcher, AppUpdateType.FLEXIBLE) } throws
             IllegalStateException("登録が外れた launcher")
 
-        assertFalse(repository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE))
+        assertFalse(repository.startFlexibleUpdate(launcher))
     }
 
     @Test

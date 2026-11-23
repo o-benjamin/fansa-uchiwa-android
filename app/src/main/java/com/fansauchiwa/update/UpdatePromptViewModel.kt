@@ -11,7 +11,6 @@ import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.UpdatePromptAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AppUpdateRepository
-import com.google.android.play.core.install.model.AppUpdateType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,20 +34,11 @@ class UpdatePromptViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UpdatePromptUiState())
     val uiState: StateFlow<UpdatePromptUiState> = _uiState.asStateFlow()
 
-    // 編集画面からホームに戻るたびに、Play と Remote Config に聞き直さない
+    // 同じホームのまま画面だけ作り直されたとき（Activity の再生成など）に、案内を出したことの計測と広告の飛ばしを重ねない
     private var hasCheckedForUpdate = false
-
-    // Play の柔軟な更新の画面を出して、まだ結果が返ってきていない
-    private var isWaitingFlexibleUpdateResult = false
 
     init {
         observeUpdateDownloaded()
-    }
-
-    fun observeUpdateDownloaded() {
-        appUpdateRepository.getUpdateDownloadedStream()
-            .onEach { isDownloaded -> _uiState.update { it.copy(isUpdateDownloaded = isDownloaded) } }
-            .launchIn(viewModelScope)
     }
 
     fun fetchUpdateDownloaded() {
@@ -58,25 +48,33 @@ class UpdatePromptViewModel @Inject constructor(
     }
 
     /**
-     * ホームを開いたときに呼ぶ。案内を出すのは起動して最初の1回だけ（閉じられないダイアログを除く。[AppUpdateRepository.getUpdatePromptOnLaunch]）
+     * ホームを開いたときに呼ぶ。案内を出すのは起動して最初の1回だけ（閉じられないダイアログを除く。[AppUpdateRepository.takeUpdatePromptForLaunch]）。
+     * 柔軟な更新は [UpdatePromptUiState.isFlexibleUpdatePending] を立てるだけで、Play の画面は [startFlexibleUpdate] で出す
      */
-    fun checkForUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>) {
+    fun checkForUpdate() {
         if (hasCheckedForUpdate) return
         hasCheckedForUpdate = true
         viewModelScope.launch {
-            when (val type = appUpdateRepository.getUpdatePromptOnLaunch()) {
+            when (val type = appUpdateRepository.takeUpdatePromptForLaunch()) {
                 UpdatePromptType.NONE -> Unit
-                UpdatePromptType.FLEXIBLE -> {
-                    if (appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE)) {
-                        isWaitingFlexibleUpdateResult = true
-                        onPromptShown(type)
-                    }
-                }
-
-                UpdatePromptType.MIN, UpdatePromptType.FORCE -> {
+                UpdatePromptType.FLEXIBLE -> _uiState.update { it.copy(isFlexibleUpdatePending = true) }
+                UpdatePromptType.MIN, UpdatePromptType.FORCE_FALLBACK, UpdatePromptType.FORCE -> {
                     _uiState.update { it.copy(dialog = type) }
                     onPromptShown(type)
                 }
+            }
+        }
+    }
+
+    /**
+     * Play の柔軟な更新の画面を出す。[UpdatePromptUiState.isFlexibleUpdatePending] のとき、ホームが出ている間に呼ぶ
+     */
+    fun startFlexibleUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>) {
+        if (!_uiState.value.isFlexibleUpdatePending) return
+        _uiState.update { it.copy(isFlexibleUpdatePending = false) }
+        viewModelScope.launch {
+            if (appUpdateRepository.startFlexibleUpdate(launcher)) {
+                onPromptShown(UpdatePromptType.FLEXIBLE)
             }
         }
     }
@@ -86,13 +84,13 @@ class UpdatePromptViewModel @Inject constructor(
      */
     fun onUpdateTap(launcher: ActivityResultLauncher<IntentSenderRequest>) {
         val type = _uiState.value.dialog ?: return
-        logEvent(AnalyticsActions.TAP_UPDATE, type)
+        logEvent(AnalyticsActions.TAP_UPDATE_PROMPT, type)
         // 閉じられないダイアログは、Play の画面で更新をやめて戻ってきても出したままにする
         if (type != UpdatePromptType.FORCE) {
             _uiState.update { it.copy(dialog = null) }
         }
         viewModelScope.launch {
-            if (!appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE)) {
+            if (!appUpdateRepository.startImmediateUpdate(launcher)) {
                 appUpdateRepository.openStorePage()
             }
         }
@@ -107,14 +105,11 @@ class UpdatePromptViewModel @Inject constructor(
     }
 
     /**
-     * Play の更新の画面から戻ってきたとき。柔軟な更新で更新を選んだかを送る
-     * （即時更新を選んだことは、ダイアログの「更新する」を押したときに送っている）
+     * Play の柔軟な更新の画面から戻ってきたとき。更新を選んでいたら送る
      */
-    fun onUpdateFlowResult(resultCode: Int) {
-        if (!isWaitingFlexibleUpdateResult) return
-        isWaitingFlexibleUpdateResult = false
+    fun onFlexibleUpdateResult(resultCode: Int) {
         if (resultCode == Activity.RESULT_OK) {
-            logEvent(AnalyticsActions.TAP_UPDATE, UpdatePromptType.FLEXIBLE)
+            logEvent(AnalyticsActions.TAP_UPDATE_PROMPT, UpdatePromptType.FLEXIBLE)
         }
     }
 
@@ -127,10 +122,16 @@ class UpdatePromptViewModel @Inject constructor(
         }
     }
 
+    private fun observeUpdateDownloaded() {
+        appUpdateRepository.getUpdateDownloadedStream()
+            .onEach { isDownloaded -> _uiState.update { it.copy(isUpdateDownloaded = isDownloaded) } }
+            .launchIn(viewModelScope)
+    }
+
     private fun onPromptShown(type: UpdatePromptType) {
         // 案内を出した起動で、続けて全画面の広告まで出さない
         adMobRepository.skipNextInterstitialAd()
-        logEvent(AnalyticsActions.SHOW_UPDATE_PROMPT, type)
+        logEvent(AnalyticsActions.VIEW_UPDATE_PROMPT, type)
     }
 
     private fun logEvent(name: String, type: UpdatePromptType) {

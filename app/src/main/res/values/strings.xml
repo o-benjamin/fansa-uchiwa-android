@@ -280,7 +280,7 @@
     <!-- 更新の案内（#428） -->
     <string name="update_dialog_title">新しいバージョンがあります</string>
     <string name="update_dialog_message">お使いのバージョンは古くなっています。新しい機能や不具合の修正を使うには、最新のバージョンに更新してください。</string>
-    <string name="update_dialog_message_force">お使いのバージョンには大きな不具合があります。引き続き使うには、最新のバージョンに更新してください。</string>
+    <string name="update_dialog_message_critical">お使いのバージョンには大きな不具合があります。最新のバージョンに更新してください。</string>
     <string name="update_dialog_update">更新する</string>
     <string name="update_dialog_later">あとで</string>
     <string name="update_downloaded_message">新しいバージョンの準備ができました</string>

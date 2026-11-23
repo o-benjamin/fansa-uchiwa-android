@@ -8,7 +8,6 @@ import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.AppUpdateRepository
-import com.google.android.play.core.install.model.AppUpdateType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -55,7 +54,7 @@ class UpdatePromptViewModelTest {
     }
 
     private fun createViewModel(prompt: UpdatePromptType): UpdatePromptViewModel {
-        coEvery { appUpdateRepository.getUpdatePromptOnLaunch() } returns prompt
+        coEvery { appUpdateRepository.takeUpdatePromptForLaunch() } returns prompt
         return UpdatePromptViewModel(appUpdateRepository, adMobRepository, analyticsRepository)
     }
 
@@ -66,13 +65,13 @@ class UpdatePromptViewModelTest {
     fun checkForUpdate_min_showsDialogLogsAndSkipsInterstitial() = runTest {
         val viewModel = createViewModel(UpdatePromptType.MIN)
 
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         assertEquals(UpdatePromptType.MIN, viewModel.uiState.value.dialog)
         verify(exactly = 1) { adMobRepository.skipNextInterstitialAd() }
         coVerify(exactly = 1) {
-            analyticsRepository.logEvent(event(AnalyticsActions.SHOW_UPDATE_PROMPT, "min"))
+            analyticsRepository.logEvent(event(AnalyticsActions.VIEW_UPDATE_PROMPT, "min"))
         }
     }
 
@@ -80,39 +79,38 @@ class UpdatePromptViewModelTest {
     fun checkForUpdate_force_showsForcedDialog() = runTest {
         val viewModel = createViewModel(UpdatePromptType.FORCE)
 
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         assertEquals(UpdatePromptType.FORCE, viewModel.uiState.value.dialog)
         coVerify(exactly = 1) {
-            analyticsRepository.logEvent(event(AnalyticsActions.SHOW_UPDATE_PROMPT, "force"))
+            analyticsRepository.logEvent(event(AnalyticsActions.VIEW_UPDATE_PROMPT, "force"))
         }
     }
 
     @Test
-    fun checkForUpdate_flexibleStarted_logsWithoutDialog() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE) } returns true
+    fun checkForUpdate_forceFallback_showsDialogAndLogsFallback() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.FORCE_FALLBACK)
 
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
-        assertNull(viewModel.uiState.value.dialog)
-        verify(exactly = 1) { adMobRepository.skipNextInterstitialAd() }
+        assertEquals(UpdatePromptType.FORCE_FALLBACK, viewModel.uiState.value.dialog)
         coVerify(exactly = 1) {
-            analyticsRepository.logEvent(event(AnalyticsActions.SHOW_UPDATE_PROMPT, "flexible"))
+            analyticsRepository.logEvent(event(AnalyticsActions.VIEW_UPDATE_PROMPT, "force_fallback"))
         }
     }
 
     @Test
-    fun checkForUpdate_flexibleNotStarted_logsNothingAndKeepsInterstitial() = runTest {
+    fun checkForUpdate_flexible_marksPendingWithoutStartingOrLogging() = runTest {
         val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE) } returns false
 
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
-        verify(exactly = 0) { adMobRepository.skipNextInterstitialAd() }
+        assertTrue(viewModel.uiState.value.isFlexibleUpdatePending)
+        assertNull(viewModel.uiState.value.dialog)
+        coVerify(exactly = 0) { appUpdateRepository.startFlexibleUpdate(any()) }
         coVerify(exactly = 0) { analyticsRepository.logEvent(any()) }
     }
 
@@ -120,64 +118,122 @@ class UpdatePromptViewModelTest {
     fun checkForUpdate_none_doesNothing() = runTest {
         val viewModel = createViewModel(UpdatePromptType.NONE)
 
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.dialog)
+        assertFalse(viewModel.uiState.value.isFlexibleUpdatePending)
         verify(exactly = 0) { adMobRepository.skipNextInterstitialAd() }
-        coVerify(exactly = 0) { appUpdateRepository.startUpdateFlow(any(), any()) }
     }
 
     @Test
     fun checkForUpdate_calledTwice_asksRepositoryOnce() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.NONE)
+        val viewModel = createViewModel(UpdatePromptType.FORCE)
 
-        viewModel.checkForUpdate(launcher)
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { appUpdateRepository.getUpdatePromptOnLaunch() }
+        coVerify(exactly = 1) { appUpdateRepository.takeUpdatePromptForLaunch() }
+        verify(exactly = 1) { adMobRepository.skipNextInterstitialAd() }
+    }
+
+    @Test
+    fun startFlexibleUpdate_pendingAndStarted_logsAndSkipsInterstitial() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
+        coEvery { appUpdateRepository.startFlexibleUpdate(launcher) } returns true
+        viewModel.checkForUpdate()
+        advanceUntilIdle()
+
+        viewModel.startFlexibleUpdate(launcher)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isFlexibleUpdatePending)
+        verify(exactly = 1) { adMobRepository.skipNextInterstitialAd() }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(event(AnalyticsActions.VIEW_UPDATE_PROMPT, "flexible"))
+        }
+    }
+
+    @Test
+    fun startFlexibleUpdate_notStarted_logsNothingAndKeepsInterstitial() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
+        coEvery { appUpdateRepository.startFlexibleUpdate(launcher) } returns false
+        viewModel.checkForUpdate()
+        advanceUntilIdle()
+
+        viewModel.startFlexibleUpdate(launcher)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isFlexibleUpdatePending)
+        verify(exactly = 0) { adMobRepository.skipNextInterstitialAd() }
+        coVerify(exactly = 0) { analyticsRepository.logEvent(any()) }
+    }
+
+    @Test
+    fun startFlexibleUpdate_calledTwice_startsOnce() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
+        coEvery { appUpdateRepository.startFlexibleUpdate(launcher) } returns true
+        viewModel.checkForUpdate()
+        advanceUntilIdle()
+
+        viewModel.startFlexibleUpdate(launcher)
+        viewModel.startFlexibleUpdate(launcher)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { appUpdateRepository.startFlexibleUpdate(launcher) }
+    }
+
+    @Test
+    fun startFlexibleUpdate_notPending_doesNothing() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.NONE)
+
+        viewModel.startFlexibleUpdate(launcher)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { appUpdateRepository.startFlexibleUpdate(any()) }
     }
 
     @Test
     fun onUpdateTap_min_closesDialogLogsAndStartsImmediateUpdate() = runTest {
         val viewModel = createViewModel(UpdatePromptType.MIN)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE) } returns true
-        viewModel.checkForUpdate(launcher)
+        coEvery { appUpdateRepository.startImmediateUpdate(launcher) } returns true
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         viewModel.onUpdateTap(launcher)
         advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.dialog)
-        coVerify(exactly = 1) { analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE, "min")) }
+        coVerify(exactly = 1) { analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE_PROMPT, "min")) }
         verify(exactly = 0) { appUpdateRepository.openStorePage() }
     }
 
     @Test
     fun onUpdateTap_force_keepsDialog() = runTest {
         val viewModel = createViewModel(UpdatePromptType.FORCE)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE) } returns true
-        viewModel.checkForUpdate(launcher)
+        coEvery { appUpdateRepository.startImmediateUpdate(launcher) } returns true
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         viewModel.onUpdateTap(launcher)
         advanceUntilIdle()
 
         assertEquals(UpdatePromptType.FORCE, viewModel.uiState.value.dialog)
-        coVerify(exactly = 1) { analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE, "force")) }
+        coVerify(exactly = 1) { analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE_PROMPT, "force")) }
     }
 
     @Test
     fun onUpdateTap_immediateUpdateUnavailable_opensStorePage() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.MIN)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE) } returns false
-        viewModel.checkForUpdate(launcher)
+        val viewModel = createViewModel(UpdatePromptType.FORCE_FALLBACK)
+        coEvery { appUpdateRepository.startImmediateUpdate(launcher) } returns false
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         viewModel.onUpdateTap(launcher)
         advanceUntilIdle()
 
+        assertNull(viewModel.uiState.value.dialog)
         verify(exactly = 1) { appUpdateRepository.openStorePage() }
     }
 
@@ -188,14 +244,14 @@ class UpdatePromptViewModelTest {
         viewModel.onUpdateTap(launcher)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { appUpdateRepository.startUpdateFlow(any(), any()) }
+        coVerify(exactly = 0) { appUpdateRepository.startImmediateUpdate(any()) }
         coVerify(exactly = 0) { analyticsRepository.logEvent(any()) }
     }
 
     @Test
-    fun dismissDialog_min_closesDialog() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.MIN)
-        viewModel.checkForUpdate(launcher)
+    fun dismissDialog_forceFallback_closesDialog() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.FORCE_FALLBACK)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         viewModel.dismissDialog()
@@ -206,7 +262,7 @@ class UpdatePromptViewModelTest {
     @Test
     fun dismissDialog_force_keepsDialog() = runTest {
         val viewModel = createViewModel(UpdatePromptType.FORCE)
-        viewModel.checkForUpdate(launcher)
+        viewModel.checkForUpdate()
         advanceUntilIdle()
 
         viewModel.dismissDialog()
@@ -215,49 +271,29 @@ class UpdatePromptViewModelTest {
     }
 
     @Test
-    fun onUpdateFlowResult_flexibleAccepted_logsTapUpdateOnce() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE) } returns true
-        viewModel.checkForUpdate(launcher)
+    fun onFlexibleUpdateResult_accepted_logsTap() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.NONE)
+
+        viewModel.onFlexibleUpdateResult(Activity.RESULT_OK)
         advanceUntilIdle()
 
-        viewModel.onUpdateFlowResult(Activity.RESULT_OK)
-        viewModel.onUpdateFlowResult(Activity.RESULT_OK)
-        advanceUntilIdle()
-
-        coVerify(exactly = 1) { analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE, "flexible")) }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE_PROMPT, "flexible"))
+        }
     }
 
     @Test
-    fun onUpdateFlowResult_flexibleCanceled_logsNoTap() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.FLEXIBLE)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.FLEXIBLE) } returns true
-        viewModel.checkForUpdate(launcher)
+    fun onFlexibleUpdateResult_canceled_logsNoTap() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.NONE)
+
+        viewModel.onFlexibleUpdateResult(Activity.RESULT_CANCELED)
         advanceUntilIdle()
 
-        viewModel.onUpdateFlowResult(Activity.RESULT_CANCELED)
-        advanceUntilIdle()
-
-        coVerify(exactly = 0) { analyticsRepository.logEvent(event(AnalyticsActions.TAP_UPDATE, "flexible")) }
+        coVerify(exactly = 0) { analyticsRepository.logEvent(any()) }
     }
 
     @Test
-    fun onUpdateFlowResult_afterImmediateUpdate_logsNoExtraTap() = runTest {
-        val viewModel = createViewModel(UpdatePromptType.MIN)
-        coEvery { appUpdateRepository.startUpdateFlow(launcher, AppUpdateType.IMMEDIATE) } returns true
-        viewModel.checkForUpdate(launcher)
-        advanceUntilIdle()
-        viewModel.onUpdateTap(launcher)
-        advanceUntilIdle()
-
-        viewModel.onUpdateFlowResult(Activity.RESULT_OK)
-        advanceUntilIdle()
-
-        coVerify(exactly = 1) { analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_UPDATE }) }
-    }
-
-    @Test
-    fun updateDownloaded_emitted_updatesUiState() = runTest {
+    fun observeUpdateDownloaded_downloadedEmitted_setsIsUpdateDownloaded() = runTest {
         val viewModel = createViewModel(UpdatePromptType.NONE)
         advanceUntilIdle()
         assertFalse(viewModel.uiState.value.isUpdateDownloaded)

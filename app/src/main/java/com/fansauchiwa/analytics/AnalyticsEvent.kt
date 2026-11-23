@@ -102,8 +102,8 @@ object AnalyticsActions {
     const val IN_APP_REVIEW_REQUEST = "in_app_review_request"
 
     // 更新の案内（#428）。どの案内かは UpdatePromptAnalyticsParams の source
-    const val SHOW_UPDATE_PROMPT = "show_update_prompt"
-    const val TAP_UPDATE = "tap_update"
+    const val VIEW_UPDATE_PROMPT = "view_update_prompt"
+    const val TAP_UPDATE_PROMPT = "tap_update_prompt"
 
     const val AD_REWARD_SHOW = "ad_reward_show"
     const val AD_REWARD_COMPLETE = "ad_reward_complete"

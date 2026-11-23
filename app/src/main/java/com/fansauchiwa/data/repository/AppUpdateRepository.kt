@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import com.fansauchiwa.BuildConfig
-import com.fansauchiwa.data.PlayAppUpdateStatus
+import com.fansauchiwa.data.AvailableAppUpdate
 import com.fansauchiwa.data.infra.AppUpdateDataSource
 import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.update.UpdatePromptPolicy
@@ -15,9 +15,10 @@ import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -33,18 +34,24 @@ import kotlinx.coroutines.sync.withLock
  */
 interface AppUpdateRepository {
     /**
-     * 起動して最初に呼んだときに出す案内を決めて返す。2回目以降は [UpdatePromptType.NONE]。
+     * この起動で出す案内を受け取る。決めるのは最初に呼んだときだけで、2回目以降は [UpdatePromptType.NONE]。
      * ただし [UpdatePromptType.FORCE] は、同じ起動の中でも呼ぶたびに返す（ホームを作り直しても閉じられないままにするため）
      */
-    suspend fun getUpdatePromptOnLaunch(): UpdatePromptType
+    suspend fun takeUpdatePromptForLaunch(): UpdatePromptType
 
     /**
-     * Play の更新の画面を出す。Play に聞き直してから出す（前に聞いた結果は1回しか使えないため）
+     * Play の柔軟な更新の画面を出す。Play に聞き直してから出す（前に聞いた結果は1回しか使えないため）
      *
-     * @param updateType `AppUpdateType.FLEXIBLE` か `AppUpdateType.IMMEDIATE`
-     * @return 画面を出せたら true。新しい版がない・その出し方が許されていない・Play に聞けないときは false
+     * @return 画面を出せたら true。新しい版がない・柔軟な更新が許されていない・もうダウンロード中・Play に聞けないときは false
      */
-    suspend fun startUpdateFlow(launcher: ActivityResultLauncher<IntentSenderRequest>, updateType: Int): Boolean
+    suspend fun startFlexibleUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>): Boolean
+
+    /**
+     * Play の即時更新の画面を出す。前の起動で止まった即時更新があれば、その続きを出す
+     *
+     * @return 画面を出せたら true。新しい版がない・即時更新が許されていない・Play に聞けないときは false
+     */
+    suspend fun startImmediateUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>): Boolean
 
     /**
      * Play ストアのアプリのページを開く。開けないときは何もしない
@@ -73,6 +80,7 @@ class AppUpdateRepositoryImpl @Inject constructor(
     private val remoteConfigDataSource: RemoteConfigDataSource
 ) : AppUpdateRepository {
 
+    // ホームが作り直されて同時に呼ばれても、Play と Remote Config に聞いて決めるのを1回にする
     private val launchPromptMutex = Mutex()
 
     // この起動で決めた案内。決める前は null
@@ -80,29 +88,32 @@ class AppUpdateRepositoryImpl @Inject constructor(
 
     private val _updateDownloadedStream = MutableSharedFlow<Boolean>(replay = 1)
 
-    override suspend fun getUpdatePromptOnLaunch(): UpdatePromptType = launchPromptMutex.withLock {
+    override suspend fun takeUpdatePromptForLaunch(): UpdatePromptType = launchPromptMutex.withLock {
         val decided = launchPrompt
         if (decided != null) {
             return@withLock if (decided == UpdatePromptType.FORCE) UpdatePromptType.FORCE else UpdatePromptType.NONE
         }
-        val prompt = UpdatePromptPolicy.decide(
-            currentVersionCode = BuildConfig.VERSION_CODE.toLong(),
-            versionCodes = remoteConfigDataSource.getUpdateVersionCodesStream().first(),
-            playUpdate = runCatchingPlay { appUpdateDataSource.requestAppUpdateInfo() }?.toPlayAppUpdateStatus()
-        )
+        // Remote Config の取得と Play への問い合わせは互いに関係ないので、並べて待つ時間を短くする
+        val prompt = coroutineScope {
+            val versionCodes = async { remoteConfigDataSource.getUpdateVersionCodesStream().first() }
+            val availableUpdate = async {
+                runCatchingPlay { appUpdateDataSource.requestAppUpdateInfo() }?.toAvailableAppUpdate()
+            }
+            UpdatePromptPolicy.decide(
+                currentVersionCode = BuildConfig.VERSION_CODE.toLong(),
+                versionCodes = versionCodes.await(),
+                availableUpdate = availableUpdate.await()
+            )
+        }
         launchPrompt = prompt
         prompt
     }
 
-    override suspend fun startUpdateFlow(
-        launcher: ActivityResultLauncher<IntentSenderRequest>,
-        updateType: Int
-    ): Boolean = runCatchingPlay {
-        val info = appUpdateDataSource.requestAppUpdateInfo()
-        info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
-            info.isUpdateTypeAllowed(updateType) &&
-            appUpdateDataSource.startUpdateFlow(info, launcher, updateType)
-    } ?: false
+    override suspend fun startFlexibleUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>): Boolean =
+        startUpdateFlow(launcher, AppUpdateType.FLEXIBLE)
+
+    override suspend fun startImmediateUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>): Boolean =
+        startUpdateFlow(launcher, AppUpdateType.IMMEDIATE)
 
     override fun openStorePage() {
         try {
@@ -128,15 +139,39 @@ class AppUpdateRepositoryImpl @Inject constructor(
         runCatchingPlay { appUpdateDataSource.completeUpdate() }
     }
 
-    private fun AppUpdateInfo.toPlayAppUpdateStatus(): PlayAppUpdateStatus? =
-        if (updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-            PlayAppUpdateStatus(
-                isFlexibleAllowed = isUpdateTypeAllowed(AppUpdateType.FLEXIBLE),
+    private suspend fun startUpdateFlow(
+        launcher: ActivityResultLauncher<IntentSenderRequest>,
+        updateType: Int
+    ): Boolean = runCatchingPlay {
+        val info = appUpdateDataSource.requestAppUpdateInfo()
+        info.canStartUpdate(updateType) && appUpdateDataSource.startUpdateFlow(info, launcher, updateType)
+    } ?: false
+
+    private fun AppUpdateInfo.toAvailableAppUpdate(): AvailableAppUpdate? =
+        when (updateAvailability()) {
+            UpdateAvailability.UPDATE_AVAILABLE,
+            UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> AvailableAppUpdate(
+                availableVersionCode = availableVersionCode(),
+                isImmediateAllowed = canStartUpdate(AppUpdateType.IMMEDIATE),
+                isFlexibleAllowed = canStartUpdate(AppUpdateType.FLEXIBLE),
                 stalenessDays = clientVersionStalenessDays()
             )
-        } else {
-            null
+
+            else -> null
         }
+
+    /**
+     * その出し方で Play の更新の画面を出せるか
+     */
+    private fun AppUpdateInfo.canStartUpdate(updateType: Int): Boolean = when (updateAvailability()) {
+        UpdateAvailability.UPDATE_AVAILABLE -> isUpdateTypeAllowed(updateType) &&
+            !(updateType == AppUpdateType.FLEXIBLE && installStatus() in FLEXIBLE_UPDATE_STARTED_STATUSES)
+
+        // アプリから始めた更新が途中にある（前の起動で止まった即時更新など）。Play の案内どおり、即時更新の画面で続きを出す
+        UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> updateType == AppUpdateType.IMMEDIATE
+
+        else -> false
+    }
 
     /**
      * Play への問い合わせ。失敗するのは想定内なので、ログだけ残して null を返す
@@ -152,5 +187,13 @@ class AppUpdateRepositoryImpl @Inject constructor(
 
     private companion object {
         const val TAG = "AppUpdate"
+
+        // 柔軟な更新をもう始めている。もう一度 Play の画面は出さない（ダウンロード済みはホームの「再起動」で案内する）
+        val FLEXIBLE_UPDATE_STARTED_STATUSES = setOf(
+            InstallStatus.PENDING,
+            InstallStatus.DOWNLOADING,
+            InstallStatus.DOWNLOADED,
+            InstallStatus.INSTALLING
+        )
     }
 }

@@ -22,18 +22,18 @@ class UpdateDialogTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private fun setDialog(isForced: Boolean, onUpdate: () -> Unit = {}, onDismiss: () -> Unit = {}) {
+    private fun setDialog(type: UpdatePromptType, onUpdate: () -> Unit = {}, onDismiss: () -> Unit = {}) {
         composeTestRule.setContent {
             FansaUchiwaTheme {
-                UpdateDialog(isForced = isForced, onUpdate = onUpdate, onDismiss = onDismiss)
+                UpdateDialog(type = type, onUpdate = onUpdate, onDismiss = onDismiss)
             }
         }
     }
 
     @Test
-    fun updateDialog_notForced_showsMessageAndLaterClosesIt() {
+    fun updateDialog_min_showsMessageAndLaterClosesIt() {
         var dismissCount = 0
-        setDialog(isForced = false, onDismiss = { dismissCount++ })
+        setDialog(UpdatePromptType.MIN, onDismiss = { dismissCount++ })
 
         composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_message)).assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_later)).performClick()
@@ -42,9 +42,9 @@ class UpdateDialogTest {
     }
 
     @Test
-    fun updateDialog_notForced_updateCallsOnUpdate() {
+    fun updateDialog_min_updateCallsOnUpdate() {
         var updateCount = 0
-        setDialog(isForced = false, onUpdate = { updateCount++ })
+        setDialog(UpdatePromptType.MIN, onUpdate = { updateCount++ })
 
         composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_update)).performClick()
 
@@ -52,11 +52,22 @@ class UpdateDialogTest {
     }
 
     @Test
-    fun updateDialog_forced_hasNoLaterButtonAndIgnoresBack() {
+    fun updateDialog_forceFallback_showsCriticalMessageAndLaterClosesIt() {
         var dismissCount = 0
-        setDialog(isForced = true, onDismiss = { dismissCount++ })
+        setDialog(UpdatePromptType.FORCE_FALLBACK, onDismiss = { dismissCount++ })
 
-        composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_message_force)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_message_critical)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_later)).performClick()
+
+        assertEquals(1, dismissCount)
+    }
+
+    @Test
+    fun updateDialog_force_hasNoLaterButtonAndIgnoresBack() {
+        var dismissCount = 0
+        setDialog(UpdatePromptType.FORCE, onDismiss = { dismissCount++ })
+
+        composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_message_critical)).assertIsDisplayed()
         composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_later)).assertDoesNotExist()
         Espresso.pressBackUnconditionally()
         composeTestRule.onNodeWithText(context.getString(R.string.update_dialog_update)).assertIsDisplayed()
