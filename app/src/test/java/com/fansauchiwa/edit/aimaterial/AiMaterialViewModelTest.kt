@@ -17,7 +17,6 @@ import com.fansauchiwa.data.AiMaterialRejectedException
 import com.fansauchiwa.data.AiMaterialReportLimitException
 import com.fansauchiwa.data.AiMaterialReportReason
 import com.fansauchiwa.data.AiMaterialUnconfirmedException
-import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.GrantedTickets
 import com.fansauchiwa.data.PlayBillingException
 import com.fansauchiwa.data.TicketProduct
@@ -25,6 +24,7 @@ import com.fansauchiwa.data.TicketProductUnavailableException
 import com.fansauchiwa.data.TicketPurchaseOutcome
 import com.fansauchiwa.data.TicketPurchaseRejectReason
 import com.fansauchiwa.data.TicketPurchaseRejectedException
+import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.TicketPurchaseRepository

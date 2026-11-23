@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  MAX_REDO_ATTEMPTS,
   REDO_WINDOW_MS,
   refundCredit,
   reserveCredit,
@@ -179,6 +180,7 @@ test("頼みの番号つきでおさえると、ふつうにおさえて、頼�
   assert.equal(lastRequest.paidWith, "ticket");
   assert.equal(lastRequest.reservedAt.toMillis(), day.getTime());
   assert.equal(lastRequest.updatedAt.toMillis(), day.getTime());
+  assert.equal(lastRequest.redoCount, 0);
 });
 
 test("同じ番号の前の頼みを作っている途中なら、回数を使わずに in_progress で断る", async () => {
@@ -222,6 +224,24 @@ test("作り直しに失敗して done に戻ったら、15分以内はもう一
 
   const outcome = await reserveCreditForRequest(db, uid, LIMITS, msLater(day, 3000), "r1");
   assert.deepEqual(outcome, { ok: true, redo: true, paidWith: "ticket", ticketsRemaining: 4 });
+});
+
+test("作り直しを上限の回数だけ試したら、失敗していても15分以内でもふつうに回数を使う", async () => {
+  const day = uniqueDay();
+  const uid = await ticketHolder(day);
+  await reserveCreditForRequest(db, uid, LIMITS, day, "r1");
+  await updateRequestState(db, uid, "r1", "generating", "done", day);
+  for (let attempt = 1; attempt <= MAX_REDO_ATTEMPTS; attempt++) {
+    const redo = await reserveCreditForRequest(db, uid, LIMITS, msLater(day, attempt * 1000), "r1");
+    assert.deepEqual(redo, { ok: true, redo: true, paidWith: "ticket", ticketsRemaining: 4 });
+    await updateRequestState(db, uid, "r1", "redoing", "done", msLater(day, attempt * 1000 + 500));
+  }
+  assert.equal((await userOf(uid)).lastRequest.redoCount, MAX_REDO_ATTEMPTS);
+
+  const outcome = await reserveCreditForRequest(db, uid, LIMITS, msLater(day, 60_000), "r1");
+  assert.equal(outcome.ok && !("redo" in outcome), true);
+  assert.equal((await userOf(uid)).packs.p.remaining, 3);
+  assert.equal((await userOf(uid)).lastRequest.redoCount, 0);
 });
 
 test("15分を過ぎた・番号が違う・前の頼みは回数を戻したときは、作り直さずにふつうに回数を使う", async () => {

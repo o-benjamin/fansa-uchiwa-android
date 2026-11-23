@@ -54,6 +54,7 @@ export const generateMaterial = onCall(
     enforceAppCheck: true,
     secrets: [geminiApiKey, discordWebhookUrl],
     // gemini.ts の待ち時間（審査15秒＋画像60秒）より長くする。短いと、時間切れで打ち切られて回数を戻せなくなる
+    // 変えたら quota.ts の STALE_CALL_MS（これより長く）と、アプリの CALL_TIMEOUT_SECONDS（FirebaseFunctionsAiMaterialRemoteSource.kt、これより長く）も直す
     timeoutSeconds: 120,
     memory: "512MiB",
     // インスタンスが増え続けないように抑える（1インスタンスが複数の呼び出しを同時に受けるので、同時実行の上限ではない）。

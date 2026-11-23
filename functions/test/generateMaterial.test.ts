@@ -413,11 +413,12 @@ test("頼みの番号つきで断って回数を戻したら頼みを消し、�
   assert.equal(await ticketsOf(uid), 4);
 });
 
-test("作り直しに失敗したら回数は動かさずに断り、15分以内ならもう一度作り直せる", async () => {
+test("作り直しに失敗したら回数は動かさずに断り、15分以内ならもう一度作り直せる", async (t) => {
   const day = uniqueDay();
   const uid = await ticketHolder(day);
   await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(day).deps);
 
+  const logs = captureInfoLogs(t);
   const failing = fakeDeps(secondsLater(day, 60), { image: async () => ({ kind: "no_image", finishReason: "STOP" }) });
   await assert.rejects(
     handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, failing.deps),
@@ -425,6 +426,11 @@ test("作り直しに失敗したら回数は動かさずに断り、15分以内
   );
   assert.equal(await ticketsOf(uid), 4);
   assert.equal((await lastRequestOf(uid)).state, "done");
+  const failedLog = logs().find(([message]) => message === "作り直せなかった");
+  assert.ok(failedLog);
+  assert.equal(failedLog[1].uid, uid);
+  assert.equal(failedLog[1].requestId, "r1");
+  assert.equal(failedLog[1].reason, "generation_failed");
 
   const response = await handleGenerateMaterial(uid, { prompt: "うさぎ", requestId: "r1" }, fakeDeps(secondsLater(day, 120)).deps);
   assert.equal(response.ticketsRemaining, 4);

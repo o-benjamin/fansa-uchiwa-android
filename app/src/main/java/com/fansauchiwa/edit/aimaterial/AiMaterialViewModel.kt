@@ -163,15 +163,8 @@ class AiMaterialViewModel @Inject constructor(
     fun discardResult() {
         if (_uiState.value.generation !is AiMaterialGeneration.Succeeded) return
         pendingRequestId = null
-        _uiState.update { state ->
-            if (state.generation is AiMaterialGeneration.Succeeded) {
-                state.copy(
-                    generation = AiMaterialGeneration.Idle,
-                    reportStatus = AiMaterialReportStatus.NOT_SENT
-                )
-            } else {
-                state
-            }
+        _uiState.update {
+            it.copy(generation = AiMaterialGeneration.Idle, reportStatus = AiMaterialReportStatus.NOT_SENT)
         }
     }
 

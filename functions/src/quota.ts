@@ -14,13 +14,14 @@ import { jstDateKey } from "./jstDate";
  *     <packId>: { remaining: number, expiresAt: Timestamp }   期限は購入から6か月
  *   }
  *   lastRequest: {              回数を使った最後の頼み（#387）。届いたか分からなかった頼みを、アプリが同じ番号でもう一度送ったら、
- *                               回数を使わずに1回だけ作り直す（reserveCreditForRequest）
+ *                               回数を使わずに作り直す（作り直して渡すのは1回まで。reserveCreditForRequest）
  *     id: string                頼みの番号。アプリが「作る」で作り、素材を受け取るまで同じ番号で送り直す
  *     state: RequestState       generating（作っている）→ done（作れた）→ redoing（作り直している）→ redone（作り直せた）。
  *                               作り直しに失敗したら done に戻す。断った・失敗して回数を戻したら lastRequest ごと消す
  *     paidWith: "free" | "ticket"   使った回数の種類（作り直しの応答の paidWith）
  *     reservedAt: Timestamp     回数を使った時刻。作り直せるのはここから REDO_WINDOW_MS まで
  *     updatedAt: Timestamp      state を変えた時刻。generating・redoing のまま STALE_CALL_MS たったら、その呼び出しは止まったとみなす
+ *     redoCount: number         作り直しを始めた回数（失敗・止まったものも数える）。MAX_REDO_ATTEMPTS に達したら作り直さない
  *   }
  *
  * dailyUsage/{日本時間の日付}
@@ -42,8 +43,16 @@ export const DAILY_USAGE_COLLECTION = "dailyUsage";
 
 /** 届いたか分からなかった頼みを作り直せるのは、回数を使ってからこの時間まで（#387） */
 export const REDO_WINDOW_MS = 15 * 60 * 1000;
-/** generating・redoing のままこの時間がたったら、その呼び出しは止まったとみなす。関数の timeoutSeconds（120秒）より長くする */
+/**
+ * generating・redoing のままこの時間がたったら、その呼び出しは止まったとみなす。関数の timeoutSeconds（120秒、index.ts）より長くする。
+ * 変えたら、アプリの in_progress の文（strings.xml の ai_material_error_in_progress の「3分ほど」）も直す
+ */
 export const STALE_CALL_MS = 3 * 60 * 1000;
+/**
+ * 1回の頼みで作り直しを試せる回数（作れたら redone で、そこで終わり）。作り直しに失敗したときや止まったときは、
+ * 時間内ならもう一度作り直せるが、くり返しで Gemini の費用が増え続けないよう上限を置く。1回分で Gemini を呼ぶのは多くて 1 + この回数
+ */
+export const MAX_REDO_ATTEMPTS = 2;
 
 export interface DailyLimits {
   freeDailyLimit: number;
@@ -72,7 +81,7 @@ export type ReserveOutcome =
 export type RequestState = "generating" | "done" | "redoing" | "redone";
 
 /**
- * 頼みの番号つきでおさえたときの結果。[ReserveOutcome] に次の2つが足される
+ * 頼みの番号つきでおさえたときの結果。`ReserveOutcome` に次の2つが足される
  * - redo：同じ番号の前の頼みで回数を使って作れていたので、回数を使わずに作り直す。paidWith は前の頼みで使ったもの
  * - in_progress：同じ番号の前の頼みをまだ作っている（回数は使わずに断る）
  */
@@ -126,9 +135,11 @@ export async function reserveCredit(
 /**
  * 頼みの番号つきで1回分をおさえる（#387）。同じ番号の前の頼みで回数を使っていれば、次のとおり回数を使わない。
  * - 前の頼みをまだ作っている（generating・redoing で STALE_CALL_MS 以内）→ in_progress で断る
- * - 前の頼みが作れていて（done。generating・redoing のまま止まったものも含む）、回数を使ってから REDO_WINDOW_MS 以内 →
- *   作り直す（redoing にする）。回数も全体の回数も動かさない。1回の頼みにつき1回までなので、Gemini の費用は多くて2倍
- * - そのほか（番号が違う・作り直し済み・時間を過ぎた・前の頼みは回数を戻した）→ reserveCredit と同じくおさえ、頼みを覚える
+ * - 前の頼みが作れていて（done。generating・redoing のまま止まったものも含む）、回数を使ってから REDO_WINDOW_MS 以内で、
+ *   作り直しを MAX_REDO_ATTEMPTS 回まだ試していない → 作り直す（redoing にする）。回数も全体の回数も動かさない。
+ *   止まった redoing も作り直すのは、その作り直しの結果が届いたか分からないため
+ * - そのほか（番号が違う・作り直し済み・作り直しを試し切った・時間を過ぎた・前の頼みは回数を戻した）→
+ *   reserveCredit と同じくおさえ、頼みを覚える
  * 届いたか分からなかった利用者が押し直すと、作った絵は前と同じではなく同じ頼みで新しく作ったものになる（サーバーに絵は残さない）。
  * 作り直しの文章と元画像が前と同じかは確かめない（前の頼みは受け取れていないので、変えても1回分で1枚しか渡らない）
  */
@@ -142,14 +153,15 @@ export async function reserveCreditForRequest(
   return db.runTransaction(async (transaction) => {
     const target = await readReserveTarget(db, transaction, uid, now);
     const userData = target.userSnapshot.data();
-    const previous = checkPreviousRequest(userData?.lastRequest, requestId, now);
-    if (previous === "in_progress") return { ok: false, reason: "in_progress", firstTotalLimitHit: false };
-    if (previous !== "new") {
+    const decision = decideByPreviousRequest(userData?.lastRequest, requestId, now);
+    if (decision.kind === "in_progress") return { ok: false, reason: "in_progress", firstTotalLimitHit: false };
+    if (decision.kind === "redo") {
       transaction.update(target.userRef, {
         "lastRequest.state": "redoing" satisfies RequestState,
         "lastRequest.updatedAt": Timestamp.fromDate(now),
+        "lastRequest.redoCount": FieldValue.increment(1),
       });
-      return { ok: true, redo: true, paidWith: previous.redo, ticketsRemaining: countUsableTickets(userData, now) };
+      return { ok: true, redo: true, paidWith: decision.paidWith, ticketsRemaining: countUsableTickets(userData, now) };
     }
 
     const outcome = reserveInTransaction(transaction, target, limits, now);
@@ -161,6 +173,7 @@ export async function reserveCreditForRequest(
         paidWith: outcome.reservation.kind,
         reservedAt: at,
         updatedAt: at,
+        redoCount: 0,
       };
       transaction.set(target.userRef, { lastRequest }, { merge: true });
     }
@@ -230,29 +243,34 @@ function reserveInTransaction(
   return { ok: false, reason: freeAvailable ? "free_daily_limit" : "no_credits", firstTotalLimitHit: false };
 }
 
+type PreviousRequestDecision =
+  | { kind: "new" }
+  | { kind: "in_progress" }
+  | { kind: "redo"; paidWith: Reservation["kind"] };
+
 /** 同じ番号の前の頼みを見て、回数を使わずに断るか（in_progress）・作り直すか（redo）・ふつうにおさえるか（new）を決める。 */
-function checkPreviousRequest(
-  lastRequest: unknown,
-  requestId: string,
-  now: Date,
-): "new" | "in_progress" | { redo: Reservation["kind"] } {
+function decideByPreviousRequest(lastRequest: unknown, requestId: string, now: Date): PreviousRequestDecision {
   const last = (lastRequest ?? {}) as {
     id?: unknown;
     state?: unknown;
     paidWith?: unknown;
     reservedAt?: unknown;
     updatedAt?: unknown;
+    redoCount?: unknown;
   };
-  if (last.id !== requestId) return "new";
-  if (!(last.reservedAt instanceof Timestamp) || !(last.updatedAt instanceof Timestamp)) return "new";
-  if (last.paidWith !== "free" && last.paidWith !== "ticket") return "new";
+  if (last.id !== requestId) return { kind: "new" };
+  if (!(last.reservedAt instanceof Timestamp) || !(last.updatedAt instanceof Timestamp)) return { kind: "new" };
+  if (last.paidWith !== "free" && last.paidWith !== "ticket") return { kind: "new" };
 
   const busy = last.state === "generating" || last.state === "redoing";
-  if (busy && now.getTime() - last.updatedAt.toMillis() < STALE_CALL_MS) return "in_progress";
-  // ここでの busy は、止まった呼び出し。generating なら回数を使ったまま戻していないので、作れたときと同じく作り直せる
-  const finished = last.state === "done" || busy;
-  if (finished && now.getTime() - last.reservedAt.toMillis() <= REDO_WINDOW_MS) return { redo: last.paidWith };
-  return "new";
+  const stalled = busy && now.getTime() - last.updatedAt.toMillis() >= STALE_CALL_MS;
+  if (busy && !stalled) return { kind: "in_progress" };
+  // 止まった generating は回数を使ったまま戻しておらず、止まった redoing はその結果が届いたか分からないので、作れたときと同じく作り直せる
+  const redoable = last.state === "done" || stalled;
+  const withinWindow = now.getTime() - last.reservedAt.toMillis() <= REDO_WINDOW_MS;
+  const redoCount = typeof last.redoCount === "number" ? last.redoCount : 0;
+  if (redoable && withinWindow && redoCount < MAX_REDO_ATTEMPTS) return { kind: "redo", paidWith: last.paidWith };
+  return { kind: "new" };
 }
 
 /**
@@ -278,7 +296,7 @@ export async function updateRequestState(
 /**
  * おさえた1回分を戻す（生成に失敗した・審査で断った・安全フィルターで止まったとき）。
  * 回数券は、購入の取り消しなどで消えていれば戻さない。全体の回数は、おさえた日の分を戻す。
- * [requestId] の頼みを覚えていれば消す（同じ番号でもう一度来たら、作り直しではなくふつうにおさえる）。
+ * `requestId` の頼みを覚えていれば消す（同じ番号でもう一度来たら、作り直しではなくふつうにおさえる）。
  * 利用者の回数を戻したら true、回数券が消えていて戻さなかったら false を返す。
  */
 export async function refundCredit(

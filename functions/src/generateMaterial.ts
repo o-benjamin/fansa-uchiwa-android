@@ -182,7 +182,8 @@ export async function handleGenerateMaterial(
 }
 
 /**
- * 回数を使わずに作り直す（#387）。失敗したら、時間内ならもう一度作り直せるよう done に戻す（回数は動かしていないので戻さない）。
+ * 回数を使わずに作り直す（#387）。失敗したら、時間内で試せる回数が残っていればもう一度作り直せるよう done に戻す
+ * （回数は動かしていないので戻さない。quota.ts の MAX_REDO_ATTEMPTS）。
  */
 async function redo(
   deps: GenerateMaterialDeps,
@@ -196,6 +197,7 @@ async function redo(
   const startedAt = Date.now();
   const sticker = await createSticker(deps.gemini, settings, request);
   if (!sticker.ok) {
+    logger.info("作り直せなかった", { ...ids, reason: sticker.reason });
     await moveRequest(deps, ids, "redoing", "done");
     refuse(sticker.reason, sticker.details);
   }
@@ -219,7 +221,8 @@ async function redo(
 }
 
 /**
- * 回数を動かすログ（おさえた・おさえられなかった・戻した・戻さなかった・戻せなかった・作れた）に書く ID。
+ * 回数を動かすログ（おさえた・おさえられなかった・戻した・戻さなかった・戻せなかった・作れた）と、
+ * 作り直しのログ（回数を使わずに作り直す・作り直せなかった・頼みの状態を書けなかった）に書く ID。
  * 「作れたか確かめられませんでした」と出た人から連絡が来たとき、その uid の回数が減ったままかをログで確かめるため。
  * `reservation` は1回ごとに違う値ではない（同じ日に同じ回数券で作ると同じ）ので、1回の呼び出しのログは `callId` で組にする
  * （README の generateMaterial の「困ったとき（Cloud Logging で探す）」）。
