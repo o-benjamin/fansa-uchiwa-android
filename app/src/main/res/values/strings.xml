@@ -245,7 +245,7 @@
     <!-- 15分（最初に「作る」を押して回数を使った時刻から数える）と1回までは functions/src/quota.ts の REDO_WINDOW_MS と reserveCreditForRequest。変えるときは特定商取引法に基づく表記（web/public/tokushoho.html）も直す -->
     <string name="ai_material_error_unconfirmed">作れたか確かめられませんでした。最初に「作る」を押してから15分以内に、この画面のままもう一度「作る」を押すと、追加で回数を使わずに作り直します（1回まで）。それでも受け取れずに回数が減っていたら、特定商取引法に基づく表記の連絡先に、設定画面の「利用者 ID」とおおよその日時を添えてご連絡ください</string>
     <!-- 3分は functions/src/quota.ts の STALE_CALL_MS（前の呼び出しが止まったとみなして作り直せるようになるまで） -->
-    <string name="ai_material_error_in_progress">前に頼んだ分をまだ作っています。3分ほど待ってから、もう一度「作る」を押してください</string>
+    <string name="ai_material_error_in_progress">前に頼んだ分をまだ作っています。この画面のまま3分ほど待ってから、もう一度「作る」を押してください</string>
     <string name="ai_material_report">この素材を報告する</string>
     <string name="ai_material_report_message">頼んだ文章と選んだ理由を、匿名の利用者 ID とあわせて開発者に送ります。絵は送りません</string>
     <string name="ai_material_report_reason_inappropriate">不快・不適切な内容</string>

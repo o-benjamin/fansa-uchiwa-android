@@ -27,7 +27,7 @@
 
 ## 節ごとの根拠（2026-11 時点）
 
-この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で、回数の行の `lastRequest` は #387 の PR #440 で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
+この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で、回数の行の `lastRequest` は #387 で `feature/387-redo-same-request` の 2afa585 で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
 
 | ページの記述 | 根拠 |
 |---|---|
