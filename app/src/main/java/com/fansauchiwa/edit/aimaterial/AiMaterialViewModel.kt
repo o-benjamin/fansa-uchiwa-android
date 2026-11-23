@@ -20,6 +20,7 @@ import com.fansauchiwa.data.PlayBillingException
 import com.fansauchiwa.data.TicketPurchaseOutcome
 import com.fansauchiwa.data.TicketPurchaseRejectReason
 import com.fansauchiwa.data.TicketPurchaseRejectedException
+import com.fansauchiwa.data.UuidProvider
 import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.TicketPurchaseRepository
@@ -43,6 +44,7 @@ private const val PROMPT_KEY = "ai_material_prompt"
 private const val UNCONFIRMED_KEY = "ai_material_unconfirmed"
 private const val RESULT_KEY = "ai_material_result"
 private const val TICKETS_REMAINING_KEY = "ai_material_tickets_remaining"
+private const val REQUEST_ID_KEY = "ai_material_request_id"
 
 @HiltViewModel
 class AiMaterialViewModel @Inject constructor(
@@ -50,6 +52,7 @@ class AiMaterialViewModel @Inject constructor(
     private val ticketPurchaseRepository: TicketPurchaseRepository,
     private val analyticsRepository: AnalyticsRepository,
     private val crashReportingRepository: CrashReportingRepository,
+    private val uuidProvider: UuidProvider,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -61,6 +64,16 @@ class AiMaterialViewModel @Inject constructor(
 
     // 二度押しで同じ素材を2回置かない・2回数えない
     private var isConfirmed = false
+
+    // 頼みの番号。素材を受け取って置くか捨てるまで、同じ番号で頼み直す。サーバーは同じ番号の前の頼みで回数を使っていれば、
+    // 15分以内に1回だけ回数を使わずに作り直す（#387、`functions/src/quota.ts` の reserveCreditForRequest）。
+    // 作れたあとも捨てるまで持つのは、プロセスが止められて戻した素材のファイルが消えていたとき（Unconfirmed になる）にも作り直せるようにするため。
+    // プロセスが止められても同じ番号で頼めるよう SavedStateHandle に置く
+    private var pendingRequestId: String?
+        get() = savedStateHandle[REQUEST_ID_KEY]
+        set(value) {
+            savedStateHandle[REQUEST_ID_KEY] = value
+        }
 
     init {
         saveUiStateOnChange()
@@ -90,9 +103,10 @@ class AiMaterialViewModel @Inject constructor(
         val state = _uiState.value
         if (!state.canGenerate) return
         _uiState.value = state.copy(generation = AiMaterialGeneration.Generating, addedTickets = null)
+        val requestId = pendingRequestId ?: uuidProvider.generate().also { pendingRequestId = it }
         viewModelScope.launch {
             val generation = aiMaterialRepository
-                .generate(state.prompt.trim(), state.sourceImageUri)
+                .generate(state.prompt.trim(), state.sourceImageUri, requestId)
                 .fold(
                     onSuccess = { AiMaterialGeneration.Succeeded(it) },
                     onFailure = { error ->
@@ -144,18 +158,13 @@ class AiMaterialViewModel @Inject constructor(
 
     /**
      * 作った素材を捨てて入力に戻る。作り直すと回数が減るので、ここでは作り直さない
-     * （もう一度「作る」を押したときだけ [generate] が走る）
+     * （もう一度「作る」を押したときだけ [generate] が走り、新しい頼みの番号で回数を使う）
      */
     fun discardResult() {
-        _uiState.update { state ->
-            if (state.generation is AiMaterialGeneration.Succeeded) {
-                state.copy(
-                    generation = AiMaterialGeneration.Idle,
-                    reportStatus = AiMaterialReportStatus.NOT_SENT
-                )
-            } else {
-                state
-            }
+        if (_uiState.value.generation !is AiMaterialGeneration.Succeeded) return
+        pendingRequestId = null
+        _uiState.update {
+            it.copy(generation = AiMaterialGeneration.Idle, reportStatus = AiMaterialReportStatus.NOT_SENT)
         }
     }
 
@@ -163,6 +172,7 @@ class AiMaterialViewModel @Inject constructor(
         val image = (_uiState.value.generation as? AiMaterialGeneration.Succeeded)?.image ?: return
         if (isConfirmed) return
         isConfirmed = true
+        pendingRequestId = null
         viewModelScope.launch {
             analyticsRepository.logEvent(
                 AnalyticsEvent(

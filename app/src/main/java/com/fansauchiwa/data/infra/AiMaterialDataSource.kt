@@ -9,12 +9,13 @@ import com.fansauchiwa.data.GeneratedAiMaterial
  */
 interface AiMaterialDataSource {
     /**
-     * 素材を1枚作る。
+     * 素材を1枚作る。[requestId] は頼みの番号で、同じ番号の前の頼みで回数を使っていれば、サーバーは回数を使わずに作り直す（#387）。
      * サーバーが理由つきで断ったときは `AiMaterialRejectedException`、通信できないときなどはそのほかの例外を投げる
      */
     suspend fun generateMaterial(
         prompt: String,
-        sourceImage: AiMaterialSourceImage?
+        sourceImage: AiMaterialSourceImage?,
+        requestId: String
     ): GeneratedAiMaterial
 
     /**

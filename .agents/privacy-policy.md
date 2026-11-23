@@ -27,7 +27,7 @@
 
 ## 節ごとの根拠（2026-11 時点）
 
-この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
+この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で、回数の行の `lastRequest` は #387 で `feature/387-redo-same-request` の 2afa585 で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
 
 | ページの記述 | 根拠 |
 |---|---|
@@ -36,7 +36,7 @@
 | 購入の記録（注文番号・商品・日時・期限、トークンは残さない。注文番号はない場合がある） | `functions/src/verifyPurchase.ts` の「購入の記録」 |
 | 返金で回数券を取り消す | `functions/src/voidedPurchases.ts` |
 | 報告の内容は180日、1日ごとの報告の数は2日で消える。Discord には理由とモデル名だけ | `functions/src/reportMaterial.ts`（`REPORT_RETENTION_DAYS`・`REPORT_USAGE_RETENTION_DAYS`、TTL、`notifyOwner`） |
-| 回数（無料の1回、回数券の残りと期限） | `functions/src/quota.ts` |
+| 回数（無料の1回、回数券の残りと期限）と、最後に回数を使った頼み（番号・日時・作れたか・作り直した回数） | `functions/src/quota.ts`（`lastRequest` は #387 の作り直し。`functions/README.md` の「作り直し」） |
 | App Check は素材を作る・回数券を買う・報告するとき | `functions/src/index.ts` の `enforceAppCheck: true` |
 | 利用者 ID は AI素材の機能を初めて使うときに作る。作るとき IP アドレスが Firebase に記録される | `app/src/main/java/com/fansauchiwa/data/repository/AuthRepository.kt`（使うときに `signInAnonymously`）、[Firebase のデータの開示](https://firebase.google.com/docs/android/play-data-disclosure)（2026-10-16 に確認） |
 | Gemini は有料の契約で、送った内容は学習に使われない | `functions/src/index.ts` の `GEMINI_API_KEY` のコメント、[Gemini API 追加利用規約](https://ai.google.dev/gemini-api/terms)の有料サービスの項。無料枠のキーにすると、この記述と食い違う |

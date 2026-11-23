@@ -31,6 +31,7 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
         - 回数券の期間と期限の決め方（上の「決まり」、`functions/README.md` の「verifyPurchase」）
         - 回数券を使う順番（期限の近いものから。`functions/src/quota.ts`）
         - うまく作れなかったときに回数を戻す動き（`functions/README.md` の「generateMaterial」）
+        - 作れたか確かめられなかったときに、回数を使わずに作り直す時間と回数（最初に回数を使ってから15分・1回まで。`functions/README.md` の「作り直し」、`functions/src/quota.ts` の `REDO_WINDOW_MS`。エラー文 `ai_material_error_unconfirmed` も同じことを書いている）
         - 回数券でも作れなくなるとき（全体の安全上限 `totalDailyLimit` は `functions/README.md` の「設定」、入口スイッチは同じく「止める」）
         - 長く止める・提供をやめるときの残りの回数券の扱い（この文書の「決まり」。ページの「使える期間と条件」と「返品・キャンセル」の両方）
         - 返金で残りの回数を取り消す動き（`functions/README.md` の「revokeVoidedPurchases」）

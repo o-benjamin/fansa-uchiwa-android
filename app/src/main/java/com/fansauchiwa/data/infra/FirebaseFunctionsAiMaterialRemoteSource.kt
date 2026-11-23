@@ -19,12 +19,13 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
 
     override suspend fun generateMaterial(
         prompt: String,
-        sourceImage: AiMaterialSourceImage?
+        sourceImage: AiMaterialSourceImage?,
+        requestId: String
     ): GeneratedAiMaterial {
         val callable = functions.getHttpsCallable(GENERATE_FUNCTION_NAME)
         callable.setTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         val response = try {
-            callable.call(toGenerateRequest(prompt, sourceImage)).await()
+            callable.call(toGenerateRequest(prompt, sourceImage, requestId)).await()
         } catch (e: FirebaseFunctionsException) {
             throw rejectReasonFrom(e.details)?.let(::AiMaterialRejectedException) ?: e
         }
@@ -56,9 +57,11 @@ class FirebaseFunctionsAiMaterialRemoteSource @Inject constructor(
 
         internal fun toGenerateRequest(
             prompt: String,
-            sourceImage: AiMaterialSourceImage?
+            sourceImage: AiMaterialSourceImage?,
+            requestId: String
         ): Map<String, Any> = buildMap {
             put("prompt", prompt)
+            put("requestId", requestId)
             if (sourceImage != null) {
                 put(
                     "sourceImage",
