@@ -5,6 +5,7 @@ AI 素材のサーバー（Cloud Functions）を、本物のアプリの利用�
 - **呼ぶ場所**:
     - サーバーを呼ぶ直前に `AuthRepository.prepareForServerCall()` を呼び、返った利用者の ID を使ってください。App Check を有効にし、まだなら匿名でログインします。
     - アプリの起動時には呼ばないでください。AI 素材を使わない人のために Play Integrity を呼んだり、匿名の利用者を作ったりしないためです。
+    - `prepareForServerCall()` がユーザーを作る・ID トークンを取り直すタイミングを変えたとき（起動時にログインする、トークンを強制的に取り直すなど）と、Firebase BoM（`gradle/libs.versions.toml` の `firebaseBom`。firebase-auth が変わる）を上げたときは、`functions/README.md` の「消したあとに聞かれたら」を確かめ直してください。消したユーザーの端末で何が起きるかを、今のタイミングと firebase-auth の動きで書いています。削除の依頼への返信（同じ文書の「削除の依頼が来たら」の手順「終えたことを返信で知らせ、そのあとでメールを消す」）も同じ動きを前提にしています。
 
 - **利用者の ID を画面に出す**:
     - 設定画面のいちばん下に「利用者 ID」として出します（#387）。回数が減ったのに受け取れなかった人から連絡をもらったとき、サーバーのログからその人を探して回数を戻すためです。探し方は `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」。
@@ -17,7 +18,6 @@ AI 素材のサーバー（Cloud Functions）を、本物のアプリの利用�
         - `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」の「「作れたか確かめられませんでした」と出た人から連絡が来た」と、「入口を初めて開ける前に」の利用者 ID の項目
         - `.agents/remote-config.md` の「特定のインストールだけに機能を出す」の手順 1（インストール ID の下に利用者 ID が出る、と書いている）
         - `functions/README.md` の「削除の依頼が来たら（AI 素材の記録）」（インストール ID との見分け方と、消したあとの「消したのに設定画面に同じ利用者 ID が出ている」）
-    - `AuthRepositoryImpl.prepareForServerCall()` がユーザーを作る・ID トークンを取り直すタイミングを変えたら（起動時にログインする、トークンを強制的に取り直すなど）、`functions/README.md` の「消したあとに聞かれたら」も直してください。消したユーザーの端末で何が起きるかを、今のタイミングで書いています。
 
 - **provider はビルドタイプで分ける**:
     - `release`：Play Integrity（`app/src/release/.../di/AppCheckProviderModule.kt`）。ストアから入れたアプリでしか通りません。
