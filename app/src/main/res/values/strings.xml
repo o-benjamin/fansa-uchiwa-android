@@ -277,6 +277,15 @@
     <string name="apology_dialog_title">お詫びとお知らせ</string>
     <string name="apology_dialog_message">いつもご利用いただきありがとうございます。\n\n前回のバージョンで発生していた、クラッシュする不具合を修正いたしました。ご不便をおかけして申し訳ありません。再発防止対策を講じ、今後はこのようなことが起こらないよう努めますので、どうか引き続きアプリをお楽しみください。</string>
 
+    <!-- 更新の案内（#428） -->
+    <string name="update_dialog_title">新しいバージョンがあります</string>
+    <string name="update_dialog_message">お使いのバージョンは古くなっています。新しい機能や不具合の修正を使うには、最新のバージョンに更新してください。</string>
+    <string name="update_dialog_message_force">お使いのバージョンには大きな不具合があります。引き続き使うには、最新のバージョンに更新してください。</string>
+    <string name="update_dialog_update">更新する</string>
+    <string name="update_dialog_later">あとで</string>
+    <string name="update_downloaded_message">新しいバージョンの準備ができました</string>
+    <string name="update_downloaded_restart">再起動</string>
+
     <!-- 今日のお題のカード（#360） -->
     <string name="daily_prompt_card_title">今日のお題</string>
     <string name="daily_prompt_create_button">このお題で作る</string>

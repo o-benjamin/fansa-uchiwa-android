@@ -1,0 +1,32 @@
+package com.fansauchiwa.analytics
+
+import com.fansauchiwa.update.UpdatePromptType
+
+/**
+ * 更新の案内（#428）の計測のパラメータ
+ *
+ * - [AnalyticsActions.SHOW_UPDATE_PROMPT]：案内を出したとき。柔軟な更新は Play の画面を出せたとき、
+ *   ほかはダイアログを出したとき（閉じられないダイアログは、ホームを作り直すたびにもう一度送る）
+ * - [AnalyticsActions.TAP_UPDATE]：更新を選んだとき。柔軟な更新は Play の画面で更新を選んだとき、ほかはダイアログの「更新する」
+ *
+ * どちらにも [PARAM_SOURCE] で案内の種類（flexible・min・force）を付ける。パラメータ名は GA4 にカスタムディメンションとして
+ * 登録済みの `source`（[DailyPromptAnalyticsParams] と同じ名前）を使い、登録を待たずに初日から種類ごとに見られるようにした。
+ * イベント名で絞れば、お題の `source` とは混ざらない
+ */
+object UpdatePromptAnalyticsParams {
+    const val PARAM_SOURCE = "source"
+
+    const val SOURCE_FLEXIBLE = "flexible"
+    const val SOURCE_MIN = "min"
+    const val SOURCE_FORCE = "force"
+
+    /**
+     * @return 案内を出さない [UpdatePromptType.NONE] のときは空
+     */
+    fun params(type: UpdatePromptType): Map<String, Any> = when (type) {
+        UpdatePromptType.NONE -> emptyMap()
+        UpdatePromptType.FLEXIBLE -> mapOf(PARAM_SOURCE to SOURCE_FLEXIBLE)
+        UpdatePromptType.MIN -> mapOf(PARAM_SOURCE to SOURCE_MIN)
+        UpdatePromptType.FORCE -> mapOf(PARAM_SOURCE to SOURCE_FORCE)
+    }
+}

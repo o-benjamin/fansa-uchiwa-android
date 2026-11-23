@@ -8,8 +8,36 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 | `daily_prompts` | String（JSON） | 今日のファンサお題（#358）。日付ごとのお題の一覧 | 空文字（同梱の控えから出す。下の「`daily_prompts` の書き方」） |
 | `affiliate_materials` | String（JSON） | 保存完了のダイアログに出す、うちわの材料の Amazon アソシエイトのリンク | 空文字（リンクの欄を出さない） |
 | `ai_material_enabled` | Boolean | AI 素材（#315）の入口を出すか。サーバー（`functions/src/entrySwitch.ts`）も同じ値を見て、閉じていれば生成を断る | `false`（入口を出さない） |
+| `min_version_code` | Number | 更新の案内（#428）。今の版の versionCode がこれより小さければ、起動するたびに閉じられる更新のダイアログを出す | `0`（出さない） |
+| `force_version_code` | Number | 更新の案内（#428）。今の版の versionCode がこれより小さければ、閉じられない更新のダイアログを出す。**致命的な不具合のときだけ** | `0`（出さない） |
 
-取得は、ホームが前に出たとき（`daily_prompts` と `ai_material_enabled`）と、うちわのプレビュー画面を開いたとき（`affiliate_materials`）。`ai_material_enabled` の入口は、お題のカードの副ボタン「AIで素材を作る」に出す（#340。お題のカードを閉じた日は入口も出ない）。どこで取得しても、すべてのパラメータが新しい値になる。最小取得間隔は1時間なので、**コンソールで公開してから端末に届くまで最大約1時間**かかる。取得に失敗したら前回の値を使う（なければ空）。
+取得は、ホームが前に出たとき（`daily_prompts` と `ai_material_enabled`）と、うちわのプレビュー画面を開いたとき（`affiliate_materials`）、起動して最初にホームを開いたとき（`min_version_code`・`force_version_code`）。`ai_material_enabled` の入口は、お題のカードの副ボタン「AIで素材を作る」に出す（#340。お題のカードを閉じた日は入口も出ない）。どこで取得しても、すべてのパラメータが新しい値になる。最小取得間隔は1時間なので、**コンソールで公開してから端末に届くまで最大約1時間**かかる。取得に失敗したら前回の値を使う（なければ空）。
+
+## `min_version_code`・`force_version_code`（更新の案内）
+
+アプリは起動して最初にホームを開いたときに1回だけ、この2つと Play の In-App Updates の答えから案内を決める（`update/UpdatePromptPolicy.kt`）。編集画面には出さない。
+
+- `force_version_code` より古い：閉じられない更新のダイアログ。ただし Play が「新しい版がある」と答えたときだけで、Play に聞けない端末やまだ新しい版が届いていない端末では、閉じられるダイアログに下げる（更新できないまま使えなくしないため）
+- `min_version_code` より古い：閉じられる更新のダイアログ（「あとで」）。起動するたびに出る
+- どちらにも当たらず、Play に新しい版があって3日以上入っていない：Play の柔軟な更新の画面（`UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS`）
+- ダイアログの「更新する」は Play の即時更新の画面を出し、出せなければ Play ストアのページを開く。案内を出した起動では、最初のインタースティシャルを出さない
+- 届くまで最大約1時間（最小取得間隔）。そのあとの次の起動から効く
+
+### 上げるとき（運用の決まり。#428）
+
+`min_version_code` は、新しい版を出してすぐには上げない。次のすべてに当たるときだけ上げる。
+
+1. 上げる先の版が 100% で配信されてから **14日以上**たっている
+2. その版で、Crashlytics にその版から出た新しい FATAL がない
+3. 上げる先は「ひとつ前の安定した版」の versionCode。出したばかりの版は指定しない
+4. Remote Config の変更なので、上げるたびにオーナーの承認をもらう
+
+`force_version_code` は、その版のままだとデータが消える・起動できないなどの致命的な不具合があり、直した版が配信済みのときだけ使う。直した版の versionCode を入れ、オーナーの承認をもらってから公開する。不具合が片づいたら `0` に戻す。
+
+### 確かめる・うまく出ないとき
+
+- **確かめる**：Play からの答えは Play ストアから入れたアプリでしか返らないので、クローズドテスト版（または内部テスト版）で試す。条件 `app.build`（versionCode）で自分の版だけに大きい値を配ると、その版でダイアログが出る。DebugView に `show_update_prompt`（`source=min`・`force`・`flexible`）と、「更新する」で `tap_update` が出る
+- **出ない**：公開から1時間以内なら、まだ届いていない。起動して最初のホームでしか決めないので、アプリを完全に終了してから開き直す。ログのタグ `AppUpdate`（Play への問い合わせの失敗）と `RemoteConfig` を見る
 
 ## `affiliate_materials` の書き方
 

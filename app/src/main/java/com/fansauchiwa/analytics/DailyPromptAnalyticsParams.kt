@@ -30,6 +30,7 @@ package com.fansauchiwa.analytics
  *   paramsFrom_ChosenFromDailyPromptUchiwa_ReturnsTargetEntryPointAndSource（期待から source を外す）、
  *   DailyPromptCardTest の onShown（setCard の引数と、onShown が1回呼ばれることの確認。お題の文言が出ることの確認は残す）
  * - GA4：カスタムディメンション `prompt_id` と、ほかのイベントで使っていなければ `source` をアーカイブする
+ *   （更新の案内の [UpdatePromptAnalyticsParams] も `source` を使っている）
  */
 object DailyPromptAnalyticsParams {
     const val PARAM_PROMPT_ID = "prompt_id"

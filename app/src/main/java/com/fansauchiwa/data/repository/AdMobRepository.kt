@@ -96,6 +96,12 @@ interface AdMobRepository {
     )
 
     /**
+     * 次に [showInterstitialAd] を呼んだときだけ、広告を出さずにすぐ onAdClosed を呼ぶ。
+     * 更新の案内（#428）を出した起動では、最初のインタースティシャルを出さないために使う
+     */
+    fun skipNextInterstitialAd()
+
+    /**
      * 広告1回の表示で発生した収益をAnalyticsに記録する
      * @param adValue OnPaidEventListener で受け取った収益
      * @param adFormat 広告フォーマット（[AdFormat]）
@@ -132,6 +138,10 @@ class AdMobRepositoryImpl @Inject constructor(
     // 期限切れの判定に使う、ロードが終わった時刻（SystemClock.elapsedRealtime()）
     private var interstitialAdLoadedAtMillis = 0L
     private var isLoadingInterstitialAd = false
+
+    // 次の1回だけインタースティシャルを出さない（[skipNextInterstitialAd]）
+    @Volatile
+    private var shouldSkipNextInterstitialAd = false
 
     // Analytics計測用のCoroutineScope（コールバック内で使用）
     private val analyticsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -368,6 +378,13 @@ class AdMobRepositoryImpl @Inject constructor(
         placement: String,
         onAdClosed: () -> Unit
     ) {
+        // 読み込んだ広告は捨てずに、次に出すときに使う
+        if (shouldSkipNextInterstitialAd) {
+            shouldSkipNextInterstitialAd = false
+            onAdClosed()
+            return
+        }
+
         // 期限切れの広告は表示しても収益にならないため、捨ててロードし直し、今回は表示しない
         if (isInterstitialAdExpired()) {
             loadInterstitialAd()
@@ -425,6 +442,10 @@ class AdMobRepositoryImpl @Inject constructor(
         }
 
         ad.show(activity)
+    }
+
+    override fun skipNextInterstitialAd() {
+        shouldSkipNextInterstitialAd = true
     }
 
     override fun logAdPaidEvent(
