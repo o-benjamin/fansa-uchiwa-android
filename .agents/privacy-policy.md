@@ -16,7 +16,7 @@
 
 - 外部サービス・SDK を足す・替える・外す（「本アプリが利用する第三者サービス」の囲みと、「第三者への提供」のリンク）
 - Analytics のイベント・パラメータで、新しい種類の情報を送る（「情報の収集と利用」の例。例：#362 の共有先のアプリ）
-- AI素材のサーバー（`functions/`）で、保存する項目・保存期間（TTL）・ログに書くもの・知らせる先（Discord）を変える。Gemini 以外のモデルに替える、API キーを替える（「AI素材の機能で送信・保存する情報」「データの保存期間と削除」）
+- AI素材のサーバー（`functions/`）で、保存する項目・保存期間（TTL）・ログに書くもの・知らせる先（Discord）を変える。Gemini 以外のモデルに替える、API キーを替える（「AI素材の機能で送信・保存する情報」「データの保存期間と削除」）。利用者 ID（`uid`）を持つ記録を足したら、`functions/README.md` の「削除の依頼が来たら」の手順「消す」にも足す
 - バックアップの決まり（`app/src/main/res/xml/backup_rules.xml`・`data_extraction_rules.xml`）を変える（「端末のバックアップ」「オプトアウト権」）
 - 削除の依頼で添えてもらう利用者 ID の見出し・場所を変える・外す（`strings.xml` の `settings_user_id`・`settings_installation_id`、`settings/SettingsScreen.kt` の `AppInfoSection`）。直すのは「データの保存期間と削除」の頼み方と「オプトアウト権」の最後の1文。特定商取引法に基づく表記も同じ見出しで案内しているので、`.agents/play-billing.md` の「次を変えたら、ページも直してください」も見る。ほかに案内している先（AI 素材のエラー文・`functions/README.md`）は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」
 - 問い合わせのメールの使い道・保存のしかた・受け取る受信箱を変える（「お問い合わせ」の2段落目）
@@ -43,4 +43,4 @@
 | 顔の確認と背景の切り抜きは端末内 | 切り抜きは `app/src/main/java/com/fansauchiwa/data/infra/ImageProcessingLocalSource.kt`、顔の確認も同じファイル（#338 で追加）。どちらも `gradle/libs.versions.toml` の ML Kit（Play 開発者サービスの端末内モデル） |
 | うちわのデータ・挿入した画像・利用者 ID がバックアップに入る | `app/src/main/AndroidManifest.xml` の `allowBackup="true"`、`backup_rules.xml`・`data_extraction_rules.xml` に除外がない |
 | 設定画面の「利用者 ID」を添えれば削除を頼める。画面に出ていなければ、その端末のアプリにはいま利用者 ID がない（まだ使っていなければ記録もない。入れ直した・データを消したなら前の ID の記録が残る）。報告の日と文章で頼めるのは180日以内 | `app/src/main/java/com/fansauchiwa/settings/SettingsScreen.kt` の `AppInfoSection`（`userId` が null なら行を出さない）、`app/src/main/java/com/fansauchiwa/data/repository/AppInfoRepository.kt`（`getCurrentUserId()`。サーバーを呼ぶ前の `AuthRepository.prepareForServerCall()` まで作らない）、`functions/src/reportMaterial.ts` の `REPORT_RETENTION_DAYS`。利用者 ID で記録を探して消す手順は `functions/README.md` の「削除の依頼が来たら」 |
-| 問い合わせのメールの利用者 ID・メールアドレスは、回答・回数の確認と戻し・返金・削除にだけ使う。期限を決めずに保存し、頼まれたら消す。記録の削除を頼まれたら、終えたと知らせたあとにそのやりとりも消す（消す範囲は `functions/README.md` の「削除の依頼が来たら」の 5） | 運用（`fansauchiwa.app@gmail.com` の受信箱。自動で消す・転送する設定は置かない）。`functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」は、手での戻しを同じ利用者 ID への過去30日の返信で数えるので、返信を含むやりとりは、頼まれたとき以外は30日より早く消さない（頼まれて消すと数えられなくなるが、1回の戻しは1枚分なので受け入れる）。保存の期限を決めたら、ページとこの行と `functions/README.md` の「削除の依頼が来たら」の 5 を直す |
+| 問い合わせのメールの利用者 ID・メールアドレスは、回答・回数の確認と戻し・返金・削除にだけ使う。期限を決めずに保存し、頼まれたら消す。記録の削除を頼まれたら、終えたと知らせたあとにそのやりとりも消す | 運用（`fansauchiwa.app@gmail.com` の受信箱。自動で消す・転送する設定は置かない）。`functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」は、手での戻しを同じ利用者 ID への過去30日の返信で数えるので、返信を含むやりとりは、頼まれたとき以外は30日より早く消さない（頼まれて消すと数えられなくなるが、1回の戻しは1枚分なので受け入れる）。消すやりとりの範囲は `functions/README.md` の「削除の依頼が来たら」の手順「終えたことを返信で知らせ、そのあとでメールを消す」にある。保存の期限を決めたら（#444）、ページとこの行とその手順を直す |

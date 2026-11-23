@@ -16,6 +16,8 @@ AI 素材のサーバー（Cloud Functions）を、本物のアプリの利用�
         - AI 素材のエラー文（`strings.xml` の `ai_material_error_unconfirmed`。見出しだけを引いていて、場所は書いていない）
         - `functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」の「「作れたか確かめられませんでした」と出た人から連絡が来た」と、「入口を初めて開ける前に」の利用者 ID の項目
         - `.agents/remote-config.md` の「特定のインストールだけに機能を出す」の手順 1（インストール ID の下に利用者 ID が出る、と書いている）
+        - `functions/README.md` の「削除の依頼が来たら（AI 素材の記録）」（インストール ID との見分け方と、消したあとの「消したのに設定画面に同じ利用者 ID が出ている」）
+    - `AuthRepositoryImpl.prepareForServerCall()` がユーザーを作る・ID トークンを取り直すタイミングを変えたら（起動時にログインする、トークンを強制的に取り直すなど）、`functions/README.md` の「消したあとに聞かれたら」も直してください。消したユーザーの端末で何が起きるかを、今のタイミングで書いています。
 
 - **provider はビルドタイプで分ける**:
     - `release`：Play Integrity（`app/src/release/.../di/AppCheckProviderModule.kt`）。ストアから入れたアプリでしか通りません。
