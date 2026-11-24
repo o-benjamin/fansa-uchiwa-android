@@ -22,10 +22,12 @@ import com.fansauchiwa.data.DailyPrompt
  * 計測をやめるときに消すもの：
  * - このファイル、[DailyPromptViewTracker]、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT。
  *   アプリ内メッセージ（#428）が残るなら、[SOURCE_IN_APP_MESSAGE] と [tapParams] の source の部分を、
- *   TAP_AI_MATERIAL_ENTRY のパラメータとして AI素材の計測の側へ移す
- * - HomeViewModel の onDailyPromptShown、onDailyPromptCreate の logEvent。onDailyPromptCreateWithAiMaterial は
- *   AnalyticsActions の TAP_AI_MATERIAL_ENTRY（AI素材の計測）を残して prompt_id だけ外し（`source=in_app_message` は上のとおり残す）、
- *   KDoc の tap_daily_prompt の説明を消す。onInAppMessageDailyPrompt は、お題がなくなるのでアプリ内メッセージの行き先 `daily_prompt` ごと消す
+ *   TAP_AI_MATERIAL_ENTRY のパラメータとして [AiMaterialParams] へ移す
+ * - HomeViewModel の onDailyPromptShown、onDailyPromptCreate の logEvent と source 引数。onDailyPromptCreateWithAiMaterial は
+ *   AnalyticsActions の TAP_AI_MATERIAL_ENTRY（AI素材の計測）を残して prompt_id だけ外し
+ *   （`source=in_app_message` は、この一覧の1つ目の項目のとおり [AiMaterialParams] へ移して残す）、KDoc の tap_daily_prompt の説明を消す。
+ *   onInAppMessageDailyPrompt・onInAppMessageAiMaterial は残す（お題のカードは残るので、行き先 `daily_prompt` は効いたまま）。
+ *   onInAppMessageDailyPrompt が渡している source と、KDoc の tap_daily_prompt の説明だけ消す
  * - DailyPromptCard の onShown と LaunchedEffect、HomeScreen.kt の onDailyPromptShown の受け渡し
  *   （HomeTabContent・HomeTabHomeContent・プレビュー）、HomeScreenTest の引数
  * - UchiwaPreviewViewModel の logExportEvent と showRewardedAdAndShare、ShareAnalyticsParams の selectShareTargetParams

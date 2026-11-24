@@ -1,6 +1,6 @@
 # アプリ内メッセージ（Firebase In-App Messaging）
 
-更新後のお知らせや新機能の案内は、自前のダイアログにせず Firebase In-App Messaging（FIAM）で出します（#428 の「ねらい」）。出したあとに文面を直したり、新機能の案内を版をまたいで続けたりするのに、アプリを出し直さずに済むためです。文面・画像・ボタン・出す相手（版・オーディエンス）・期間は Firebase コンソールの「Messaging」のキャンペーンで決め、アプリのコードには持ちません。
+更新後のお知らせや新機能の案内は、自前のダイアログにせず Firebase In-App Messaging（FIAM）で出します（#428 の「ねらい」）。出したあとに文面を直したり、新機能の案内を版をまたいで続けたりするのに、アプリを出し直さずに済むためです。アプリに固定で置いたお知らせのダイアログは、キャンペーンで代わりに出せるなら消してかまいません（#239 はこれで消しました）。文面・画像・ボタン・出す相手（版・オーディエンス）・期間は Firebase コンソールの「Messaging」のキャンペーンで決め、アプリのコードには持ちません。
 
 ## アプリの中の作り
 
@@ -30,7 +30,7 @@
 ## キャンペーンの作り方
 
 - 「更新して最初の起動で1回」：トリガーを `on_foreground`、対象のアプリのバージョンを新しい版に絞り、端末ごとの表示の上限を1回にする
-- 形式はモーダル・カード・画像のどれか。**バナーは使わない**（上の「アプリの中の作り」）
+- 形式はモーダル・カード・画像のどれか。**バナーは使わない**（この文書の「アプリの中の作り」）
 - `on_foreground` のメッセージは、キャンペーンをまたいで端末ごとに1日1回までしか出ない（22.0.2 の `RateLimitModule`。テスト送信は対象外）。同じ日に `on_foreground` のキャンペーンを2つ動かすと片方が出ない
 - **キャンペーンの公開はオーナーの承認**（外への発信。文面の案は AI エージェントが作ってよい）
 - 公開前の確かめ：コンソールの「デバイスでテスト」に、設定画面のいちばん下のインストール ID（#411）を入れる。テスト送信は次にアプリを前に出したとき（ホームで）に出る。Analytics を送るのはクローズドテスト版（release）と beta で、debug は送らない
@@ -43,4 +43,4 @@
 
 - FIAM が扱うのは、表示・タップ・閉じたの記録と Firebase のインストール ID（[Firebase のデータの開示](https://firebase.google.com/docs/android/play-data-disclosure)、2026-11-24 に確認）。送るときは HTTPS で暗号化される。プライバシーポリシーの「本アプリが利用する第三者サービス」に載せている（`.agents/privacy-policy.md`）
 - 持ち主が変わるとき：キャンペーンは Firebase プロジェクトにあり、プロジェクトごと移せばそのまま渡る。別のプロジェクトに移すなら、動いているキャンペーンを作り直す（アプリ側は `google-services.json` の差し替えだけ）
-- FIAM をやめるときは、コンソールのキャンペーンを止め、`git grep -n -i -e 'InAppMessag' -e 'in_app_message' -- app gradle` に当たるものを消し（`inappmessage/`・`InAppMessaging*`・`InAppMessageTarget`・`InAppMessageAnalyticsParams` はファイルごと、`HomeScreen`・`HomeViewModel`・`FansaUchiwaNavGraph`・`DailyPromptAnalyticsParams`・`AnalyticsEvent`・DI の2つは当たった箇所だけ）、プライバシーポリシーから外す。`firebase-inappmessaging-display` を外すと、一緒に入っていた Glide・gRPC・RxJava 2 なども消える（アプリの画像の読み込みは Coil で、Glide は FIAM のためだけに入っている）
+- FIAM をやめるときは、コンソールのキャンペーンを止め、`git grep -n -i -e 'InAppMessag' -e 'in_app_message' -- app gradle` に当たるものを消し（`inappmessage/`・`InAppMessaging*`・`FirebaseInAppMessagingRemoteSource`・`InAppMessageTarget`・`InAppMessageAnalyticsParams`（それぞれのテストも）はファイルごと、`HomeScreen`・`HomeViewModel`（`HomeViewModelTest` も）・`FansaUchiwaNavGraph`・`DailyPromptAnalyticsParams`・`AnalyticsEvent`・`InfraModule`・`RepositoryModule`・`app/build.gradle.kts`・`gradle/libs.versions.toml` は当たった箇所だけ）、プライバシーポリシーから外す。この文書と、`AGENTS.md`・`.agents/privacy-policy.md` の FIAM の行、journey（`journeys/create-and-save-from-template.xml`）のお知らせを閉じる手順も消す。`firebase-inappmessaging-display` を外すと、一緒に入っていた Glide・gRPC・RxJava 2 なども消える（アプリの画像の読み込みは Coil で、Glide は FIAM のためだけに入っている）

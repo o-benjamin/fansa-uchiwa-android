@@ -98,7 +98,7 @@ class InAppMessageViewModelTest {
     }
 
     @Test
-    fun click_dailyPrompt_setsPendingTargetUntilOpened() = runTest {
+    fun click_dailyPrompt_setsPendingTargetUntilHandled() = runTest {
         val viewModel = createObservingViewModel()
         runCurrent()
 
