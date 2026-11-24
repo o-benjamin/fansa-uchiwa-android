@@ -1,21 +1,21 @@
 # プライバシーポリシー（`web/public/privacy-policy.html`・`docs/privacy-policy.html`）
 
-アプリから外へ送るもの・サーバーに残すものを変えたら、このページとデータセーフティの申告を一緒に直し、下の「公開のしかた」で2か所とも公開します。ページの記述が実際の動きとずれると、利用者に事実と違う説明をすることになります。
+アプリから外へ送るもの・サーバーに残すものを変えたら、このページとデータセーフティの申告を一緒に直し、この文書の「公開のしかた」で2か所とも公開します。ページの記述が実際の動きとずれると、利用者に事実と違う説明をすることになります。
 
 ## 公開のしかた
 
-- 同じページを2か所に置いています。中身は同じにします（片方を直したら、もう片方へ `cp` で写します）。`firebase.json` の hosting の `predeploy` が2つを `diff` で比べ、違えば Hosting に出すのを止めます（`diff` を使うので、Windows では Git Bash か WSL から出します）
+- 同じページを2か所に置いています。中身は同じにします（片方を直したら、もう片方へ `cp` で写します）。`firebase.json` の hosting の `predeploy` が2つを `diff` で比べ、違えば Hosting に出すのを止めます。Windows では WSL から出します（フックは Node の `shell: true` で動くので、Git Bash や PowerShell から出しても cmd.exe で動きます。2つが違うときは、案内の代わりに `'{'` が見つからないというエラーで止まります。直前の `Files … differ` が、2つが違うという意味です）。案内の文は単引用符が外れて渡るので、ASCII の記号（`(` `)` `'` `;` `&` `*` など）を入れません
     - Firebase Hosting：`web/public/privacy-policy.html`（https://fansauchiwa-578d22ff.web.app/privacy-policy.html）。v2.13.0 からのアプリ・公式サイト・特定商取引法に基づく表記のページが開きます。ブランチにマージしただけでは出ません。出し方（承認・どのブランチから出すか・出す前の確かめ）は `.agents/play-billing.md` の「特定商取引法に基づく表記」の、`firebase deploy --only hosting` で出す箇条と同じです（`web/public` がまるごと置き換わるため）
     - GitHub Pages：`master` の `docs/privacy-policy.html`（https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html）。v2.12.x までのアプリが開きます。`release/vX.Y.Z` に入っただけでは公開されません。`release/vX.Y.Z` → `master` は公開の24時間後です
-- `release/vX.Y.Z` でこのページを直したら、その版の製品版を出す前に、リリースを進める人がアプリの持ち主の承認をもらって Hosting に出します。送るもの・残すものが変わった新しい版のアプリが開くのは Hosting なので、Pages（`master`）より先に出します
+- `release/vX.Y.Z` でこのページを直したら、その版の製品版を出す前に、リリースを進める人がオーナーの承認をもらって Hosting に出します。送るもの・残すものが変わった新しい版のアプリが開くのは Hosting なので、Pages（`master`）より先に出します
 - 機能の公開より先にページを出したいときは、2つのファイルだけを変える `master` 向けの PR を作り、マージのあと Hosting にも出します（例：#283・#341。Pages だけだったころ）
 - Pages は、v2.13.0 からの版が行き渡り、リポジトリを非公開にするときに止めます。判断のしかた・止め方・消すものは #451 にあります
 - まだ提供していない機能の説明がページに載っているときは、その項の頭と「本アプリが利用する第三者サービス」の囲みに「今後のアップデートで提供する予定」の文を置きます（消す時期は下の「直すきっかけ」）。今は AI素材の機能（#315）がこの状態です（v2.12.0 に AI素材を入れなかったため。#398）。囲みの文は目的に「AI素材」とある行を指しているので、文が残っている間は、ほかの行の目的に「AI素材」と書きません。ページの文を消すときに、この箇条の「今は」から「書きません」までと、下の「直すきっかけ」の AI素材の例（括弧の中）も消します
 - URL を使っている場所：
-    - Hosting の URL：`app/src/main/java/com/fansauchiwa/home/HomeScreen.kt`（メニューの「プライバシーポリシー」）。`web/public/index.html` と `web/public/tokushoho.html` は相対リンク（`privacy-policy.html`）です。URL は Firebase のプロジェクト ID（`.firebaserc`）から決まり、出回っている版は前の URL を開き続けるので、持ち主が変わるときはプロジェクトを替えずにプロジェクトごと移します（`.agents/play-billing.md` の「持ち主が変わるとき」）
+    - Hosting の URL：`app/src/main/java/com/fansauchiwa/home/HomeScreen.kt`（メニューの「プライバシーポリシー」）。`web/public/index.html` と `web/public/tokushoho.html` は相対リンク（`privacy-policy.html`）です。URL は Firebase のプロジェクト ID（`.firebaserc`）から決まり、出回っている版は前の URL を開き続けるので、持ち主が変わるときはプロジェクトを替えずにプロジェクトごと移します（`.agents/play-billing.md` の「持ち主が変わるとき」）。それでも替えるときは、`git grep -n 'fansauchiwa-578d22ff.web.app'` で出るアプリのリンク（ポリシーのほか、公式サイト・使い方・特定商取引法に基づく表記）をすべて新しいプロジェクトのドメインに直し、前のプロジェクトの Hosting は消さずに残します（消すと、出回っている版のリンクが開かなくなります）
     - Pages の URL：v2.12.x までのアプリが開きます。Pages の URL は転送されないので、Pages を止めるまでリポジトリの名前と持ち主を変えません
     - Play Console の「アプリのコンテンツ」：Hosting に出したら、Play Console の権限がある人が Hosting の URL に変えます。ストアの掲載ページから開くポリシーにも、同じ版を出すためです（#451）
-- 改訂日（ページの末尾）は、PR では直した日にしておきます。先に公開されたほう（ふつうは Hosting）の日とずれていたら、公開ページを確かめる人が2つとも直して Hosting に出し直します。あとから Pages に出たときは直しません（今回の AI素材の改訂の分は、#398 の「入口（`ai_material_enabled`）を開ける前に」の項で確かめます）
+- 改訂日（ページの末尾）は、PR では直した日にしておきます。先に公開されたほう（ふつうは Hosting）の日とずれていたら、Hosting に出した人が、出したブランチ（`release/vX.Y.Z` から出したときはそのブランチ）で2つとも直し、同じブランチから Hosting に出し直します。あとから Pages に出たときは直しません（今回の AI素材の改訂の分は、#398 の「入口（`ai_material_enabled`）を開ける前に」の項で確かめます）
 
 ## 直すきっかけ
 
