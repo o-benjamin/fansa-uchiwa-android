@@ -7,7 +7,7 @@
       "**/node_modules/**"
     ],
     "predeploy": [
-      "diff -q \"$PROJECT_DIR/docs/privacy-policy.html\" \"$RESOURCE_DIR/privacy-policy.html\""
+      "diff -q \"$PROJECT_DIR/docs/privacy-policy.html\" \"$RESOURCE_DIR/privacy-policy.html\" || { echo 'docs/privacy-policy.html と web/public/privacy-policy.html が違います。新しいほうをもう片方へ cp してください（.agents/privacy-policy.md の「公開のしかた」）' >&2; exit 1; }"
     ]
   },
   "functions": [
