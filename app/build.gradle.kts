@@ -190,6 +190,9 @@ dependencies {
     // アプリ内レビュー依頼（In-App Review API）
     implementation(libs.play.review.ktx)
 
+    // 更新の促し（In-App Updates API。#428）
+    implementation(libs.play.app.update.ktx)
+
     // ColorPicker
     implementation(libs.compose.colorpicker)
 

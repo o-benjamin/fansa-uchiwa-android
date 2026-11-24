@@ -22,6 +22,8 @@ import com.fansauchiwa.data.repository.AiMaterialRepository
 import com.fansauchiwa.data.repository.AiMaterialRepositoryImpl
 import com.fansauchiwa.data.repository.AppInfoRepository
 import com.fansauchiwa.data.repository.AppInfoRepositoryImpl
+import com.fansauchiwa.data.repository.AppUpdateRepository
+import com.fansauchiwa.data.repository.AppUpdateRepositoryImpl
 import com.fansauchiwa.data.repository.AuthRepository
 import com.fansauchiwa.data.repository.AuthRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
@@ -126,6 +128,13 @@ abstract class RepositoryModule {
     abstract fun bindInAppReviewRepository(
         impl: InAppReviewRepositoryImpl
     ): InAppReviewRepository
+
+    // 起動ごとに1回だけ案内するための状態を持つので、Singleton にする
+    @Binds
+    @Singleton
+    abstract fun bindAppUpdateRepository(
+        impl: AppUpdateRepositoryImpl
+    ): AppUpdateRepository
 
     @Binds
     @Singleton

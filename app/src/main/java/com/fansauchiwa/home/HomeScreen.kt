@@ -131,6 +131,7 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
 import com.fansauchiwa.ui.util.createOverallBorderBitmap
 import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
+import com.fansauchiwa.update.UpdatePrompt
 import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.min
@@ -392,6 +393,8 @@ fun HomeScreen(
         )
     }
 
+    UpdatePrompt(snackbarHostState = snackbarHostState)
+
     nameTemplateDialogState.templateId?.let { templateId ->
         NameTemplateInputDialog(
             lastName = nameTemplateDialogState.lastName,
@@ -437,8 +440,8 @@ fun HomeScreen(
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToTimeline = onNavigateToTimeline,
                 onOpenPrivacyPolicy = {
-                    val url =
-                        "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
+                    // `web/public/privacy-policy.html` を Firebase Hosting で出す（`.agents/privacy-policy.md` の「公開のしかた」）
+                    val url = "https://fansauchiwa-578d22ff.web.app/privacy-policy.html"
                     val customTabsIntent = CustomTabsIntent.Builder().build()
                     customTabsIntent.launchUrl(context, url.toUri())
                 },
