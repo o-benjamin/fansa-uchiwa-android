@@ -436,8 +436,8 @@ fun HomeScreen(
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToTimeline = onNavigateToTimeline,
                 onOpenPrivacyPolicy = {
-                    val url =
-                        "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
+                    // `web/public/privacy-policy.html` を Firebase Hosting で出す（`.agents/privacy-policy.md` の「公開のしかた」）
+                    val url = "https://fansauchiwa-578d22ff.web.app/privacy-policy.html"
                     val customTabsIntent = CustomTabsIntent.Builder().build()
                     customTabsIntent.launchUrl(context, url.toUri())
                 },

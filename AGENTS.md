@@ -27,7 +27,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | Analytics のイベント・パラメータを追加・変更する、分析用のコードを扱う | `.agents/analytics.md` |
 | Remote Config の値（アプリを出し直さずに変える値）を読む・足す、`affiliate_materials`・`daily_prompts`（今日のお題）を設定する・止める、`ai_material_enabled`（AI素材の入口）を開ける・止める、更新を促す版（`min_version_code`・`force_version_code`）を上げる | `.agents/remote-config.md` |
 | 更新後のお知らせ・新機能の案内（Firebase In-App Messaging のキャンペーン）を出す・止める、ボタンの行き先を足す、FIAM を更新する、アプリの持ち主が変わる | `.agents/in-app-messaging.md` |
-| 外部サービス・SDK を足す・替える・外す、外へ送るデータ（Analytics のパラメータを含む）・サーバーに保存するもの・保存期間を変える、バックアップの決まり（`backup_rules.xml`・`data_extraction_rules.xml`）を変える、`docs/privacy-policy.html` を直す | `.agents/privacy-policy.md` |
+| 外部サービス・SDK を足す・替える・外す、外へ送るデータ（Analytics のパラメータを含む）・サーバーに保存するもの・保存期間を変える、バックアップの決まり（`backup_rules.xml`・`data_extraction_rules.xml`）を変える、プライバシーポリシー（`web/public/privacy-policy.html`・`docs/privacy-policy.html`）を直す | `.agents/privacy-policy.md` |
 | AI 素材のサーバーを呼ぶ、匿名ログイン・App Check・Play Integrity の設定を扱う、アプリの持ち主が変わる | `.agents/firebase-auth-app-check.md` |
 | 回数券の購入（Play Billing）を扱う、Billing Library を更新する、特定商取引法に基づく表記（`web/public/tokushoho.html`）を直す、アプリの持ち主が変わる | `.agents/play-billing.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
