@@ -256,8 +256,14 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        // カードから押した数と分ける
         coVerify(exactly = 1) {
-            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_DAILY_PROMPT })
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.TAP_DAILY_PROMPT,
+                    params = mapOf("prompt_id" to "20261104", "source" to "in_app_message")
+                )
+            )
         }
     }
 
@@ -287,8 +293,12 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        val params = mapOf("prompt_id" to "20261104", "source" to "in_app_message")
         coVerify(exactly = 1) {
-            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_AI_MATERIAL_ENTRY })
+            analyticsRepository.logEvent(AnalyticsEvent(name = AnalyticsActions.TAP_AI_MATERIAL_ENTRY, params = params))
+        }
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(AnalyticsEvent(name = AnalyticsActions.TAP_DAILY_PROMPT, params = params))
         }
     }
 

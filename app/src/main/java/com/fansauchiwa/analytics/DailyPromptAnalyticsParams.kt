@@ -1,11 +1,15 @@
 package com.fansauchiwa.analytics
 
+import com.fansauchiwa.data.DailyPrompt
+
 /**
  * 今日のお題（#360）の計測のパラメータ
  *
  * - [AnalyticsActions.VIEW_DAILY_PROMPT]・[AnalyticsActions.TAP_DAILY_PROMPT] には [PARAM_PROMPT_ID] を付ける
  * - お題のカードの副ボタンから AI素材の入口を開いたときの [AnalyticsActions.TAP_AI_MATERIAL_ENTRY]（#340）にも
  *   [PARAM_PROMPT_ID] を付ける。どのお題の日に AI素材が使われたかを見るため
+ * - アプリ内メッセージ（#428）のボタンから開いたときの [AnalyticsActions.TAP_DAILY_PROMPT]・[AnalyticsActions.TAP_AI_MATERIAL_ENTRY] には、
+ *   [tapParams] で `source=in_app_message` も付ける。カードから押した数と分けるため（カードから押したときは付けない）
  * - お題から作ったうちわの [AnalyticsActions.TAP_PREVIEW_EXPORT]・[AnalyticsActions.TAP_PREVIEW_SHARE] には、
  *   [sourceParams] で `source=daily_prompt` を付ける。ほかのうちわには何も付けない（今までの集計は変わらない）
  *
@@ -38,6 +42,19 @@ object DailyPromptAnalyticsParams {
 
     /** お題から作ったうちわ */
     const val SOURCE_DAILY_PROMPT = "daily_prompt"
+
+    /** アプリ内メッセージのボタンから、お題・AI素材を開いた */
+    const val SOURCE_IN_APP_MESSAGE = "in_app_message"
+
+    /**
+     * [AnalyticsActions.TAP_DAILY_PROMPT]・[AnalyticsActions.TAP_AI_MATERIAL_ENTRY] のパラメータ。
+     * [source] はカード以外から開いたときだけ渡す（[SOURCE_IN_APP_MESSAGE]）
+     */
+    fun tapParams(prompt: DailyPrompt, source: String? = null): Map<String, Any> =
+        buildMap {
+            put(PARAM_PROMPT_ID, prompt.id)
+            source?.let { put(PARAM_SOURCE, it) }
+        }
 
     fun sourceParams(isStartedFromDailyPrompt: Boolean): Map<String, Any> =
         if (isStartedFromDailyPrompt) {

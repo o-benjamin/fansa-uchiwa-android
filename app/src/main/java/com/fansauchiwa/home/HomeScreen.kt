@@ -110,6 +110,7 @@ import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
+import com.fansauchiwa.data.InAppMessageTarget
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.applyTemplateMainColor
@@ -131,7 +132,6 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
 import com.fansauchiwa.ui.util.createOverallBorderBitmap
 import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
-import com.fansauchiwa.inappmessage.InAppMessageHost
 import com.fansauchiwa.update.UpdatePrompt
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -340,7 +340,9 @@ fun HomeScreen(
     onAddClick: () -> Unit = {},
     onAiMaterialEntryClick: (EditScreenInputArg) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    onNavigateToTimeline: () -> Unit = {}
+    onNavigateToTimeline: () -> Unit = {},
+    inAppMessageDestination: InAppMessageTarget? = null,
+    onInAppMessageDestinationOpened: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -377,10 +379,15 @@ fun HomeScreen(
 
     UpdatePrompt(snackbarHostState = snackbarHostState)
 
-    InAppMessageHost(
-        onOpenDailyPrompt = { viewModel.onInAppMessageDailyPrompt()?.let(onImageClick) },
-        onOpenAiMaterial = { viewModel.onInAppMessageAiMaterial()?.let(onAiMaterialEntryClick) }
-    )
+    // アプリ内メッセージ（#428）のボタンで押された画面を、お題のカードと同じ道で開く
+    LaunchedEffect(inAppMessageDestination) {
+        when (inAppMessageDestination ?: return@LaunchedEffect) {
+            InAppMessageTarget.DAILY_PROMPT -> viewModel.onInAppMessageDailyPrompt()?.let(onImageClick)
+            InAppMessageTarget.AI_MATERIAL -> viewModel.onInAppMessageAiMaterial()?.let(onAiMaterialEntryClick)
+            else -> Unit
+        }
+        onInAppMessageDestinationOpened()
+    }
 
     nameTemplateDialogState.templateId?.let { templateId ->
         NameTemplateInputDialog(

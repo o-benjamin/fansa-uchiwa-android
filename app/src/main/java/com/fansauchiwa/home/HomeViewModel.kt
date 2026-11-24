@@ -178,11 +178,8 @@ class HomeViewModel @Inject constructor(
      * 「AIで素材を作る」（[onDailyPromptCreateWithAiMaterial]）からも呼ばれる。
      * 白紙からの新規作成と保存の率を比べるため、tap_home_new_create は送らない
      */
-    fun onDailyPromptCreate(prompt: DailyPrompt): EditScreenInputArg {
-        logEvent(
-            AnalyticsActions.TAP_DAILY_PROMPT,
-            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
-        )
+    fun onDailyPromptCreate(prompt: DailyPrompt, source: String? = null): EditScreenInputArg {
+        logEvent(AnalyticsActions.TAP_DAILY_PROMPT, DailyPromptAnalyticsParams.tapParams(prompt, source))
         val uchiwaId = uuidProvider.generate()
         dailyPromptUchiwaRepository.markStartedFromPrompt(uchiwaId)
         return EditScreenInputArg(uchiwaId = uchiwaId, dailyPromptText = prompt.text)
@@ -194,30 +191,29 @@ class HomeViewModel @Inject constructor(
      * 同じうちわを開くので tap_daily_prompt も送る。お題から開いたうちわの数（tap_daily_prompt）と、
      * そのうちわを保存した数（`source=daily_prompt` の付いた tap_preview_export）が、同じうちわを数えるようにするため
      */
-    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt): EditScreenInputArg {
-        logEvent(
-            AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
-            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
-        )
-        return onDailyPromptCreate(prompt)
+    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt, source: String? = null): EditScreenInputArg {
+        logEvent(AnalyticsActions.TAP_AI_MATERIAL_ENTRY, DailyPromptAnalyticsParams.tapParams(prompt, source))
+        return onDailyPromptCreate(prompt, source)
     }
 
     /**
      * アプリ内メッセージ（#428）のボタンで今日のお題を開くときに呼ぶ。お題のカードの「このお題で作る」と同じ引数を返す。
-     * カードが出ていない（Remote Config で止めている、今日は閉じた、まだ読み込んでいない）ときは null で、ホームのまま
+     * カードが出ていない（Remote Config で止めている、今日は閉じた、まだ読み込んでいない）ときは null で、ホームのまま。
+     * tap_daily_prompt には `source=in_app_message` を付け、カードから押した数と分ける
      */
     fun onInAppMessageDailyPrompt(): EditScreenInputArg? =
-        _uiState.value.dailyPrompt?.let(::onDailyPromptCreate)
+        _uiState.value.dailyPrompt?.let { onDailyPromptCreate(it, DailyPromptAnalyticsParams.SOURCE_IN_APP_MESSAGE) }
 
     /**
      * アプリ内メッセージ（#428）のボタンで AI素材の画面を開くときに呼ぶ。お題のカードの「AIで素材を作る」と同じ引数を返す。
-     * カードに入口が出ていない（お題のカードが出ていない、Remote Config で入口を閉じている）ときは null で、ホームのまま
+     * カードに入口が出ていない（お題のカードが出ていない、Remote Config で入口を閉じている）ときは null で、ホームのまま。
+     * tap_ai_material_entry・tap_daily_prompt には `source=in_app_message` を付け、カードから押した数と分ける
      */
     fun onInAppMessageAiMaterial(): EditScreenInputArg? {
         val state = _uiState.value
         val prompt = state.dailyPrompt ?: return null
         if (!state.isAiMaterialEntryEnabled) return null
-        return onDailyPromptCreateWithAiMaterial(prompt)
+        return onDailyPromptCreateWithAiMaterial(prompt, DailyPromptAnalyticsParams.SOURCE_IN_APP_MESSAGE)
     }
 
     /**

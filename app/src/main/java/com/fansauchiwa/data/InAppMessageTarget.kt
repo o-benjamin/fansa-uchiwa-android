@@ -38,7 +38,7 @@ enum class InAppMessageTarget(val analyticsValue: String) {
             if (!trimmed.contains("://")) return OTHER
             return when (trimmed.substringBefore("://").lowercase()) {
                 "https", "http" -> WEB
-                APP_SCHEME -> fromAppHost(trimmed.substringAfter("://").substringBefore('/').substringBefore('?'))
+                APP_SCHEME -> fromAppHost(trimmed.substringAfter("://").takeWhile { it !in "/?#" })
                 else -> OTHER
             }
         }

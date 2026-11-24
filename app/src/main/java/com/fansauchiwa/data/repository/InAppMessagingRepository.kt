@@ -23,7 +23,7 @@ interface InAppMessagingRepository {
     fun getClickedTargetStream(): Flow<InAppMessageTarget>
 
     /**
-     * true の間はメッセージを出さない。ホームが前にいる間だけ出すために、ホームから呼ぶ
+     * true の間はメッセージを出さない。ホームが今の画面のときだけ出すために、今の画面が変わるたびに呼ぶ
      */
     fun setMessagesSuppressed(suppressed: Boolean)
 }

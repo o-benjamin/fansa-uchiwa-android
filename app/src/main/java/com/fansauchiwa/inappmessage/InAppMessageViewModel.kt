@@ -12,6 +12,7 @@ import com.fansauchiwa.data.repository.AppUpdateRepository
 import com.fansauchiwa.data.repository.InAppMessagingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * アプリ内メッセージ（Firebase In-App Messaging。#428）。ホームに置く [InAppMessageHost] が使う。
+ * アプリ内メッセージ（Firebase In-App Messaging。#428）。Activity に1つで、[InAppMessageHost] が使う。
  * メッセージの表示とボタンの URL を開く動きは Firebase In-App Messaging が行い、ここはそのあとの始末をする
  */
 @HiltViewModel
@@ -35,23 +36,31 @@ class InAppMessageViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(InAppMessageUiState())
     val uiState: StateFlow<InAppMessageUiState> = _uiState.asStateFlow()
 
-    init {
-        observeImpression()
-        observeClickedTarget()
+    private var isHomeShown = false
+
+    /**
+     * メッセージの表示とボタンを受け取る。呼び出し元を止めるまで返らない。Activity が前にいる間だけ呼ぶ（[InAppMessageHost]）
+     */
+    suspend fun observeMessages() {
+        coroutineScope {
+            inAppMessagingRepository.getImpressionStream()
+                // メッセージを出した起動で、続けて全画面の広告まで出さない（更新の案内と同じ）
+                .onEach { adMobRepository.skipNextInterstitialAd() }
+                .launchIn(this)
+            inAppMessagingRepository.getClickedTargetStream()
+                .onEach(::onTargetClicked)
+                .launchIn(this)
+        }
     }
 
     /**
-     * ホームが前に出たとき。メッセージを出せるようにする
+     * 今の画面がホームかどうかが変わったとき。編集中に割り込まないよう、ホーム以外ではメッセージを止める
      */
-    fun onHomeResumed() {
-        inAppMessagingRepository.setMessagesSuppressed(false)
-    }
-
-    /**
-     * ホームが隠れたとき（編集画面などへ移った、アプリが裏に回った）。編集中に割り込まないよう、メッセージを止める
-     */
-    fun onHomePaused() {
-        inAppMessagingRepository.setMessagesSuppressed(true)
+    fun onHomeShownChanged(isHomeShown: Boolean) {
+        this.isHomeShown = isHomeShown
+        inAppMessagingRepository.setMessagesSuppressed(!isHomeShown)
+        // ホームを離れたら、まだ開いていない行き先は捨てる。あとでホームに戻ったときに急に開かないように
+        if (!isHomeShown) _uiState.update { it.copy(pendingDestination = null) }
     }
 
     /**
@@ -61,24 +70,12 @@ class InAppMessageViewModel @Inject constructor(
         _uiState.update { it.copy(pendingDestination = null) }
     }
 
-    private fun observeImpression() {
-        inAppMessagingRepository.getImpressionStream()
-            // メッセージを出した起動で、続けて全画面の広告まで出さない（更新の案内と同じ）
-            .onEach { adMobRepository.skipNextInterstitialAd() }
-            .launchIn(viewModelScope)
-    }
-
-    private fun observeClickedTarget() {
-        inAppMessagingRepository.getClickedTargetStream()
-            .onEach(::onTargetClicked)
-            .launchIn(viewModelScope)
-    }
-
     private fun onTargetClicked(target: InAppMessageTarget) {
         when (target) {
             InAppMessageTarget.STORE -> appUpdateRepository.openStorePage()
+            // ホーム以外で押された（止める前に出てしまった）ときは開かない。ホームが受け取れず、戻ったときに急に開くため
             InAppMessageTarget.DAILY_PROMPT, InAppMessageTarget.AI_MATERIAL ->
-                _uiState.update { it.copy(pendingDestination = target) }
+                if (isHomeShown) _uiState.update { it.copy(pendingDestination = target) }
             // Web ページは Firebase In-App Messaging が開き、ホームはメッセージが閉じればそのまま
             InAppMessageTarget.WEB, InAppMessageTarget.HOME, InAppMessageTarget.OTHER -> Unit
         }

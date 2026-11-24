@@ -15,9 +15,11 @@ import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -60,27 +62,35 @@ class InAppMessageViewModelTest {
         analyticsRepository
     )
 
+    // InAppMessageHost が Activity の前にいる間だけ observeMessages を回すのと同じに、テストの間だけ回す。今の画面はホーム
+    private fun TestScope.createObservingViewModel(): InAppMessageViewModel {
+        val viewModel = createViewModel()
+        viewModel.onHomeShownChanged(true)
+        backgroundScope.launch { viewModel.observeMessages() }
+        return viewModel
+    }
+
     private fun tapEvent(target: String) =
         AnalyticsEvent(name = AnalyticsActions.TAP_IN_APP_MESSAGE, params = mapOf("target" to target))
 
     @Test
     fun impression_skipsNextInterstitial() = runTest {
-        createViewModel()
-        advanceUntilIdle()
+        createObservingViewModel()
+        runCurrent()
 
         impressions.emit(Unit)
-        advanceUntilIdle()
+        runCurrent()
 
         verify(exactly = 1) { adMobRepository.skipNextInterstitialAd() }
     }
 
     @Test
     fun click_store_opensStorePageAndLogs() = runTest {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+        val viewModel = createObservingViewModel()
+        runCurrent()
 
         clickedTargets.emit(InAppMessageTarget.STORE)
-        advanceUntilIdle()
+        runCurrent()
 
         verify(exactly = 1) { appUpdateRepository.openStorePage() }
         assertNull(viewModel.uiState.value.pendingDestination)
@@ -89,11 +99,11 @@ class InAppMessageViewModelTest {
 
     @Test
     fun click_dailyPrompt_setsPendingDestinationUntilOpened() = runTest {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+        val viewModel = createObservingViewModel()
+        runCurrent()
 
         clickedTargets.emit(InAppMessageTarget.DAILY_PROMPT)
-        advanceUntilIdle()
+        runCurrent()
 
         assertEquals(InAppMessageTarget.DAILY_PROMPT, viewModel.uiState.value.pendingDestination)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("daily_prompt")) }
@@ -105,11 +115,11 @@ class InAppMessageViewModelTest {
 
     @Test
     fun click_aiMaterial_setsPendingDestination() = runTest {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+        val viewModel = createObservingViewModel()
+        runCurrent()
 
         clickedTargets.emit(InAppMessageTarget.AI_MATERIAL)
-        advanceUntilIdle()
+        runCurrent()
 
         assertEquals(InAppMessageTarget.AI_MATERIAL, viewModel.uiState.value.pendingDestination)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("ai_material")) }
@@ -117,13 +127,13 @@ class InAppMessageViewModelTest {
 
     @Test
     fun click_webHomeOrOther_onlyLogs() = runTest {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+        val viewModel = createObservingViewModel()
+        runCurrent()
 
         clickedTargets.emit(InAppMessageTarget.WEB)
         clickedTargets.emit(InAppMessageTarget.HOME)
         clickedTargets.emit(InAppMessageTarget.OTHER)
-        advanceUntilIdle()
+        runCurrent()
 
         // Web ページは Firebase In-App Messaging が開く
         verify(exactly = 0) { appUpdateRepository.openStorePage() }
@@ -134,11 +144,60 @@ class InAppMessageViewModelTest {
     }
 
     @Test
-    fun homeResumedAndPaused_switchesSuppression() = runTest {
+    fun observeMessages_stopped_ignoresClicksUntilObservedAgain() = runTest {
+        val viewModel = createViewModel()
+        val job = launch { viewModel.observeMessages() }
+        runCurrent()
+        job.cancel()
+        runCurrent()
+
+        clickedTargets.emit(InAppMessageTarget.STORE)
+        runCurrent()
+
+        verify(exactly = 0) { appUpdateRepository.openStorePage() }
+
+        // 前に戻ったら付け直す
+        backgroundScope.launch { viewModel.observeMessages() }
+        runCurrent()
+        clickedTargets.emit(InAppMessageTarget.STORE)
+        runCurrent()
+
+        verify(exactly = 1) { appUpdateRepository.openStorePage() }
+        verify(exactly = 2) { inAppMessagingRepository.getClickedTargetStream() }
+    }
+
+    @Test
+    fun click_dailyPromptOutsideHome_doesNotSetPendingDestination() = runTest {
+        val viewModel = createObservingViewModel()
+        viewModel.onHomeShownChanged(false)
+        runCurrent()
+
+        clickedTargets.emit(InAppMessageTarget.DAILY_PROMPT)
+        runCurrent()
+
+        // ホームに戻ったときに急に開かない。押した数は数える
+        assertNull(viewModel.uiState.value.pendingDestination)
+        coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("daily_prompt")) }
+    }
+
+    @Test
+    fun homeHidden_dropsPendingDestination() = runTest {
+        val viewModel = createObservingViewModel()
+        runCurrent()
+        clickedTargets.emit(InAppMessageTarget.AI_MATERIAL)
+        runCurrent()
+
+        viewModel.onHomeShownChanged(false)
+
+        assertNull(viewModel.uiState.value.pendingDestination)
+    }
+
+    @Test
+    fun homeShownChanged_suppressesOutsideHome() = runTest {
         val viewModel = createViewModel()
 
-        viewModel.onHomePaused()
-        viewModel.onHomeResumed()
+        viewModel.onHomeShownChanged(false)
+        viewModel.onHomeShownChanged(true)
 
         verifyOrder {
             inAppMessagingRepository.setMessagesSuppressed(true)

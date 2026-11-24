@@ -139,6 +139,7 @@ abstract class RepositoryModule {
     ): AppUpdateRepository
 
     @Binds
+    @Singleton
     abstract fun bindInAppMessagingRepository(
         impl: InAppMessagingRepositoryImpl
     ): InAppMessagingRepository

@@ -2,49 +2,36 @@ package com.fansauchiwa.inappmessage
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.fansauchiwa.data.InAppMessageTarget
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 
 /**
  * アプリ内メッセージ（Firebase In-App Messaging。#428）の受け口。画面には何も描かない。
- * ホームにだけ置き、ホームが前にいる間だけメッセージを出す。編集中に割り込まないためと、
- * ボタンの行き先のお題・AI素材をホームのカードと同じ道で開くため
+ * ナビゲーションの外（`FansaUchiwaNavGraph`）に1つだけ置き、Activity の [viewModel] を渡す。
+ * ボタンの行き先のお題・AI素材は、[InAppMessageUiState.pendingDestination] をホームが受け取って開く
  *
- * アプリを作り直した直後に編集画面から始まったとき（裏に回している間にプロセスが終わったときなど）は、
- * ホームが一度も前に出ていないので止められず、その起動のきっかけのメッセージが編集画面に出ることがある
+ * メッセージはホームが今の画面のときだけ出す。アプリを裏に回しただけでは止めない。止めたまま前に戻ると、
+ * 出していたメッセージを Firebase In-App Messaging が描き直せず、そのメッセージが残ったまま以後のメッセージも出なくなるため
  *
- * @param onOpenDailyPrompt ボタンの行き先が今日のお題のとき。お題のカードの「このお題で作る」と同じ
- * @param onOpenAiMaterial ボタンの行き先が AI素材のとき。お題のカードの「AIで素材を作る」と同じ
+ * @param isHomeShown 今の画面がホームか。ナビゲーションの準備前（今の画面がまだない）は null で、何も変えない
  */
 @Composable
 fun InAppMessageHost(
-    onOpenDailyPrompt: () -> Unit,
-    onOpenAiMaterial: () -> Unit,
-    viewModel: InAppMessageViewModel = hiltViewModel()
+    isHomeShown: Boolean?,
+    viewModel: InAppMessageViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val currentOnOpenDailyPrompt by rememberUpdatedState(onOpenDailyPrompt)
-    val currentOnOpenAiMaterial by rememberUpdatedState(onOpenAiMaterial)
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        viewModel.onHomeResumed()
-    }
-
-    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
-        viewModel.onHomePaused()
-    }
-
-    LaunchedEffect(uiState.pendingDestination) {
-        when (uiState.pendingDestination ?: return@LaunchedEffect) {
-            InAppMessageTarget.DAILY_PROMPT -> currentOnOpenDailyPrompt()
-            InAppMessageTarget.AI_MATERIAL -> currentOnOpenAiMaterial()
-            else -> Unit
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        // Firebase In-App Messaging は Activity が一時停止するたびにアプリのリスナーをすべて外す
+        // （onActivityPaused → removeAllListeners）ので、前にいる間だけ受け取り、前に戻るたびに付け直す
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.observeMessages()
         }
-        viewModel.onDestinationOpened()
+    }
+
+    LaunchedEffect(isHomeShown) {
+        isHomeShown?.let(viewModel::onHomeShownChanged)
     }
 }

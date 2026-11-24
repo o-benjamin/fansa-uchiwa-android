@@ -14,10 +14,11 @@ class InAppMessageTargetTest {
     }
 
     @Test
-    fun fromActionUrl_appScreenWithCaseSlashOrQuery_returnsTarget() {
+    fun fromActionUrl_appScreenWithCaseSlashQueryOrFragment_returnsTarget() {
         // コンソールで大文字や末尾の / を付けても、同じ行き先にする
         assertEquals(InAppMessageTarget.STORE, InAppMessageTarget.fromActionUrl("FansaUchiwa://Store/"))
         assertEquals(InAppMessageTarget.DAILY_PROMPT, InAppMessageTarget.fromActionUrl(" fansauchiwa://daily_prompt?from=v2.13.0 "))
+        assertEquals(InAppMessageTarget.STORE, InAppMessageTarget.fromActionUrl("fansauchiwa://store#v2.13.0"))
     }
 
     @Test
