@@ -131,6 +131,7 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
 import com.fansauchiwa.ui.util.createOverallBorderBitmap
 import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
+import com.fansauchiwa.update.UpdatePrompt
 import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.min
@@ -391,6 +392,8 @@ fun HomeScreen(
             }
         )
     }
+
+    UpdatePrompt(snackbarHostState = snackbarHostState)
 
     nameTemplateDialogState.templateId?.let { templateId ->
         NameTemplateInputDialog(

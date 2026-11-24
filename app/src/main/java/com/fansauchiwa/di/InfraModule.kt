@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.fansauchiwa.data.infra.AppCheckDataSource
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.AppInstallLocalSource
+import com.fansauchiwa.data.infra.AppUpdateDataSource
 import com.fansauchiwa.data.infra.AiMaterialDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageLocalSource
@@ -29,6 +30,7 @@ import com.fansauchiwa.data.infra.InAppReviewHistoryLocalSource
 import com.fansauchiwa.data.infra.InstallationIdDataSource
 import com.fansauchiwa.data.infra.PlayBillingDataSource
 import com.fansauchiwa.data.infra.PlayBillingRemoteSource
+import com.fansauchiwa.data.infra.PlayAppUpdateRemoteSource
 import com.fansauchiwa.data.infra.PlayInAppReviewRemoteSource
 import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
@@ -179,6 +181,17 @@ abstract class AiMaterialModule {
             return FirebaseFunctions.getInstance(FUNCTIONS_REGION)
         }
     }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AppUpdateModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindAppUpdateDataSource(
+        impl: PlayAppUpdateRemoteSource
+    ): AppUpdateDataSource
 }
 
 @Module

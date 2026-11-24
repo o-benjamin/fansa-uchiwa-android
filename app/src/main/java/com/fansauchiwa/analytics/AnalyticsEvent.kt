@@ -101,6 +101,10 @@ object AnalyticsActions {
     // アプリ内レビュー依頼を試みた回数（#243）。Play の仕様上、実際に表示されたかはわからない
     const val IN_APP_REVIEW_REQUEST = "in_app_review_request"
 
+    // 更新の案内（#428）。どの案内かは UpdatePromptAnalyticsParams の source
+    const val VIEW_UPDATE_PROMPT = "view_update_prompt"
+    const val TAP_UPDATE_PROMPT = "tap_update_prompt"
+
     const val AD_REWARD_SHOW = "ad_reward_show"
     const val AD_REWARD_COMPLETE = "ad_reward_complete"
     const val AD_REWARD_DISMISSED = "ad_reward_dismissed"

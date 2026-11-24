@@ -1,5 +1,6 @@
 package com.fansauchiwa.data.infra
 
+import com.fansauchiwa.data.UpdateVersionCodes
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -24,4 +25,10 @@ interface RemoteConfigDataSource {
      * 取得に失敗したときは前回取得した値、未設定なら false
      */
     fun getAiMaterialEnabledStream(): Flow<Boolean>
+
+    /**
+     * 更新を促す版の境目（`min_version_code`・`force_version_code`。#428）。
+     * 取得を試みてから、有効になっている値を流す。取得に失敗したときは前回取得した値、未設定なら 0（促さない）
+     */
+    fun getUpdateVersionCodesStream(): Flow<UpdateVersionCodes>
 }

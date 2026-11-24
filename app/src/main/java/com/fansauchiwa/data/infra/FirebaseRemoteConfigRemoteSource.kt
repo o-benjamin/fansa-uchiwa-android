@@ -1,6 +1,7 @@
 package com.fansauchiwa.data.infra
 
 import android.util.Log
+import com.fansauchiwa.data.UpdateVersionCodes
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import javax.inject.Inject
@@ -45,6 +46,18 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         emit(remoteConfig.getBoolean(KEY_AI_MATERIAL_ENABLED))
     }
 
+    override fun getUpdateVersionCodesStream(): Flow<UpdateVersionCodes> = flow {
+        // 取得に失敗したとき（オフラインなど）も前回の値で決められるよう、先に端末から読み込んでおく
+        awaitInitialized()
+        fetchAndActivate()
+        emit(
+            UpdateVersionCodes(
+                minVersionCode = remoteConfig.getLong(KEY_MIN_VERSION_CODE),
+                forceVersionCode = remoteConfig.getLong(KEY_FORCE_VERSION_CODE)
+            )
+        )
+    }
+
     /**
      * 前回までに有効にした値を端末から読み込む。読み込む前の getString は初期値（空文字）を返すため
      */
@@ -77,6 +90,8 @@ class FirebaseRemoteConfigRemoteSource @Inject constructor(
         const val KEY_DAILY_PROMPTS = "daily_prompts"
         const val KEY_AFFILIATE_MATERIALS = "affiliate_materials"
         const val KEY_AI_MATERIAL_ENABLED = "ai_material_enabled"
+        const val KEY_MIN_VERSION_CODE = "min_version_code"
+        const val KEY_FORCE_VERSION_CODE = "force_version_code"
         const val MINIMUM_FETCH_INTERVAL_SECONDS = 60L * 60
         const val FETCH_TIMEOUT_SECONDS = 10L
     }
