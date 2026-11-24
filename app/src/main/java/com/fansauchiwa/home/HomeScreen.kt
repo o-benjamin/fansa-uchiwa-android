@@ -341,8 +341,8 @@ fun HomeScreen(
     onAiMaterialEntryClick: (EditScreenInputArg) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToTimeline: () -> Unit = {},
-    inAppMessageDestination: InAppMessageTarget? = null,
-    onInAppMessageDestinationOpened: () -> Unit = {}
+    pendingInAppMessageTarget: InAppMessageTarget? = null,
+    onInAppMessageTargetHandled: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -379,14 +379,16 @@ fun HomeScreen(
 
     UpdatePrompt(snackbarHostState = snackbarHostState)
 
-    // アプリ内メッセージ（#428）のボタンで押された画面を、お題のカードと同じ道で開く
-    LaunchedEffect(inAppMessageDestination) {
-        when (inAppMessageDestination ?: return@LaunchedEffect) {
+    // アプリ内メッセージ（#428）のボタンの行き先（お題・AI素材）を、お題のカードと同じ道で開く
+    LaunchedEffect(pendingInAppMessageTarget) {
+        val target = pendingInAppMessageTarget ?: return@LaunchedEffect
+        when (target) {
             InAppMessageTarget.DAILY_PROMPT -> viewModel.onInAppMessageDailyPrompt()?.let(onImageClick)
             InAppMessageTarget.AI_MATERIAL -> viewModel.onInAppMessageAiMaterial()?.let(onAiMaterialEntryClick)
+            // ほかの行き先は InAppMessageViewModel が pendingTarget にしない
             else -> Unit
         }
-        onInAppMessageDestinationOpened()
+        onInAppMessageTargetHandled()
     }
 
     nameTemplateDialogState.templateId?.let { templateId ->

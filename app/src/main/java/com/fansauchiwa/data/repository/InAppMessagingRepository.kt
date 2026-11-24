@@ -44,7 +44,7 @@ class InAppMessagingRepositoryImpl @Inject constructor(
         try {
             inAppMessagingDataSource.setMessagesSuppressed(suppressed)
         } catch (e: Exception) {
-            // 止められなくても、ホームの表示は続ける。メッセージが編集画面に出ることがあるだけ
+            // 失敗してもアプリは落とさない。止められなければ編集画面などにも出ることがあり、止めを外せなければホームでも出ないだけ
             Log.w(TAG, "メッセージの表示を切り替えられなかった", e)
         }
     }

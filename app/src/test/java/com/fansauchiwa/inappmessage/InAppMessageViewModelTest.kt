@@ -93,35 +93,35 @@ class InAppMessageViewModelTest {
         runCurrent()
 
         verify(exactly = 1) { appUpdateRepository.openStorePage() }
-        assertNull(viewModel.uiState.value.pendingDestination)
+        assertNull(viewModel.uiState.value.pendingTarget)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("store")) }
     }
 
     @Test
-    fun click_dailyPrompt_setsPendingDestinationUntilOpened() = runTest {
+    fun click_dailyPrompt_setsPendingTargetUntilOpened() = runTest {
         val viewModel = createObservingViewModel()
         runCurrent()
 
         clickedTargets.emit(InAppMessageTarget.DAILY_PROMPT)
         runCurrent()
 
-        assertEquals(InAppMessageTarget.DAILY_PROMPT, viewModel.uiState.value.pendingDestination)
+        assertEquals(InAppMessageTarget.DAILY_PROMPT, viewModel.uiState.value.pendingTarget)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("daily_prompt")) }
 
-        viewModel.onDestinationOpened()
+        viewModel.onPendingTargetHandled()
 
-        assertNull(viewModel.uiState.value.pendingDestination)
+        assertNull(viewModel.uiState.value.pendingTarget)
     }
 
     @Test
-    fun click_aiMaterial_setsPendingDestination() = runTest {
+    fun click_aiMaterial_setsPendingTarget() = runTest {
         val viewModel = createObservingViewModel()
         runCurrent()
 
         clickedTargets.emit(InAppMessageTarget.AI_MATERIAL)
         runCurrent()
 
-        assertEquals(InAppMessageTarget.AI_MATERIAL, viewModel.uiState.value.pendingDestination)
+        assertEquals(InAppMessageTarget.AI_MATERIAL, viewModel.uiState.value.pendingTarget)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("ai_material")) }
     }
 
@@ -137,7 +137,7 @@ class InAppMessageViewModelTest {
 
         // Web ページは Firebase In-App Messaging が開く
         verify(exactly = 0) { appUpdateRepository.openStorePage() }
-        assertNull(viewModel.uiState.value.pendingDestination)
+        assertNull(viewModel.uiState.value.pendingTarget)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("web")) }
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("home")) }
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("other")) }
@@ -167,7 +167,7 @@ class InAppMessageViewModelTest {
     }
 
     @Test
-    fun click_dailyPromptOutsideHome_doesNotSetPendingDestination() = runTest {
+    fun click_dailyPromptOutsideHome_doesNotSetPendingTarget() = runTest {
         val viewModel = createObservingViewModel()
         viewModel.onHomeShownChanged(false)
         runCurrent()
@@ -176,12 +176,12 @@ class InAppMessageViewModelTest {
         runCurrent()
 
         // ホームに戻ったときに急に開かない。押した数は数える
-        assertNull(viewModel.uiState.value.pendingDestination)
+        assertNull(viewModel.uiState.value.pendingTarget)
         coVerify(exactly = 1) { analyticsRepository.logEvent(tapEvent("daily_prompt")) }
     }
 
     @Test
-    fun homeHidden_dropsPendingDestination() = runTest {
+    fun homeHidden_dropsPendingTarget() = runTest {
         val viewModel = createObservingViewModel()
         runCurrent()
         clickedTargets.emit(InAppMessageTarget.AI_MATERIAL)
@@ -189,7 +189,7 @@ class InAppMessageViewModelTest {
 
         viewModel.onHomeShownChanged(false)
 
-        assertNull(viewModel.uiState.value.pendingDestination)
+        assertNull(viewModel.uiState.value.pendingTarget)
     }
 
     @Test

@@ -39,7 +39,9 @@ class InAppMessageViewModel @Inject constructor(
     private var isHomeShown = false
 
     /**
-     * メッセージの表示とボタンを受け取る。呼び出し元を止めるまで返らない。Activity が前にいる間だけ呼ぶ（[InAppMessageHost]）
+     * メッセージの表示とボタンを受け取る。呼び出し元を止めるまで返らない。Activity が前にいる間だけ呼ぶ（[InAppMessageHost]）。
+     * ほかの observe~ と違い viewModelScope で購読しないのは、Firebase In-App Messaging が Activity の一時停止のたびに
+     * アプリのリスナーをすべて外し、前に戻るたびに付け直す必要があるため
      */
     suspend fun observeMessages() {
         coroutineScope {
@@ -60,14 +62,14 @@ class InAppMessageViewModel @Inject constructor(
         this.isHomeShown = isHomeShown
         inAppMessagingRepository.setMessagesSuppressed(!isHomeShown)
         // ホームを離れたら、まだ開いていない行き先は捨てる。あとでホームに戻ったときに急に開かないように
-        if (!isHomeShown) _uiState.update { it.copy(pendingDestination = null) }
+        if (!isHomeShown) _uiState.update { it.copy(pendingTarget = null) }
     }
 
     /**
-     * [InAppMessageUiState.pendingDestination] の画面を開いたとき（開けずにホームのままだったときも）
+     * ホームが [InAppMessageUiState.pendingTarget] を受け取ったとき（開けずにホームのままだったときも）
      */
-    fun onDestinationOpened() {
-        _uiState.update { it.copy(pendingDestination = null) }
+    fun onPendingTargetHandled() {
+        _uiState.update { it.copy(pendingTarget = null) }
     }
 
     private fun onTargetClicked(target: InAppMessageTarget) {
@@ -75,7 +77,7 @@ class InAppMessageViewModel @Inject constructor(
             InAppMessageTarget.STORE -> appUpdateRepository.openStorePage()
             // ホーム以外で押された（止める前に出てしまった）ときは開かない。ホームが受け取れず、戻ったときに急に開くため
             InAppMessageTarget.DAILY_PROMPT, InAppMessageTarget.AI_MATERIAL ->
-                if (isHomeShown) _uiState.update { it.copy(pendingDestination = target) }
+                if (isHomeShown) _uiState.update { it.copy(pendingTarget = target) }
             // Web ページは Firebase In-App Messaging が開き、ホームはメッセージが閉じればそのまま
             InAppMessageTarget.WEB, InAppMessageTarget.HOME, InAppMessageTarget.OTHER -> Unit
         }

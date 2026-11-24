@@ -20,15 +20,18 @@ import com.fansauchiwa.data.DailyPrompt
  * 名前を変えると集計が2つの名前に割れるので変えない。ほかの計測で「どこから作ったうちわか」を送るときも同じ名前を使う。
  *
  * 計測をやめるときに消すもの：
- * - このファイル、[DailyPromptViewTracker]、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT
+ * - このファイル、[DailyPromptViewTracker]、AnalyticsActions の VIEW_DAILY_PROMPT・TAP_DAILY_PROMPT。
+ *   アプリ内メッセージ（#428）が残るなら、[SOURCE_IN_APP_MESSAGE] と [tapParams] の source の部分を、
+ *   TAP_AI_MATERIAL_ENTRY のパラメータとして AI素材の計測の側へ移す
  * - HomeViewModel の onDailyPromptShown、onDailyPromptCreate の logEvent。onDailyPromptCreateWithAiMaterial は
- *   AnalyticsActions の TAP_AI_MATERIAL_ENTRY（AI素材の計測）を残して prompt_id だけ外し、KDoc の tap_daily_prompt の説明を消す
+ *   AnalyticsActions の TAP_AI_MATERIAL_ENTRY（AI素材の計測）を残して prompt_id だけ外し（`source=in_app_message` は上のとおり残す）、
+ *   KDoc の tap_daily_prompt の説明を消す。onInAppMessageDailyPrompt は、お題がなくなるのでアプリ内メッセージの行き先 `daily_prompt` ごと消す
  * - DailyPromptCard の onShown と LaunchedEffect、HomeScreen.kt の onDailyPromptShown の受け渡し
  *   （HomeTabContent・HomeTabHomeContent・プレビュー）、HomeScreenTest の引数
  * - UchiwaPreviewViewModel の logExportEvent と showRewardedAdAndShare、ShareAnalyticsParams の selectShareTargetParams
  *   で sourceParams を足しているところ（select_share_target の source。#362）
- * - テスト：DailyPromptViewTrackerTest、HomeViewModelTest のお題の計測（onDailyPromptCreateWithAiMaterial_… の
- *   prompt_id と tap_daily_prompt の確認を含む）、UchiwaPreviewSaveTest と
+ * - テスト：DailyPromptViewTrackerTest、HomeViewModelTest のお題の計測（onDailyPromptCreateWithAiMaterial_… と
+ *   onInAppMessageDailyPrompt_…・onInAppMessageAiMaterial_… の prompt_id と tap_daily_prompt の確認を含む）、UchiwaPreviewSaveTest と
  *   UchiwaPreviewShareTest の source のテスト、ShareAnalyticsParamsTest の
  *   selectShareTargetParams_StartedFromDailyPrompt_AddsSourceDailyPrompt、ShareTargetReceiverTest の
  *   paramsFrom_ChosenFromDailyPromptUchiwa_ReturnsTargetEntryPointAndSource（期待から source を外す）、

@@ -68,8 +68,8 @@ fun FansaUchiwaNavGraph(
                 onNavigateToTimeline = {
                     navController.navigate(EventTimelineDestination.screen)
                 },
-                inAppMessageDestination = inAppMessageUiState.pendingDestination,
-                onInAppMessageDestinationOpened = inAppMessageViewModel::onDestinationOpened
+                pendingInAppMessageTarget = inAppMessageUiState.pendingTarget,
+                onInAppMessageTargetHandled = inAppMessageViewModel::onPendingTargetHandled
             )
         }
         composable<EditRoute> {
