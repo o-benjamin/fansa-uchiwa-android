@@ -10,6 +10,7 @@ import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.update.UpdatePromptPolicy
 import com.fansauchiwa.update.UpdatePromptType
 import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.install.model.ActivityResult
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
@@ -35,7 +36,7 @@ import kotlinx.coroutines.sync.withLock
 interface AppUpdateRepository {
     /**
      * この起動で出す案内を受け取る。決めるのは最初に呼んだときだけで、2回目以降は [UpdatePromptType.NONE]。
-     * ただし [UpdatePromptType.FORCE] は、同じ起動の中でも呼ぶたびに返す（ホームを作り直しても閉じられないままにするため）
+     * ただし [UpdatePromptType.FORCE] は、同じ起動の中でも呼ぶたびに返す（ホームの ViewModel ごと作り直されても閉じられないままにするため）
      */
     suspend fun takeUpdatePromptForLaunch(): UpdatePromptType
 
@@ -52,6 +53,11 @@ interface AppUpdateRepository {
      * @return 画面を出せたら true。新しい版がない・即時更新が許されていない・Play に聞けないときは false
      */
     suspend fun startImmediateUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>): Boolean
+
+    /**
+     * Play の即時更新の画面から戻ってきたとき。更新に失敗していたらログに残す（閉じられないダイアログに戻るだけなので、調べる手がかりにする）
+     */
+    fun onImmediateUpdateResult(resultCode: Int)
 
     /**
      * Play ストアのアプリのページを開く。開けないときは何もしない
@@ -80,7 +86,7 @@ class AppUpdateRepositoryImpl @Inject constructor(
     private val remoteConfigDataSource: RemoteConfigDataSource
 ) : AppUpdateRepository {
 
-    // ホームが作り直されて同時に呼ばれても、Play と Remote Config に聞いて決めるのを1回にする
+    // ホームの ViewModel ごと作り直されて同時に呼ばれても、Play と Remote Config に聞いて決めるのを1回にする
     private val launchPromptMutex = Mutex()
 
     // この起動で決めた案内。決める前は null
@@ -114,6 +120,12 @@ class AppUpdateRepositoryImpl @Inject constructor(
 
     override suspend fun startImmediateUpdate(launcher: ActivityResultLauncher<IntentSenderRequest>): Boolean =
         startUpdateFlow(launcher, AppUpdateType.IMMEDIATE)
+
+    override fun onImmediateUpdateResult(resultCode: Int) {
+        if (resultCode == ActivityResult.RESULT_IN_APP_UPDATE_FAILED) {
+            Log.w(TAG, "Play の即時更新に失敗した")
+        }
+    }
 
     override fun openStorePage() {
         try {
@@ -161,11 +173,11 @@ class AppUpdateRepositoryImpl @Inject constructor(
         }
 
     /**
-     * その出し方で Play の更新の画面を出せるか
+     * その出し方で、いま Play の更新の画面を出すか（柔軟な更新をもう始めていれば出さない）
      */
     private fun AppUpdateInfo.canStartUpdate(updateType: Int): Boolean = when (updateAvailability()) {
         UpdateAvailability.UPDATE_AVAILABLE -> isUpdateTypeAllowed(updateType) &&
-            !(updateType == AppUpdateType.FLEXIBLE && installStatus() in FLEXIBLE_UPDATE_STARTED_STATUSES)
+            (updateType != AppUpdateType.FLEXIBLE || installStatus() !in FLEXIBLE_UPDATE_STARTED_STATUSES)
 
         // アプリから始めた更新が途中にある（前の起動で止まった即時更新など）。Play の案内どおり、即時更新の画面で続きを出す
         UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> updateType == AppUpdateType.IMMEDIATE

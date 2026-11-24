@@ -127,7 +127,7 @@ class UpdatePromptViewModelTest {
     }
 
     @Test
-    fun checkForUpdate_calledTwice_asksRepositoryOnce() = runTest {
+    fun checkForUpdate_calledTwiceWithForce_asksAndSkipsInterstitialOnce() = runTest {
         val viewModel = createViewModel(UpdatePromptType.FORCE)
 
         viewModel.checkForUpdate()
@@ -290,6 +290,15 @@ class UpdatePromptViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 0) { analyticsRepository.logEvent(any()) }
+    }
+
+    @Test
+    fun onImmediateUpdateResult_passesResultToRepository() = runTest {
+        val viewModel = createViewModel(UpdatePromptType.FORCE)
+
+        viewModel.onImmediateUpdateResult(Activity.RESULT_CANCELED)
+
+        verify(exactly = 1) { appUpdateRepository.onImmediateUpdateResult(Activity.RESULT_CANCELED) }
     }
 
     @Test

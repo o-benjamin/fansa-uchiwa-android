@@ -28,10 +28,10 @@ object UpdatePromptPolicy {
     ): UpdatePromptType {
         val isBelowForce = currentVersionCode < versionCodes.forceVersionCode
         val isBelowMin = currentVersionCode < versionCodes.minVersionCode
-        val canUpdateToForce = availableUpdate != null && availableUpdate.isImmediateAllowed &&
+        val canUpdateToForceVersion = availableUpdate != null && availableUpdate.isImmediateAllowed &&
             availableUpdate.availableVersionCode >= versionCodes.forceVersionCode
         return when {
-            isBelowForce && canUpdateToForce -> UpdatePromptType.FORCE
+            isBelowForce && canUpdateToForceVersion -> UpdatePromptType.FORCE
             isBelowForce -> UpdatePromptType.FORCE_FALLBACK
             isBelowMin -> UpdatePromptType.MIN
             availableUpdate != null && availableUpdate.isFlexibleAllowed &&

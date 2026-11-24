@@ -1,5 +1,6 @@
 package com.fansauchiwa.data.repository
 
+import android.app.Activity
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
@@ -10,6 +11,7 @@ import com.fansauchiwa.data.infra.RemoteConfigDataSource
 import com.fansauchiwa.update.UpdatePromptPolicy
 import com.fansauchiwa.update.UpdatePromptType
 import com.google.android.play.core.appupdate.AppUpdateInfo
+import com.google.android.play.core.install.model.ActivityResult
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
@@ -49,6 +51,7 @@ class AppUpdateRepositoryImplTest {
     fun setUp() {
         mockkStatic(Log::class)
         every { Log.w(any(), any<String>(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
         appUpdateDataSource = mockk(relaxed = true)
         remoteConfigDataSource = mockk()
@@ -76,7 +79,7 @@ class AppUpdateRepositoryImplTest {
         every { installStatus() } returns installStatus
     }
 
-    private fun availableUpdate(
+    private fun appUpdateInfo(
         stalenessDays: Int? = UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS,
         isFlexibleAllowed: Boolean = true,
         isImmediateAllowed: Boolean = true,
@@ -92,7 +95,7 @@ class AppUpdateRepositoryImplTest {
     }
 
     // アプリから始めた更新が途中にある。続きを出すときに isUpdateTypeAllowed に頼らないことを確かめるため、どちらも false にする
-    private fun updateInProgress(): AppUpdateInfo = availableUpdate(
+    private fun updateInProgress(): AppUpdateInfo = appUpdateInfo(
         isFlexibleAllowed = false,
         isImmediateAllowed = false,
         updateAvailability = UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
@@ -100,7 +103,7 @@ class AppUpdateRepositoryImplTest {
 
     @Test
     fun takeUpdatePromptForLaunch_staleFlexibleUpdate_returnsFlexibleOnlyOnce() = runTest {
-        givenAppUpdateInfo(availableUpdate())
+        givenAppUpdateInfo(appUpdateInfo())
 
         assertEquals(UpdatePromptType.FLEXIBLE, repository.takeUpdatePromptForLaunch())
         assertEquals(UpdatePromptType.NONE, repository.takeUpdatePromptForLaunch())
@@ -117,7 +120,7 @@ class AppUpdateRepositoryImplTest {
     @Test
     fun takeUpdatePromptForLaunch_belowForce_returnsForceEveryTimeWithoutAskingAgain() = runTest {
         givenVersionCodes(UpdateVersionCodes(forceVersionCode = current + 1))
-        givenAppUpdateInfo(availableUpdate())
+        givenAppUpdateInfo(appUpdateInfo())
 
         assertEquals(UpdatePromptType.FORCE, repository.takeUpdatePromptForLaunch())
         assertEquals(UpdatePromptType.FORCE, repository.takeUpdatePromptForLaunch())
@@ -150,7 +153,7 @@ class AppUpdateRepositoryImplTest {
 
     @Test
     fun takeUpdatePromptForLaunch_staleUpdateAlreadyDownloading_returnsNone() = runTest {
-        givenAppUpdateInfo(availableUpdate(installStatus = InstallStatus.DOWNLOADING))
+        givenAppUpdateInfo(appUpdateInfo(installStatus = InstallStatus.DOWNLOADING))
 
         assertEquals(UpdatePromptType.NONE, repository.takeUpdatePromptForLaunch())
     }
@@ -162,7 +165,7 @@ class AppUpdateRepositoryImplTest {
 
     @Test
     fun startImmediateUpdate_updateAllowed_startsFlowWithFreshInfo() = runTest {
-        val info = availableUpdate()
+        val info = appUpdateInfo()
         givenAppUpdateInfo(info)
         every { appUpdateDataSource.startUpdateFlow(info, launcher, AppUpdateType.IMMEDIATE) } returns true
 
@@ -172,7 +175,7 @@ class AppUpdateRepositoryImplTest {
 
     @Test
     fun startImmediateUpdate_typeNotAllowed_returnsFalseWithoutStarting() = runTest {
-        givenAppUpdateInfo(availableUpdate(isImmediateAllowed = false))
+        givenAppUpdateInfo(appUpdateInfo(isImmediateAllowed = false))
 
         assertFalse(repository.startImmediateUpdate(launcher))
         verify(exactly = 0) { appUpdateDataSource.startUpdateFlow(any(), any(), any()) }
@@ -197,7 +200,7 @@ class AppUpdateRepositoryImplTest {
 
     @Test
     fun startFlexibleUpdate_alreadyDownloaded_returnsFalse() = runTest {
-        givenAppUpdateInfo(availableUpdate(installStatus = InstallStatus.DOWNLOADED))
+        givenAppUpdateInfo(appUpdateInfo(installStatus = InstallStatus.DOWNLOADED))
 
         assertFalse(repository.startFlexibleUpdate(launcher))
         verify(exactly = 0) { appUpdateDataSource.startUpdateFlow(any(), any(), any()) }
@@ -211,7 +214,7 @@ class AppUpdateRepositoryImplTest {
 
     @Test
     fun startFlexibleUpdate_launcherThrows_returnsFalse() = runTest {
-        val info = availableUpdate()
+        val info = appUpdateInfo()
         givenAppUpdateInfo(info)
         every { appUpdateDataSource.startUpdateFlow(info, launcher, AppUpdateType.FLEXIBLE) } throws
             IllegalStateException("登録が外れた launcher")
@@ -268,5 +271,19 @@ class AppUpdateRepositoryImplTest {
         coEvery { appUpdateDataSource.completeUpdate() } throws IOException("Play がない")
 
         repository.completeUpdate()
+    }
+
+    @Test
+    fun onImmediateUpdateResult_failed_logsWarning() {
+        repository.onImmediateUpdateResult(ActivityResult.RESULT_IN_APP_UPDATE_FAILED)
+
+        verify(exactly = 1) { Log.w("AppUpdate", any<String>()) }
+    }
+
+    @Test
+    fun onImmediateUpdateResult_canceled_logsNothing() {
+        repository.onImmediateUpdateResult(Activity.RESULT_CANCELED)
+
+        verify(exactly = 0) { Log.w(any(), any<String>()) }
     }
 }

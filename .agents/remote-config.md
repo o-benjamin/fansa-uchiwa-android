@@ -8,7 +8,7 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 | `daily_prompts` | String（JSON） | 今日のファンサお題（#358）。日付ごとのお題の一覧 | 空文字（同梱の控えから出す。下の「`daily_prompts` の書き方」） |
 | `affiliate_materials` | String（JSON） | 保存完了のダイアログに出す、うちわの材料の Amazon アソシエイトのリンク | 空文字（リンクの欄を出さない） |
 | `ai_material_enabled` | Boolean | AI 素材（#315）の入口を出すか。サーバー（`functions/src/entrySwitch.ts`）も同じ値を見て、閉じていれば生成を断る | `false`（入口を出さない） |
-| `min_version_code` | Number | 更新の案内（#428）。今の版の versionCode（版名とは別の連番。下の「上げるとき」）がこれより小さければ、起動するたびに閉じられる更新のダイアログを出す | `0`（出さない） |
+| `min_version_code` | Number | 更新の案内（#428）。今の版の versionCode（版名とは別の連番。このファイルの「上げるとき（運用の決まり。#428）」）がこれより小さければ、起動するたびに閉じられる更新のダイアログを出す | `0`（出さない） |
 | `force_version_code` | Number | 更新の案内（#428）。今の版の versionCode がこれより小さければ、閉じられない更新のダイアログを出す（直った版に即時更新できない端末では、閉じられるダイアログに下げる）。**致命的な不具合のときだけ** | `0`（出さない） |
 
 取得は、ホームが前に出たとき（`daily_prompts` と `ai_material_enabled`）と、うちわのプレビュー画面を開いたとき（`affiliate_materials`）、起動して最初にホームを開いたとき（`min_version_code`・`force_version_code`）。`ai_material_enabled` の入口は、お題のカードの副ボタン「AIで素材を作る」に出す（#340。お題のカードを閉じた日は入口も出ない）。どこで取得しても、すべてのパラメータが新しい値になる。最小取得間隔は1時間なので、**コンソールで公開してから端末に届くまで最大約1時間**かかる。取得に失敗したら前回の値を使う（なければ空）。
@@ -19,7 +19,7 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 
 - `force_version_code` より古い：閉じられない更新のダイアログ。ただし Play が「`force_version_code` 以上の版に即時更新できる」と答えたときだけ。Play に聞けない端末、直った版がまだ届いていない端末、即時更新が許されていない端末では、同じ文言の閉じられるダイアログに下げる（更新できないまま使えなくしないため）
 - `min_version_code` より古い：閉じられる更新のダイアログ（「あとで」）。起動するたびに出る
-- どちらにも当たらず、Play に新しい版があって3日以上入っていない：Play の柔軟な更新の画面（`UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS`）。もうダウンロード中・ダウンロード済みなら出さない
+- どちらにも当たらず、Play に新しい版があって3日以上入っていない：Play の柔軟な更新の画面（`UpdatePromptPolicy.FLEXIBLE_MIN_STALENESS_DAYS`）。もうダウンロード中・ダウンロード済みなら出さない。Remote Config を見ないので、止めるにはアプリを出し直すしかない
 - ダイアログの「更新する」は Play の即時更新の画面を出し、出せなければ Play ストアのページを開く。案内を出した起動では、最初のインタースティシャルを出さない
 - 届くまで最大約1時間（最小取得間隔）。そのあとの次の起動から効く
 - 計測：出したときに `view_update_prompt`、更新を選んだときに `tap_update_prompt`。どちらも `source` が `flexible`・`min`・`force_fallback`（閉じられるダイアログに下げた分）・`force`
@@ -35,6 +35,8 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 3. 上げる先は「ひとつ前の安定した版」の versionCode。出したばかりの版は指定しない
 4. Remote Config の変更なので、上げるたびにオーナーの承認をもらう
 
+間違えた・やめるときは、前の値（なければ `0`）で公開する。届くまで最大約1時間かかり、届いたあとの次の起動から出なくなる。
+
 `force_version_code` は、その版のままだとデータが消える・起動できないなどの致命的な不具合があるときだけ使う。
 
 - 直した版を 100% で配信してから、その版の versionCode を入れる。段階的な公開の途中だと、直った版が届いていない端末は閉じられるダイアログに下がるだけになる
@@ -43,9 +45,9 @@ Firebase Remote Config の値を読む処理は `data/infra/FirebaseRemoteConfig
 
 ### 確かめる・うまく出ないとき
 
-- **確かめる**：Play からの答えは Play ストアから入れたアプリでしか返らないので、Play から入れたクローズドテスト版（または内部テスト版）で試す。配る相手は、このファイルの「特定のインストールだけに機能を出す」の条件（`app.firebaseInstallationId`）でテストする人のインストールだけに絞る（`app.build` で絞ると、その版を製品版に出したときに全員に出る）。その条件の値だけ `min_version_code` を今の versionCode より大きくすると、閉じられるダイアログが出て `view_update_prompt`（`source=min`）が届く。「更新する」で `tap_update_prompt` が届く（新しい版がないので、Play ストアのページが開くだけ）。**確かめ終わったら、その版を製品版に出す前に条件ごと消す**
+- **確かめる**：Play からの答えは Play ストアから入れたアプリでしか返らないので、Play から入れたクローズドテスト版（または内部テスト版）で試す。配る相手は、このファイルの「特定のインストールだけに機能を出す」の条件（`app.firebaseInstallationId`）でテストする人のインストールだけに絞る（`app.build` で絞ると、その版を製品版に出したときに全員に出る）。その条件の値だけ `min_version_code` を今の versionCode より大きくすると、閉じられるダイアログが出て `view_update_prompt`（`source=min`）が届く。「更新する」で `tap_update_prompt` が届く（新しい版がないので、Play ストアのページが開くだけ）。**確かめ終わったら、すぐその条件の `min_version_code` の値を消す**（残すと、テストした端末に起動のたびにダイアログが出続ける。条件はほかのパラメータでも使っていることがある（`ai_material_enabled` のクローズドテストなど）ので、条件そのものは消さない）
 - `force`・`flexible` は、Play に今より新しい版があるときしか出ない。確かめられるのは、次の版が Play に出たあとに、ひとつ古い版を入れた端末だけ（いちばん新しい版で `force_version_code` を上げると `force_fallback` になる）
-- **出ない**：公開から1時間以内なら、まだ届いていない。起動して最初のホームでしか決めないので、アプリを完全に終了してから開き直す。ログのタグ `AppUpdate`（Play への問い合わせの失敗）と `RemoteConfig` を見る
+- **出ない**：公開から1時間以内なら、まだ届いていない。起動して最初のホームでしか決めないので、アプリを完全に終了してから開き直す。ログのタグ `AppUpdate`（Play への問い合わせの失敗と、即時更新の失敗）と `RemoteConfig` を見る
 - **`force_fallback` が多い**：直った版が届いていない（段階的な公開の途中）か、Play に聞けない端末。直った版を 100% にしたかを確かめる。`force` の効き目は `source=force` だけで見る
 
 ## `affiliate_materials` の書き方

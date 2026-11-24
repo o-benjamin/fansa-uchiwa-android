@@ -37,10 +37,11 @@ fun UpdatePrompt(
     ) { result ->
         viewModel.onFlexibleUpdateResult(result.resultCode)
     }
-    // 即時更新を選んだことはダイアログの「更新する」で送っているので、結果は使わない
     val immediateUpdateLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
-    ) {}
+    ) { result ->
+        viewModel.onImmediateUpdateResult(result.resultCode)
+    }
     val downloadedMessage = stringResource(R.string.update_downloaded_message)
     val restartLabel = stringResource(R.string.update_downloaded_restart)
 
@@ -48,7 +49,7 @@ fun UpdatePrompt(
         viewModel.checkForUpdate()
     }
 
-    // 決まるまでに編集画面へ移っていたら、Play の画面はホームに戻ってから出す
+    // 柔軟な更新の Play の画面は、ホームが出ている間にここから出す（決まるまでに編集画面へ移っていたら、戻ったときに出る）
     LaunchedEffect(uiState.isFlexibleUpdatePending) {
         if (uiState.isFlexibleUpdatePending) {
             viewModel.startFlexibleUpdate(flexibleUpdateLauncher)
@@ -93,10 +94,9 @@ fun UpdateDialog(
     onDismiss: () -> Unit
 ) {
     val isForced = type == UpdatePromptType.FORCE
-    val messageRes = if (type == UpdatePromptType.MIN) {
-        R.string.update_dialog_message
-    } else {
-        R.string.update_dialog_message_critical
+    val messageRes = when (type) {
+        UpdatePromptType.FORCE_FALLBACK, UpdatePromptType.FORCE -> R.string.update_dialog_message_critical
+        else -> R.string.update_dialog_message
     }
     AlertDialog(
         onDismissRequest = onDismiss,

@@ -27,7 +27,7 @@
 
 ## 節ごとの根拠（2026-11 時点）
 
-この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で、回数の行の `lastRequest` は #387 で `feature/387-redo-same-request` の 2afa585 で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
+この表は、AI素材のコードが `release/vX.Y.Z` に入る前に `feature/348-ai-material-billing-server`（#391）の c2d987c で確かめました（設定画面の「利用者 ID」と問い合わせのメールの2行は、#416 で `release/v2.13.0` の 2003880 で、回数の行の `lastRequest` は #387 で `feature/387-redo-same-request` の 2afa585 で、Google Play の行は #428 で `feature/428-update-prompt` の 737f7ce で確かめました）。AI素材のコードは `release/v2.13.0` に入ったので、`master` に入る前に表を見直し（#398）、この段落は消します。
 
 | ページの記述 | 根拠 |
 |---|---|
@@ -40,7 +40,7 @@
 | App Check は素材を作る・回数券を買う・報告するとき | `functions/src/index.ts` の `enforceAppCheck: true` |
 | 利用者 ID は AI素材の機能を初めて使うときに作る。作るとき IP アドレスが Firebase に記録される | `app/src/main/java/com/fansauchiwa/data/repository/AuthRepository.kt`（使うときに `signInAnonymously`）、[Firebase のデータの開示](https://firebase.google.com/docs/android/play-data-disclosure)（2026-10-16 に確認） |
 | Gemini は有料の契約で、送った内容は学習に使われない | `functions/src/index.ts` の `GEMINI_API_KEY` のコメント、[Gemini API 追加利用規約](https://ai.google.dev/gemini-api/terms)の有料サービスの項。無料枠のキーにすると、この記述と食い違う |
-| Google Play（アプリ内レビュー・アプリ内アップデート） | `gradle/libs.versions.toml` の `review-ktx`（#243）・`app-update-ktx`（#428）。扱うデータは Google の [In-App Updates](https://developer.android.com/guide/playcore/in-app-updates) と [In-App Review](https://developer.android.com/guide/playcore/in-app-review) の「Data safety」の節（2026-11-24 に確認）。更新は端末の情報・アプリの版・入っているモジュールの一覧を、新しい版の有無と大きさを調べるために使い、第三者に渡さない。レビューは入力した評価と文章を Play ストアのレビューに使う |
+| Google Play のアプリ内レビュー・アプリ内アップデートを、レビューの受け付けと新しい版の確認・更新に使う | `gradle/libs.versions.toml` の `review-ktx`（#243）・`app-update-ktx`（#428）。扱うデータは Google の [In-App Updates](https://developer.android.com/guide/playcore/in-app-updates) と [In-App Review](https://developer.android.com/guide/playcore/in-app-review) の「Data safety」の節（2026-11-24 に確認）。更新は端末の情報・アプリの版・入っているモジュールの一覧を、新しい版の有無と大きさを調べるために使い、第三者に渡さない。レビューは入力した評価と文章を Play ストアのレビューに使う |
 | 顔の確認と背景の切り抜きは端末内 | 切り抜きは `app/src/main/java/com/fansauchiwa/data/infra/ImageProcessingLocalSource.kt`、顔の確認も同じファイル（#338 で追加）。どちらも `gradle/libs.versions.toml` の ML Kit（Play 開発者サービスの端末内モデル） |
 | うちわのデータ・挿入した画像・利用者 ID がバックアップに入る | `app/src/main/AndroidManifest.xml` の `allowBackup="true"`、`backup_rules.xml`・`data_extraction_rules.xml` に除外がない |
 | 設定画面の「利用者 ID」を添えれば削除を頼める。画面に出ていなければ、その端末のアプリにはいま利用者 ID がない（まだ使っていなければ記録もない。入れ直した・データを消したなら前の ID の記録が残る）。報告の日と文章で頼めるのは180日以内 | `app/src/main/java/com/fansauchiwa/settings/SettingsScreen.kt` の `AppInfoSection`（`userId` が null なら行を出さない）、`app/src/main/java/com/fansauchiwa/data/repository/AppInfoRepository.kt`（`getCurrentUserId()`。サーバーを呼ぶ前の `AuthRepository.prepareForServerCall()` まで作らない）、`functions/src/reportMaterial.ts` の `REPORT_RETENTION_DAYS`。利用者 ID で記録を探して消す手順は #399 で `functions/README.md` に書く |

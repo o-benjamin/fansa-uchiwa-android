@@ -34,7 +34,7 @@ class UpdatePromptViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UpdatePromptUiState())
     val uiState: StateFlow<UpdatePromptUiState> = _uiState.asStateFlow()
 
-    // 同じホームのまま画面だけ作り直されたとき（Activity の再生成など）に、案内を出したことの計測と広告の飛ばしを重ねない
+    // 画面の回転などで UpdatePrompt だけが作り直されると LaunchedEffect がもう一度走る。Repository は FORCE を毎回返すので、ここで止めないと計測と広告の飛ばしが重なる
     private var hasCheckedForUpdate = false
 
     init {
@@ -94,6 +94,13 @@ class UpdatePromptViewModel @Inject constructor(
                 appUpdateRepository.openStorePage()
             }
         }
+    }
+
+    /**
+     * Play の即時更新の画面から戻ってきたとき。更新を選んだことは [onUpdateTap] で送っているので、失敗のログだけ残す
+     */
+    fun onImmediateUpdateResult(resultCode: Int) {
+        appUpdateRepository.onImmediateUpdateResult(resultCode)
     }
 
     /**
