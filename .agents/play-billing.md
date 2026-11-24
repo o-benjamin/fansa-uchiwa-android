@@ -38,16 +38,16 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
         - 足せていない購入を送り直すきっかけ（上の「決まり」）と、消費しないまま3日たつと Play が返金する動き
         - 回数券をひもづける先（匿名ログインの ID。`.agents/firebase-auth-app-check.md`）
         - 問い合わせで添えてもらう注文番号の形（`GPA.…`）
-        - 問い合わせで添えてもらう利用者 ID の見出しと場所（`strings.xml` の `settings_user_id` と、見分けるために名前を出している `settings_installation_id`。場所は `settings/SettingsScreen.kt` の `AppInfoSection` で、設定画面のいちばん下。プライバシーポリシー `docs/privacy-policy.html` の「データの保存期間と削除」も同じ見出しと場所を案内しているので、`.agents/privacy-policy.md` も見る。ほかに案内している先（AI 素材のエラー文・`functions/README.md`）は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」）
+        - 問い合わせで添えてもらう利用者 ID の見出しと場所（`strings.xml` の `settings_user_id` と、見分けるために名前を出している `settings_installation_id`。場所は `settings/SettingsScreen.kt` の `AppInfoSection` で、設定画面のいちばん下。プライバシーポリシー（`web/public/privacy-policy.html`・`docs/privacy-policy.html`）の「データの保存期間と削除」も同じ見出しと場所を案内しているので、`.agents/privacy-policy.md` も見る。ほかに案内している先（AI 素材のエラー文・`functions/README.md`）は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」）
         - AI 素材が作れたか確かめられなかったときの文言（`strings.xml` の `ai_material_error_unconfirmed`。ページは書き出しの「作れたか確かめられませんでした」を引いている）
         - `minSdk`（動作環境。`app/build.gradle.kts`）
         - 問い合わせのアドレス
     - 値段と1回の購入の回数はページに書かず、購入の案内（見出しは「回数券を買う」）に表示するとしているので、変えてもページは直さなくてかまいません。
     - 末尾の日付：初めて出すときは「制定」の日を出す日に直します。そのあと中身を変えたら、制定の日は残し、「YYYY年M月D日 改定」を足して出す日にします。
-    - 出すのは `firebase deploy --only hosting` です（プロジェクトは `.firebaserc` の `default`）。`functions/README.md` の「本番に出す（オーナーの承認が要る）」と同じく、承認を取ってから出してください。ブランチにマージしただけでは出ません。
-        - `web/public` の中がまるごと置き換わります。AdMob が読む `app-ads.txt` もここにあるので、古いブランチから出すと、ほかのページと `app-ads.txt` が前の版に戻ります。出すのは `master` からにしてください。`master` に入る前に出すとき（`functions/README.md` の「入口を初めて開ける前に」など）は、このページの入ったブランチのうち、次の `git diff` で `web/public` の差分が出したいファイルだけになるものから出してください。
-        - 出す前に `git diff origin/master -- web/public` を見て、差分が出したいファイルだけかを確かめてください。
-        - 出す前に、プライバシーポリシーの「お問い合わせ」に問い合わせのメールの扱い（#416）が入った版が `master` から公開されているかを確かめてください（https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html）。特定商取引法に基づく表記のページが利用者 ID を添えた連絡を頼むので、問い合わせでメールアドレスと利用者 ID が結びつきます。まだなら、先に `.agents/privacy-policy.md` の「公開のしかた」の `master` 向けの PR で出してください。
+    - 出すのは `firebase deploy --only hosting -m "<ブランチ>@<コミット>"` です（`<コミット>` は `git rev-parse --short HEAD`。プロジェクトは `.firebaserc` の `default`。`-m` の文は Firebase コンソールの Hosting の「リリース履歴」に出ます）。`functions/README.md` の「本番に出す（オーナーの承認が要る）」と同じく、承認を取ってから出してください。ブランチにマージしただけでは出ません。出るのは作業ツリーの中身なので、コミットしていない変更がない状態で出してください。出すコミットは、マージしない枝でも push しておいてください（次に出す人が、下の確かめでそのコミットと比べるため）。
+        - `web/public` の中がまるごと置き換わります。AdMob が読む `app-ads.txt` とプライバシーポリシー（`.agents/privacy-policy.md`）もここにあるので、古いブランチから出すと、ほかのページが前の版に戻ります。ふだんは `master` から出してください。`master` に入る前に出すとき（`release/vX.Y.Z` で直したポリシーを製品版の前に出す、`functions/README.md` の「入口を初めて開ける前に」など）は、出したいページの入ったブランチのうち、次の確かめで差分が出したいファイルだけになるものから出してください。
+        - 出す前に、リリース履歴でいま出ている版の `-m` に書いたコミットを見て、`git diff <そのコミット> -- web/public` が出したいファイルだけかを確かめてください（`-m` のない版なら `git diff origin/master -- web/public`）。`master` より先の版が出ているときに `master` から出すと、その先の分（例：`release/vX.Y.Z` から出した表記のページ）が消えます。
+        - 出す前に、出すブランチの `web/public/privacy-policy.html` の「お問い合わせ」に問い合わせのメールの扱い（#416）が入っているかを確かめてください。特定商取引法に基づく表記のページが利用者 ID を添えた連絡を頼むので、問い合わせでメールアドレスと利用者 ID が結びつきます。表記のページのリンク先はこのファイルで、同じ deploy で出ます。Play Console のポリシーの URL がまだ Pages なら、出したらすぐ、Play Console の権限がある人に Hosting の URL に変えてもらってください。ストアの掲載ページから開くポリシーにも、同じ文を出すためです（`.agents/privacy-policy.md` の「公開のしかた」）。
         - 出したあとに `https://fansauchiwa-578d22ff.web.app/tokushoho.html` を開き、末尾の日付が新しくなっているかを確かめてください。
 
 - **持ち主が変わるとき**:
@@ -58,8 +58,9 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
         - 問い合わせの Gmail のアカウントごと引き渡すなら、アドレスは直さなくてかまいません。引き渡さないなら、次の場所でアドレスを直してください。
             - `web/public/tokushoho.html`：連絡先の行と「回数券が追加されない・回数が減ったとき」の行。上の「末尾の日付」のとおり改定の日を足し、Hosting に出す
             - この文書の「特定商取引法に基づく表記」
-            - `docs/privacy-policy.html`：「改訂」の日も直す。GitHub Pages（`master` の `docs/`）から出るので、`master` に入れると公開される
+            - `web/public/privacy-policy.html` と `docs/privacy-policy.html`（中身は同じ。`.agents/privacy-policy.md` の「公開のしかた」）：「改訂」の日も直す。Hosting は表記のページと一緒に出し、Pages は `master` に入れると公開される
             - Play Console のストア掲載情報の連絡先（同じアドレスにしているとき）
         - 問い合わせの Gmail を引き渡さないときは、前の受信箱の問い合わせのメールをすべて新しい受信箱へ移し、前の受信箱からは消してください。プライバシーポリシーの「お問い合わせ」で、期限を決めずに保存し、頼まれたら消すと書いているためです（前の受信箱に残すと、頼まれても消せません）。過去30日の返信は、`functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」で手での戻しを数えるのにも使います。
         - 法人が引き継ぐときは、表示することが変わります（代表者または通信販売に関する業務の責任者の氏名などが加わります）。特定商取引法ガイドで確かめて、ページを直してください。
         - リンク先は Firebase Hosting の既定のドメインで、Firebase プロジェクトを替えると、出回っている古い版のリンクは元のページを開き続けます。プロジェクトごと移してください。
+    - プライバシーポリシーの URL は、`.agents/privacy-policy.md` の「公開のしかた」の「URL を使っている場所」を見てください。v2.12.x までのアプリは GitHub Pages の URL を開くので、Pages を止めるまで（#451）リポジトリの名前と持ち主を変えないでください。
