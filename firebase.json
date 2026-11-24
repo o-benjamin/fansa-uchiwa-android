@@ -5,6 +5,9 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "predeploy": [
+      "diff -q \"$PROJECT_DIR/docs/privacy-policy.html\" \"$RESOURCE_DIR/privacy-policy.html\""
     ]
   },
   "functions": [

@@ -47,7 +47,7 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
     - 出すのは `firebase deploy --only hosting` です（プロジェクトは `.firebaserc` の `default`）。`functions/README.md` の「本番に出す（オーナーの承認が要る）」と同じく、承認を取ってから出してください。ブランチにマージしただけでは出ません。
         - `web/public` の中がまるごと置き換わります。AdMob が読む `app-ads.txt` もここにあるので、古いブランチから出すと、ほかのページと `app-ads.txt` が前の版に戻ります。出すのは `master` からにしてください。`master` に入る前に出すとき（`functions/README.md` の「入口を初めて開ける前に」など）は、このページの入ったブランチのうち、次の `git diff` で `web/public` の差分が出したいファイルだけになるものから出してください。
         - 出す前に `git diff origin/master -- web/public` を見て、差分が出したいファイルだけかを確かめてください。
-        - 出す前に、プライバシーポリシーの「お問い合わせ」に問い合わせのメールの扱い（#416）が入った版が `master` から公開されているかを確かめてください（https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html）。特定商取引法に基づく表記のページが利用者 ID を添えた連絡を頼むので、問い合わせでメールアドレスと利用者 ID が結びつきます。まだなら、先に `.agents/privacy-policy.md` の「公開のしかた」の `master` 向けの PR で出してください。
+        - 出す前に、出すブランチの `web/public/privacy-policy.html` の「お問い合わせ」に問い合わせのメールの扱い（#416）が入っているかを確かめてください。特定商取引法に基づく表記のページが利用者 ID を添えた連絡を頼むので、問い合わせでメールアドレスと利用者 ID が結びつきます。表記のページのリンク先はこのファイルで、同じ deploy で出ます。Play Console のポリシーの URL がまだ Pages（https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html）なら、Pages の版にも入っているかを確かめ、まだなら先に `.agents/privacy-policy.md` の「公開のしかた」の `master` 向けの PR で出してください。
         - 出したあとに `https://fansauchiwa-578d22ff.web.app/tokushoho.html` を開き、末尾の日付が新しくなっているかを確かめてください。
 
 - **持ち主が変わるとき**:
@@ -58,7 +58,7 @@ AI 素材の回数券（#348）を Google Play で買う仕組み。アプリは
         - 問い合わせの Gmail のアカウントごと引き渡すなら、アドレスは直さなくてかまいません。引き渡さないなら、次の場所でアドレスを直してください。
             - `web/public/tokushoho.html`：連絡先の行と「回数券が追加されない・回数が減ったとき」の行。上の「末尾の日付」のとおり改定の日を足し、Hosting に出す
             - この文書の「特定商取引法に基づく表記」
-            - `docs/privacy-policy.html`：「改訂」の日も直す。GitHub Pages（`master` の `docs/`）から出るので、`master` に入れると公開される
+            - `web/public/privacy-policy.html` と `docs/privacy-policy.html`（中身は同じ。`.agents/privacy-policy.md` の「公開のしかた」）：「改訂」の日も直す。Hosting は表記のページと一緒に出し、Pages は `master` に入れると公開される
             - Play Console のストア掲載情報の連絡先（同じアドレスにしているとき）
         - 問い合わせの Gmail を引き渡さないときは、前の受信箱の問い合わせのメールをすべて新しい受信箱へ移し、前の受信箱からは消してください。プライバシーポリシーの「お問い合わせ」で、期限を決めずに保存し、頼まれたら消すと書いているためです（前の受信箱に残すと、頼まれても消せません）。過去30日の返信は、`functions/README.md` の generateMaterial の「困ったとき（Cloud Logging で探す）」で手での戻しを数えるのにも使います。
         - 法人が引き継ぐときは、表示することが変わります（代表者または通信販売に関する業務の責任者の氏名などが加わります）。特定商取引法ガイドで確かめて、ページを直してください。

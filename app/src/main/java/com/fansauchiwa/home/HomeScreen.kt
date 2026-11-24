@@ -441,7 +441,7 @@ fun HomeScreen(
                 onNavigateToTimeline = onNavigateToTimeline,
                 onOpenPrivacyPolicy = {
                     val url =
-                        "https://o-benjamin.github.io/fansa-uchiwa-android/privacy-policy.html"
+                        "https://fansauchiwa-578d22ff.web.app/privacy-policy.html"
                     val customTabsIntent = CustomTabsIntent.Builder().build()
                     customTabsIntent.launchUrl(context, url.toUri())
                 },
