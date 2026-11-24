@@ -105,6 +105,9 @@ object AnalyticsActions {
     const val VIEW_UPDATE_PROMPT = "view_update_prompt"
     const val TAP_UPDATE_PROMPT = "tap_update_prompt"
 
+    // アプリ内メッセージ（Firebase In-App Messaging。#428）のボタン。行き先は InAppMessageAnalyticsParams の target
+    const val TAP_IN_APP_MESSAGE = "tap_in_app_message"
+
     const val AD_REWARD_SHOW = "ad_reward_show"
     const val AD_REWARD_COMPLETE = "ad_reward_complete"
     const val AD_REWARD_DISMISSED = "ad_reward_dismissed"

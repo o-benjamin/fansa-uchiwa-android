@@ -131,6 +131,7 @@ import com.fansauchiwa.ui.util.FansaHapticType
 import com.fansauchiwa.ui.util.captureGraphicsLayerBitmap
 import com.fansauchiwa.ui.util.createOverallBorderBitmap
 import com.fansauchiwa.ui.util.createOverallBorderMaskBitmap
+import com.fansauchiwa.inappmessage.InAppMessageHost
 import com.fansauchiwa.update.UpdatePrompt
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -366,8 +367,6 @@ fun HomeScreen(
         // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
         viewModel.loadAllMasterpieces()
         viewModel.loadTemplates()
-        viewModel.observeApologyDialogState()
-        viewModel.fetchApologyDialogState()
     }
 
     // ホームを開いたまま裏に回して翌日戻ったときも、その日のお題に変える。AI素材の入口の開け閉めも読み直す
@@ -376,24 +375,12 @@ fun HomeScreen(
         viewModel.fetchAiMaterialEntryEnabled()
     }
 
-    if (uiState.showApologyDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissApologyDialog() },
-            title = {
-                Text(text = stringResource(R.string.apology_dialog_title))
-            },
-            text = {
-                Text(text = stringResource(R.string.apology_dialog_message))
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.dismissApologyDialog() }) {
-                    Text(text = "閉じる")
-                }
-            }
-        )
-    }
-
     UpdatePrompt(snackbarHostState = snackbarHostState)
+
+    InAppMessageHost(
+        onOpenDailyPrompt = { viewModel.onInAppMessageDailyPrompt()?.let(onImageClick) },
+        onOpenAiMaterial = { viewModel.onInAppMessageAiMaterial()?.let(onAiMaterialEntryClick) }
+    )
 
     nameTemplateDialogState.templateId?.let { templateId ->
         NameTemplateInputDialog(

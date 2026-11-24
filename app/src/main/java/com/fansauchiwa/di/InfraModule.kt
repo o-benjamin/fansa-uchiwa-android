@@ -8,6 +8,8 @@ import com.fansauchiwa.data.infra.AppCheckDataSource
 import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.AppInstallLocalSource
 import com.fansauchiwa.data.infra.AppUpdateDataSource
+import com.fansauchiwa.data.infra.FirebaseInAppMessagingRemoteSource
+import com.fansauchiwa.data.infra.InAppMessagingDataSource
 import com.fansauchiwa.data.infra.AiMaterialDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageDataSource
 import com.fansauchiwa.data.infra.AiMaterialImageLocalSource
@@ -192,6 +194,17 @@ abstract class AppUpdateModule {
     abstract fun bindAppUpdateDataSource(
         impl: PlayAppUpdateRemoteSource
     ): AppUpdateDataSource
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class InAppMessagingModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindInAppMessagingDataSource(
+        impl: FirebaseInAppMessagingRemoteSource
+    ): InAppMessagingDataSource
 }
 
 @Module

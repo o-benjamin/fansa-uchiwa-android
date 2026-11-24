@@ -246,6 +246,77 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun onInAppMessageDailyPrompt_promptShown_returnsSameArgAsCard() = runTest {
+        every { uuidProvider.generate() } returns "new-uchiwa-id"
+        val viewModel = createViewModel()
+        dailyPromptStream.emit(DailyPrompt("20261104", "ピースして"))
+        advanceUntilIdle()
+
+        val inputArg = viewModel.onInAppMessageDailyPrompt()
+        advanceUntilIdle()
+
+        assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_DAILY_PROMPT })
+        }
+    }
+
+    @Test
+    fun onInAppMessageDailyPrompt_cardDismissedToday_returnsNull() = runTest {
+        dailyPromptDismissedDateStream.value = today
+        val viewModel = createViewModel()
+        dailyPromptStream.emit(DailyPrompt("20261104", "ピースして"))
+        advanceUntilIdle()
+
+        assertNull(viewModel.onInAppMessageDailyPrompt())
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_DAILY_PROMPT })
+        }
+    }
+
+    @Test
+    fun onInAppMessageAiMaterial_entryOpen_returnsSameArgAsCard() = runTest {
+        every { uuidProvider.generate() } returns "new-uchiwa-id"
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(true)
+        val viewModel = createViewModel()
+        dailyPromptStream.emit(DailyPrompt("20261104", "ピースして"))
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+
+        val inputArg = viewModel.onInAppMessageAiMaterial()
+        advanceUntilIdle()
+
+        assertEquals(EditScreenInputArg(uchiwaId = "new-uchiwa-id", dailyPromptText = "ピースして"), inputArg)
+        coVerify(exactly = 1) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_AI_MATERIAL_ENTRY })
+        }
+    }
+
+    @Test
+    fun onInAppMessageAiMaterial_entryClosed_returnsNull() = runTest {
+        val viewModel = createViewModel()
+        dailyPromptStream.emit(DailyPrompt("20261104", "ピースして"))
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+
+        assertNull(viewModel.onInAppMessageAiMaterial())
+    }
+
+    @Test
+    fun onInAppMessageAiMaterial_noPrompt_returnsNull() = runTest {
+        every { aiMaterialRepository.getEntryEnabledStream() } returns flowOf(true)
+        val viewModel = createViewModel()
+        dailyPromptStream.emit(null)
+        viewModel.fetchAiMaterialEntryEnabled()
+        advanceUntilIdle()
+
+        assertNull(viewModel.onInAppMessageAiMaterial())
+        coVerify(exactly = 0) {
+            analyticsRepository.logEvent(match { it.name == AnalyticsActions.TAP_AI_MATERIAL_ENTRY })
+        }
+    }
+
+    @Test
     fun init_aiMaterialEntryNotFetchedYet_hidesAiMaterialEntry() = runTest {
         val viewModel = createViewModel()
         advanceUntilIdle()

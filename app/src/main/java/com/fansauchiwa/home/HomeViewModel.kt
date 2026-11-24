@@ -132,27 +132,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun observeApologyDialogState() {
-        viewModelScope.launch {
-            settingsRepository.getHasSeenApologyDialogStream().collect { hasSeen ->
-                _uiState.update { it.copy(showApologyDialog = !hasSeen) }
-            }
-        }
-    }
-
-    fun fetchApologyDialogState() {
-        viewModelScope.launch {
-            settingsRepository.fetchHasSeenApologyDialog()
-        }
-    }
-
-    fun dismissApologyDialog() {
-        viewModelScope.launch {
-            settingsRepository.setHasSeenApologyDialog(true)
-            _uiState.update { it.copy(showApologyDialog = false) }
-        }
-    }
-
     private fun observeDailyPrompt() {
         combine(
             dailyPromptRepository.getDailyPromptStream(),
@@ -221,6 +200,24 @@ class HomeViewModel @Inject constructor(
             mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
         )
         return onDailyPromptCreate(prompt)
+    }
+
+    /**
+     * アプリ内メッセージ（#428）のボタンで今日のお題を開くときに呼ぶ。お題のカードの「このお題で作る」と同じ引数を返す。
+     * カードが出ていない（Remote Config で止めている、今日は閉じた、まだ読み込んでいない）ときは null で、ホームのまま
+     */
+    fun onInAppMessageDailyPrompt(): EditScreenInputArg? =
+        _uiState.value.dailyPrompt?.let(::onDailyPromptCreate)
+
+    /**
+     * アプリ内メッセージ（#428）のボタンで AI素材の画面を開くときに呼ぶ。お題のカードの「AIで素材を作る」と同じ引数を返す。
+     * カードに入口が出ていない（お題のカードが出ていない、Remote Config で入口を閉じている）ときは null で、ホームのまま
+     */
+    fun onInAppMessageAiMaterial(): EditScreenInputArg? {
+        val state = _uiState.value
+        val prompt = state.dailyPrompt ?: return null
+        if (!state.isAiMaterialEntryEnabled) return null
+        return onDailyPromptCreateWithAiMaterial(prompt)
     }
 
     /**

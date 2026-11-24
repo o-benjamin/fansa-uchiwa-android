@@ -24,6 +24,8 @@ import com.fansauchiwa.data.repository.AppInfoRepository
 import com.fansauchiwa.data.repository.AppInfoRepositoryImpl
 import com.fansauchiwa.data.repository.AppUpdateRepository
 import com.fansauchiwa.data.repository.AppUpdateRepositoryImpl
+import com.fansauchiwa.data.repository.InAppMessagingRepository
+import com.fansauchiwa.data.repository.InAppMessagingRepositoryImpl
 import com.fansauchiwa.data.repository.AuthRepository
 import com.fansauchiwa.data.repository.AuthRepositoryImpl
 import com.fansauchiwa.data.repository.CrashReportingRepository
@@ -135,6 +137,11 @@ abstract class RepositoryModule {
     abstract fun bindAppUpdateRepository(
         impl: AppUpdateRepositoryImpl
     ): AppUpdateRepository
+
+    @Binds
+    abstract fun bindInAppMessagingRepository(
+        impl: InAppMessagingRepositoryImpl
+    ): InAppMessagingRepository
 
     @Binds
     @Singleton

@@ -1,6 +1,5 @@
 package com.fansauchiwa.data.repository
 
-import com.fansauchiwa.data.infra.AppInstallDataSource
 import com.fansauchiwa.data.infra.SettingsDataSource
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -28,16 +27,6 @@ interface SettingsRepository {
      */
     suspend fun setHapticFeedbackEnabled(enabled: Boolean)
 
-    fun getHasSeenApologyDialogStream(): Flow<Boolean>
-
-    /**
-     * お詫びダイアログを見たかどうかを取得して流す
-     * 新規インストールの場合は「見た」を保存してから true を流す
-     */
-    suspend fun fetchHasSeenApologyDialog()
-
-    suspend fun setHasSeenApologyDialog(hasSeen: Boolean)
-
     /**
      * ホームの「今日のお題」のカード（#360）を閉じた日付。閉じたことがなければ null
      */
@@ -52,19 +41,14 @@ interface SettingsRepository {
 }
 
 class SettingsRepositoryImpl @Inject constructor(
-    private val settingsDataSource: SettingsDataSource,
-    private val appInstallDataSource: AppInstallDataSource
+    private val settingsDataSource: SettingsDataSource
 ) : SettingsRepository {
 
     private val _hapticFeedbackEnabledStream = MutableSharedFlow<Boolean>(replay = 1)
-    private val _hasSeenApologyDialogStream = MutableSharedFlow<Boolean>(replay = 1)
     private val _dailyPromptDismissedDateStream = MutableSharedFlow<LocalDate?>(replay = 1)
 
     override fun getHapticFeedbackEnabledStream(): Flow<Boolean> =
         _hapticFeedbackEnabledStream.asSharedFlow()
-
-    override fun getHasSeenApologyDialogStream(): Flow<Boolean> =
-        _hasSeenApologyDialogStream.asSharedFlow()
 
     override suspend fun fetchHapticFeedbackEnabled() {
         val value = settingsDataSource.getHapticFeedbackEnabledStream().first()
@@ -73,24 +57,6 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setHapticFeedbackEnabled(enabled: Boolean) {
         settingsDataSource.setHapticFeedbackEnabled(enabled)
-    }
-
-    override suspend fun fetchHasSeenApologyDialog() {
-        val hasSeen = settingsDataSource.getHasSeenApologyDialogStream().first()
-        // お詫びダイアログは v2.5.0 より前から使っていた人向けなので、新規インストールでは見たことにする。
-        // 次に更新すると新規インストールと判定できなくなるため、ここで保存しておく。
-        // インストール後に一度も開かずに更新した場合は判定できず、ダイアログが出る（許容している）。
-        // ダイアログは #239 で削除する予定
-        val isSkippedForFreshInstall =
-            !hasSeen && appInstallDataSource.getIsFreshInstallStream().first()
-        if (isSkippedForFreshInstall) {
-            settingsDataSource.setHasSeenApologyDialog(true)
-        }
-        _hasSeenApologyDialogStream.emit(hasSeen || isSkippedForFreshInstall)
-    }
-
-    override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
-        settingsDataSource.setHasSeenApologyDialog(hasSeen)
     }
 
     override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> =

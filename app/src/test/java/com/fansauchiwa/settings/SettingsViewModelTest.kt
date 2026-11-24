@@ -44,12 +44,6 @@ class SettingsViewModelTest {
             hapticEnabled = enabled
         }
 
-        override fun getHasSeenApologyDialogStream(): Flow<Boolean> = MutableSharedFlow()
-
-        override suspend fun fetchHasSeenApologyDialog() = Unit
-
-        override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) = Unit
-
         override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> = MutableSharedFlow()
 
         override suspend fun fetchDailyPromptDismissedDate() = Unit
