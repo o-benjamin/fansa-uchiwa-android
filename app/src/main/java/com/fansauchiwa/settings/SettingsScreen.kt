@@ -87,6 +87,11 @@ private fun SettingsContent(
         clipLabelResId = R.string.settings_user_id_clip_label,
         copiedMessageResId = R.string.settings_user_id_copied
     )
+    val copyPushToken = rememberCopyToClipboard(
+        snackbarHostState = snackbarHostState,
+        clipLabelResId = R.string.settings_push_token_clip_label,
+        copiedMessageResId = R.string.settings_push_token_copied
+    )
 
     if (uiState.showLicenseDialog) {
         AlertDialog(
@@ -164,7 +169,8 @@ private fun SettingsContent(
                 AppInfoSection(
                     appInfo = appInfo,
                     onCopyInstallationId = copyInstallationId,
-                    onCopyUserId = copyUserId
+                    onCopyUserId = copyUserId,
+                    onCopyPushToken = copyPushToken
                 )
             }
         }
@@ -202,15 +208,17 @@ private fun rememberCopyToClipboard(
 }
 
 /**
- * 画面のいちばん下に、アプリのバージョンとインストール ID・利用者 ID を小さく出す（使い道は [AppInfo]）。
+ * 画面のいちばん下に、アプリのバージョンとインストール ID・利用者 ID・通知のテスト用 ID を小さく出す（使い道は [AppInfo]）。
  * ID が取れなかったとき・まだないときは、その ID の行を出さない。
- * 2つの ID は使い道が違う（インストール ID は Remote Config の条件、利用者 ID は問い合わせ）ので、見出しで見分けられるようにする
+ * 3つの ID は使い道が違う（インストール ID は Remote Config の条件、利用者 ID は問い合わせ、通知のテスト用 ID はお知らせの試し送り）ので、
+ * 見出しで見分けられるようにする
  */
 @Composable
 internal fun AppInfoSection(
     appInfo: AppInfo,
     onCopyInstallationId: (String) -> Unit,
     onCopyUserId: (String) -> Unit,
+    onCopyPushToken: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -232,6 +240,13 @@ internal fun AppInfoSection(
                 label = stringResource(R.string.settings_user_id),
                 id = userId,
                 onClick = { onCopyUserId(userId) }
+            )
+        }
+        appInfo.pushToken?.let { pushToken ->
+            CopyableIdRow(
+                label = stringResource(R.string.settings_push_token),
+                id = pushToken,
+                onClick = { onCopyPushToken(pushToken) }
             )
         }
     }

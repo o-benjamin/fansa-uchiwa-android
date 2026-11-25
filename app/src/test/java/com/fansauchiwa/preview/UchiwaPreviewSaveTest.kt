@@ -19,6 +19,7 @@ import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.DailyPromptUchiwaRepositoryImpl
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
+import com.fansauchiwa.data.repository.NotificationPermissionRepository
 import com.fansauchiwa.edit.FontFamilies
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,6 +39,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -55,6 +58,7 @@ class UchiwaPreviewSaveTest {
     private lateinit var fontSessionTracker: FontSessionTracker
     private lateinit var puffyStateAnalytics: PuffyStateAnalytics
     private lateinit var exportedFontAnalytics: ExportedFontAnalytics
+    private lateinit var notificationPermissionRepository: NotificationPermissionRepository
 
     @Before
     fun setUp() {
@@ -68,6 +72,7 @@ class UchiwaPreviewSaveTest {
         fontSessionTracker = mockk(relaxed = true)
         puffyStateAnalytics = mockk(relaxed = true)
         exportedFontAnalytics = mockk(relaxed = true)
+        notificationPermissionRepository = mockk(relaxed = true)
 
         every { adMobRepository.isLoadingRewardedAd } returns MutableStateFlow(false)
         every { affiliateRepository.getAffiliateLinksStream() } returns emptyFlow()
@@ -98,6 +103,7 @@ class UchiwaPreviewSaveTest {
             exportedFontAnalytics = exportedFontAnalytics,
             affiliateRepository = affiliateRepository,
             dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
+            notificationPermissionRepository = notificationPermissionRepository,
             savedStateHandle = savedStateHandle
         )
     }
@@ -256,14 +262,44 @@ class UchiwaPreviewSaveTest {
     }
 
     @Test
-    fun requestInAppReviewIfEligible_called_delegatesToRepositoryWithActivity() = runTest {
+    fun onSaveSuccessShown_notificationPermissionNotToRequest_delegatesReviewToRepositoryWithActivity() = runTest {
         val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
         val activity = mockk<Activity>()
+        coEvery { notificationPermissionRepository.shouldRequestAfterSave() } returns false
 
-        viewModel.requestInAppReviewIfEligible(activity)
+        viewModel.onSaveSuccessShown(activity)
         advanceUntilIdle()
 
         coVerify(exactly = 1) { inAppReviewRepository.requestReviewIfEligible(activity) }
+        coVerify(exactly = 0) { notificationPermissionRepository.markRequestedAfterSave() }
+        assertFalse(viewModel.uiState.value.shouldRequestNotificationPermission)
+    }
+
+    @Test
+    fun onSaveSuccessShown_notificationPermissionToRequest_requestsPermissionInsteadOfReview() = runTest {
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        val activity = mockk<Activity>()
+        coEvery { notificationPermissionRepository.shouldRequestAfterSave() } returns true
+
+        viewModel.onSaveSuccessShown(activity)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.shouldRequestNotificationPermission)
+        coVerify(exactly = 1) { notificationPermissionRepository.markRequestedAfterSave() }
+        // 許可のダイアログとレビュー依頼を続けて出さない
+        coVerify(exactly = 0) { inAppReviewRepository.requestReviewIfEligible(any()) }
+    }
+
+    @Test
+    fun onNotificationPermissionRequested_afterRequest_clearsRequest() = runTest {
+        val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
+        coEvery { notificationPermissionRepository.shouldRequestAfterSave() } returns true
+        viewModel.onSaveSuccessShown(mockk())
+        advanceUntilIdle()
+
+        viewModel.onNotificationPermissionRequested()
+
+        assertFalse(viewModel.uiState.value.shouldRequestNotificationPermission)
     }
 
     @Test

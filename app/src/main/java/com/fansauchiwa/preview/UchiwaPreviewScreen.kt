@@ -1,11 +1,15 @@
 package com.fansauchiwa.preview
 
+import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -139,14 +143,27 @@ fun UchiwaPreviewScreen(
         }
     }
 
-    // 失敗時の Snackbar とは別に、保存成功の直後にアプリ内レビュー依頼を出す（#243）。報酬獲得時の保存は広告の表示中に終わるため、
+    // 失敗時の Snackbar とは別に、保存成功の直後に通知の許可（#429）かアプリ内レビュー依頼（#243）を出す。報酬獲得時の保存は広告の表示中に終わるため、
     // 広告が閉じてこの画面が前面（RESUMED）に戻るのを待ってから出し、広告と重ならないようにする
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess != true) return@LaunchedEffect
         val activity = context as? Activity ?: return@LaunchedEffect
         lifecycleOwner.lifecycle.withResumed {
-            viewModel.requestInAppReviewIfEligible(activity)
+            viewModel.onSaveSuccessShown(activity)
+        }
+    }
+
+    // 許可されたかどうかで変えることはない（許可されなくても保存の流れは同じ。通知が届かないだけ）
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+    LaunchedEffect(uiState.shouldRequestNotificationPermission) {
+        if (!uiState.shouldRequestNotificationPermission) return@LaunchedEffect
+        viewModel.onNotificationPermissionRequested()
+        // 許可が要るのは Android 13 以上だけ（ViewModel もそのときだけ聞く）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 

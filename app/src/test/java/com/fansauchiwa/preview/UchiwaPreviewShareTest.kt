@@ -93,6 +93,7 @@ class UchiwaPreviewShareTest {
             exportedFontAnalytics = exportedFontAnalytics,
             affiliateRepository = affiliateRepository,
             dailyPromptUchiwaRepository = dailyPromptUchiwaRepository,
+            notificationPermissionRepository = mockk(relaxed = true),
             savedStateHandle = savedStateHandle
         )
     }

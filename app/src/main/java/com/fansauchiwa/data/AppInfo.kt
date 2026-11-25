@@ -12,9 +12,12 @@ package com.fansauchiwa.data
  * 特定商取引法に基づく表記・プライバシーポリシー・AI 素材のエラー文（`ai_material_error_unconfirmed`）などが見出しと場所を案内しているので、
  * 行を外す・見出しや場所を変えるときはそちらも直す
  * （案内している先は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」）。まだ AI 素材を使っておらずログインしていなければ null
+ * @property pushToken プッシュ通知（#429）の送り先の登録トークン。Firebase コンソールの「テスト メッセージを送信」に貼り、
+ * この端末だけにお知らせを試し送りできるように出す（手順は `.agents/push-notifications.md`）。取れなかったときは null
  */
 data class AppInfo(
     val versionName: String,
     val installationId: String?,
-    val userId: String?
+    val userId: String?,
+    val pushToken: String? = null
 )

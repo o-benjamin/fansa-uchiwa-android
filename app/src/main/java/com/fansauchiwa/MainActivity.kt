@@ -1,5 +1,6 @@
 package com.fansauchiwa
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -15,10 +16,12 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.EventAnalyticsParams
+import com.fansauchiwa.analytics.PushAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.ui.notification.EXTRA_REMINDER_DAYS_UNTIL
+import com.fansauchiwa.ui.notification.PushNotificationExtras
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.theme.createFontFamilyResolverRecordingFailures
 import com.fansauchiwa.ui.util.LocalHapticFeedbackEnabled
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity() {
         // 画面の回転などで作り直されたときに、同じ通知タップを二重に数えない
         if (savedInstanceState == null) {
             logReminderTap()
+            handlePushNotificationOpen(intent)
         }
 
         enableEdgeToEdge(
@@ -75,6 +79,30 @@ class MainActivity : ComponentActivity() {
                     FansaUchiwaNavGraph()
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // 通知から開くと、ふつうは Activity が作り直されて onCreate で数える。今の Activity にそのまま届いたときも数えるため、ここでも見る
+        handlePushNotificationOpen(intent)
+    }
+
+    /**
+     * お知らせのプッシュ通知（#429）を押して開いたときに、計測を送り、直後のインタースティシャルを出さないようにする。
+     * 行き先はいつもホーム（起動したときと同じ）。お題のカードもホームにあるので、お題のお知らせもホームで足りる
+     */
+    private fun handlePushNotificationOpen(intent: Intent) {
+        val extras = intent.extras ?: return
+        if (!extras.containsKey(PushNotificationExtras.MESSAGE_ID)) return
+        adMobRepository.skipNextInterstitialAd()
+        lifecycleScope.launch {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.OPEN_FROM_PUSH,
+                    params = PushAnalyticsParams.params(extras.getString(PushNotificationExtras.CAMPAIGN))
+                )
+            )
         }
     }
 

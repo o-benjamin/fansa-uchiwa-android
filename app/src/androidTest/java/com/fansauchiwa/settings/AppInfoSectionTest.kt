@@ -35,7 +35,8 @@ class AppInfoSectionTest {
                         userId = "test-user-id"
                     ),
                     onCopyInstallationId = { copiedInstallationIds.add(it) },
-                    onCopyUserId = { copiedUserIds.add(it) }
+                    onCopyUserId = { copiedUserIds.add(it) },
+                    onCopyPushToken = {}
                 )
             }
         }
@@ -64,7 +65,8 @@ class AppInfoSectionTest {
                 AppInfoSection(
                     appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id", userId = null),
                     onCopyInstallationId = {},
-                    onCopyUserId = {}
+                    onCopyUserId = {},
+                    onCopyPushToken = {}
                 )
             }
         }
@@ -83,7 +85,8 @@ class AppInfoSectionTest {
                 AppInfoSection(
                     appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = "test-user-id"),
                     onCopyInstallationId = {},
-                    onCopyUserId = { copiedUserIds.add(it) }
+                    onCopyUserId = { copiedUserIds.add(it) },
+                    onCopyPushToken = {}
                 )
             }
         }
@@ -104,7 +107,8 @@ class AppInfoSectionTest {
                 AppInfoSection(
                     appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = null),
                     onCopyInstallationId = {},
-                    onCopyUserId = {}
+                    onCopyUserId = {},
+                    onCopyPushToken = {}
                 )
             }
         }
@@ -115,5 +119,35 @@ class AppInfoSectionTest {
             .assertDoesNotExist()
         composeTestRule.onNodeWithText(context.getString(R.string.settings_user_id))
             .assertDoesNotExist()
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_push_token))
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun appInfoSection_withPushToken_showsTokenAndCopiesItOnTap() {
+        val copiedPushTokens = mutableListOf<String>()
+        composeTestRule.setContent {
+            FansaUchiwaTheme {
+                AppInfoSection(
+                    appInfo = AppInfo(
+                        versionName = "2.13.0",
+                        installationId = null,
+                        userId = null,
+                        pushToken = "test-push-token"
+                    ),
+                    onCopyInstallationId = {},
+                    onCopyUserId = {},
+                    onCopyPushToken = { copiedPushTokens.add(it) }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_push_token))
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("test-push-token")
+            .assertIsDisplayed()
+            .performClick()
+
+        assertEquals(listOf("test-push-token"), copiedPushTokens)
     }
 }
