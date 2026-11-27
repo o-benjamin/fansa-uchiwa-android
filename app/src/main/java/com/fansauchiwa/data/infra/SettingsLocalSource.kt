@@ -50,6 +50,15 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
+    override fun getHasRequestedNotificationPermissionStream(): Flow<Boolean> = preferencesStream
+        .map { preferences -> preferences[KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION] ?: false }
+
+    override suspend fun markNotificationPermissionRequested() {
+        dataStore.edit { preferences ->
+            preferences[KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION] = true
+        }
+    }
+
     // 読めない値は「閉じていない」とみなす（カードが1日余計に出るだけで済むため）
     private fun parseDateOrNull(value: String): LocalDate? =
         try {
@@ -74,6 +83,8 @@ class SettingsLocalSource @Inject constructor(
         // ISO 8601 の日付（例 2026-11-04）で持つ
         private val KEY_DAILY_PROMPT_DISMISSED_DATE =
             stringPreferencesKey("daily_prompt_dismissed_date")
+        private val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION =
+            booleanPreferencesKey("has_requested_notification_permission")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
     }
 }

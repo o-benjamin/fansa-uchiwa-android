@@ -41,6 +41,10 @@ import com.fansauchiwa.data.repository.EventRepository
 import com.fansauchiwa.data.repository.EventRepositoryImpl
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.InAppReviewRepositoryImpl
+import com.fansauchiwa.data.repository.NotificationPermissionRepository
+import com.fansauchiwa.data.repository.NotificationPermissionRepositoryImpl
+import com.fansauchiwa.data.repository.PushMessagingRepository
+import com.fansauchiwa.data.repository.PushMessagingRepositoryImpl
 import com.fansauchiwa.data.repository.LocalDatabaseRepository
 import com.fansauchiwa.data.repository.LocalDatabaseRepositoryImpl
 import com.fansauchiwa.data.repository.LocalImageRepository
@@ -130,6 +134,18 @@ abstract class RepositoryModule {
     abstract fun bindInAppReviewRepository(
         impl: InAppReviewRepositoryImpl
     ): InAppReviewRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationPermissionRepository(
+        impl: NotificationPermissionRepositoryImpl
+    ): NotificationPermissionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPushMessagingRepository(
+        impl: PushMessagingRepositoryImpl
+    ): PushMessagingRepository
 
     // 起動ごとに1回だけ案内するための状態を持つので、Singleton にする
     @Binds

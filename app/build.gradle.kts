@@ -221,6 +221,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.appcheck)
     implementation(libs.firebase.functions)
+    // プッシュ通知（#429）。送るのは Firebase コンソールのお知らせから（.agents/push-notifications.md）
+    implementation(libs.firebase.messaging)
     // AI 素材の回数券の購入（#348）。購入の確認と回数の付与はサーバーの verifyPurchase が行う
     implementation(libs.billing.ktx)
     // App Check の provider はビルドタイプで分ける（di/AppCheckProviderModule.kt）。

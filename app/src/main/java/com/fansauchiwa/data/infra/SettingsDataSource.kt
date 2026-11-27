@@ -26,4 +26,14 @@ interface SettingsDataSource {
      * ホームの「今日のお題」のカードを閉じた日付を設定する。その日はカードを出さない
      */
     suspend fun setDailyPromptDismissedDate(date: LocalDate)
+
+    /**
+     * 保存のあとに通知の許可（#429）を一度聞いたかどうかのFlowを返す。デフォルト値は false
+     */
+    fun getHasRequestedNotificationPermissionStream(): Flow<Boolean>
+
+    /**
+     * 保存のあとに通知の許可を聞いたことを残す。以後は保存のあとに聞かない
+     */
+    suspend fun markNotificationPermissionRequested()
 }

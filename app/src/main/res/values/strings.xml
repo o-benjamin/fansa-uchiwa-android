@@ -163,6 +163,9 @@
     <string name="settings_user_id">利用者 ID（AI素材のお問い合わせ用・タップでコピー）</string>
     <string name="settings_user_id_clip_label">利用者 ID</string>
     <string name="settings_user_id_copied">利用者 ID をコピーしました</string>
+    <string name="settings_push_token">通知のテスト用 ID（タップでコピー）</string>
+    <string name="settings_push_token_clip_label">通知のテスト用 ID</string>
+    <string name="settings_push_token_copied">通知のテスト用 ID をコピーしました</string>
     <string name="event_timeline">イベント予定</string>
     <string name="event_timeline_open_from_preview">イベント予定に追加</string>
     <string name="event_add">イベントを追加</string>
@@ -189,6 +192,10 @@
     <string name="notification_permission_description">通知</string>
     <string name="event_reminder_channel_name">イベントリマインド</string>
     <string name="event_reminder_channel_description">近づいたイベントを毎晩お知らせします</string>
+    <!-- お知らせの通知（#429）。ID は AndroidManifest.xml の FCM の既定のチャンネルにも使うので、変えない（端末に作ったチャンネルが残り、設定を引き継げなくなる） -->
+    <string name="announcement_notification_channel_id" translatable="false">announcement-channel</string>
+    <string name="announcement_notification_channel_name">お知らせ</string>
+    <string name="announcement_notification_channel_description">新しい機能やテンプレートなどをお知らせします</string>
     <string name="event_reminder_title">あと%1$d日！</string>
     <string name="event_reminder_message">%1$sまであと%2$d日です！</string>
     <string name="event_bring_uchiwas">持っていくうちわ</string>

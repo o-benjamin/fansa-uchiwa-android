@@ -23,6 +23,7 @@ import com.fansauchiwa.data.infra.FirebaseCrashlyticsRemoteSource
 import com.fansauchiwa.data.infra.FirebaseFunctionsAiMaterialRemoteSource
 import com.fansauchiwa.data.infra.FirebaseFunctionsTicketPurchaseRemoteSource
 import com.fansauchiwa.data.infra.FirebaseInstallationsRemoteSource
+import com.fansauchiwa.data.infra.FirebaseMessagingRemoteSource
 import com.fansauchiwa.data.infra.FirebaseRemoteConfigRemoteSource
 import com.fansauchiwa.data.infra.ImageProcessingDataSource
 import com.fansauchiwa.data.infra.ImageProcessingLocalSource
@@ -30,6 +31,9 @@ import com.fansauchiwa.data.infra.InAppReviewDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryDataSource
 import com.fansauchiwa.data.infra.InAppReviewHistoryLocalSource
 import com.fansauchiwa.data.infra.InstallationIdDataSource
+import com.fansauchiwa.data.infra.NotificationPermissionDataSource
+import com.fansauchiwa.data.infra.NotificationPermissionLocalSource
+import com.fansauchiwa.data.infra.PushMessagingDataSource
 import com.fansauchiwa.data.infra.PlayBillingDataSource
 import com.fansauchiwa.data.infra.PlayBillingRemoteSource
 import com.fansauchiwa.data.infra.PlayAppUpdateRemoteSource
@@ -45,6 +49,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.installations.FirebaseInstallations
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import dagger.Binds
 import dagger.Module
@@ -142,6 +147,36 @@ abstract class InstallationIdModule {
             return FirebaseInstallations.getInstance()
         }
     }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class PushMessagingModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindPushMessagingDataSource(
+        impl: FirebaseMessagingRemoteSource
+    ): PushMessagingDataSource
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideFirebaseMessaging(): FirebaseMessaging {
+            return FirebaseMessaging.getInstance()
+        }
+    }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class NotificationPermissionModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationPermissionDataSource(
+        impl: NotificationPermissionLocalSource
+    ): NotificationPermissionDataSource
 }
 
 @Module
