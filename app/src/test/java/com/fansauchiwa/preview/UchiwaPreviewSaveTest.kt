@@ -285,21 +285,24 @@ class UchiwaPreviewSaveTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.shouldRequestNotificationPermission)
-        coVerify(exactly = 1) { notificationPermissionRepository.markRequestedAfterSave() }
+        // 聞いたことは、画面が実際に聞くとき（onNotificationPermissionRequested）に残す
+        coVerify(exactly = 0) { notificationPermissionRepository.markRequestedAfterSave() }
         // 許可のダイアログとレビュー依頼を続けて出さない
         coVerify(exactly = 0) { inAppReviewRepository.requestReviewIfEligible(any()) }
     }
 
     @Test
-    fun onNotificationPermissionRequested_afterRequest_clearsRequest() = runTest {
+    fun onNotificationPermissionRequested_afterRequest_clearsRequestAndMarksRequested() = runTest {
         val viewModel = createViewModel("/data/user/0/com.fansauchiwa/files/masterpiece.png")
         coEvery { notificationPermissionRepository.shouldRequestAfterSave() } returns true
         viewModel.onSaveSuccessShown(mockk())
         advanceUntilIdle()
 
         viewModel.onNotificationPermissionRequested()
+        advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.shouldRequestNotificationPermission)
+        coVerify(exactly = 1) { notificationPermissionRepository.markRequestedAfterSave() }
     }
 
     @Test

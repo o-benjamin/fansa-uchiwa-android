@@ -232,7 +232,6 @@ class UchiwaPreviewViewModel @Inject constructor(
     fun onSaveSuccessShown(activity: Activity) {
         viewModelScope.launch {
             if (notificationPermissionRepository.shouldRequestAfterSave()) {
-                notificationPermissionRepository.markRequestedAfterSave()
                 savedStateHandle[UI_STATE_KEY] = uiState.value.copy(shouldRequestNotificationPermission = true)
             } else {
                 inAppReviewRepository.requestReviewIfEligible(activity)
@@ -241,10 +240,14 @@ class UchiwaPreviewViewModel @Inject constructor(
     }
 
     /**
-     * Screen が通知の許可のダイアログを出したら呼ぶ。画面が作り直されても、もう一度出さない
+     * Screen が通知の許可のダイアログを出す直前に呼ぶ。画面が作り直されても、もう一度出さない。
+     * 聞いたことは、画面が実際に聞くときに残す（残したあとに画面を離れて、聞かないまま聞いたことにならないように）
      */
     fun onNotificationPermissionRequested() {
         savedStateHandle[UI_STATE_KEY] = uiState.value.copy(shouldRequestNotificationPermission = false)
+        viewModelScope.launch {
+            notificationPermissionRepository.markRequestedAfterSave()
+        }
     }
 
     /**

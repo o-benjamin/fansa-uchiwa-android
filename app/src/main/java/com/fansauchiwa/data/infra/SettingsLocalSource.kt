@@ -64,7 +64,7 @@ class SettingsLocalSource @Inject constructor(
     override fun getHasRequestedNotificationPermissionStream(): Flow<Boolean> = preferencesStream
         .map { preferences -> preferences[KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION] ?: false }
 
-    override suspend fun setHasRequestedNotificationPermission() {
+    override suspend fun markNotificationPermissionRequested() {
         dataStore.edit { preferences ->
             preferences[KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION] = true
         }

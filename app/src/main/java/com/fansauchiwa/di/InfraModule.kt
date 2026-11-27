@@ -157,12 +157,6 @@ abstract class PushMessagingModule {
         impl: FirebaseMessagingRemoteSource
     ): PushMessagingDataSource
 
-    @Binds
-    @Singleton
-    abstract fun bindNotificationPermissionDataSource(
-        impl: NotificationPermissionLocalSource
-    ): NotificationPermissionDataSource
-
     companion object {
         @Provides
         @Singleton
@@ -170,6 +164,17 @@ abstract class PushMessagingModule {
             return FirebaseMessaging.getInstance()
         }
     }
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class NotificationPermissionModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationPermissionDataSource(
+        impl: NotificationPermissionLocalSource
+    ): NotificationPermissionDataSource
 }
 
 @Module

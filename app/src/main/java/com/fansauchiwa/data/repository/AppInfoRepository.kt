@@ -37,13 +37,16 @@ class AppInfoRepositoryImpl @Inject constructor(
 
     override suspend fun fetchAppInfo() {
         val installationId = installationIdDataSource.getInstallationIdStream().first()
-        _appInfoStream.emit(
-            AppInfo(
-                versionName = BuildConfig.VERSION_NAME,
-                installationId = installationId,
-                userId = authDataSource.getCurrentUserId(),
-                pushToken = pushMessagingDataSource.getTokenStream().first()
-            )
+        val appInfo = AppInfo(
+            versionName = BuildConfig.VERSION_NAME,
+            installationId = installationId,
+            userId = authDataSource.getCurrentUserId(),
+            pushToken = null
         )
+        // 通知の登録トークンは、オフラインやまだ発行されていないときに取得に時間がかかる。
+        // 問い合わせに要る利用者 ID などを待たせないよう、先にトークンなしで出し、取れたら足して出し直す
+        _appInfoStream.emit(appInfo)
+        val pushToken = pushMessagingDataSource.getTokenStream().first() ?: return
+        _appInfoStream.emit(appInfo.copy(pushToken = pushToken))
     }
 }

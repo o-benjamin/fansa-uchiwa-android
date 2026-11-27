@@ -45,5 +45,5 @@ interface SettingsDataSource {
     /**
      * 保存のあとに通知の許可を聞いたことを残す。以後は保存のあとに聞かない
      */
-    suspend fun setHasRequestedNotificationPermission()
+    suspend fun markNotificationPermissionRequested()
 }

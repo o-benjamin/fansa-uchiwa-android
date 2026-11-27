@@ -9,7 +9,7 @@ package com.fansauchiwa.analytics
  * [PARAM_SOURCE] に、お知らせごとに決める名前（コンソールの「カスタムデータ」のキー `campaign` の値）を付ける。
  * 名前がないお知らせはパラメータなしで送る。パラメータ名は GA4 にカスタムディメンションとして登録済みの `source` を使い、
  * 登録を待たずに初日からお知らせごとに見られるようにした（[UpdatePromptAnalyticsParams] と同じ。イベント名で絞れば、ほかの `source` とは混ざらない）。
- * コンソールから送ったお知らせは、FCM も `notification_open` などを自動で送る（`.agents/push-notifications.md`）
+ * コンソールから送ったお知らせは、FCM も `notification_open` などを自動で送る（`.agents/push-notifications.md` の「計測」）
  */
 object PushAnalyticsParams {
     const val PARAM_SOURCE = "source"

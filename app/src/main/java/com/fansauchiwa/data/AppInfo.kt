@@ -13,11 +13,11 @@ package com.fansauchiwa.data
  * 行を外す・見出しや場所を変えるときはそちらも直す
  * （案内している先は `.agents/firebase-auth-app-check.md` の「利用者の ID を画面に出す」）。まだ AI 素材を使っておらずログインしていなければ null
  * @property pushToken プッシュ通知（#429）の送り先の登録トークン。Firebase コンソールの「テスト メッセージを送信」に貼り、
- * この端末だけにお知らせを試し送りできるように出す（手順は `.agents/push-notifications.md`）。取れなかったときは null
+ * この端末だけにお知らせを試し送りできるように出す（手順は `.agents/push-notifications.md` の「送り方」）。取れなかったときは null
  */
 data class AppInfo(
     val versionName: String,
     val installationId: String?,
     val userId: String?,
-    val pushToken: String? = null
+    val pushToken: String?
 )

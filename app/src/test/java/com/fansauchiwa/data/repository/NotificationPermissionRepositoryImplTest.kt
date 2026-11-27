@@ -47,6 +47,6 @@ class NotificationPermissionRepositoryImplTest {
     fun markRequestedAfterSave_called_savesRequested() = runTest {
         repository.markRequestedAfterSave()
 
-        coVerify(exactly = 1) { settingsDataSource.setHasRequestedNotificationPermission() }
+        coVerify(exactly = 1) { settingsDataSource.markNotificationPermissionRequested() }
     }
 }

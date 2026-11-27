@@ -161,7 +161,8 @@ fun UchiwaPreviewScreen(
     LaunchedEffect(uiState.shouldRequestNotificationPermission) {
         if (!uiState.shouldRequestNotificationPermission) return@LaunchedEffect
         viewModel.onNotificationPermissionRequested()
-        // 許可が要るのは Android 13 以上だけ（ViewModel もそのときだけ聞く）
+        // shouldRequestNotificationPermission が true になるのは Android 13 以上だけ。
+        // POST_NOTIFICATIONS は API 33 の定数なので、ここでも分けて書く
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }

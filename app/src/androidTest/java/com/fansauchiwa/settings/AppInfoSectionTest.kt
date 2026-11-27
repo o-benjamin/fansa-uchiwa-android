@@ -32,7 +32,8 @@ class AppInfoSectionTest {
                     appInfo = AppInfo(
                         versionName = "2.13.0",
                         installationId = "test-installation-id",
-                        userId = "test-user-id"
+                        userId = "test-user-id",
+                        pushToken = null
                     ),
                     onCopyInstallationId = { copiedInstallationIds.add(it) },
                     onCopyUserId = { copiedUserIds.add(it) },
@@ -63,7 +64,7 @@ class AppInfoSectionTest {
         composeTestRule.setContent {
             FansaUchiwaTheme {
                 AppInfoSection(
-                    appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id", userId = null),
+                    appInfo = AppInfo(versionName = "2.13.0", installationId = "test-installation-id", userId = null, pushToken = null),
                     onCopyInstallationId = {},
                     onCopyUserId = {},
                     onCopyPushToken = {}
@@ -83,7 +84,7 @@ class AppInfoSectionTest {
         composeTestRule.setContent {
             FansaUchiwaTheme {
                 AppInfoSection(
-                    appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = "test-user-id"),
+                    appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = "test-user-id", pushToken = null),
                     onCopyInstallationId = {},
                     onCopyUserId = { copiedUserIds.add(it) },
                     onCopyPushToken = {}
@@ -105,7 +106,7 @@ class AppInfoSectionTest {
         composeTestRule.setContent {
             FansaUchiwaTheme {
                 AppInfoSection(
-                    appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = null),
+                    appInfo = AppInfo(versionName = "2.13.0", installationId = null, userId = null, pushToken = null),
                     onCopyInstallationId = {},
                     onCopyUserId = {},
                     onCopyPushToken = {}

@@ -8,8 +8,12 @@ import com.fansauchiwa.data.infra.PushMessagingDataSource
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -37,7 +41,12 @@ class AppInfoRepositoryImplTest {
         repository.fetchAppInfo()
 
         assertEquals(
-            AppInfo(versionName = BuildConfig.VERSION_NAME, installationId = "test-installation-id", userId = null),
+            AppInfo(
+                versionName = BuildConfig.VERSION_NAME,
+                installationId = "test-installation-id",
+                userId = null,
+                pushToken = null
+            ),
             repository.getAppInfoStream().first()
         )
     }
@@ -50,7 +59,7 @@ class AppInfoRepositoryImplTest {
         repository.fetchAppInfo()
 
         assertEquals(
-            AppInfo(versionName = BuildConfig.VERSION_NAME, installationId = null, userId = null),
+            AppInfo(versionName = BuildConfig.VERSION_NAME, installationId = null, userId = null, pushToken = null),
             repository.getAppInfoStream().first()
         )
     }
@@ -95,5 +104,26 @@ class AppInfoRepositoryImplTest {
         repository.fetchAppInfo()
 
         assertNull(repository.getAppInfoStream().first().pushToken)
+    }
+
+    @Test
+    fun fetchAppInfo_pushTokenPending_emitsOtherIdsWithoutWaiting() = runTest {
+        every { installationIdDataSource.getInstallationIdStream() } returns flowOf("test-installation-id")
+        every { authDataSource.getCurrentUserId() } returns "test-user-id"
+        // オフラインなどでトークンの取得が終わらない
+        every { pushMessagingDataSource.getTokenStream() } returns flow { awaitCancellation() }
+
+        backgroundScope.launch { repository.fetchAppInfo() }
+        runCurrent()
+
+        assertEquals(
+            AppInfo(
+                versionName = BuildConfig.VERSION_NAME,
+                installationId = "test-installation-id",
+                userId = "test-user-id",
+                pushToken = null
+            ),
+            repository.getAppInfoStream().first()
+        )
     }
 }

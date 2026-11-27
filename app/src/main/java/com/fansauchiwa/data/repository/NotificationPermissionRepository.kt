@@ -7,8 +7,9 @@ import kotlinx.coroutines.flow.first
 
 /**
  * 通知の許可（Android 13 以上）を、うちわを保存したあとに1回だけ聞くための判定（#429）。
- * プッシュ通知のお知らせと、今後足す通知（#361 のお題の通知など）で、聞く場面をこの1つにまとめる。
- * イベント予定のリマインド（`EventEditBottomSheet`）は、リマインドを付けたときにその場で聞く（こちらとは別に数えない）
+ * アプリのほうから自動で聞くのは、この保存のあとの1か所だけにする（お知らせのプッシュ通知はここで許可をもらう）。
+ * 利用者が自分で通知をオンにする操作（イベント予定のリマインドを付ける `EventEditBottomSheet`、#361 のお題の通知のスイッチなど）では、その場で聞く。
+ * そこで聞いても、ここの「1回」には数えない（リマインドで許可しなかった人には、保存のあとにもう一度聞く。許可した人には聞かない）
  */
 interface NotificationPermissionRepository {
     /**
@@ -32,6 +33,6 @@ class NotificationPermissionRepositoryImpl @Inject constructor(
             !settingsDataSource.getHasRequestedNotificationPermissionStream().first()
 
     override suspend fun markRequestedAfterSave() {
-        settingsDataSource.setHasRequestedNotificationPermission()
+        settingsDataSource.markNotificationPermissionRequested()
     }
 }

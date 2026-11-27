@@ -47,8 +47,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 画面の回転などで作り直されたときに、同じ通知タップを二重に数えない
-        if (savedInstanceState == null) {
+        // 画面の回転などで作り直されたときと、履歴から開き直したときに、同じ通知タップを二重に数えない
+        if (savedInstanceState == null && !isLaunchedFromHistory()) {
             logReminderTap()
             handlePushNotificationOpen(intent)
         }
@@ -84,9 +84,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        // 通知から開くと、ふつうは Activity が作り直されて onCreate で数える。今の Activity にそのまま届いたときも数えるため、ここでも見る
+        // FCM の通知は FLAG_ACTIVITY_CLEAR_TOP で開くので、launchMode が standard の今は作り直されて onCreate で数える。
+        // launchMode を singleTop にしたときは作り直されずここに届くので、そのときのためにここでも見る
         handlePushNotificationOpen(intent)
     }
+
+    /**
+     * 履歴（最近使ったアプリ）から開き直したか。通知から開いた Activity が終わったあとに履歴から開くと、
+     * 通知の情報が付いた最初の Intent がもう一度届くので、通知のタップとして数えない
+     */
+    private fun isLaunchedFromHistory(): Boolean =
+        (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
     /**
      * お知らせのプッシュ通知（#429）を押して開いたときに、計測を送り、直後のインタースティシャルを出さないようにする。

@@ -37,7 +37,7 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="subject_segment,face" />
-        <!-- FCM がアプリの外にいるときに出す通知のチャンネル（#429）。チャンネルは FansaUchiwaApplication が起動のたびに作る -->
+        <!-- アプリが前面にないときに FCM が出す通知のチャンネル（#429）。チャンネルは FansaUchiwaApplication が起動のたびに作る -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="@string/announcement_notification_channel_id" />

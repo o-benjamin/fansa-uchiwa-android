@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -17,7 +18,8 @@ import org.junit.Test
 class PushMessagingRepositoryImplTest {
 
     private val pushMessagingDataSource: PushMessagingDataSource = mockk(relaxed = true)
-    private val repository = PushMessagingRepositoryImpl(pushMessagingDataSource)
+    private val crashReportingRepository: CrashReportingRepository = mockk(relaxed = true)
+    private val repository = PushMessagingRepositoryImpl(pushMessagingDataSource, crashReportingRepository)
 
     @Before
     fun setUp() {
@@ -43,5 +45,18 @@ class PushMessagingRepositoryImplTest {
 
         // 購読できなくても起動を止めない
         repository.subscribeToAnnouncements()
+
+        // 通信の都合の失敗は Crashlytics に送らない
+        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
+    }
+
+    @Test
+    fun subscribeToAnnouncements_invalidTopic_recordsException() = runTest {
+        val exception = IllegalArgumentException("Invalid topic name")
+        coEvery { pushMessagingDataSource.subscribeToTopic(any()) } throws exception
+
+        repository.subscribeToAnnouncements()
+
+        verify(exactly = 1) { crashReportingRepository.recordException(exception) }
     }
 }
