@@ -108,6 +108,7 @@ firebase-installations = { module = "com.google.firebase:firebase-installations"
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-appcheck = { module = "com.google.firebase:firebase-appcheck" }
 firebase-functions = { module = "com.google.firebase:firebase-functions" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 firebase-appcheck-playintegrity = { module = "com.google.firebase:firebase-appcheck-playintegrity" }
 firebase-appcheck-debug = { module = "com.google.firebase:firebase-appcheck-debug" }
 

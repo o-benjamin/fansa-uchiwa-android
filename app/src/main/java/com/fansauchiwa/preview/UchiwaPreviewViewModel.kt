@@ -22,6 +22,7 @@ import com.fansauchiwa.data.repository.AffiliateRepository
 import com.fansauchiwa.data.repository.DailyPromptUchiwaRepository
 import com.fansauchiwa.data.repository.InAppReviewRepository
 import com.fansauchiwa.data.repository.MasterpieceRepository
+import com.fansauchiwa.data.repository.NotificationPermissionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.net.URLDecoder
 import javax.inject.Inject
@@ -43,6 +44,7 @@ class UchiwaPreviewViewModel @Inject constructor(
     private val exportedFontAnalytics: ExportedFontAnalytics,
     private val affiliateRepository: AffiliateRepository,
     private val dailyPromptUchiwaRepository: DailyPromptUchiwaRepository,
+    private val notificationPermissionRepository: NotificationPermissionRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -223,12 +225,28 @@ class UchiwaPreviewViewModel @Inject constructor(
     }
 
     /**
-     * 保存成功の直後に、条件を満たしていればアプリ内レビュー依頼を出す（#243）
-     * 広告の画面が閉じてこの画面が前面に戻ってから呼ぶこと
+     * 保存成功の直後に呼ぶ。広告の画面が閉じてこの画面が前面に戻ってから呼ぶこと。
+     * 通知の許可をまだ聞いていなければ聞き（#429）、聞かないときは条件を満たしていればアプリ内レビュー依頼を出す（#243）。
+     * 2つを続けて出さないよう、許可を聞いた保存ではレビュー依頼を出さない（レビュー依頼は次に保存したときに判定する）
      */
-    fun requestInAppReviewIfEligible(activity: Activity) {
+    fun onSaveSuccessShown(activity: Activity) {
         viewModelScope.launch {
-            inAppReviewRepository.requestReviewIfEligible(activity)
+            if (notificationPermissionRepository.shouldRequestAfterSave()) {
+                savedStateHandle[UI_STATE_KEY] = uiState.value.copy(shouldRequestNotificationPermission = true)
+            } else {
+                inAppReviewRepository.requestReviewIfEligible(activity)
+            }
+        }
+    }
+
+    /**
+     * Screen が通知の許可のダイアログを出す直前に呼ぶ。画面が作り直されても、もう一度出さない。
+     * 聞いたことは、画面が実際に聞くときに残す（残したあとに画面を離れて、聞かないまま聞いたことにならないように）
+     */
+    fun onNotificationPermissionRequested() {
+        savedStateHandle[UI_STATE_KEY] = uiState.value.copy(shouldRequestNotificationPermission = false)
+        viewModelScope.launch {
+            notificationPermissionRepository.markRequestedAfterSave()
         }
     }
 

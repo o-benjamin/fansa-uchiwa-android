@@ -77,6 +77,7 @@ class UchiwaPreviewAffiliateTest {
         exportedFontAnalytics = mockk<ExportedFontAnalytics>(relaxed = true),
         affiliateRepository = affiliateRepository,
         dailyPromptUchiwaRepository = DailyPromptUchiwaRepositoryImpl(),
+        notificationPermissionRepository = mockk(relaxed = true),
         savedStateHandle = SavedStateHandle().apply {
             set(IMAGE_PATH_ARG, URLEncoder.encode(imagePath, "UTF-8"))
         }

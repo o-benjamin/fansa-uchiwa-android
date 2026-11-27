@@ -29,6 +29,7 @@ Jetpack Compose (Material 3) + MVVM / UDF の Android アプリ。Kotlin・ラ�
 | 外部サービス・SDK を足す・替える・外す、外へ送るデータ（Analytics のパラメータを含む）・サーバーに保存するもの・保存期間を変える、バックアップの決まり（`backup_rules.xml`・`data_extraction_rules.xml`）を変える、プライバシーポリシー（`web/public/privacy-policy.html`・`docs/privacy-policy.html`）を直す | `.agents/privacy-policy.md` |
 | AI 素材のサーバーを呼ぶ、匿名ログイン・App Check・Play Integrity の設定を扱う、アプリの持ち主が変わる | `.agents/firebase-auth-app-check.md` |
 | 回数券の購入（Play Billing）を扱う、Billing Library を更新する、特定商取引法に基づく表記（`web/public/tokushoho.html`）を直す、アプリの持ち主が変わる | `.agents/play-billing.md` |
+| プッシュ通知（お知らせ）を送る・通知の許可を聞く場面を変える・通知チャンネルやトピックを扱う、通知を足す、アプリの持ち主が変わる | `.agents/push-notifications.md` |
 | コミットメッセージを作成する | `.agents/commit-message.md` |
 | サーバー（`functions/` の Cloud Functions）を作成・変更する、出す・止める、Secret を入れ替える | `functions/README.md` |
 | Android の API を調べる（`android docs search`）、頼まれたときや不具合の調査でアプリを動かす、既存の journey（`journeys/`）が通る画面の文言や手順を変える | `.agents/android-cli.md` |

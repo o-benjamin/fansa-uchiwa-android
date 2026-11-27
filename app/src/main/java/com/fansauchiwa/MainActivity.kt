@@ -1,5 +1,6 @@
 package com.fansauchiwa
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -15,10 +16,12 @@ import com.fansauchiwa.analytics.AnalyticsActions
 import com.fansauchiwa.analytics.AnalyticsEvent
 import com.fansauchiwa.analytics.AnalyticsRepository
 import com.fansauchiwa.analytics.EventAnalyticsParams
+import com.fansauchiwa.analytics.PushAnalyticsParams
 import com.fansauchiwa.data.repository.AdMobRepository
 import com.fansauchiwa.data.repository.CrashReportingRepository
 import com.fansauchiwa.data.repository.SettingsRepository
 import com.fansauchiwa.ui.notification.EXTRA_REMINDER_DAYS_UNTIL
+import com.fansauchiwa.ui.notification.PushNotificationExtras
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import com.fansauchiwa.ui.theme.createFontFamilyResolverRecordingFailures
 import com.fansauchiwa.ui.util.LocalHapticFeedbackEnabled
@@ -44,9 +47,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 画面の回転などで作り直されたときに、同じ通知タップを二重に数えない
-        if (savedInstanceState == null) {
+        // 画面の回転などで作り直されたときと、履歴から開き直したときに、同じ通知タップを二重に数えない
+        if (savedInstanceState == null && !isLaunchedFromHistory()) {
             logReminderTap()
+            handlePushNotificationOpen(intent)
         }
 
         enableEdgeToEdge(
@@ -75,6 +79,38 @@ class MainActivity : ComponentActivity() {
                     FansaUchiwaNavGraph()
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // FCM の通知は FLAG_ACTIVITY_CLEAR_TOP で開くので、launchMode が standard の今は作り直されて onCreate で数える。
+        // launchMode を singleTop にしたときは作り直されずここに届くので、そのときのためにここでも見る
+        handlePushNotificationOpen(intent)
+    }
+
+    /**
+     * 履歴（最近使ったアプリ）から開き直したか。通知から開いた Activity が終わったあとに履歴から開くと、
+     * 通知の情報が付いた最初の Intent がもう一度届くので、通知のタップとして数えない
+     */
+    private fun isLaunchedFromHistory(): Boolean =
+        (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+
+    /**
+     * お知らせのプッシュ通知（#429）を押して開いたときに、計測を送り、直後のインタースティシャルを出さないようにする。
+     * 行き先はいつもホーム（起動したときと同じ）。お題のカードもホームにあるので、お題のお知らせもホームで足りる
+     */
+    private fun handlePushNotificationOpen(intent: Intent) {
+        val extras = intent.extras ?: return
+        if (!extras.containsKey(PushNotificationExtras.MESSAGE_ID)) return
+        adMobRepository.skipNextInterstitialAd()
+        lifecycleScope.launch {
+            analyticsRepository.logEvent(
+                AnalyticsEvent(
+                    name = AnalyticsActions.OPEN_FROM_PUSH,
+                    params = PushAnalyticsParams.params(extras.getString(PushNotificationExtras.CAMPAIGN))
+                )
+            )
         }
     }
 
