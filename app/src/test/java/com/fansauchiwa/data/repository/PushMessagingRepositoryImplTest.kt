@@ -9,7 +9,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
@@ -40,21 +39,12 @@ class PushMessagingRepositoryImplTest {
     }
 
     @Test
-    fun subscribeToAnnouncements_subscribeFails_doesNotThrow() = runTest {
-        coEvery { pushMessagingDataSource.subscribeToTopic(any()) } throws IOException("SERVICE_NOT_AVAILABLE")
-
-        // 購読できなくても起動を止めない
-        repository.subscribeToAnnouncements()
-
-        // 通信の都合の失敗は Crashlytics に送らない
-        verify(exactly = 0) { crashReportingRepository.recordException(any()) }
-    }
-
-    @Test
-    fun subscribeToAnnouncements_invalidTopic_recordsException() = runTest {
+    fun subscribeToAnnouncements_invalidTopic_recordsExceptionWithoutThrowing() = runTest {
+        // 購読の Task が失敗するのは、トピック名の形式の誤りのときだけ
         val exception = IllegalArgumentException("Invalid topic name")
         coEvery { pushMessagingDataSource.subscribeToTopic(any()) } throws exception
 
+        // 購読できなくても起動を止めない
         repository.subscribeToAnnouncements()
 
         verify(exactly = 1) { crashReportingRepository.recordException(exception) }

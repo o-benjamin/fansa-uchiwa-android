@@ -1,6 +1,7 @@
 package com.fansauchiwa.settings
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -10,6 +11,7 @@ import com.fansauchiwa.R
 import com.fansauchiwa.data.AppInfo
 import com.fansauchiwa.ui.theme.FansaUchiwaTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -150,5 +152,31 @@ class AppInfoSectionTest {
             .performClick()
 
         assertEquals(listOf("test-push-token"), copiedPushTokens)
+    }
+
+    @Test
+    fun appInfoSection_withAllIds_showsUserIdAtTheBottom() {
+        composeTestRule.setContent {
+            FansaUchiwaTheme {
+                AppInfoSection(
+                    appInfo = AppInfo(
+                        versionName = "2.13.0",
+                        installationId = "test-installation-id",
+                        userId = "test-user-id",
+                        pushToken = "test-push-token"
+                    ),
+                    onCopyInstallationId = {},
+                    onCopyUserId = {},
+                    onCopyPushToken = {}
+                )
+            }
+        }
+
+        // 問い合わせの案内が「設定画面のいちばん下の利用者 ID」としているので、行を足しても利用者 ID をいちばん下に置く
+        val userIdTop = composeTestRule.onNodeWithText("test-user-id").getUnclippedBoundsInRoot().top
+        val pushTokenTop = composeTestRule.onNodeWithText("test-push-token").getUnclippedBoundsInRoot().top
+        val installationIdTop = composeTestRule.onNodeWithText("test-installation-id").getUnclippedBoundsInRoot().top
+        assertTrue(userIdTop > pushTokenTop)
+        assertTrue(userIdTop > installationIdTop)
     }
 }

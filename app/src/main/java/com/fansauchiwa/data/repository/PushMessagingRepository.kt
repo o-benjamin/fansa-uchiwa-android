@@ -3,14 +3,15 @@ package com.fansauchiwa.data.repository
 import android.util.Log
 import com.fansauchiwa.data.infra.PushMessagingDataSource
 import javax.inject.Inject
-import java.io.IOException
 import kotlinx.coroutines.CancellationException
 
 interface PushMessagingRepository {
     /**
      * 全員に送るお知らせのトピック（[ANNOUNCEMENT_TOPIC]）を購読する（#429）。起動のたびに呼ぶ（購読済みでも害はない）。
      * 購読できなくてもアプリの操作には関わらないので、例外は投げない。
-     * 通信や Google Play 開発者サービスの都合（[IOException]）はログだけ、それ以外（トピック名の誤りなど、全員で失敗するもの）は Crashlytics にも残す
+     * 購読の Task が失敗するのはトピック名の形式の誤り（`IllegalArgumentException`）だけで、全員で失敗するので Crashlytics に残す。
+     * 通信・Google Play 開発者サービス・サーバーの断りでは Task は終わらず、SDK が裏でやり直すか logcat に出すだけ
+     * （firebase-messaging 25.0.1 の `TopicsSubscriber`・`TopicsSyncTask` で確かめた。BoM を上げたら見直す。調べ方は `.agents/push-notifications.md` の「アプリの作り」）
      */
     suspend fun subscribeToAnnouncements()
 
@@ -33,11 +34,8 @@ class PushMessagingRepositoryImpl @Inject constructor(
             pushMessagingDataSource.subscribeToTopic(PushMessagingRepository.ANNOUNCEMENT_TOPIC)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            // オフラインや、Google Play 開発者サービスがない端末などで失敗する。次の起動でまた試す
-            Log.w(TAG, "お知らせのトピックの購読に失敗", e)
         } catch (e: Exception) {
-            // 端末の都合でない失敗は、全員にお知らせが届かないおそれがあるので Crashlytics で気づけるようにする
+            // ここに来るのは全員にお知らせが届かなくなる失敗なので、Crashlytics で気づけるようにする
             Log.w(TAG, "お知らせのトピックの購読に失敗", e)
             crashReportingRepository.recordException(e)
         }
