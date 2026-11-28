@@ -1475,7 +1475,8 @@ fun CompleteEditButton(
     val hapticManager = rememberFansaHapticManager()
     Button(
         onClick = {
-            hapticManager.perform(FansaHapticType.CONFIRM)
+            // プレビューへ進むだけなので軽いタップ。成功の合図（CONFIRM）は保存できた瞬間に取っておく（#454、.agents/ui.md）
+            hapticManager.perform(FansaHapticType.VIRTUAL_KEY)
             onClick()
         },
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),

@@ -135,17 +135,24 @@ fun UchiwaPreviewScreen(
         onBack()
     }
 
-    // 保存失敗時のみSnackbarで通知
+    // 報酬獲得時の保存は広告の表示中に終わる。保存の結果に応じて出すもの（Snackbar・振動・通知の許可・レビュー依頼）は、
+    // 広告が閉じてこの画面が前面（RESUMED）に戻るのを待ってから出し、広告と重ならないようにする
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // 保存失敗時のみSnackbarで通知。振動（REJECT）と同じく、この画面が前面に戻ってから出す
+    // （広告の表示中に出すと、広告の下で表示が終わって saveSuccess が null に戻り、Snackbar も振動も届かないため）
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess == false) {
+            lifecycleOwner.lifecycle.withResumed {} // 前面に戻るまで待つだけ
             snackbarHostState.showSnackbar("保存に失敗しました")
             viewModel.clearSaveStatus()
         }
     }
 
-    // 失敗時の Snackbar とは別に、保存成功の直後に通知の許可（#429）かアプリ内レビュー依頼（#243）を出す。報酬獲得時の保存は広告の表示中に終わるため、
-    // 広告が閉じてこの画面が前面（RESUMED）に戻るのを待ってから出し、広告と重ならないようにする
-    val lifecycleOwner = LocalLifecycleOwner.current
+    // 成功（保存完了のダイアログ）で CONFIRM、失敗（Snackbar）で REJECT を1回だけ鳴らす（#454）
+    SaveResultHapticEffect(saveSuccess = uiState.saveSuccess)
+
+    // 失敗時の Snackbar とは別に、保存成功の直後に通知の許可（#429）かアプリ内レビュー依頼（#243）を出す
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess != true) return@LaunchedEffect
         val activity = context as? Activity ?: return@LaunchedEffect
