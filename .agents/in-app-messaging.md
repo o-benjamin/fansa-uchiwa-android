@@ -29,7 +29,7 @@
 
 ## キャンペーンの作り方
 
-- コンソールの「Messaging」の「新しいキャンペーン」で、In-App Messaging の種類を選ぶ（通知の種類はプッシュ通知。`.agents/push-notifications.md`）
+- コンソールの「Messaging」の「新しいキャンペーン」で、In-App Messaging の種類を選ぶ（「Firebase Notification メッセージ」はプッシュ通知。`.agents/push-notifications.md`）
 - 「更新して最初の起動で1回」：トリガーを `on_foreground`、対象のアプリのバージョンを新しい版に絞り、端末ごとの表示の上限を1回にする
 - 形式はモーダル・カード・画像のどれか。**バナーは使わない**（この文書の「アプリの中の作り」）
 - `on_foreground` のメッセージは、キャンペーンをまたいで端末ごとに1日1回までしか出ない（22.0.2 の `RateLimitModule`。テスト送信は対象外）。同じ日に `on_foreground` のキャンペーンを2つ動かすと片方が出ない
