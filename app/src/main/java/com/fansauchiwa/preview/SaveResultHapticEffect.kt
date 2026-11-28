@@ -17,9 +17,7 @@ import com.fansauchiwa.ui.util.rememberFansaHapticManager
  *
  * - 報酬獲得時の保存は広告の表示中に終わるため、広告の上では鳴らさず、画面が前面（RESUMED）に戻ってから鳴らす
  * - 鳴らしたかは画面が作り直されても残るよう保存し、ダークモードの切り替えなどで作り直されたときに同じ結果でもう一度鳴らさない
- *   （画面は縦固定なので、端末を回しても作り直されない）
- * - 結果を閉じた（[saveSuccess] が null に戻った）ら、次の保存で鳴らせるように戻す
- * - 設定の「触覚フィードバック」がオフなら鳴らさない（[rememberFansaHapticManager] が守る）
+ * - 結果を閉じた（[saveSuccess] が null に戻った）ら、次の保存で鳴らせるように戻す。前面に戻る前に null に戻すと鳴らない
  *
  * @param saveSuccess 保存の結果（[UchiwaPreviewUiState.saveSuccess]）。true は成功、false は失敗、null は結果を出していない
  */
@@ -29,15 +27,13 @@ fun SaveResultHapticEffect(saveSuccess: Boolean?) {
     val hapticManager = rememberFansaHapticManager()
     var hasPerformed by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(saveSuccess) {
-        val hapticType = when (saveSuccess) {
-            true -> FansaHapticType.CONFIRM
-            false -> FansaHapticType.REJECT
-            null -> {
-                hasPerformed = false
-                return@LaunchedEffect
-            }
+        if (saveSuccess == null) {
+            // 結果を閉じたら、次の保存で鳴らせるように戻す
+            hasPerformed = false
+            return@LaunchedEffect
         }
         if (hasPerformed) return@LaunchedEffect
+        val hapticType = if (saveSuccess) FansaHapticType.CONFIRM else FansaHapticType.REJECT
         lifecycleOwner.lifecycle.withResumed {
             hapticManager.perform(hapticType)
             hasPerformed = true

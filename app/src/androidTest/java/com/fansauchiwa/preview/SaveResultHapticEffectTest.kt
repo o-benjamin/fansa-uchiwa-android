@@ -27,12 +27,12 @@ class SaveResultHapticEffectTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val performed = mutableListOf<HapticFeedbackType>()
+    private val performedHapticTypes = mutableListOf<HapticFeedbackType>()
 
     // 端末を振動させる代わりに、鳴らされた種類を記録する
     private val recordingHapticFeedback = object : HapticFeedback {
         override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
-            performed += hapticFeedbackType
+            performedHapticTypes += hapticFeedbackType
         }
     }
 
@@ -52,7 +52,7 @@ class SaveResultHapticEffectTest {
         }
         composeTestRule.waitForIdle()
 
-        assertEquals(listOf(HapticFeedbackType.Confirm), performed)
+        assertEquals(listOf(HapticFeedbackType.Confirm), performedHapticTypes)
     }
 
     @Test
@@ -62,7 +62,7 @@ class SaveResultHapticEffectTest {
         }
         composeTestRule.waitForIdle()
 
-        assertEquals(listOf(HapticFeedbackType.Reject), performed)
+        assertEquals(listOf(HapticFeedbackType.Reject), performedHapticTypes)
     }
 
     @Test
@@ -72,7 +72,7 @@ class SaveResultHapticEffectTest {
         }
         composeTestRule.waitForIdle()
 
-        assertEquals(emptyList<HapticFeedbackType>(), performed)
+        assertEquals(emptyList<HapticFeedbackType>(), performedHapticTypes)
     }
 
     @Test
@@ -82,7 +82,7 @@ class SaveResultHapticEffectTest {
         }
         composeTestRule.waitForIdle()
 
-        assertEquals(emptyList<HapticFeedbackType>(), performed)
+        assertEquals(emptyList<HapticFeedbackType>(), performedHapticTypes)
     }
 
     @Test
@@ -97,22 +97,23 @@ class SaveResultHapticEffectTest {
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
 
-        assertEquals(listOf(HapticFeedbackType.Confirm), performed)
+        assertEquals(listOf(HapticFeedbackType.Confirm), performedHapticTypes)
     }
 
     @Test
-    fun saveResultHapticEffect_resultClearedThenSavedAgain_performsAgain() {
+    fun saveResultHapticEffect_resultClearedThenNextResult_performsForNextResult() {
         var saveSuccess by mutableStateOf<Boolean?>(true)
         composeTestRule.setContent {
             WithRecordingHaptic(hapticEnabled = true) { SaveResultHapticEffect(saveSuccess = saveSuccess) }
         }
         composeTestRule.waitForIdle()
 
+        // null をコンポジションに届けてから次の結果を流す（1つの runOnIdle にまとめると null を経ない）
         composeTestRule.runOnIdle { saveSuccess = null }
         composeTestRule.runOnIdle { saveSuccess = false }
         composeTestRule.waitForIdle()
 
-        assertEquals(listOf(HapticFeedbackType.Confirm, HapticFeedbackType.Reject), performed)
+        assertEquals(listOf(HapticFeedbackType.Confirm, HapticFeedbackType.Reject), performedHapticTypes)
     }
 
     @Test
@@ -129,11 +130,11 @@ class SaveResultHapticEffectTest {
             }
         }
         composeTestRule.waitForIdle()
-        assertEquals(emptyList<HapticFeedbackType>(), performed)
+        assertEquals(emptyList<HapticFeedbackType>(), performedHapticTypes)
 
         composeTestRule.runOnUiThread { lifecycleOwner.registry.currentState = Lifecycle.State.RESUMED }
         composeTestRule.waitForIdle()
 
-        assertEquals(listOf(HapticFeedbackType.Confirm), performed)
+        assertEquals(listOf(HapticFeedbackType.Confirm), performedHapticTypes)
     }
 }

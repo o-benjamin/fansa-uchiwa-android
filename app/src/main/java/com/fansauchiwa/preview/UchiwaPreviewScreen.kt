@@ -139,7 +139,7 @@ fun UchiwaPreviewScreen(
     // 広告が閉じてこの画面が前面（RESUMED）に戻るのを待ってから出し、広告と重ならないようにする
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // 保存失敗時のみSnackbarで通知。振動（REJECT）と同じく、この画面が前面に戻ってから出す
+    // 保存失敗時のみSnackbarで通知
     // （広告の表示中に出すと、広告の下で表示が終わって saveSuccess が null に戻り、Snackbar も振動も届かないため）
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess == false) {
