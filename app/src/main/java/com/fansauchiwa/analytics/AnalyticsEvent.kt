@@ -37,11 +37,13 @@ object AnalyticsActions {
     const val TAP_HOME_TEMPLATE = "tap_home_template"
 
     // ホームの「今日のお題」のカード（#360）。カードが出た・「このお題で作る」か「AIで素材を作る」を押した（どちらも同じうちわを開く。
-    // 「AIで素材を作る」だけの数は TAP_AI_MATERIAL_ENTRY）。パラメータは DailyPromptAnalyticsParams
+    // 「AIで素材を作る」だけの数は TAP_AI_MATERIAL_ENTRY）。TAP_DAILY_PROMPT は、アプリ内メッセージ（#428）のボタンから
+    // お題を開いたときにも `source=in_app_message` を付けて送る。パラメータは DailyPromptAnalyticsParams
     const val VIEW_DAILY_PROMPT = "view_daily_prompt"
     const val TAP_DAILY_PROMPT = "tap_daily_prompt"
 
-    // お題のカードの副ボタン「AIで素材を作る」（AI素材の入口、#340）。パラメータは DailyPromptAnalyticsParams の prompt_id
+    // AI素材の入口（#340）。お題のカードの副ボタン「AIで素材を作る」と、アプリ内メッセージ（#428）のボタン
+    // （`source=in_app_message` を付ける）。パラメータは DailyPromptAnalyticsParams
     const val TAP_AI_MATERIAL_ENTRY = "tap_ai_material_entry"
 
     const val TAP_EDIT_BACK = "tap_edit_back"
