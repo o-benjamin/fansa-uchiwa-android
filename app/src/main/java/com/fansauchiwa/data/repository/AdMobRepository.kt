@@ -97,7 +97,8 @@ interface AdMobRepository {
 
     /**
      * 次に [showInterstitialAd] を呼んだときだけ、広告を出さずにすぐ onAdClosed を呼ぶ。
-     * 更新の案内（#428）を出した起動と、お知らせの通知から開いたとき（#429、`MainActivity.handlePushNotificationOpen`）に、
+     * 更新の案内（#428）を出した起動、アプリ内メッセージ（#428、`InAppMessageViewModel`）を出したとき、
+     * お知らせの通知から開いたとき（#429、`MainActivity.handlePushNotificationOpen`）に、
      * 最初のインタースティシャルを出さないために使う
      */
     fun skipNextInterstitialAd()

@@ -39,17 +39,6 @@ class SettingsLocalSource @Inject constructor(
         }
     }
 
-    override fun getHasSeenApologyDialogStream(): Flow<Boolean> = preferencesStream
-        .map { preferences ->
-            preferences[KEY_HAS_SEEN_APOLOGY_DIALOG] ?: DEFAULT_HAS_SEEN_APOLOGY_DIALOG
-        }
-
-    override suspend fun setHasSeenApologyDialog(hasSeen: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[KEY_HAS_SEEN_APOLOGY_DIALOG] = hasSeen
-        }
-    }
-
     override fun getDailyPromptDismissedDateStream(): Flow<LocalDate?> = preferencesStream
         .map { preferences ->
             preferences[KEY_DAILY_PROMPT_DISMISSED_DATE]?.let(::parseDateOrNull)
@@ -86,16 +75,16 @@ class SettingsLocalSource @Inject constructor(
         // "has_seen_edit_completion_tooltip" は完成ボタンの吹き出し（#130。#309 で削除）が使っていたキー。
         // 既存の端末には値が残るが読まない。別の用途に再利用しないこと
 
+        // "has_seen_apology_dialog" は「お詫びとお知らせ」ダイアログ（v2.5.0。#428 で削除、#239）が使っていたキー。
+        // 既存の端末には値が残るが読まない。別の用途に再利用しないこと
+
         private val KEY_HAPTIC_FEEDBACK_ENABLED =
             booleanPreferencesKey("haptic_feedback_enabled")
-        private val KEY_HAS_SEEN_APOLOGY_DIALOG =
-            booleanPreferencesKey("has_seen_apology_dialog")
         // ISO 8601 の日付（例 2026-11-04）で持つ
         private val KEY_DAILY_PROMPT_DISMISSED_DATE =
             stringPreferencesKey("daily_prompt_dismissed_date")
         private val KEY_HAS_REQUESTED_NOTIFICATION_PERMISSION =
             booleanPreferencesKey("has_requested_notification_permission")
         private const val DEFAULT_HAPTIC_FEEDBACK_ENABLED = true
-        private const val DEFAULT_HAS_SEEN_APOLOGY_DIALOG = false
     }
 }

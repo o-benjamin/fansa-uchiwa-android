@@ -11,12 +11,6 @@ class AppInstallLocalSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) : AppInstallDataSource {
 
-    override fun getIsFreshInstallStream(): Flow<Boolean> = flow {
-        // 判定できない場合は、ダイアログを出す側（false）に倒す
-        val packageInfo = getPackageInfoOrNull()
-        emit(packageInfo != null && packageInfo.firstInstallTime == packageInfo.lastUpdateTime)
-    }
-
     override fun getFirstInstallTimeMillisStream(): Flow<Long?> = flow {
         emit(getPackageInfoOrNull()?.firstInstallTime)
     }

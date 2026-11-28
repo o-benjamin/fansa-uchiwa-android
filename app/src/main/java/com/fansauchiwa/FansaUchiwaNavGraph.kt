@@ -3,12 +3,15 @@ package com.fansauchiwa
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.fansauchiwa.edit.EditScreen
@@ -18,6 +21,8 @@ import com.fansauchiwa.edit.aimaterial.AiMaterialViewModel
 import com.fansauchiwa.edit.imagepreview.ImagePreviewScreen
 import com.fansauchiwa.edit.imagepreview.ImagePreviewViewModel
 import com.fansauchiwa.home.HomeScreen
+import com.fansauchiwa.inappmessage.InAppMessageHost
+import com.fansauchiwa.inappmessage.InAppMessageViewModel
 import com.fansauchiwa.preview.UchiwaPreviewScreen
 import com.fansauchiwa.preview.UchiwaPreviewViewModel
 import com.fansauchiwa.settings.SettingsScreen
@@ -28,6 +33,15 @@ fun FansaUchiwaNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = HomeDestination.route
 ) {
+    // アプリ内メッセージ（#428）は Activity に1つ。ホームが今の画面のときだけ出す
+    val inAppMessageViewModel: InAppMessageViewModel = hiltViewModel()
+    val inAppMessageUiState by inAppMessageViewModel.uiState.collectAsStateWithLifecycle()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    InAppMessageHost(
+        isHomeShown = currentBackStackEntry?.let { it.destination.route == HomeDestination.route },
+        viewModel = inAppMessageViewModel
+    )
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -53,7 +67,9 @@ fun FansaUchiwaNavGraph(
                 },
                 onNavigateToTimeline = {
                     navController.navigate(EventTimelineDestination.screen)
-                }
+                },
+                pendingInAppMessageTarget = inAppMessageUiState.pendingTarget,
+                onInAppMessageTargetHandled = inAppMessageViewModel::onPendingTargetHandled
             )
         }
         composable<EditRoute> {

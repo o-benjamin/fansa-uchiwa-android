@@ -110,6 +110,7 @@ import com.fansauchiwa.analytics.AnalyticsScreens
 import com.fansauchiwa.data.DailyPrompt
 import com.fansauchiwa.data.Decoration
 import com.fansauchiwa.data.DecorationColors
+import com.fansauchiwa.data.InAppMessageTarget
 import com.fansauchiwa.data.SavedUchiwa
 import com.fansauchiwa.data.Template
 import com.fansauchiwa.data.applyTemplateMainColor
@@ -339,7 +340,9 @@ fun HomeScreen(
     onAddClick: () -> Unit = {},
     onAiMaterialEntryClick: (EditScreenInputArg) -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    onNavigateToTimeline: () -> Unit = {}
+    onNavigateToTimeline: () -> Unit = {},
+    pendingInAppMessageTarget: InAppMessageTarget? = null,
+    onInAppMessageTargetHandled: () -> Unit = {}
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -366,8 +369,6 @@ fun HomeScreen(
         // ViewModelのinitでloadすると、画面に戻ってきたに情報が更新されないため、描画時に毎回更新するようにする
         viewModel.loadAllMasterpieces()
         viewModel.loadTemplates()
-        viewModel.observeApologyDialogState()
-        viewModel.fetchApologyDialogState()
     }
 
     // ホームを開いたまま裏に回して翌日戻ったときも、その日のお題に変える。AI素材の入口の開け閉めも読み直す
@@ -376,24 +377,19 @@ fun HomeScreen(
         viewModel.fetchAiMaterialEntryEnabled()
     }
 
-    if (uiState.showApologyDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissApologyDialog() },
-            title = {
-                Text(text = stringResource(R.string.apology_dialog_title))
-            },
-            text = {
-                Text(text = stringResource(R.string.apology_dialog_message))
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.dismissApologyDialog() }) {
-                    Text(text = "閉じる")
-                }
-            }
-        )
-    }
-
     UpdatePrompt(snackbarHostState = snackbarHostState)
+
+    // アプリ内メッセージ（#428）のボタンの行き先（お題・AI素材）を、お題のカードと同じ道で開く
+    LaunchedEffect(pendingInAppMessageTarget) {
+        val target = pendingInAppMessageTarget ?: return@LaunchedEffect
+        when (target) {
+            InAppMessageTarget.DAILY_PROMPT -> viewModel.onInAppMessageDailyPrompt()?.let(onImageClick)
+            InAppMessageTarget.AI_MATERIAL -> viewModel.onInAppMessageAiMaterial()?.let(onAiMaterialEntryClick)
+            // ほかの行き先は InAppMessageViewModel が pendingTarget にしない
+            else -> Unit
+        }
+        onInAppMessageTargetHandled()
+    }
 
     nameTemplateDialogState.templateId?.let { templateId ->
         NameTemplateInputDialog(

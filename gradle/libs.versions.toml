@@ -105,6 +105,7 @@ firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-config = { module = "com.google.firebase:firebase-config" }
 firebase-installations = { module = "com.google.firebase:firebase-installations" }
+firebase-inappmessaging-display = { module = "com.google.firebase:firebase-inappmessaging-display" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-appcheck = { module = "com.google.firebase:firebase-appcheck" }
 firebase-functions = { module = "com.google.firebase:firebase-functions" }

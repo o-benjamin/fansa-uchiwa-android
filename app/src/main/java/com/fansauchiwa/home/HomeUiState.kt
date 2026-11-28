@@ -23,7 +23,6 @@ data class HomeUiState(
     val isSelectionMode: Boolean = false,
     val selectedPaths: List<String> = emptyList(),
     val templates: @RawValue List<Template> = emptyList(),
-    val showApologyDialog: Boolean = false,
     // ホームのカードに出す今日のお題。null なら出さない（Remote Config で止めている、または今日はカードを閉じた）
     val dailyPrompt: DailyPrompt? = null,
     // お題のカードに AI素材の入口（#340）を出すか。Remote Config の `ai_material_enabled`

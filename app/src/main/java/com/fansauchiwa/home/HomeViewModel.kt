@@ -132,27 +132,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun observeApologyDialogState() {
-        viewModelScope.launch {
-            settingsRepository.getHasSeenApologyDialogStream().collect { hasSeen ->
-                _uiState.update { it.copy(showApologyDialog = !hasSeen) }
-            }
-        }
-    }
-
-    fun fetchApologyDialogState() {
-        viewModelScope.launch {
-            settingsRepository.fetchHasSeenApologyDialog()
-        }
-    }
-
-    fun dismissApologyDialog() {
-        viewModelScope.launch {
-            settingsRepository.setHasSeenApologyDialog(true)
-            _uiState.update { it.copy(showApologyDialog = false) }
-        }
-    }
-
     private fun observeDailyPrompt() {
         combine(
             dailyPromptRepository.getDailyPromptStream(),
@@ -195,15 +174,14 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * 「このお題で作る」を押したときに呼び、白紙のうちわにお題の文字を置いて編集画面を開くための引数を返す。
-     * 「AIで素材を作る」（[onDailyPromptCreateWithAiMaterial]）からも呼ばれる。
+     * お題のカードの「このお題で作る」と、アプリ内メッセージのボタン（[onInAppMessageDailyPrompt]）から呼び、
+     * 白紙のうちわにお題の文字を置いて編集画面を開くための引数を返す。「AIで素材を作る」（[onDailyPromptCreateWithAiMaterial]）からも呼ばれる。
      * 白紙からの新規作成と保存の率を比べるため、tap_home_new_create は送らない
+     *
+     * @param source 計測（tap_daily_prompt）の `source`。カード以外から開いたときだけ渡す（[DailyPromptAnalyticsParams.SOURCE_IN_APP_MESSAGE]）
      */
-    fun onDailyPromptCreate(prompt: DailyPrompt): EditScreenInputArg {
-        logEvent(
-            AnalyticsActions.TAP_DAILY_PROMPT,
-            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
-        )
+    fun onDailyPromptCreate(prompt: DailyPrompt, source: String? = null): EditScreenInputArg {
+        logEvent(AnalyticsActions.TAP_DAILY_PROMPT, DailyPromptAnalyticsParams.tapParams(prompt, source))
         val uchiwaId = uuidProvider.generate()
         dailyPromptUchiwaRepository.markStartedFromPrompt(uchiwaId)
         return EditScreenInputArg(uchiwaId = uchiwaId, dailyPromptText = prompt.text)
@@ -213,14 +191,34 @@ class HomeViewModel @Inject constructor(
      * お題のカードの「AIで素材を作る」（#340）を押したときに呼ぶ。「このお題で作る」と同じうちわを開く引数を返し、
      * 呼び出し側はその編集画面の上に AI素材の画面を開く（AI素材の画面は、作った素材を下の編集画面に置くため）。
      * 同じうちわを開くので tap_daily_prompt も送る。お題から開いたうちわの数（tap_daily_prompt）と、
-     * そのうちわを保存した数（`source=daily_prompt` の付いた tap_preview_export）が、同じうちわを数えるようにするため
+     * そのうちわを保存した数（`source=daily_prompt` の付いた tap_preview_export）が、同じうちわを数えるようにするため。
+     * アプリ内メッセージのボタン（[onInAppMessageAiMaterial]）からも呼ばれる
+     *
+     * @param source 計測（tap_ai_material_entry・tap_daily_prompt）の `source`。カード以外から開いたときだけ渡す（[DailyPromptAnalyticsParams.SOURCE_IN_APP_MESSAGE]）
      */
-    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt): EditScreenInputArg {
-        logEvent(
-            AnalyticsActions.TAP_AI_MATERIAL_ENTRY,
-            mapOf(DailyPromptAnalyticsParams.PARAM_PROMPT_ID to prompt.id)
-        )
-        return onDailyPromptCreate(prompt)
+    fun onDailyPromptCreateWithAiMaterial(prompt: DailyPrompt, source: String? = null): EditScreenInputArg {
+        logEvent(AnalyticsActions.TAP_AI_MATERIAL_ENTRY, DailyPromptAnalyticsParams.tapParams(prompt, source))
+        return onDailyPromptCreate(prompt, source)
+    }
+
+    /**
+     * アプリ内メッセージ（#428）のボタンで今日のお題を開くときに呼ぶ。お題のカードの「このお題で作る」と同じ引数を返す。
+     * カードが出ていない（Remote Config で止めている、今日は閉じた、まだ読み込んでいない）ときは null で、ホームのまま。
+     * tap_daily_prompt には `source=in_app_message` を付け、カードから押した数と分ける
+     */
+    fun onInAppMessageDailyPrompt(): EditScreenInputArg? =
+        _uiState.value.dailyPrompt?.let { onDailyPromptCreate(it, DailyPromptAnalyticsParams.SOURCE_IN_APP_MESSAGE) }
+
+    /**
+     * アプリ内メッセージ（#428）のボタンで AI素材の画面を開くときに呼ぶ。お題のカードの「AIで素材を作る」と同じ引数を返す。
+     * カードに入口が出ていない（お題のカードが出ていない、Remote Config で入口を閉じている）ときは null で、ホームのまま。
+     * tap_ai_material_entry・tap_daily_prompt には `source=in_app_message` を付け、カードから押した数と分ける
+     */
+    fun onInAppMessageAiMaterial(): EditScreenInputArg? {
+        val state = _uiState.value
+        val prompt = state.dailyPrompt ?: return null
+        if (!state.isAiMaterialEntryEnabled) return null
+        return onDailyPromptCreateWithAiMaterial(prompt, DailyPromptAnalyticsParams.SOURCE_IN_APP_MESSAGE)
     }
 
     /**
